@@ -73,6 +73,8 @@ public class JobManager extends AbstractManager implements IJobManager {
                     params.getMap("attributes"),
                     params.getMap("resourceManagerAttributes"),
                     Job.Status.valueOf(params.getString("status")),
+                    params.getLong("startTime"),
+                    params.getLong("endTime"),
                     params,
                     sessionId
             );
@@ -84,8 +86,8 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
                                    URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
-                                   Map<String, Object> attributes,Map<String, Object> resourceManagerAttributes,
-                                   Job.Status status, QueryOptions options, String sessionId)
+                                   Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
+                                   Job.Status status, long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -111,6 +113,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
         job.setStatus(status);
+        job.setStartTime(startTime);
+        job.setEndTime(endTime);
+
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
         }

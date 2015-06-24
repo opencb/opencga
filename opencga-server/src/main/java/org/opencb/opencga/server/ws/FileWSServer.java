@@ -722,6 +722,37 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class UpdateFile {
+//        public String name;
+        public File.Format format;
+        public File.Bioformat bioformat;
+//        public String path;
+        public String ownerId;
+        public String creationDate;
+        public String modificationDate;
+        public String description;
+        public Long diskUsage;
+//        public int experimentId;
+        public List<Integer> sampleIds;
+        public Integer jobId;
+        public Map<String, Object> stats;
+        public Map<String, Object> attributes;
+    }
+
+    @POST
+    @Path("/{fileId}/update")
+    @ApiOperation(value = "Modify file", position = 16)
+    public Response updatePOST(@PathParam(value = "fileId") String fileIdStr,
+                               @ApiParam(name = "params", value = "Parameters to modify", required = true) UpdateFile params) {
+        try {
+            int fileId = catalogManager.getFileId(fileIdStr);
+            QueryResult queryResult = catalogManager.modifyFile(fileId, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/link")
     @ApiOperation(value = "Link an external file into catalog.", position = 17)

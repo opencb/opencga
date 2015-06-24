@@ -62,7 +62,7 @@ public class JobWSServerTest {
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
                         status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
 
         QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -88,7 +88,7 @@ public class JobWSServerTest {
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
                         status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
 
         QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
@@ -97,6 +97,8 @@ public class JobWSServerTest {
         assertEquals(jobName, job.getName());
         assertEquals(toolName, job.getToolName());
         assertEquals(description, job.getDescription());
+        assertEquals(10, job.getStartTime());
+        assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
         assertEquals(status.toString(), job.getStatus().toString());
         assertEquals(outDirId, job.getOutDirId());
@@ -115,7 +117,7 @@ public class JobWSServerTest {
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
-                .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, commandLine,
+                .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
                         status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
     }
 

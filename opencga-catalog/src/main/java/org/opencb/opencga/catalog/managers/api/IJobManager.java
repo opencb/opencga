@@ -21,7 +21,7 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
 
     QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
                             URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
-                            Map<String, Object> resourceManagerAttributes, Job.Status status, QueryOptions options,
+                            Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime, long endTime, QueryOptions options,
                             String sessionId)
             throws CatalogException;
 

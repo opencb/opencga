@@ -23,7 +23,6 @@ import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
@@ -34,14 +33,12 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +46,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -672,10 +668,10 @@ public class CatalogManager {
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status,
-                                      QueryOptions options, String sessionId)
+                                      long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles,
-                attributes, resourceManagerAttributes, status, options, sessionId);
+                attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
