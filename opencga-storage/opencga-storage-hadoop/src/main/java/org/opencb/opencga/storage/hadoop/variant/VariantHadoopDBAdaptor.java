@@ -1,10 +1,22 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -21,11 +33,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -113,7 +120,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return queryResult;
     }
 
-    private Variant buildVariantFromRowId(byte[] rid) {
+    public static Variant buildVariantFromRowId(byte[] rid) {
         String rowString = Bytes.toString(rid);
 
         String[] arr = StringUtils.split(rowString, HBaseUtils.ROWKEY_SEPARATOR);
@@ -134,7 +141,30 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        return null;
+        List<QueryResult<Variant>> allResults;
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        
+        // If the users asks to sort the results, do it by chromosome and start
+        if (options.getBoolean(SORT, false)) {
+            // TODO Add sort option
+        }
+        
+        // If the user asks to merge the results, run only one query,
+        // otherwise delegate in the method to query regions one by one
+        if (options.getBoolean(MERGE, false)) {
+            options.add(REGION, regionList);
+            allResults = Collections.singletonList(getAllVariants(options));
+        } else {
+            allResults = new ArrayList<>(regionList.size());
+            for (Region r : regionList) {
+                QueryResult queryResult = getAllVariantsByRegion(r, options);
+                queryResult.setId(r.toString());
+                allResults.add(queryResult);
+            }
+        }
+        return allResults;
     }
 
     @Override
