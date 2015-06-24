@@ -1380,6 +1380,49 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Map<String, Object> fileParameters = new HashMap<>();
+
+        String[] acceptedParams = {"description", "name", "creationDate"};
+        filterStringParams(parameters, fileParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("type", Cohort.Type.class);
+        filterEnumParams(parameters, fileParameters, acceptedEnums);
+
+        String[] acceptedLongParams = {"diskUsage"};
+        filterLongParams(parameters, fileParameters, acceptedLongParams);
+
+        String[] acceptedIntegerListParams = {"samples"};
+        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
+        if (parameters.containsKey("samples")) {
+            for (Integer sampleId : parameters.getAsIntegerList("samples")) {
+                if (!sampleExists(sampleId)) {
+                    throw CatalogDBException.idNotFound("Sample", sampleId);
+                }
+            }
+        }
+
+        String[] acceptedMapParams = {"attributes"};
+        filterMapParams(parameters, fileParameters, acceptedMapParams);
+
+        if(!fileParameters.isEmpty()) {
+            HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();
+            for (Map.Entry<String, Object> entry : fileParameters.entrySet()) {
+                studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
+            }
+            QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject("cohorts.id" , cohortId),
+                    new BasicDBObject("$set", studyRelativeCohortParameters), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+                throw CatalogDBException.idNotFound("Cohort", cohortId);
+            }
+        }
+
+        return endQuery("Modify cohort", startTime, getCohort(cohortId));
+    }
+
+    @Override
     public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
         BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
         QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);

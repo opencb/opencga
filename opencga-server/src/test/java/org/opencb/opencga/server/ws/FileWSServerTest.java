@@ -86,6 +86,10 @@ public class FileWSServerTest {
         CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
         Files.createDirectory(ROOT_DIR.resolve("data"));
         CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
+        String fileName = "variant-test-file.vcf.gz";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
+        fileName = "HG00096.chrom20.small.bam";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
     }
 
 
@@ -135,7 +139,6 @@ public class FileWSServerTest {
         File file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
-
     }
 
     @Test

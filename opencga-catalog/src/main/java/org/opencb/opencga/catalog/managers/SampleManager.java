@@ -215,7 +215,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<VariableSet> readVariableset(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSet);
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
@@ -263,6 +263,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         return sampleDBAdaptor.createCohort(studyId, cohort);
+    }
+
+    @Override
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(params, "Update parameters");
+        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            return sampleDBAdaptor.updateCohort(cohortId, params);
+        } else {
+            throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohortId, null);
+        }
     }
 
 

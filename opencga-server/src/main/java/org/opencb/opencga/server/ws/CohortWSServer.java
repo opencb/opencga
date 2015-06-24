@@ -169,17 +169,28 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) {
-        return createErrorResponse("update - GET", "PENDING");
-    }
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
+                           @ApiParam(value = "", required = true) @QueryParam("name") String name,
+                           @ApiParam(value = "", required = true) @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "", required = true) @QueryParam("description") String description,
+                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
+        try {
+            return createOkResponse(catalogManager.updateCohort(cohortId, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }    }
 
     @POST
     @Path("/{cohortId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
-    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId,
+    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("update - POST", "PENDING");
+        try {
+            return createOkResponse(catalogManager.updateCohort(cohortId, new QueryOptions(params), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET

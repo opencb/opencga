@@ -777,7 +777,7 @@ public class CatalogManager {
 
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.readVariableset(variableSet, options, sessionId);
+        return sampleManager.readVariableSet(variableSet, options, sessionId);
     }
 
 
@@ -813,6 +813,10 @@ public class CatalogManager {
     public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
+    }
+
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+        return sampleManager.updateCohort(cohortId, updateParams, sessionId);
     }
 
     /**

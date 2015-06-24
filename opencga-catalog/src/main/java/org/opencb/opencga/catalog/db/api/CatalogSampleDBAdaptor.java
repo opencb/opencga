@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
@@ -91,6 +92,8 @@ public interface CatalogSampleDBAdaptor {
     QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
 
     QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
+
+    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
 
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
