@@ -19,10 +19,7 @@ package org.opencb.opencga.catalog.models;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -77,6 +74,7 @@ public class File {
 
     private Index index;
 
+    private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -214,6 +212,7 @@ public class File {
         this.jobId = jobId;
         this.acl = acl;
         this.index = null;
+        this.annotationSets = new LinkedList<>();
         this.stats = stats;
         this.attributes = attributes;
     }

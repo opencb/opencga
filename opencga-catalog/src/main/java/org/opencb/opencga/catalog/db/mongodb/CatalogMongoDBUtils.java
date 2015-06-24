@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -354,6 +355,15 @@ class CatalogMongoDBUtils {
 
     /*  */
 
+    static boolean isDataStoreOption(String key) {
+        return datastoreOptions.contains(key);
+    }
+
+    static boolean isOtherKnownOption(String key) {
+        return otherOptions.contains(key);
+    }
+
+
     static void addQueryStringListFilter(String key, QueryOptions options, DBObject query) {
         addQueryStringListFilter(key, options, key, query);
     }
@@ -385,13 +395,70 @@ class CatalogMongoDBUtils {
     }
 
 
-    static boolean isDataStoreOption(String key) {
-        return datastoreOptions.contains(key);
+    public static void addAnnotationQueryFilter(String optionKey, QueryOptions options, List<DBObject> annotationSetFilter, Map<String, Variable> variableMap) throws CatalogDBException {
+        // Annotation Filters
+        final String AND = ";";
+        final String OR = ",";
+        final String IS = ":";
+
+        for (String annotation : options.getAsStringList(optionKey, AND)) {
+            String[] split = annotation.split(IS, 2);
+            if (split.length != 2) {
+                throw new CatalogDBException("Malformed annotation query : " + annotation);
+            }
+            final String variableId;
+            final String route;
+            if (split[0].contains(".")) {
+                String[] variableId_route = split[0].split("\\.", 2);
+                variableId = variableId_route[0];
+                route = "." + variableId_route[1];
+            } else {
+                variableId = split[0];
+                route = "";
+            }
+            String[] values = split[1].split(OR);
+
+            CatalogDBAdaptor.FilterOption.Type type = CatalogDBAdaptor.FilterOption.Type.TEXT;
+
+            if (variableMap != null) {
+                Variable variable = variableMap.get(variableId);
+                Variable.VariableType variableType = variable.getType();
+                if ( variable.getType() == Variable.VariableType.OBJECT) {
+                    String[] routes = route.split("\\.");
+                    for (String r : routes) {
+                        if (variable.getType() != Variable.VariableType.OBJECT) {
+                            throw new CatalogDBException("Unable to query variable " + split[0]);
+                        }
+                        if (variable.getVariableSet() != null) {
+                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                            if (subVariableMap.containsKey(r)) {
+                                variable = subVariableMap.get(r);
+                                variableType = variable.getType();
+                            }
+                        } else {
+                            variableType = Variable.VariableType.TEXT;
+                            break;
+                        }
+                    }
+                }
+                if (variableType == Variable.VariableType.BOOLEAN) {
+                    type = CatalogDBAdaptor.FilterOption.Type.BOOLEAN;
+
+                } else if (variableType == Variable.VariableType.NUMERIC) {
+                    type = CatalogDBAdaptor.FilterOption.Type.NUMERICAL;
+                }
+            }
+            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
+            annotationSetFilter.add(
+                    new BasicDBObject("annotations",
+                            new BasicDBObject("$elemMatch",
+                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
+                            )
+                    )
+            );
+        }
     }
 
-    static boolean isOtherKnownOption(String key) {
-        return otherOptions.contains(key);
-    }
 
     static List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, CatalogDBAdaptor.FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
         return addCompQueryFilter(type, optionKey, options, "", andQuery);

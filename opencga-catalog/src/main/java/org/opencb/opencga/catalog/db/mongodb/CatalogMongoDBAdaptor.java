@@ -1244,11 +1244,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         long startTime = startQuery();
         String warning = "";
 
-        // Annotation Filters
-        final String AND = ";";
-        final String OR = ",";
-        final String IS = ":";
-
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 
         List<DBObject> mongoQueryList = new LinkedList<>();
@@ -1274,62 +1269,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                         addCompQueryFilter(option.getType(), option.name(), options, option.getKey(), annotationSetFilter);
                         break;
                     case annotation:
-                        for (String annotation : options.getAsStringList("annotation", AND)) {
-                            String[] split = annotation.split(IS, 2);
-                            if (split.length != 2) {
-                                throw new CatalogDBException("Malformed annotation query : " + annotation);
-                            }
-                            final String variableId;
-                            final String route;
-                            if (split[0].contains(".")) {
-                                String[] variableId_route = split[0].split("\\.", 2);
-                                variableId = variableId_route[0];
-                                route = "." + variableId_route[1];
-                            } else {
-                                variableId = split[0];
-                                route = "";
-                            }
-                            String[] values = split[1].split(OR);
-
-                            FilterOption.Type type = FilterOption.Type.TEXT;
-
-                            if (variableMap != null) {
-                                Variable variable = variableMap.get(variableId);
-                                Variable.VariableType variableType = variable.getType();
-                                if ( variable.getType() == Variable.VariableType.OBJECT) {
-                                    String[] routes = route.split("\\.");
-                                    for (String r : routes) {
-                                        if (variable.getType() != Variable.VariableType.OBJECT) {
-                                            throw new CatalogDBException("Unable to query variable " + split[0]);
-                                        }
-                                        if (variable.getVariableSet() != null) {
-                                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
-                                            if (subVariableMap.containsKey(r)) {
-                                                variable = subVariableMap.get(r);
-                                                variableType = variable.getType();
-                                            }
-                                        } else {
-                                            variableType = Variable.VariableType.TEXT;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (variableType == Variable.VariableType.BOOLEAN) {
-                                    type = FilterOption.Type.BOOLEAN;
-
-                                } else if (variableType == Variable.VariableType.NUMERIC) {
-                                    type = FilterOption.Type.NUMERICAL;
-                                }
-                            }
-                            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
-                            annotationSetFilter.add(
-                                    new BasicDBObject("annotations",
-                                            new BasicDBObject("$elemMatch",
-                                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
-                                            )
-                                    )
-                            );
-                        }
+                        addAnnotationQueryFilter(option.name(), options, annotationSetFilter, variableMap);
                         break;
                     default:
                         String optionsKey = entry.getKey().replaceFirst(option.name(), option.getKey());
@@ -1379,15 +1319,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
     }
 
-    @Override
-//<<<<<<< HEAD
-//    public QueryResult<Job> getJob(int jobId) throws CatalogManagerException {
-//        long startTime = startQuery();
-//        QueryResult queryResult = jobCollection.find(new BasicDBObject("id", jobId), null);
-//        Job job = parseJob(queryResult);
-//        if(job != null) {
-//            return endQuery("Get job", startTime, Arrays.asList(job));
-//=======
     public int getStudyIdBySampleId(int sampleId) throws CatalogDBException {
         DBObject query = new BasicDBObject("id", sampleId);
         BasicDBObject projection = new BasicDBObject(_STUDY_ID, true);
@@ -1395,7 +1326,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if (!queryResult.getResult().isEmpty()) {
             Object studyId = queryResult.getResult().get(0).get(_STUDY_ID);
             return studyId instanceof Integer ? (Integer) studyId : Integer.parseInt(studyId.toString());
-//>>>>>>> bba62bea67b13e466ff74c6c0befb010e6fd05db
         } else {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
@@ -1404,14 +1334,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     @Override
     public QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException {
         long startTime = startQuery();
-//<<<<<<< HEAD
-//        QueryResult queryResult = jobCollection.find(new BasicDBObject("analysisId", analysisId), null);
-//        List<Job> jobs = parseJobs(queryResult);
-//        return endQuery("Get all jobs", startTime, jobs);
-//    }
-//=======
         checkStudyId(studyId);
-//>>>>>>> bba62bea67b13e466ff74c6c0befb010e6fd05db
 
         QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
                 .start(_ID, studyId)
