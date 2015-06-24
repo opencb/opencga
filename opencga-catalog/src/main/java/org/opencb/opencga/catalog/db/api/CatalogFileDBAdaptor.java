@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -88,39 +89,48 @@ public interface CatalogFileDBAdaptor {
      * ***************************
      */
 
-    // add file to study
-    QueryResult<File> createFileToStudy(int studyId, File file, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
-
     int getFileId(int studyId, String path) throws CatalogDBException;
-
-    QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
-
-    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
-
-    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
 
     int getStudyIdByFileId(int fileId) throws CatalogDBException;
 
     String getFileOwnerId(int fileId) throws CatalogDBException;
 
+    QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    @Deprecated QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
+
+    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
+
+    QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
+
+    /**
+     * ACL methods
+     * ***************************
+     */
+
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
 
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
-    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
+    /**
+     * Dataset methods
+     * ***************************
+     */
+
+    int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
     QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
-
-    int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
 }
