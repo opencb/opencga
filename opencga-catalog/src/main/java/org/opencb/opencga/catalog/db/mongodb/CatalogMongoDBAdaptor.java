@@ -201,7 +201,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      */
     protected int getNewId()  {return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);}
 
-
     /**
      * Study methods
      * ***************************
@@ -501,7 +500,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         try {
             fileCollection.insert(fileDBObject, null);
-        } catch (MongoException.DuplicateKey e) {
+        } catch (DuplicateKeyException e) {
             throw new CatalogDBException("File {studyId:"+ studyId + /*", name:\"" + file.getName() +*/ "\", path:\""+file.getPath()+"\"} already exists");
         }
 

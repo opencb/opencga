@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -16,13 +17,10 @@ import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.core.common.MailUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -33,8 +31,10 @@ import java.util.regex.Pattern;
 public class UserManager extends AbstractManager implements IUserManager {
 
     protected final String creationUserPolicy;
+//    private final SessionManager sessionManager;
 
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
+
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
@@ -45,6 +45,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
         creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER, "always");
+//        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
 
@@ -90,7 +91,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkEmail(email);
         organization = organization != null ? organization : "";
 
-        User user = new User(id, name, email, password, organization, User.Role.USER, "");
+        User user = new User(id, name, email, "", organization, User.Role.USER, "");
 
         switch (creationUserPolicy) {
             case "onlyAdmin": {
@@ -119,7 +120,9 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
-            return userDBAdaptor.insertUser(user, options);
+            QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
+            authenticationManager.newPassword(user.getId(), password);
+            return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
             if (!userDBAdaptor.userExists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
@@ -211,28 +214,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(email, "email");
-        userDBAdaptor.updateUserLastActivity(userId);
-
-        String newPassword = StringUtils.randomString(6);
-        String newCryptPass;
-        try {
-            newCryptPass = StringUtils.sha1(newPassword);
-        } catch (NoSuchAlgorithmException e) {
-            throw new CatalogDBException("could not encode password");
-        }
-
-        QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
-
-        String mailUser = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_USER);
-        String mailPassword = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PASSWORD);
-        String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
-        String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
-
-        MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
-
-        return qr;
+        return authenticationManager.resetPassword(userId, email);
     }
 
     @Override
@@ -264,7 +246,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(sessionIp, "sessionIp");
         Session session = new Session(sessionIp);
 
-        return userDBAdaptor.login(userId, password, session);
+//        Session login = sessionManager.login(userId, password, sessionIp);
+//        ObjectMap objectMap = new ObjectMap("sessionId", login.getId());
+//        objectMap.put("userId", userId);
+//        return new QueryResult<>("login", 0, 1, 1, null, null, Collections.singletonList(objectMap));
+
+        return userDBAdaptor.login(userId, CatalogAuthenticationManager.cipherPassword(password), session);
     }
 
     @Override
@@ -274,6 +261,8 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkSessionId(userId, sessionId);
         switch (authorizationManager.getUserRole(userId)) {
             default:
+//                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
+//                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
                 return userDBAdaptor.logout(userId, sessionId);
             case ANONYMOUS:
                 return logoutAnonymous(sessionId);

@@ -31,6 +31,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -179,6 +180,21 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testAdminUserExists() throws Exception {
+        thrown.expect(CatalogException.class);
+        catalogManager.login("admin", "admin", null);
+    }
+
+
+    @Test
+    public void testAdminUserExists2() throws Exception {
+        thrown.expect(CatalogException.class);
+        QueryResult<ObjectMap> login = catalogManager.login("admin", CatalogAuthenticationManager.cipherPassword("admin"), null);
+        User admin = catalogManager.getUser("admin", null, login.first().getString("sessionId")).first();
+        assertEquals(User.Role.ADMIN, admin.getRole());
+    }
+
+    @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
@@ -251,7 +267,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(!userPre.getLastActivity().equals(userPost.getLastActivity()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
-        assertEquals(userPost.getPassword(), newPassword);
+        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cipherPassword(newPassword));
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }

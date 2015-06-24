@@ -100,7 +100,7 @@ public class CatalogManager {
     }
 
     public CatalogManager(Properties catalogProperties)
-            throws CatalogIOException, CatalogDBException {
+            throws CatalogException {
         this.properties = catalogProperties;
         logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
@@ -111,8 +111,9 @@ public class CatalogManager {
 
         if (!catalogDBAdaptor.isCatalogDBReady()) {
             catalogDBAdaptor.initializeCatalogDB();
-            User admin = new User("admin", "admin", "admin@email.com", "admin", "openCB", User.Role.ADMIN, "active");
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, "active");
             catalogDBAdaptor.getCatalogUserDBAdaptor().insertUser(admin, null);
+            authenticationManager.newPassword("admin", "admin");
         }
     }
 
@@ -121,7 +122,7 @@ public class CatalogManager {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor());
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor(), properties);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
         userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);

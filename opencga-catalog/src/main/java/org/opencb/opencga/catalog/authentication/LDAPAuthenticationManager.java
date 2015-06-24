@@ -5,7 +5,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class LDAPAuthenticationManager implements AuthenticationManager {
+public abstract class LDAPAuthenticationManager implements AuthenticationManager {
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
         return false;

@@ -72,7 +72,7 @@ public class DaemonLoop implements Runnable {
         this.properties = properties;
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogIOException | CatalogDBException e) {
+        } catch (CatalogException e) {
             e.printStackTrace();
         }
 
