@@ -666,12 +666,12 @@ public class CatalogManager {
     }
 
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status,
                                       long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles,
-                attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
+                outputFiles, attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)

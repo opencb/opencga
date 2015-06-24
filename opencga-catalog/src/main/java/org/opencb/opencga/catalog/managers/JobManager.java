@@ -70,6 +70,7 @@ public class JobManager extends AbstractManager implements IJobManager {
                     params.containsKey("tmpOutDirUri")? new URI(null, params.getString("tmpOutDirUri"), null) : null,
                     params.getInt("outDirId"),
                     params.getAsIntegerList("inputFiles"),
+                    params.getAsIntegerList("outputFiles"),
                     params.getMap("attributes"),
                     params.getMap("resourceManagerAttributes"),
                     Job.Status.valueOf(params.getString("status")),
@@ -85,7 +86,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
-                                   URI tmpOutDirUri, int outDirId, List<Integer> inputFiles,
+                                   URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles,
                                    Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
                                    Job.Status status, long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -112,6 +113,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
+        job.setOutput(outputFiles);
         job.setStatus(status);
         job.setStartTime(startTime);
         job.setEndTime(endTime);

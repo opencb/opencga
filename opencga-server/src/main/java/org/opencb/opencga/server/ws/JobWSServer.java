@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.ws;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -93,11 +92,13 @@ public class JobWSServer extends OpenCGAWSServer {
         public String description;
         public long startTime;
         public long endTime;
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String commandLine;
-        public Status status;
+        public Status status = Status.READY;
+        @ApiModelProperty(required = true)
         public int outDirId;
         public List<Integer> input;
+        public List<Integer> output;
         public Map<String, Object> attributes;
         public Map<String, Object> resourceManagerAttributes;
 
@@ -112,7 +113,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
-                    job.commandLine, null, job.outDirId, job.input, job.attributes,
+                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
                     job.resourceManagerAttributes, Job.Status.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

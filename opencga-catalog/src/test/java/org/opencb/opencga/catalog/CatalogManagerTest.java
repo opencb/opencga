@@ -986,19 +986,19 @@ public class CatalogManagerTest extends GenericTest {
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         catalogManager.createJob(
                 studyId, "myJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.PREPARED, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.PREPARED, 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myReadyJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.READY, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.READY, 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myQueuedJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.QUEUED, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.QUEUED, 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
 
         String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
         QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
@@ -1017,7 +1017,7 @@ public class CatalogManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, projectId, //Bad outputId
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
     }
 
     @Test
@@ -1029,7 +1029,7 @@ public class CatalogManagerTest extends GenericTest {
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "echo \"Hello World!\"", tmpJobOutDir, outDir.getId(),
-                Collections.emptyList(), new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, sessionIdUser);
 
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
 
