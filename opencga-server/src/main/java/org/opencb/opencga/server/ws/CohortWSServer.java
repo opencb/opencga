@@ -170,9 +170,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
-                           @ApiParam(value = "", required = true) @QueryParam("name") String name,
-                           @ApiParam(value = "", required = true) @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "", required = true) @QueryParam("description") String description,
+                           @ApiParam(value = "", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
         try {
             return createOkResponse(catalogManager.updateCohort(cohortId, queryOptions, sessionId));
@@ -195,9 +195,12 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/delete")
-    @ApiOperation(value = "Delete cohort. PENDING", position = 5)
+    @ApiOperation(value = "Delete cohort.", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
-        return createErrorResponse("delete", "PENDING");
-    }
+        try {
+            return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }    }
 
 }
