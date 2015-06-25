@@ -97,6 +97,8 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
 
+    QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
+
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     /**

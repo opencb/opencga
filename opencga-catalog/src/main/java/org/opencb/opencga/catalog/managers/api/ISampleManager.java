@@ -63,4 +63,6 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
                                      Map<String, Object> attributes, String sessionId) throws CatalogException;
 
     QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, String sessionId) throws CatalogException;
+
+    QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException;
 }

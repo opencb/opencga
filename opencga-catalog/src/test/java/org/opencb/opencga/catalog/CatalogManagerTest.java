@@ -1480,6 +1480,34 @@ public class CatalogManagerTest extends GenericTest {
 
 
     @Test
+    public void testDeleteCohort() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId2 = catalogManager.createSample(studyId, "SAMPLE_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId3 = catalogManager.createSample(studyId, "SAMPLE_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId4 = catalogManager.createSample(studyId, "SAMPLE_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId5 = catalogManager.createSample(studyId, "SAMPLE_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2, sampleId3), null, sessionIdUser).first();
+
+
+        assertEquals("MyCohort", myCohort.getName());
+        assertEquals(3, myCohort.getSamples().size());
+        assertTrue(myCohort.getSamples().contains(sampleId1));
+        assertTrue(myCohort.getSamples().contains(sampleId2));
+        assertTrue(myCohort.getSamples().contains(sampleId3));
+
+        Cohort myDeletedCohort = catalogManager.deleteCohort(myCohort.getId(), null, sessionIdUser).first();
+
+        assertEquals(myCohort.getId(), myDeletedCohort.getId());
+
+        thrown.expect(CatalogException.class);
+        catalogManager.getCohort(myCohort.getId(), null, sessionIdUser);
+    }
+
+
+    @Test
     public void testModifySample () throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();

@@ -837,6 +837,10 @@ public class CatalogManager {
         return sampleManager.updateCohort(cohortId, updateParams, sessionId);
     }
 
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+        return sampleManager.deleteCohort(cohortId, updateParams, sessionId);
+    }
+
     /**
      * Tools methods
      * ***************************

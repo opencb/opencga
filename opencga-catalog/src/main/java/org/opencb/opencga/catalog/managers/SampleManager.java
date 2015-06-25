@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -298,10 +299,22 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
+        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             return sampleDBAdaptor.updateCohort(cohortId, params);
         } else {
-            throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohortId, null);
+            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
+        }
+    }
+
+    @Override
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            return sampleDBAdaptor.deleteCohort(cohortId, options);
+        } else {
+            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
         }
     }
 

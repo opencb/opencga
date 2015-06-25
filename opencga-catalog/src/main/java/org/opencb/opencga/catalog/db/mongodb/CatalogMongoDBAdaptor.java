@@ -1335,6 +1335,25 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+//        checkCohortInUse(cohortId);
+        int studyId = getStudyIdByCohortId(cohortId);
+        QueryResult<Cohort> cohort = getCohort(cohortId);
+
+        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
+
+        if (update.first().getN() == 0) {
+            throw CatalogDBException.idNotFound("Cohhort", cohortId);
+        }
+
+        return endQuery("Delete Cohort", startTime, cohort);
+
+    }
+
+
+    @Override
     public QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -1517,10 +1536,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         addCompQueryFilter(FilterOption.Type.TEXT, "attributes", parameters, "variableSets.attributes", mongoQueryList);
 
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
-                    new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
-                    new BasicDBObject("$unwind", "$variableSets"),
-                    new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
-                ), filterOptions(parameters, FILTER_ROUTE_STUDIES));
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$unwind", "$variableSets"),
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+        ), filterOptions(parameters, FILTER_ROUTE_STUDIES));
 
         List<VariableSet> variableSets = parseObjects(queryResult, VariableSet.class);
 
