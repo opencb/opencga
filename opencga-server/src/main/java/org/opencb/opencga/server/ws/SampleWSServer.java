@@ -186,7 +186,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/delete")
-    @ApiOperation(value = "Delete a sample [NO TESTED]", position = 7)
+    @ApiOperation(value = "Delete a sample [PENDING]", position = 7)
     public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) {
         return createErrorResponse("delete", "PENDING");
     }

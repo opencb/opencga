@@ -27,40 +27,43 @@ public interface CatalogSampleDBAdaptor {
 
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
 
-        ;
-
-        SampleFilterOption(Type type, String description) {
-            this._key = name();
-            this._description = description;
-            this._type = type;
-        }
-
-        SampleFilterOption(String key, Type type, String description) {
-            this._key = key;
-            this._description = description;
-            this._type = type;
-        }
+        SampleFilterOption(Type type, String description) {this._key = name();this._description = description;this._type = type;}
+        SampleFilterOption(String key, Type type, String description) {this._key = key;this._description = description;this._type = type;}
 
         final private String _key;
         final private String _description;
         final private Type _type;
+        @Override public String getDescription() {return _description;}
+        @Override public Type getType() {return _type;}
+        @Override public String getKey() {return _key;}
+    }
 
-        @Override
-        public String getDescription() {
-            return _description;
-        }
+    enum CohortFilterOption implements CatalogDBAdaptor.FilterOption {
+        studyId(Type.NUMERICAL, ""),
 
-        @Override
-        public Type getType() {
-            return _type;
-        }
+        id(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        type(Type.TEXT, ""),
+        creationDate(Type.TEXT, ""),
+        description(Type.TEXT, ""),
 
-        @Override
-        public String getKey() {
-            return _key;
-        }
+        samples(Type.NUMERICAL, ""),
+
+        attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
+
+
+        CohortFilterOption(Type type, String description) {this._key = name();this._description = description;this._type = type;}
+        CohortFilterOption(String key, Type type, String description) {this._key = key;this._description = description;this._type = type;}
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+        @Override public String getDescription() {return _description;}
+        @Override public Type getType() {return _type;}
+        @Override public String getKey() {return _key;}
     }
 
     /**
@@ -94,6 +97,8 @@ public interface CatalogSampleDBAdaptor {
     QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
 
     QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
+
+    QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
 

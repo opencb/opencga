@@ -279,6 +279,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        return sampleDBAdaptor.getAllCohorts(studyId, options);
+    }
+
+    @Override
     public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");

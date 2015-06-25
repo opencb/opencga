@@ -1425,6 +1425,43 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
+    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DBObject> mongoQueryList = new LinkedList<>();
+
+        for (Map.Entry<String, Object> entry : options.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                CohortFilterOption option = CohortFilterOption.valueOf(key);
+                switch (option) {
+                    case studyId:
+                        addCompQueryFilter(option.getType(), option.name(), options, _ID, mongoQueryList);
+                        break;
+                    default:
+                        String optionsKey = "cohorts." + entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option.getType(), entry.getKey(), options, optionsKey, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
+        System.out.println("new BasicDBObject(_ID, studyId).append(\"$and\", mongoQueryList) = " + new BasicDBObject(_ID, studyId).append("$and", mongoQueryList));
+        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$unwind", "$cohorts"),
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+        ), filterOptions(options, FILTER_ROUTE_STUDIES));
+
+        List<Cohort> cohorts = parseObjects(queryResult, Cohort.class);
+        return endQuery("", startTime, cohorts);
+    }
+
+    @Override
     public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
