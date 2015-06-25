@@ -237,6 +237,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return sampleDBAdaptor.getVariableSet(variableSet, options);
     }
 
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
+    }
+
 
     /**
      * Cohort methods

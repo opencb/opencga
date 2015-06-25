@@ -1038,19 +1038,9 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     /**
-     * Sample methods
+     * VariableSet methods
      * ***************************
      */
-
-    @Test
-    public void testCreateSample () throws CatalogException {
-        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
-        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
-
-        QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, "HG007", "IMDb", "", null, null, sessionIdUser);
-        System.out.println("sampleQueryResult = " + sampleQueryResult);
-
-    }
 
     @Test
     public void testCreateVariableSet () throws CatalogException {
@@ -1088,6 +1078,62 @@ public class CatalogManagerTest extends GenericTest {
         );
         thrown.expect(CatalogException.class);
         catalogManager.createVariableSet(study.getId(), "vs1", true, "", null, variables, sessionIdUser);
+    }
+
+    @Test
+    public void testDeleteVariableSet() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        List<Variable> variables = Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
+        );
+        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "", null, variables, sessionIdUser).first();
+
+        VariableSet vs1_deleted = catalogManager.deleteVariableSet(vs1.getId(), null, sessionIdUser).first();
+
+        assertEquals(vs1.getId(), vs1_deleted.getId());
+
+        thrown.expect(CatalogDBException.class);    //VariableSet does not exist
+        catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser);
+    }
+
+    @Test
+    public void testDeleteVariableSetInUse() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        List<Variable> variables = Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, false, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
+        );
+        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "", null, variables, sessionIdUser).first();
+        catalogManager.annotateSample(sampleId1, "annotationId", vs1.getId(), Collections.singletonMap("NAME", "LINUS"), null, sessionIdUser);
+
+        try {
+            catalogManager.deleteVariableSet(vs1.getId(), null, sessionIdUser).first();
+        } finally {
+            VariableSet variableSet = catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser).first();
+            assertEquals(vs1.getId(), variableSet.getId());
+
+            thrown.expect(CatalogDBException.class); //Expect the exception from the try
+        }
+    }
+
+
+
+    /**
+     * Sample methods
+     * ***************************
+     */
+
+    @Test
+    public void testCreateSample () throws CatalogException {
+        int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        int studyId = catalogManager.getAllStudies(projectId, null, sessionIdUser).first().getId();
+
+        QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, "HG007", "IMDb", "", null, null, sessionIdUser);
+        System.out.println("sampleQueryResult = " + sampleQueryResult);
+
     }
 
     @Test

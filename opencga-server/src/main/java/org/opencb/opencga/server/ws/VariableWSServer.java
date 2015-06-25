@@ -83,7 +83,7 @@ public class VariableWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableSetId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 3)
+    @ApiOperation(value = "Update some user variableSet using GET method [PENDING]", position = 3)
     public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) throws IOException {
         return createErrorResponse("update - GET", "PENDING");
     }
@@ -91,7 +91,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{variableSetId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 3)
+    @ApiOperation(value = "Update some variableSet attributes using POST method [PENDING]", position = 3)
     public Response updateByPost(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         return createErrorResponse("update - POST", "PENDING");
@@ -99,9 +99,13 @@ public class VariableWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableSetId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]", position = 4)
-    public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) {
-        return createErrorResponse("delete", "PENDING");
-    }
+    @ApiOperation(value = "Delete an unused variable Set", position = 4)
+    public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }    }
 
 }

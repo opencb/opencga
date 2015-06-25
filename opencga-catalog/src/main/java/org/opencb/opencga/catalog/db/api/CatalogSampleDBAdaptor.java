@@ -84,6 +84,8 @@ public interface CatalogSampleDBAdaptor {
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
+    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+
     /**
      * Cohort methods
      * ***************************
@@ -98,7 +100,7 @@ public interface CatalogSampleDBAdaptor {
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     /**
-     * Annotation Methods
+     * VariableSet Methods
      * ***************************
      */
 
@@ -106,7 +108,7 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
     int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
 

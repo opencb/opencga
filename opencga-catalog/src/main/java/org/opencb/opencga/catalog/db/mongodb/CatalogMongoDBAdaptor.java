@@ -1509,6 +1509,38 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkVariableSetInUse(variableSetId);
+        int studyId = getStudyIdByVariableSetId(variableSetId);
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
+
+        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
+
+        if (update.first().getN() == 0) {
+            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
+        }
+
+        return endQuery("Delete VariableSet", startTime, variableSet);
+
+    }
+
+
+    public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
+        int studyId = getStudyIdByVariableSetId(variableSetId);
+        QueryResult<Sample> samples = getAllSamples(studyId, new QueryOptions(SampleFilterOption.variableSetId.toString(), variableSetId));
+        if (samples.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
+            for (Sample sample : samples.getResult()) {
+                msg += " { id: " + sample.getId() + ", name: \"" + sample.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+    }
+
+    @Override
     public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();
 

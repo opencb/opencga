@@ -423,18 +423,20 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") File.Type type,
                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
-                           @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
-                           @ApiParam(value = "maxSize", required = false) @DefaultValue("") @QueryParam("maxSize") String maxSize,
-                           @ApiParam(value = "minSize", required = false) @DefaultValue("") @QueryParam("minSize") String minSize,
-                           @ApiParam(value = "startDate", required = false) @DefaultValue("") @QueryParam("startDate") String startDate,
-                           @ApiParam(value = "endDate", required = false) @DefaultValue("") @QueryParam("endDate") String endDate,
-                           @ApiParam(value = "like", required = false) @DefaultValue("") @QueryParam("like") String like,
-                           @ApiParam(value = "startsWith", required = false) @DefaultValue("") @QueryParam("startsWith") String startsWith,
+                           @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") File.Bioformat bioformat,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.Status status,
                            @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes) {
+                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(value = "diskUsage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+                           @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
 

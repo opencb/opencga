@@ -110,12 +110,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
-    public Response annotateSamplePOST(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-                                       @ApiParam(value = "id", required = true) @QueryParam("id") String id,
-                                       @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") int sampleId,
+                                       @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                       @ApiParam(value = "VariableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
                                        Map<String, Object> annotations) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId,
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
                     annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -128,7 +128,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
     public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-                                      @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+                                      @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId) {
         try {
             QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
@@ -141,7 +141,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                     .forEach(variable -> {
                         annotations.put(variable.getId(), params.getFirst(variable.getId()));
                     });
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, id, variableSetId, annotations, queryOptions, sessionId);
+            QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -150,7 +150,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 6)
+    @ApiOperation(value = "Update some sample attributes using GET method", position = 6)
     public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
                            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = true) @QueryParam("source") String source,
@@ -173,7 +173,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sampleId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
                                  @ApiParam(value = "params", required = true) UpdateSample params) {
         try {
@@ -186,7 +186,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]", position = 7)
+    @ApiOperation(value = "Delete a sample [NO TESTED]", position = 7)
     public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) {
         return createErrorResponse("delete", "PENDING");
     }

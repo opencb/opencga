@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -45,6 +46,8 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
             throws CatalogException;
 
     QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 
     /*----------------*/
     /* Cohort METHODS */

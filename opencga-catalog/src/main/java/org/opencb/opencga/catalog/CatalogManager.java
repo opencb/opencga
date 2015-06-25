@@ -761,6 +761,31 @@ public class CatalogManager {
         return sampleManager.readAll(studyId, options, options, sessionId);
     }
 
+    public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
+                                                     Map<String, Object> annotations,
+                                                     Map<String, Object> attributes,
+                                                     String sessionId) throws CatalogException {
+        return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
+                                                            Map<String, Object> annotations,
+                                                            Map<String, Object> attributes,
+                                                            boolean checkAnnotationSet,
+                                                            String sessionId)
+            throws CatalogException {
+        return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+    }
+
+    /**
+     * VariableSet methods
+     * ***************************
+     */
+
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
@@ -780,24 +805,9 @@ public class CatalogManager {
         return sampleManager.readVariableSet(variableSet, options, sessionId);
     }
 
-    public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
-                                                     Map<String, Object> annotations,
-                                                     Map<String, Object> attributes,
-                                                     String sessionId) throws CatalogException {
-        return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
-                                                            Map<String, Object> annotations,
-                                                            Map<String, Object> attributes,
-                                                            boolean checkAnnotationSet,
-                                                            String sessionId)
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
-        return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+        return sampleManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
     }
 
     /**
