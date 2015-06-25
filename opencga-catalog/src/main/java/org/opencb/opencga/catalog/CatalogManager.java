@@ -780,6 +780,9 @@ public class CatalogManager {
         return sampleManager.readVariableSet(variableSet, options, sessionId);
     }
 
+    public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
+    }
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,

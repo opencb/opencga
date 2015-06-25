@@ -151,17 +151,37 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 6)
-    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId) throws IOException {
-        return createErrorResponse("update - GET", "PENDING");
+    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+                           @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+                           @ApiParam(value = "source", required = true) @QueryParam("source") String source,
+                           @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId) {
+        try {
+            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class UpdateSample {
+        public String description;
+        public String source;
+        public int individualId;
+        public Map<String, Object> attributes;
     }
 
     @POST
     @Path("/{sampleId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleId,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("upodate - POST", "PENDING");
+    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+                                 @ApiParam(value = "params", required = true) UpdateSample params) {
+        try {
+            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET

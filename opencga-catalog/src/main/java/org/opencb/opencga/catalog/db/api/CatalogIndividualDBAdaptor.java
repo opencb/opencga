@@ -62,7 +62,8 @@ public interface CatalogIndividualDBAdaptor {
      * Individual methods
      * ***************************
      */
-    
+    boolean individualExists(int individualId);
+
     QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;

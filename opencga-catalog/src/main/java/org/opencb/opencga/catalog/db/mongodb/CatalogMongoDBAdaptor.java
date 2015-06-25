@@ -1304,8 +1304,34 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
     @Override
     public QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException {
-        //TODO
-        throw new UnsupportedOperationException("No implemented");
+        long startTime = startQuery();
+
+        Map<String, Object> sampleParams = new HashMap<>();
+
+        String[] acceptedParams = {"source", "description"};
+        filterStringParams(parameters, sampleParams, acceptedParams);
+
+        String[] acceptedIntParams = {"individualId"};
+        filterIntParams(parameters, sampleParams, acceptedIntParams);
+
+        String[] acceptedMapParams = {"attributes"};
+        filterMapParams(parameters, sampleParams, acceptedMapParams);
+
+        if (sampleParams.containsKey("individualId")) {
+            if (!getCatalogIndividualDBAdaptor().individualExists(parameters.getInt("individualId"))) {
+                throw CatalogDBException.idNotFound("Individual", parameters.getInt("individualId"));
+            }
+        }
+
+        if(!sampleParams.isEmpty()) {
+            QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(_ID , sampleId),
+                    new BasicDBObject("$set", sampleParams), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+                throw CatalogDBException.idNotFound("Sample", sampleId);
+            }
+        }
+
+        return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
     }
 
     @Override
@@ -1383,19 +1409,19 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
-        Map<String, Object> fileParameters = new HashMap<>();
+        Map<String, Object> cohortParams = new HashMap<>();
 
         String[] acceptedParams = {"description", "name", "creationDate"};
-        filterStringParams(parameters, fileParameters, acceptedParams);
+        filterStringParams(parameters, cohortParams, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("type", Cohort.Type.class);
-        filterEnumParams(parameters, fileParameters, acceptedEnums);
+        filterEnumParams(parameters, cohortParams, acceptedEnums);
 
         String[] acceptedLongParams = {"diskUsage"};
-        filterLongParams(parameters, fileParameters, acceptedLongParams);
+        filterLongParams(parameters, cohortParams, acceptedLongParams);
 
         String[] acceptedIntegerListParams = {"samples"};
-        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
+        filterIntegerListParams(parameters, cohortParams, acceptedIntegerListParams);
         if (parameters.containsKey("samples")) {
             for (Integer sampleId : parameters.getAsIntegerList("samples")) {
                 if (!sampleExists(sampleId)) {
@@ -1405,11 +1431,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
 
         String[] acceptedMapParams = {"attributes"};
-        filterMapParams(parameters, fileParameters, acceptedMapParams);
+        filterMapParams(parameters, cohortParams, acceptedMapParams);
 
-        if(!fileParameters.isEmpty()) {
+        if(!cohortParams.isEmpty()) {
             HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();
-            for (Map.Entry<String, Object> entry : fileParameters.entrySet()) {
+            for (Map.Entry<String, Object> entry : cohortParams.entrySet()) {
                 studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
             }
             QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject("cohorts.id" , cohortId),

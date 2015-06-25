@@ -105,6 +105,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(name, "name");
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
+        attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
@@ -154,7 +155,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> update(Integer id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ParamUtils.checkObj(parameters, "parameters");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        options.putAll(parameters);
+        return sampleDBAdaptor.modifySample(id, options);
+
     }
 
     @Override

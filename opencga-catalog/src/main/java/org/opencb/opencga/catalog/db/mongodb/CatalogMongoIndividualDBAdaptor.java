@@ -34,7 +34,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         this.individualCollection = individualCollection;
     }
 
-    boolean individualExists(int individualId) {
+    @Override
+    public boolean individualExists(int individualId) {
         return individualCollection.count(new BasicDBObject(_ID, individualId)).first() != 0;
     }
 
