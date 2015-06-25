@@ -5,6 +5,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 
@@ -49,6 +50,19 @@ public class SampleWSServerTest {
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
         s1 = OpenCGAWSServer.catalogManager.createSample(studyId, "s1", "f1", "", null, null, sessionId).first().getId();
+    }
+
+    @Test
+    public void search() throws IOException {
+        String json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
+                .queryParam(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)
+                .queryParam(CatalogSampleDBAdaptor.SampleFilterOption.name.toString(), "s1")
+                .request().get(String.class);
+
+        QueryResult<Sample> queryResult = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0);
+        assertEquals(1, queryResult.getNumTotalResults());
+        Sample sample = queryResult.first();
+        assertEquals("s1", sample.getName());
     }
 
     @Test

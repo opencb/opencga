@@ -14,7 +14,7 @@ import java.util.Map;
 public interface CatalogSampleDBAdaptor {
 
     enum SampleFilterOption implements CatalogDBAdaptor.FilterOption {
-//        studyId(Type.NUMERICAL, ""),
+        studyId(Type.NUMERICAL, ""),
         annotationSetId(Type.TEXT, ""),
         variableSetId(Type.NUMERICAL, ""),
 
@@ -74,9 +74,9 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getAllSamples(int studyId, Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 

@@ -145,7 +145,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
         query.putAll(options);
-        return sampleDBAdaptor.getAllSamples(studyId, query);
+        query.put(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId);
+        return sampleDBAdaptor.getAllSamples(query);
     }
 
     @Override

@@ -205,7 +205,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(studyId, new QueryOptions(SampleFilterOption.individualId.toString(), individualId));
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(SampleFilterOption.individualId.toString(), individualId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
             for (Sample sample : samples.getResult()) {

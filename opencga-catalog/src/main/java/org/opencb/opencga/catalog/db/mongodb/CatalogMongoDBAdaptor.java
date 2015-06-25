@@ -1232,18 +1232,18 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
         int variableSetId = options.getInt("variableSetId");
         Map<String, Variable> variableMap = null;
         if (variableSetId > 0) {
             variableMap = getVariableSet(variableSetId, null).first()
                     .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
         }
-        return getAllSamples(studyId, variableMap, options);
+        return getAllSamples(variableMap, options);
     }
 
     @Override
-    public QueryResult<Sample> getAllSamples(int studyId, Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         String warning = "";
 
@@ -1262,9 +1262,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                     case id:
                         addCompQueryFilter(option.getType(), option.name(), options, _ID, mongoQueryList);
                         break;
-//                    case studyId:
-//                        addCompQueryFilter(option.getType(), option.name(), options, _STUDY_ID, mongoQueryList);
-//                        break;
+                    case studyId:
+                        addCompQueryFilter(option.getType(), option.name(), options, _STUDY_ID, mongoQueryList);
+                        break;
                     case annotationSetId:
                         addCompQueryFilter(option.getType(), option.name(), options, "id", annotationSetFilter);
                         break;
@@ -1284,7 +1284,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        DBObject query = new BasicDBObject(_STUDY_ID, studyId);
+        DBObject query = new BasicDBObject();
 
         if (!annotationSetFilter.isEmpty()) {
             query.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
@@ -1566,8 +1566,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
 
     public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
-        int studyId = getStudyIdByVariableSetId(variableSetId);
-        QueryResult<Sample> samples = getAllSamples(studyId, new QueryOptions(SampleFilterOption.variableSetId.toString(), variableSetId));
+        QueryResult<Sample> samples = getAllSamples(new QueryOptions(SampleFilterOption.variableSetId.toString(), variableSetId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
             for (Sample sample : samples.getResult()) {
@@ -1657,7 +1656,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             study.setJobs(getAllJobs(study.getId(), options).getResult());
         }
         if (options.getBoolean("includeSamples")) {
-            study.setSamples(getAllSamples(study.getId(), options).getResult());
+            study.setSamples(getAllSamples(new QueryOptions(SampleFilterOption.studyId.toString(), study.getId())).getResult());
         }
     }
 
