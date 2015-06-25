@@ -805,6 +805,11 @@ public class CatalogManager {
         return sampleManager.readVariableSet(variableSet, options, sessionId);
     }
 
+    public QueryResult<VariableSet> getAllVariableSet(int studyId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return sampleManager.readAllVariableSets(studyId, options, sessionId);
+    }
+
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
         return sampleManager.deleteVariableSet(variableSetId, queryOptions, sessionId);

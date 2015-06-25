@@ -1417,9 +1417,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("type", Cohort.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
-        String[] acceptedLongParams = {"diskUsage"};
-        filterLongParams(parameters, cohortParams, acceptedLongParams);
-
         String[] acceptedIntegerListParams = {"samples"};
         filterIntegerListParams(parameters, cohortParams, acceptedIntegerListParams);
         if (parameters.containsKey("samples")) {
@@ -1506,6 +1503,28 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
 
         return endQuery("", startTime, studies.get(0).getVariableSets());
+    }
+
+    @Override
+    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions parameters) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DBObject> mongoQueryList = new LinkedList<>();
+
+        addCompQueryFilter(FilterOption.Type.TEXT, "description", parameters, "variableSets.description", mongoQueryList);
+        addCompQueryFilter(FilterOption.Type.TEXT, "name", parameters, "variableSets.name", mongoQueryList);
+        addCompQueryFilter(FilterOption.Type.NUMERICAL, "id", parameters, "variableSets.id", mongoQueryList);
+        addCompQueryFilter(FilterOption.Type.TEXT, "attributes", parameters, "variableSets.attributes", mongoQueryList);
+
+        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
+                    new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                    new BasicDBObject("$unwind", "$variableSets"),
+                    new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+                ), filterOptions(parameters, FILTER_ROUTE_STUDIES));
+
+        List<VariableSet> variableSets = parseObjects(queryResult, VariableSet.class);
+
+        return endQuery("", startTime, variableSets);
     }
 
     @Override

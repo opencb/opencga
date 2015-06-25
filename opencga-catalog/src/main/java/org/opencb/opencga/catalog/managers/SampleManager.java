@@ -238,6 +238,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        return sampleDBAdaptor.getAllVariableSets(studyId, options);
+    }
+
+    @Override
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
     }

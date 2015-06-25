@@ -1081,6 +1081,34 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testGetAllVariableSet() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        List<Variable> variables = Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
+        );
+        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "Cancer", null, variables, sessionIdUser).first();
+        VariableSet vs2 = catalogManager.createVariableSet(studyId, "vs2", true, "Virgo", null, variables, sessionIdUser).first();
+        VariableSet vs3 = catalogManager.createVariableSet(studyId, "vs3", true, "Piscis", null, variables, sessionIdUser).first();
+        VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
+
+        int numResults;
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1"), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1,vs2"), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "VS1"), sessionIdUser).getNumResults();
+        assertEquals(0, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("id", vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+    }
+
+    @Test
     public void testDeleteVariableSet() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 

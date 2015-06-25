@@ -108,6 +108,8 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+
     QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
     int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
