@@ -123,7 +123,6 @@ public class FileWSServerTest {
         File file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
-
     }
 
     @Test
@@ -137,6 +136,17 @@ public class FileWSServerTest {
 
         QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
+        assertEquals("data/file1.txt", file.getPath());
+        assertEquals(fileUri, file.getUri());
+
+
+        fileUri = ROOT_DIR.resolve("file2.txt").toUri();
+        json = webTarget.path("files").path(Integer.toString(file.getId())).path("relink")
+                .queryParam("sid", sessionId)
+                .queryParam("uri", fileUri).request().get(String.class);
+
+        response = WSServerTestUtils.parseResult(json, File.class);
+        file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
     }

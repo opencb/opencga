@@ -82,6 +82,23 @@ public class VariableWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get VariableSet info", position = 2)
+    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+                           @ApiParam(value = "CSV list of variableSetIds", required = false) @QueryParam("id") String id,
+                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{variableSetId}/update")
     @ApiOperation(value = "Update some user variableSet using GET method [PENDING]", position = 3)
     public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) throws IOException {

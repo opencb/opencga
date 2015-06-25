@@ -806,7 +806,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/relink")
     @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 17)
-    public Response relink(@PathParam(value = "File ID") @DefaultValue("") String fileIdStr,
+    public Response relink(@ApiParam(value = "File ID") @PathParam("fileId") @DefaultValue("") String fileIdStr,
                            @ApiParam(value = "new URI" ,required = true) @QueryParam("uri") String uriStr,
                            @ApiParam(value = "Do calculate checksum for new files", required = false) @DefaultValue("false") @QueryParam("calculateChecksum") boolean calculateChecksum ) {
         try {
