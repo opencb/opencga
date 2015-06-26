@@ -97,14 +97,14 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
                 IndividualFilterOption option = IndividualFilterOption.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option.getType(), option.name(), options, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
                         break;
                     case studyId:
-                        addCompQueryFilter(option.getType(), option.name(), options, _STUDY_ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), options, _STUDY_ID, mongoQueryList);
                         break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option.getType(), entry.getKey(), options, queryKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), options, queryKey, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {

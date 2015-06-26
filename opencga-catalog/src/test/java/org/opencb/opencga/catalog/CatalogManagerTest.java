@@ -174,6 +174,7 @@ public class CatalogManagerTest extends GenericTest {
         if(sessionIdUser3 != null) {
             catalogManager.logout("user3", sessionIdUser3);
         }
+//        catalogManager.close();
     }
 
     public CatalogManager getTestCatalogManager() {
@@ -1082,34 +1083,6 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testGetAllVariableSet() throws CatalogException {
-        int studyId = catalogManager.getStudyId("user@1000G:phase1");
-
-        List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
-                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
-        );
-        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "Cancer", null, variables, sessionIdUser).first();
-        VariableSet vs2 = catalogManager.createVariableSet(studyId, "vs2", true, "Virgo", null, variables, sessionIdUser).first();
-        VariableSet vs3 = catalogManager.createVariableSet(studyId, "vs3", true, "Piscis", null, variables, sessionIdUser).first();
-        VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
-
-        int numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1"), sessionIdUser).getNumResults();
-        assertEquals(1, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1,vs2"), sessionIdUser).getNumResults();
-        assertEquals(2, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "VS1"), sessionIdUser).getNumResults();
-        assertEquals(0, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("id", vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
-        assertEquals(2, numResults);
-
-    }
-
-    @Test
     public void testDeleteVariableSet() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
@@ -1125,6 +1098,34 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);    //VariableSet does not exist
         catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser);
+    }
+
+    @Test
+    public void testGetAllVariableSet() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        List<Variable> variables = Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
+        );
+        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "Cancer", null, variables, sessionIdUser).first();
+        VariableSet vs2 = catalogManager.createVariableSet(studyId, "vs2", true, "Virgo", null, variables, sessionIdUser).first();
+        VariableSet vs3 = catalogManager.createVariableSet(studyId, "vs3", true, "Piscis", null, variables, sessionIdUser).first();
+        VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
+
+        int numResults;
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "vs1"), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "vs1,vs2"), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "VS1"), sessionIdUser).getNumResults();
+        assertEquals(0, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.id.toString(), vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
     }
 
     @Test
@@ -1486,6 +1487,9 @@ public class CatalogManagerTest extends GenericTest {
         numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(), sampleId1 + "," + sampleId5), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
 
+//        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(), sampleId3 + "," + sampleId4), sessionIdUser).getNumResults();
+//        assertEquals(2, numResults);
+
         numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), "MyCohort2"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
@@ -1583,6 +1587,7 @@ public class CatalogManagerTest extends GenericTest {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
         db.getDb().dropDatabase();
+        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
 
         Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
         deleteFolderTree(rootdir.toFile());
