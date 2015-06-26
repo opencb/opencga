@@ -296,7 +296,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (readAll(studyId, new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
+        if (!sampleIds.isEmpty() && readAll(studyId, new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
