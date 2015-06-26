@@ -44,7 +44,7 @@ public class CliOptionsParser {
 
     private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
     private final StatsVariantsCommandOptions statsVariantsCommandOptions;
-
+    private final ExportVariantsCommandOptions exportVariantsCommandOptions;
 
     public CliOptionsParser() {
 
@@ -63,6 +63,7 @@ public class CliOptionsParser {
         queryVariantsCommandOptions = new QueryVariantsCommandOptions();
         annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
         statsVariantsCommandOptions = new StatsVariantsCommandOptions();
+        exportVariantsCommandOptions = new ExportVariantsCommandOptions();
 
         jcommander.addCommand("create-accessions", createAccessionsCommandOption);
         jcommander.addCommand("index-alignments", indexAlignmentsCommandOptions);
@@ -72,6 +73,7 @@ public class CliOptionsParser {
         jcommander.addCommand("fetch-variants", queryVariantsCommandOptions);
         jcommander.addCommand("annotate-variants", annotateVariantsCommandOptions);
         jcommander.addCommand("stats-variants", statsVariantsCommandOptions);
+        jcommander.addCommand("export-variants", exportVariantsCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -475,8 +477,20 @@ public class CliOptionsParser {
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
         */
     }
+    
+    @Parameters(commandNames = {"export-variants"}, commandDescription = "Dump a vcf from the DB.")
+    public class ExportVariantsCommandOptions extends CommonCommandOptions {
+        
+        @Parameter(names = {"-o", "--output"}, description = "Output file path and name.", required = false, arity = 1)
+        public String outdir = "";
+        
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        String studyConfigurationFile;
 
-
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        public String dbName;
+    }
+    
     public GeneralOptions getGeneralOptions() {
         return generalOptions;
     }
@@ -514,6 +528,9 @@ public class CliOptionsParser {
     }
     public StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
         return statsVariantsCommandOptions;
+    }
+    public ExportVariantsCommandOptions getExportVariantsCommandOptions() {
+        return exportVariantsCommandOptions;
     }
 
 }
