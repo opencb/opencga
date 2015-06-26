@@ -372,7 +372,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
 
-        return fileDBAdaptor.createFileToStudy(studyId, file, options);
+        return fileDBAdaptor.createFile(studyId, file, options);
     }
 
     @Override

@@ -17,11 +17,11 @@
 package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
@@ -39,7 +39,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -70,11 +69,13 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String name, String toolName, String description, String commandLine, Status status, int outDirId,
+        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status, int outDirId,
                         List<Integer> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
             this.name = name;
             this.toolName = toolName;
             this.description = description;
+            this.startTime = startTime;
+            this.endTime = endTime;
             this.commandLine = commandLine;
             this.status = status;
             this.outDirId = outDirId;
@@ -84,34 +85,23 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         enum Status{READY, ERROR}
-        private String name;
-        private String toolName;
-        private String description;
-        private String commandLine;
-        private Status status;
-        private int outDirId;
-        private List<Integer> input;
-        private Map<String, Object> attributes;
-        private Map<String, Object> resourceManagerAttributes;
+        @ApiModelProperty(required = true) 
+        public String name;
+        @ApiModelProperty(required = true) 
+        public String toolName;
+        public String description;
+        public long startTime;
+        public long endTime;
+        @ApiModelProperty(required = true)
+        public String commandLine;
+        public Status status = Status.READY;
+        @ApiModelProperty(required = true)
+        public int outDirId;
+        public List<Integer> input;
+        public List<Integer> output;
+        public Map<String, Object> attributes;
+        public Map<String, Object> resourceManagerAttributes;
 
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        public String getToolName() { return toolName; }
-        public void setToolName(String toolName) { this.toolName = toolName; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getCommandLine() { return commandLine; }
-        public void setCommandLine(String commandLine) { this.commandLine = commandLine; }
-        public int getOutDirId() { return outDirId; }
-        public void setOutDirId(int outDirId) { this.outDirId = outDirId; }
-        public List<Integer> getInput() { return input; }
-        public void setInput(List<Integer> input) { this.input = input; }
-        public Map<String,Object> getAttributes() { return attributes; }
-        public void setAttributes(Map<String, Object> attributes) { this.attributes = attributes; }
-        public Status getStatus() { return status; }
-        public void setStatus(Status status) { this.status = status; }
-        public Map<String,Object> getResourceManagerAttributes() { return resourceManagerAttributes; }
-        public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) { this.resourceManagerAttributes = resourceManagerAttributes; }
     }
 
     @POST
@@ -122,9 +112,9 @@ public class JobWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "studies", required = true) InputJob job) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<Job> result = catalogManager.createJob(studyId, job.getName(), job.getToolName(), job.getDescription(),
-                    job.getCommandLine(), null, job.getOutDirId(), job.getInput(), job.getAttributes(),
-                    job.getResourceManagerAttributes(), Job.Status.valueOf(job.getStatus().toString()), queryOptions, sessionId);
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
+                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
+                    job.resourceManagerAttributes, Job.Status.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

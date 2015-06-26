@@ -265,7 +265,7 @@ public class AnalysisJobExecutor {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, 0, 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 jobQueryResult = executeLocal(catalogManager, job, sessionId);
@@ -274,7 +274,7 @@ public class AnalysisJobExecutor {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
             }
         }
         return jobQueryResult;

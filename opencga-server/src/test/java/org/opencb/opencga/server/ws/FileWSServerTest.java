@@ -15,6 +15,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -85,6 +86,10 @@ public class FileWSServerTest {
         CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
         Files.createDirectory(ROOT_DIR.resolve("data"));
         CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
+        String fileName = "variant-test-file.vcf.gz";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
+        fileName = "HG00096.chrom20.small.bam";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
     }
 
 
@@ -118,7 +123,6 @@ public class FileWSServerTest {
         File file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
-
     }
 
     @Test
@@ -135,6 +139,30 @@ public class FileWSServerTest {
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
 
+
+        fileUri = ROOT_DIR.resolve("file2.txt").toUri();
+        json = webTarget.path("files").path(Integer.toString(file.getId())).path("relink")
+                .queryParam("sid", sessionId)
+                .queryParam("uri", fileUri).request().get(String.class);
+
+        response = WSServerTestUtils.parseResult(json, File.class);
+        file = response.getResponse().get(0).first();
+        assertEquals("data/file1.txt", file.getPath());
+        assertEquals(fileUri, file.getUri());
+    }
+
+    @Test
+    public void updateFilePOST() throws Exception {
+        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE"), sessionId).first();
+
+        FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();
+        updateFile.description = "Change description";
+        String json = webTarget.path("files").path(Integer.toString(file.getId())).path("update")
+                .queryParam("sid", sessionId).request().post(Entity.json(updateFile), String.class);
+
+        QueryResponse<QueryResult<Object>> response = WSServerTestUtils.parseResult(json, Object.class);
+        file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
+        assertEquals(updateFile.description, file.getDescription());
     }
 
     public File uploadVcf(int studyId, String sessionId) throws IOException, CatalogException {

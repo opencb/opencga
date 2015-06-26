@@ -580,24 +580,24 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         acl.push(new Acl("jcoll", true, true, true, true));
         acl.push(new Acl("jmmut", false, false, true, true));
         file.setAcl(acl);
-        System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
+        System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
-        System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
+        System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
-        System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
+        System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
 
         try {
-            System.out.println(catalogDBAdaptor.createFileToStudy(-20, file, null));
+            System.out.println(catalogDBAdaptor.createFile(-20, file, null));
             fail("Expected \"StudyId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
 
-        System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
+        System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
 
         try {
-            System.out.println(catalogDBAdaptor.createFileToStudy(studyId, file, null));
+            System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
             fail("Expected \"File already exist\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);

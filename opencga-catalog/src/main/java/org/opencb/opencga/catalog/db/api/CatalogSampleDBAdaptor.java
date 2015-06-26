@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
@@ -13,7 +14,7 @@ import java.util.Map;
 public interface CatalogSampleDBAdaptor {
 
     enum SampleFilterOption implements CatalogDBAdaptor.FilterOption {
-//        studyId(Type.NUMERICAL, ""),
+        studyId(Type.NUMERICAL, ""),
         annotationSetId(Type.TEXT, ""),
         variableSetId(Type.NUMERICAL, ""),
 
@@ -73,15 +74,17 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getAllSamples(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getAllSamples(int studyId, Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 
     QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
     /**
      * Cohort methods
@@ -92,10 +95,14 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
 
+    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
+
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     /**
-     * Annotation Methods
+     * VariableSet Methods
      * ***************************
      */
 
@@ -103,7 +110,9 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
     int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
 
