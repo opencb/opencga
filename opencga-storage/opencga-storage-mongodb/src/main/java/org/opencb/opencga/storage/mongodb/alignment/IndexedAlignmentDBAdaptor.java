@@ -266,22 +266,22 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
 
     /*************/     //TODO: This should work, but doesn't
-//        System.out.println("dbName" + mongoDataStore.getDb().getName().toString());
-//        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoWriter.COVERAGE_COLLECTION_NAME);
-//        QueryResult<DBObject> aggregate = collection.aggregate(null, operations, null);
+        System.out.println("dbName" + mongoDataStore.getDb().getName().toString());
+        MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME);
+        QueryResult<DBObject> aggregate = collection.aggregate(operations, null);
     /*************/
 
     /*************/     //TODO: What's going on?
-        long startTime = System.currentTimeMillis();
-        AggregationOutput aggregationOutput = mongoDataStore.getDb().getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME).aggregate(operations);
-
-        List<DBObject> results = new LinkedList<>();
-        for (DBObject object : aggregationOutput.results()) {
-            results.add(object);
-        }
-
-        long endTime = System.currentTimeMillis();
-        QueryResult<DBObject> aggregate = new QueryResult<>(fileId, ((int) (endTime - startTime)), results.size(), results.size(), "", "", results);
+//        long startTime = System.currentTimeMillis();
+//        AggregationOutput aggregationOutput = mongoDataStore.getDb().getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME).aggregate(operations);
+//
+//        List<DBObject> results = new LinkedList<>();
+//        for (DBObject object : aggregationOutput.results()) {
+//            results.add(object);
+//        }
+//
+//        long endTime = System.currentTimeMillis();
+//        QueryResult<DBObject> aggregate = new QueryResult<>(fileId, ((int) (endTime - startTime)), results.size(), results.size(), "", "", results);
     /*************/
 
 //        System.out.println(collection.find(new BasicDBObject(), new QueryOptions("limit", 2), null));
