@@ -29,7 +29,6 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -697,6 +696,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.put(PROTEIN_SUBSTITUTION, list); //Replace the QueryOption without the malformed query params
             }
 
+            if (options.containsKey(ALTERNATE_FREQUENCY)) {
+                List<String> list = new ArrayList<>(options.getAsStringList(ALTERNATE_FREQUENCY));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
+
+            if (options.containsKey(REFERENCE_FREQUENCY)) {
+                List<String> list = new ArrayList<>(options.getAsStringList(REFERENCE_FREQUENCY));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
+
+
+
             /** STATS **/
 
             if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
@@ -945,6 +960,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         , score, scoreBuilder);
 //                builder.and(key).elemMatch(scoreBuilder.get());
                 ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
+            } else {
+                logger.error("Bad score filter: " + elem);
+                iterator.remove(); //Remove the malformed query params.
+            }
+        }
+        if (!ands.isEmpty()) {
+            builder.and(ands.toArray(new DBObject[ands.size()]));
+        }
+        return builder;
+    }
+
+    private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, List<String> list, QueryBuilder builder) {
+//        ArrayList<DBObject> and = new ArrayList<>(list.size());
+//        DBObject[] ands = new DBObject[list.size()];
+        List<DBObject> ands = new ArrayList<>();
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
+            String elem = iterator.next();
+            String[] split = elem.split(":");
+            if (split.length == 3) {
+                String study = split[0];
+                String population = split[1];
+                String frequency = split[2];
+                QueryBuilder frequencyBuilder = new QueryBuilder();
+                frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
+                frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(population);
+                addCompQueryFilter(alleleFrequencyField, frequency, frequencyBuilder);
+                ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get())));
             } else {
                 logger.error("Bad score filter: " + elem);
                 iterator.remove(); //Remove the malformed query params.

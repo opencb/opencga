@@ -65,8 +65,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String POPULATION_FREQUENCY_SUPERPOP_FIELD = "superPop";
     public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
     public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
-    public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCE_FIELD = "refFq";
-    public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCE_FIELD = "altFq";
+    public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD = "refFq";
+    public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
 
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
     public final static String SCORE_SCORE_FIELD = "sc";
@@ -181,8 +181,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                         getDefault(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
-                        (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCE_FIELD, -1.0),
-                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCE_FIELD, -1.0)
+                        (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0),
+                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0)
                 ));
             }
         }
@@ -350,8 +350,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         DBObject dbObject = new BasicDBObject(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
         putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPop());
         putNotNull(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, populationFrequency.getSuperPop());
-        putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCE_FIELD, populationFrequency.getRefAlleleFreq());
-        putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCE_FIELD, populationFrequency.getAltAlleleFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
         return dbObject;
     }
 
