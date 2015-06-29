@@ -26,6 +26,7 @@ import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
@@ -86,7 +87,12 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
-                List<Variant> variants = factory.create(source, line);
+                List<Variant> variants = null;
+                try {
+                    variants = factory.create(source, line);
+                } catch (NotAVariantException e) {
+                    variants = Collections.emptyList();
+                }
                 for (Variant variant : variants) {
                     try {
                         String e = objectWriter.writeValueAsString(variant);

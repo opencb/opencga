@@ -66,6 +66,26 @@ public interface CatalogSampleDBAdaptor {
         @Override public String getKey() {return _key;}
     }
 
+    enum VariableSetFilterOption implements CatalogDBAdaptor.FilterOption {
+        studyId(Type.NUMERICAL, ""),
+
+        id(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        description(Type.TEXT, ""),
+        attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
+
+        VariableSetFilterOption(Type type, String description) {this._key = name();this._description = description;this._type = type;}
+        VariableSetFilterOption(String key, Type type, String description) {this._key = key;this._description = description;this._type = type;}
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+        @Override public String getDescription() {return _description;}
+        @Override public Type getType() {return _type;}
+        @Override public String getKey() {return _key;}
+    }
+
     /**
      * Samples methods
      * ***************************

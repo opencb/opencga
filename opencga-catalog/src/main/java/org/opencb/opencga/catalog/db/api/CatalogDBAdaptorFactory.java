@@ -18,7 +18,7 @@ public interface CatalogDBAdaptorFactory {
      */
     void initializeCatalogDB() throws CatalogDBException;
 
-    void disconnect();
+    void close();
 
     CatalogUserDBAdaptor getCatalogUserDBAdaptor();
 
