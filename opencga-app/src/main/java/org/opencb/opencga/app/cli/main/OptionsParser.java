@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 
@@ -626,7 +627,7 @@ public class OptionsParser {
             boolean calculateChecksum = false;
         }
 
-        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be on STAGE of be an external file")
+        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
         class RelinkCommand extends BaseFileCommand {
             @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
             String inputFile;
@@ -782,6 +783,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts", required = false, arity = 1)
             String variable;
+
+            @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
+            Cohort.Type type;
         }
 
         @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")

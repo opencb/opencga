@@ -18,6 +18,7 @@ package org.opencb.opencga.core;
 
 import com.google.common.base.Splitter;
 import org.apache.tools.ant.types.Commandline;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.core.exec.RunnableProcess;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -87,21 +89,18 @@ public class  SgeManager {
         queue = queue == null || queue.isEmpty() ? getQueueName(toolName) : queue;
         String outFile = Paths.get(outdir, "sge_out" + logFileId + ".log").toString();
         String errFile = Paths.get(outdir, "sge_err" + logFileId + ".log").toString();
+
         // init sge job
+        String outScript = outdir + "/command_line.sh";
+        Files.write(Paths.get(outScript), commandLine.getBytes());
+
         ArrayList<String> args = new ArrayList<>(Arrays.asList(
                 "qsub", "-V",
                 "-N", getSgeJobName(toolName, wumJobName),
                 "-o", outFile,
                 "-e", errFile,
                 "-q", queue,
-                "-b", "y" ));
-
-        for (String arg : Commandline.translateCommandline(commandLine)) {
-            if (arg.contains(" ")) {
-                arg = "\\\"" + arg + "\\\"";
-            }
-            args.add(arg);
-        }
+                outScript));
 
         String[] cmdArray = args.toArray(new String[args.size()]);
         logger.info("SgeManager: Enqueuing job: " + Commandline.toString(cmdArray));

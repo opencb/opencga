@@ -26,6 +26,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.annotation.*;
+import org.opencb.biodata.models.variation.PopulationFrequency;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,15 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String XREFS_FIELD = "xrefs";
     public final static String XREF_ID_FIELD = "id";
     public final static String XREF_SOURCE_FIELD = "src";
+
+    public static final String POPULATION_FREQUENCIES_FIELD = "popFq";
+    public static final String POPULATION_FREQUENCY_STUDY_FIELD = "study";
+    public static final String POPULATION_FREQUENCY_POP_FIELD = "pop";
+    public static final String POPULATION_FREQUENCY_SUPERPOP_FIELD = "superPop";
+    public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
+    public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
+    public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD = "refFq";
+    public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
 
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
     public final static String SCORE_SCORE_FIELD = "sc";
@@ -159,6 +169,24 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
             }
         }
         va.setConservedRegionScores(conservedRegionScores);
+
+        //Population frequencies
+        List<PopulationFrequency> populationFrequencies = new LinkedList<>();
+        if(object.containsField(POPULATION_FREQUENCIES_FIELD)) {
+            List<DBObject> list = (List) object.get(POPULATION_FREQUENCIES_FIELD);
+            for (DBObject dbObject : list) {
+                populationFrequencies.add(new PopulationFrequency(
+                        getDefault(dbObject, POPULATION_FREQUENCY_STUDY_FIELD, ""),
+                        getDefault(dbObject, POPULATION_FREQUENCY_POP_FIELD, ""),
+                        getDefault(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, ""),
+                        getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
+                        getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
+                        (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0),
+                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0)
+                ));
+            }
+        }
+        va.setPopulationFrequencies(populationFrequencies);
 
         //XREfs
         List<Xref> xrefs = new LinkedList<>();
@@ -269,6 +297,16 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
             putNotNull(dbObject, CONSERVED_REGION_SCORE_FIELD, conservedRegionScores);
         }
 
+        //Population frequencies
+        if (object.getPopulationFrequencies() != null) {
+            List<DBObject> populationFrequencies = new LinkedList<>();
+            for (PopulationFrequency populationFrequency : object.getPopulationFrequencies()) {
+                if (populationFrequency != null) {
+                    populationFrequencies.add(convertPopulationFrequencyToStorage(populationFrequency));
+                }
+            }
+            putNotNull(dbObject, POPULATION_FREQUENCIES_FIELD, populationFrequencies);
+        }
 
         //XREFs
         if(object.getXrefs() != null) {
@@ -305,6 +343,15 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         DBObject dbObject = new BasicDBObject(SCORE_SCORE_FIELD, score);
         putNotNull(dbObject, SCORE_SOURCE_FIELD, source);
         putNotNull(dbObject, SCORE_DESCRIPTION_FIELD, description);
+        return dbObject;
+    }
+
+    private DBObject convertPopulationFrequencyToStorage(PopulationFrequency populationFrequency) {
+        DBObject dbObject = new BasicDBObject(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
+        putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPop());
+        putNotNull(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, populationFrequency.getSuperPop());
+        putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
+        putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
         return dbObject;
     }
 

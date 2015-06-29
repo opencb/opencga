@@ -20,12 +20,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by jacobo on 17/12/14.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ *
+ * Set of samples grouped according to criteria
  */
 public class Cohort {
 
     private int id;
     private String name;
+    private Type type;
     private String creationDate;
     private String description;
 
@@ -33,18 +36,31 @@ public class Cohort {
 
     private Map<String, Object> attributes;
 
+    //Represents the criteria of grouping samples in the cohort
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        FAMILY,
+        TRIO,
+        COLLECTION
+    }
+
     public Cohort() {
     }
 
-    public Cohort(String name, String creationDate, String description, List<Integer> samples,
+    public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, creationDate, description, samples, attributes);
+        this(-1, name, type, creationDate, description, samples, attributes);
     }
 
-    public Cohort(int id, String name, String creationDate, String description, List<Integer> samples,
+    public Cohort(int id, String name, Type type, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
+        this.type = type;
         this.creationDate = creationDate;
         this.description = description;
         this.samples = samples;
@@ -56,6 +72,7 @@ public class Cohort {
         return "Cohort{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", type=" + type +
                 ", creationDate='" + creationDate + '\'' +
                 ", description='" + description + '\'' +
                 ", samples=" + samples +
@@ -77,6 +94,14 @@ public class Cohort {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     public String getCreationDate() {

@@ -3,17 +3,23 @@ package org.opencb.opencga.server.ws;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import javax.ws.rs.client.Entity;
@@ -23,6 +29,10 @@ import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -33,10 +43,126 @@ import static org.junit.Assert.assertEquals;
  */
 public class FileWSServerTest {
 
-    private final WebTarget webTarget;
+    private WebTarget webTarget;
+    private static WSServerTestUtils serverTestUtils;
+    private String sessionId;
+    private int studyId;
+    public static final Path ROOT_DIR = Paths.get("/tmp/opencga-server-FileWSServerTest-folder");
 
-    public FileWSServerTest(WebTarget webTarget) {
+    public FileWSServerTest() {
+    }
+
+    void setWebTarget(WebTarget webTarget) {
         this.webTarget = webTarget;
+    }
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
+    @BeforeClass
+    static public void initServer() throws Exception {
+        serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.initServer();
+    }
+
+    @AfterClass
+    static public void shutdownServer() throws Exception {
+        serverTestUtils.shutdownServer();
+    }
+
+    @Before
+    public void init() throws Exception {
+        serverTestUtils.setUp();
+        webTarget = serverTestUtils.getWebTarget();
+        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
+        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
+
+
+        if (ROOT_DIR.toFile().exists()) {
+            IOUtils.deleteDirectory(ROOT_DIR);
+        }
+        Files.createDirectory(ROOT_DIR);
+        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file1.txt").toString());
+        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("file2.txt").toString());
+        Files.createDirectory(ROOT_DIR.resolve("data"));
+        CatalogManagerTest.createDebugFile(ROOT_DIR.resolve("data").resolve("file2.txt").toString());
+        String fileName = "variant-test-file.vcf.gz";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
+        fileName = "HG00096.chrom20.small.bam";
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
+    }
+
+
+    @Test
+    public void linkFolderTest() throws IOException {
+
+        String path = "data/newFolder"; //Accepts ending or not ending with "/"
+        String json = webTarget.path("files").path("link")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("path", path)
+                .queryParam("uri", ROOT_DIR.toUri()).request().get(String.class);
+
+        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        File file = response.getResponse().get(0).first();
+        assertEquals(path + "/", file.getPath());
+        assertEquals(ROOT_DIR.toUri(), file.getUri());
+
+    }
+
+    @Test
+    public void linkFileTest() throws IOException {
+        URI fileUri = ROOT_DIR.resolve("file1.txt").toUri();
+        String json = webTarget.path("files").path("link")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("path", "data/")
+                .queryParam("uri", fileUri).request().get(String.class);
+
+        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        File file = response.getResponse().get(0).first();
+        assertEquals("data/file1.txt", file.getPath());
+        assertEquals(fileUri, file.getUri());
+    }
+
+    @Test
+    public void linkFileTest2() throws IOException {
+        URI fileUri = ROOT_DIR.resolve("file1.txt").toUri();
+        String json = webTarget.path("files").path("link")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("path", "data")
+                .queryParam("uri", fileUri).request().get(String.class);
+
+        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        File file = response.getResponse().get(0).first();
+        assertEquals("data/file1.txt", file.getPath());
+        assertEquals(fileUri, file.getUri());
+
+
+        fileUri = ROOT_DIR.resolve("file2.txt").toUri();
+        json = webTarget.path("files").path(Integer.toString(file.getId())).path("relink")
+                .queryParam("sid", sessionId)
+                .queryParam("uri", fileUri).request().get(String.class);
+
+        response = WSServerTestUtils.parseResult(json, File.class);
+        file = response.getResponse().get(0).first();
+        assertEquals("data/file1.txt", file.getPath());
+        assertEquals(fileUri, file.getUri());
+    }
+
+    @Test
+    public void updateFilePOST() throws Exception {
+        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE"), sessionId).first();
+
+        FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();
+        updateFile.description = "Change description";
+        String json = webTarget.path("files").path(Integer.toString(file.getId())).path("update")
+                .queryParam("sid", sessionId).request().post(Entity.json(updateFile), String.class);
+
+        QueryResponse<QueryResult<Object>> response = WSServerTestUtils.parseResult(json, Object.class);
+        file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
+        assertEquals(updateFile.description, file.getDescription());
     }
 
     public File uploadVcf(int studyId, String sessionId) throws IOException, CatalogException {
@@ -191,5 +317,6 @@ public class FileWSServerTest {
         System.out.println("\nJSON RESPONSE");
         System.out.println(json);
 
-        return alignments;    }
+        return alignments;
+    }
 }

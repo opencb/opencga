@@ -57,6 +57,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     String SIFT = "sift";
     String PROTEIN_SUBSTITUTION = "protein_substitution";
     String CONSERVED_REGION = "conserved_region";
+    String ALTERNATE_FREQUENCY = "alternate_frequency";
+    String REFERENCE_FREQUENCY = "reference_frequency";
     String MERGE = "merge";
     String SORT = "sort";
 

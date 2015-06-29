@@ -88,6 +88,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
+    public void testGetAllVariants_frequency() {
+        options = new QueryOptions("reference_frequency","1000GENOMES:phase_1_AFR:<=0.05");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(55, queryResult.getNumResults());
+        options = new QueryOptions("alternate_frequency","ESP_6500:African_American:>0.05");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(673, queryResult.getNumResults());
+    }
+
+    @Test
     public void testGetAllVariants_id() {
         // This test queries a single ID with no more options
         queryResult = dbAdaptor.getVariantById("rs1137005", null);

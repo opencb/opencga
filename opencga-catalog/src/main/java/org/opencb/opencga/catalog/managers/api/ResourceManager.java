@@ -18,7 +18,7 @@ public interface ResourceManager<I, R>{
      * @return          The created object
      * @throws CatalogException
      */
-    public QueryResult<R> create(QueryOptions params, String sessionId) throws CatalogException;
+    QueryResult<R> create(QueryOptions params, String sessionId) throws CatalogException;
 
     /**
      * Reads an object from Catalog given an ID
@@ -28,7 +28,7 @@ public interface ResourceManager<I, R>{
      * @return          The specified object
      * @throws CatalogException
      */
-    public QueryResult<R> read(I id, QueryOptions options, String sessionId)
+    QueryResult<R> read(I id, QueryOptions options, String sessionId)
             throws CatalogException;
 
     /**
@@ -39,7 +39,7 @@ public interface ResourceManager<I, R>{
      * @return          All matching elements.
      * @throws CatalogException
      */
-    public QueryResult<R> readAll(QueryOptions query, QueryOptions options, String sessionId)
+    QueryResult<R> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException;
 
     /**
@@ -51,7 +51,7 @@ public interface ResourceManager<I, R>{
      * @return            The modified entry.
      * @throws CatalogException
      */
-    public QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId)
+    QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException;
 
     /**
@@ -62,7 +62,7 @@ public interface ResourceManager<I, R>{
      * @return          The deleted object
      * @throws CatalogException
      */
-    public QueryResult<R> delete(I id, QueryOptions options, String sessionId)
+    QueryResult<R> delete(I id, QueryOptions options, String sessionId)
             throws CatalogException;
 
 }

@@ -30,9 +30,9 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
 
     public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                        CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
