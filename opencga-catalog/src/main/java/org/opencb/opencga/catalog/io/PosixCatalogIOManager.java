@@ -163,7 +163,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public boolean isDirectory(URI uri) {
-        return uri.getRawPath().endsWith("/");
+        return Paths.get(uri).toFile().isDirectory();
+//        return uri.getRawPath().endsWith("/");
     }
 
     @Override
@@ -541,7 +542,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         String checksum;
         try {
             String[] command = {"md5sum", file.getPath()};
-            logger.info("command = {} {}", command[0], command[1]);
+            logger.debug("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             checksum = br.readLine();

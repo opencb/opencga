@@ -40,9 +40,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -372,7 +372,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
 
-        return fileDBAdaptor.createFileToStudy(studyId, file, options);
+        return fileDBAdaptor.createFile(studyId, file, options);
     }
 
     @Override

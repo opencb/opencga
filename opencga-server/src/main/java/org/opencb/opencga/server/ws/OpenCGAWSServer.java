@@ -156,7 +156,7 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogIOException | CatalogDBException e) {
+        } catch (CatalogException e) {
             System.out.println("ERROR when creating CatalogManager: " + e.getMessage());
             e.printStackTrace();
         }

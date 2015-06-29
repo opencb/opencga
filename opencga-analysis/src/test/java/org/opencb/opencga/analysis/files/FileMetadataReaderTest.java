@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.files;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.Properties;
 
 public class FileMetadataReaderTest extends TestCase {
@@ -146,6 +148,34 @@ public class FileMetadataReaderTest extends TestCase {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
+    }
+
+
+    @Test
+    public void testDoNotOverwriteSampleIds() throws CatalogException, StorageManagerException {
+        File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
+                File.Bioformat.NONE, folder.getPath() + VCF_FILE_NAME, "", false, -1, sessionIdUser).first();
+
+        new CatalogFileUtils(catalogManager).
+                upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
+
+        //Add a sampleId
+        int sampleId = catalogManager.createSample(study.getId(), "Bad_Sample", "Air", "", null, null, sessionIdUser).first().getId();
+        catalogManager.modifyFile(file.getId(), new ObjectMap("sampleIds", Collections.singletonList(sampleId)), sessionIdUser);
+
+        file = catalogManager.getFile(file.getId(), null, sessionIdUser).first();
+        assertEquals(1, file.getSampleIds().size());
+        assertEquals(sampleId, file.getSampleIds().get(0).intValue());
+
+        file = FileMetadataReader.get(catalogManager).
+                setMetadataInformation(file, null, null, sessionIdUser, false);
+
+        assertEquals(File.Status.READY, file.getStatus());
+        assertEquals(File.Format.VCF, file.getFormat());
+        assertEquals(File.Bioformat.VARIANT, file.getBioformat());
+        assertNotNull(file.getAttributes().get("variantSource"));
+        assertEquals(1, file.getSampleIds().size());
+        assertTrue(file.getSampleIds().contains(sampleId));
     }
 
     @Test

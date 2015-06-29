@@ -21,8 +21,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
@@ -33,14 +33,12 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +46,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -71,7 +68,7 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
-    private CatalogDBAdaptor catalogDBAdaptor;
+    private CatalogDBAdaptorFactory catalogDBAdaptor;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
@@ -80,6 +77,7 @@ public class CatalogManager {
     private IStudyManager studyManager;
     private IFileManager fileManager;
     private IJobManager jobManager;
+    private IIndividualManager individualManager;
     private ISampleManager sampleManager;
 
     private Properties properties;
@@ -88,7 +86,7 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptor catalogDBAdaptor, Properties catalogProperties)
+    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptor, Properties catalogProperties)
             throws IOException, CatalogIOException {
         this.catalogDBAdaptor = catalogDBAdaptor;
         this.properties = catalogProperties;
@@ -98,7 +96,7 @@ public class CatalogManager {
     }
 
     public CatalogManager(Properties catalogProperties)
-            throws CatalogIOException, CatalogDBException {
+            throws CatalogException {
         this.properties = catalogProperties;
         logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
@@ -109,8 +107,9 @@ public class CatalogManager {
 
         if (!catalogDBAdaptor.isCatalogDBReady()) {
             catalogDBAdaptor.initializeCatalogDB();
-            User admin = new User("admin", "admin", "admin@email.com", "admin", "openCB", User.Role.ADMIN, "active");
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, "active");
             catalogDBAdaptor.getCatalogUserDBAdaptor().insertUser(admin, null);
+            authenticationManager.newPassword("admin", "admin");
         }
     }
 
@@ -119,7 +118,7 @@ public class CatalogManager {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor());
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor(), properties);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
         userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
@@ -127,6 +126,7 @@ public class CatalogManager {
         projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
         sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -666,12 +666,12 @@ public class CatalogManager {
     }
 
     public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, Map<String, Object> attributes,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status,
-                                      QueryOptions options, String sessionId)
+                                      long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles,
-                attributes, resourceManagerAttributes, status, options, sessionId);
+                outputFiles, attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
@@ -712,6 +712,35 @@ public class CatalogManager {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
+    
+    /**
+     * Project methods
+     * ***************************
+     */
+
+    public QueryResult<Individual> createIndividual(int studyId, String name, String family, int fatherId, int motherId,
+                                                    Individual.Gender gender, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.create(studyId, name, family, fatherId, motherId, gender, options, sessionId);
+    }
+
+    public QueryResult<Individual> getIndividual(int individualId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.read(individualId, options, sessionId);
+    }
+
+    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.readAll(studyId, options, sessionId);
+    }
+
+    public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.update(individualId, options, options, sessionId);
+    }
+
+    public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
+        return individualManager.delete(individualId, options, sessionId);
+    }
+    
     /**
      * Samples methods
      * ***************************
@@ -732,25 +761,9 @@ public class CatalogManager {
         return sampleManager.readAll(studyId, options, options, sessionId);
     }
 
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      List<Variable> variables, String sessionId)
-            throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+    public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
-
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      Set<Variable> variables, String sessionId)
-            throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
-    }
-
-    public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return sampleManager.readVariableset(variableSet, options, sessionId);
-    }
-
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
@@ -769,6 +782,40 @@ public class CatalogManager {
     }
 
     /**
+     * VariableSet methods
+     * ***************************
+     */
+
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      List<Variable> variables, String sessionId)
+            throws CatalogException {
+        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+    }
+
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      Set<Variable> variables, String sessionId)
+            throws CatalogException {
+        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+    }
+
+    public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return sampleManager.readVariableSet(variableSet, options, sessionId);
+    }
+
+    public QueryResult<VariableSet> getAllVariableSet(int studyId, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return sampleManager.readAllVariableSets(studyId, options, sessionId);
+    }
+
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId)
+            throws CatalogException {
+        return sampleManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+    }
+
+    /**
      * Cohort methods
      * ***************************
      */
@@ -781,9 +828,21 @@ public class CatalogManager {
         return sampleManager.readCohort(cohortId, options, sessionId);
     }
 
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.readAllCohort(studyId, options, sessionId);
+    }
+
+    public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
-        return sampleManager.createCohort(studyId, name, description, sampleIds, attributes, sessionId);
+        return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
+    }
+
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+        return sampleManager.updateCohort(cohortId, updateParams, sessionId);
+    }
+
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+        return sampleManager.deleteCohort(cohortId, updateParams, sessionId);
     }
 
     /**

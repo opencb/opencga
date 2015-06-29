@@ -202,7 +202,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 9)
     public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+                                 @ApiParam(name = "params", value = "Parameters to modify", required = true) Map<String, Object> params) {
         try {
             ObjectMap objectMap = new ObjectMap(params);
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);

@@ -21,11 +21,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     final CatalogFileDBAdaptor fileDBAdaptor;
     final CatalogSampleDBAdaptor sampleDBAdaptor;
 
-    public CatalogAuthorizationManager(CatalogDBAdaptor catalogDBAdaptor) {
-        this.userDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptor.getCatalogSampleDBAdaptor();
+    public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory) {
+        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
+        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
     }
 
     @Override
