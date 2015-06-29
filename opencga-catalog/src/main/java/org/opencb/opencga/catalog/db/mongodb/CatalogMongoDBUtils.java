@@ -460,19 +460,15 @@ class CatalogMongoDBUtils {
     }
 
 
-    static List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, CatalogDBAdaptor.FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
-        return addCompQueryFilter(type, optionKey, options, "", andQuery);
-    }
-
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
+    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
         }
-        return addCompQueryFilter(type, optionsList, queryKey, andQuery);
+        return addCompQueryFilter(option.getType(), optionsList, queryKey, andQuery);
     }
 
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
+    static private List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {

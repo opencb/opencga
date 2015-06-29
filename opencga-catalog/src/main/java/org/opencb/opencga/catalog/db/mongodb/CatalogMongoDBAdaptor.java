@@ -191,7 +191,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public void disconnect(){
+    public void close(){
         mongoManager.close(db.getDatabaseName());
     }
 
@@ -806,17 +806,17 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 FileFilterOption option = FileFilterOption.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option.getType(), option.name(), query, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), query, _ID, mongoQueryList);
                         break;
                     case studyId:
-                        addCompQueryFilter(option.getType(), option.name(), query, _STUDY_ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), query, _STUDY_ID, mongoQueryList);
                         break;
                     case directory:
                         mongoQueryList.add(new BasicDBObject("path", new BasicDBObject("$regex", "^" + query.getString("directory") + "[^/]+/?$")));
                         break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option.getType(), entry.getKey(), query, queryKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), query, queryKey, mongoQueryList);
                         break;
                     case minSize:
                         mongoQueryList.add(new BasicDBObject("size", new BasicDBObject("$gt", query.getInt("minSize"))));
@@ -1260,23 +1260,23 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 SampleFilterOption option = SampleFilterOption.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option.getType(), option.name(), options, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
                         break;
                     case studyId:
-                        addCompQueryFilter(option.getType(), option.name(), options, _STUDY_ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), options, _STUDY_ID, mongoQueryList);
                         break;
                     case annotationSetId:
-                        addCompQueryFilter(option.getType(), option.name(), options, "id", annotationSetFilter);
+                        addCompQueryFilter(option, option.name(), options, "id", annotationSetFilter);
                         break;
                     case variableSetId:
-                        addCompQueryFilter(option.getType(), option.name(), options, option.getKey(), annotationSetFilter);
+                        addCompQueryFilter(option, option.name(), options, option.getKey(), annotationSetFilter);
                         break;
                     case annotation:
                         addAnnotationQueryFilter(option.name(), options, annotationSetFilter, variableMap);
                         break;
                     default:
                         String optionsKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option.getType(), entry.getKey(), options, optionsKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -1425,6 +1425,43 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
+    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DBObject> mongoQueryList = new LinkedList<>();
+
+        for (Map.Entry<String, Object> entry : options.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                CohortFilterOption option = CohortFilterOption.valueOf(key);
+                switch (option) {
+                    case studyId:
+                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
+                        break;
+                    default:
+                        String optionsKey = "cohorts." + entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
+//        System.out.println("match = " + new BasicDBObject(_ID, studyId).append("$and", mongoQueryList));
+        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$unwind", "$cohorts"),
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+        ), filterOptions(options, FILTER_ROUTE_STUDIES));
+
+        List<Cohort> cohorts = parseObjects(queryResult, Cohort.class);
+        return endQuery("", startTime, cohorts);
+    }
+
+    @Override
     public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -1525,21 +1562,38 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions parameters) throws CatalogDBException {
+    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
 
-        addCompQueryFilter(FilterOption.Type.TEXT, "description", parameters, "variableSets.description", mongoQueryList);
-        addCompQueryFilter(FilterOption.Type.TEXT, "name", parameters, "variableSets.name", mongoQueryList);
-        addCompQueryFilter(FilterOption.Type.NUMERICAL, "id", parameters, "variableSets.id", mongoQueryList);
-        addCompQueryFilter(FilterOption.Type.TEXT, "attributes", parameters, "variableSets.attributes", mongoQueryList);
+
+        for (Map.Entry<String, Object> entry : options.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                VariableSetFilterOption option = VariableSetFilterOption.valueOf(key);
+                switch (option) {
+                    case studyId:
+                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
+                        break;
+                    default:
+                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
 
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
                 new BasicDBObject("$unwind", "$variableSets"),
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
-        ), filterOptions(parameters, FILTER_ROUTE_STUDIES));
+        ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<VariableSet> variableSets = parseObjects(queryResult, VariableSet.class);
 

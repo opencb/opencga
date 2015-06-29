@@ -33,6 +33,7 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
@@ -173,6 +174,7 @@ public class CatalogManagerTest extends GenericTest {
         if(sessionIdUser3 != null) {
             catalogManager.logout("user3", sessionIdUser3);
         }
+//        catalogManager.close();
     }
 
     public CatalogManager getTestCatalogManager() {
@@ -1081,34 +1083,6 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testGetAllVariableSet() throws CatalogException {
-        int studyId = catalogManager.getStudyId("user@1000G:phase1");
-
-        List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
-                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
-        );
-        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "Cancer", null, variables, sessionIdUser).first();
-        VariableSet vs2 = catalogManager.createVariableSet(studyId, "vs2", true, "Virgo", null, variables, sessionIdUser).first();
-        VariableSet vs3 = catalogManager.createVariableSet(studyId, "vs3", true, "Piscis", null, variables, sessionIdUser).first();
-        VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
-
-        int numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1"), sessionIdUser).getNumResults();
-        assertEquals(1, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "vs1,vs2"), sessionIdUser).getNumResults();
-        assertEquals(2, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("name", "VS1"), sessionIdUser).getNumResults();
-        assertEquals(0, numResults);
-
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions("id", vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
-        assertEquals(2, numResults);
-
-    }
-
-    @Test
     public void testDeleteVariableSet() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
@@ -1124,6 +1098,34 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);    //VariableSet does not exist
         catalogManager.getVariableSet(vs1.getId(), null, sessionIdUser);
+    }
+
+    @Test
+    public void testGetAllVariableSet() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        List<Variable> variables = Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "", null, Collections.<String, Object>emptyMap())
+        );
+        VariableSet vs1 = catalogManager.createVariableSet(studyId, "vs1", true, "Cancer", null, variables, sessionIdUser).first();
+        VariableSet vs2 = catalogManager.createVariableSet(studyId, "vs2", true, "Virgo", null, variables, sessionIdUser).first();
+        VariableSet vs3 = catalogManager.createVariableSet(studyId, "vs3", true, "Piscis", null, variables, sessionIdUser).first();
+        VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
+
+        int numResults;
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "vs1"), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "vs1,vs2"), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name.toString(), "VS1"), sessionIdUser).getNumResults();
+        assertEquals(0, numResults);
+
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.id.toString(), vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
     }
 
     @Test
@@ -1465,6 +1467,46 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testGetAllCohorts() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId2 = catalogManager.createSample(studyId, "SAMPLE_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId3 = catalogManager.createSample(studyId, "SAMPLE_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId4 = catalogManager.createSample(studyId, "SAMPLE_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        int sampleId5 = catalogManager.createSample(studyId, "SAMPLE_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        Cohort myCohort1 = catalogManager.createCohort(studyId, "MyCohort1", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2, sampleId3), null, sessionIdUser).first();
+        Cohort myCohort2 = catalogManager.createCohort(studyId, "MyCohort2", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4), null, sessionIdUser).first();
+        Cohort myCohort3 = catalogManager.createCohort(studyId, "MyCohort3", Cohort.Type.CASE_CONTROL, "", Arrays.asList(sampleId3, sampleId4), null, sessionIdUser).first();
+        Cohort myCohort4 = catalogManager.createCohort(studyId, "MyCohort4", Cohort.Type.TRIO, "", Arrays.asList(sampleId5, sampleId3), null, sessionIdUser).first();
+
+        int numResults;
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(), sampleId1), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(), sampleId1 + "," + sampleId5), sessionIdUser).getNumResults();
+        assertEquals(3, numResults);
+
+//        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(), sampleId3 + "," + sampleId4), sessionIdUser).getNumResults();
+//        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), "MyCohort2"), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), "~MyCohort."), sessionIdUser).getNumResults();
+        assertEquals(4, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.type.toString(), Cohort.Type.FAMILY), sessionIdUser).getNumResults();
+        assertEquals(2, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.type.toString(), "CASE_CONTROL"), sessionIdUser).getNumResults();
+        assertEquals(1, numResults);
+
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), myCohort1.getId() + "," + myCohort2.getId() + "," + myCohort3.getId()), sessionIdUser).getNumResults();
+        assertEquals(3, numResults);
+    }
+
+    @Test
     public void testCreateCohortFail() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogException.class);
@@ -1545,6 +1587,7 @@ public class CatalogManagerTest extends GenericTest {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
         MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
         db.getDb().dropDatabase();
+        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
 
         Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
         deleteFolderTree(rootdir.toFile());

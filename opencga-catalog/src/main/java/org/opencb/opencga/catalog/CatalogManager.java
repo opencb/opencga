@@ -50,7 +50,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class CatalogManager {
+public class CatalogManager implements AutoCloseable {
 
     /* DBAdaptor properties */
     public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
@@ -68,7 +68,7 @@ public class CatalogManager {
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
 
-    private CatalogDBAdaptorFactory catalogDBAdaptor;
+    private CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
 
@@ -86,9 +86,9 @@ public class CatalogManager {
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
 
-    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptor, Properties catalogProperties)
+    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, Properties catalogProperties)
             throws IOException, CatalogIOException {
-        this.catalogDBAdaptor = catalogDBAdaptor;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.properties = catalogProperties;
 
         configureIOManager(properties);
@@ -105,10 +105,10 @@ public class CatalogManager {
         logger.debug("CatalogManager configureManager");
         configureManagers(properties);
 
-        if (!catalogDBAdaptor.isCatalogDBReady()) {
-            catalogDBAdaptor.initializeCatalogDB();
+        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
+            catalogDBAdaptorFactory.initializeCatalogDB();
             User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, "active");
-            catalogDBAdaptor.getCatalogUserDBAdaptor().insertUser(admin, null);
+            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
     }
@@ -118,15 +118,15 @@ public class CatalogManager {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptor.getCatalogUserDBAdaptor(), properties);
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptor);
-        userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptor, catalogIOManagerFactory, properties);
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
+        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory);
+        userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        studyManager = new StudyManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -166,7 +166,12 @@ public class CatalogManager {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
             }
         }
-        catalogDBAdaptor = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration, properties.getProperty(CATALOG_DB_DATABASE, ""));
+        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration, properties.getProperty(CATALOG_DB_DATABASE, ""));
+    }
+
+    @Override
+    public void close() throws CatalogException {
+        catalogDBAdaptorFactory.close();
     }
 
     /**
@@ -826,6 +831,10 @@ public class CatalogManager {
 
     public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.readCohort(cohortId, options, sessionId);
+    }
+
+    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.readAllCohort(studyId, options, sessionId);
     }
 
     public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,

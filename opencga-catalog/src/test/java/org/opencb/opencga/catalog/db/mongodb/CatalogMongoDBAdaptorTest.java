@@ -95,7 +95,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @AfterClass
     public static void afterClass() {
-        catalogDBAdaptor.disconnect();
+        catalogDBAdaptor.close();
     }
 
 //    @Before

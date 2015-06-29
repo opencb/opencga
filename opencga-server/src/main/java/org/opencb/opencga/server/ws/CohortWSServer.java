@@ -33,7 +33,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -52,7 +51,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort", position = 1)
+    @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, or providing a categorical variable")
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
@@ -62,7 +61,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
         try {
             //QueryOptions queryOptions = getAllQueryOptions();
-            List<Cohort> cohorts = new LinkedList<>();
+            List<QueryResult<Cohort>> cohorts = new LinkedList<>();
             if (variableName != null && !variableName.isEmpty() && sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
@@ -71,8 +70,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                 samplesQuery.add("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery).first());
-            } else {
+                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery));
+            } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
@@ -91,8 +90,11 @@ public class CohortWSServer extends OpenCGAWSServer {
                     QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                     samplesQuery.add("annotation", variableName + ":" + s);
                     samplesQuery.add("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery).first());
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery));
                 }
+            } else {
+                //Create empty cohort
+                cohorts.add(catalogManager.createCohort(studyId, cohortName, type, cohortDescription, Collections.<Integer>emptyList(), null, sessionId));
             }
             return createOkResponse(cohorts);
         } catch (Exception e) {
