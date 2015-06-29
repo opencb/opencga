@@ -1405,7 +1405,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             throw CatalogDBException.idNotFound("Study", studyId);
         }
 
-        return endQuery("createDataset", startTime, getCohort(newId));
+        return endQuery("createCohort", startTime, getCohort(newId));
     }
 
     @Override
@@ -1458,7 +1458,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<Cohort> cohorts = parseObjects(queryResult, Cohort.class);
-        return endQuery("", startTime, cohorts);
+        return endQuery("getAllCohorts", startTime, cohorts);
     }
 
     @Override

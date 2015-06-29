@@ -51,11 +51,13 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, or providing a categorical variable")
+    @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
+            "or providing a categorical variable (both variableSetId and variable). " +
+            "If none of this is given, an empty cohort will be created.")
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
-                                 @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
                                  @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
