@@ -42,6 +42,8 @@ public class DBObjectToVariantConverterTest {
     private BasicDBObject mongoVariant;
     private Variant variant;
     protected VariantSourceEntry variantSourceEntry;
+    private Integer studyId;
+    private Integer fileId;
 
     @Before
     public void setUp() {
@@ -50,7 +52,9 @@ public class DBObjectToVariantConverterTest {
         variant.setId("rs666");
 
         //Setup variantSourceEntry
-        variantSourceEntry = new VariantSourceEntry("f1", "s1");
+        studyId = 1;
+        fileId = 2;
+        variantSourceEntry = new VariantSourceEntry(fileId.toString(), studyId.toString());
         variantSourceEntry.addAttribute("QUAL", "0.01");
         variantSourceEntry.addAttribute("AN", "2");
         variantSourceEntry.setFormat("GT:DP");
@@ -109,7 +113,7 @@ public class DBObjectToVariantConverterTest {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
                         true,
-                        new DBObjectToSamplesConverter(sampleNames)), 
+                        new DBObjectToSamplesConverter(studyId, sampleNames)),
                 new DBObjectToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
         assertEquals(variant, converted);
@@ -138,7 +142,7 @@ public class DBObjectToVariantConverterTest {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
                         true,
-                        new DBObjectToSamplesConverter(sampleNames)),
+                        new DBObjectToSamplesConverter(studyId, sampleNames)),
                 new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.

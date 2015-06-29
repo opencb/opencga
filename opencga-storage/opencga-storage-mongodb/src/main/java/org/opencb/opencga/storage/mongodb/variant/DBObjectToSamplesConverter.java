@@ -46,8 +46,10 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
 
 //    private boolean compressSamples;
 //    private List<String> samples;
-    private Map<String, Integer> sampleIds;
-    private Map<Integer, String> __idSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
+    private Map<Integer, Map<String, Integer>> studySampleIds;
+    private Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
+//    private Map<String, Integer> sampleIds;
+//    private Map<Integer, String> __idSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
     private boolean compressDefaultGenotype;
@@ -60,8 +62,8 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      * @param compressDefaultGenotype Whether to compress samples default genotype or not
      */
     public DBObjectToSamplesConverter(boolean compressDefaultGenotype) {
-        this.__idSamples = null;
-        this.sampleIds = null;
+        this.__studyIdSamples = null;
+        this.studySampleIds = null;
         this.sourceDbAdaptor = null;
         this.compressDefaultGenotype = compressDefaultGenotype;
         this.studyConfigurationManager = null;
@@ -73,9 +75,9 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      *
      * @param samples The list of samples, if any
      */
-    public DBObjectToSamplesConverter(List<String> samples) {
+    public DBObjectToSamplesConverter(int studyId, List<String> samples) {
         this(true);
-        setSamples(samples);
+        setSamples(studyId, samples);
     }
 
     /**
@@ -84,9 +86,9 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      *
      * @param sampleIds Map of samples to sampleId
      */
-    public DBObjectToSamplesConverter(boolean compressDefaultGenotype, Map<String, Integer> sampleIds) {
+    public DBObjectToSamplesConverter(int studyId, boolean compressDefaultGenotype, Map<String, Integer> sampleIds) {
         this(compressDefaultGenotype);
-        setSampleIds(sampleIds);
+        setSampleIds(studyId, sampleIds);
     }
 
     /**
@@ -112,6 +114,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      *
      * @param variantSourceDBAdaptor  VariantSourceDBAdaptor where the samples are stored.
      */
+    @Deprecated
     public DBObjectToSamplesConverter(VariantSourceDBAdaptor variantSourceDBAdaptor) {
         this(true);
         this.sourceDbAdaptor = variantSourceDBAdaptor;
@@ -127,14 +130,21 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     }
 
     public DBObjectToSamplesConverter(boolean compressDefaultGenotype, StudyConfiguration studyConfiguration) {
-        this(compressDefaultGenotype, studyConfiguration.getSampleIds());
+        this(compressDefaultGenotype, Collections.singletonList(studyConfiguration));
+    }
+
+    public DBObjectToSamplesConverter(boolean compressDefaultGenotype, List<StudyConfiguration> studyConfigurations) {
+        this(compressDefaultGenotype);
+        for (StudyConfiguration studyConfiguration : studyConfigurations) {
+            setSampleIds(studyConfiguration.getStudyId(), studyConfiguration.getSampleIds());
+        }
     }
 
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
+        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
+        Integer fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            int studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
-            int fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions("fileId", fileId));
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}, fileId: {}} not found! Looking for VariantSource", studyId, fileId);
@@ -143,14 +153,11 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
                         object.get(FILEID_FIELD).toString(), null);
                 if(samplesBySource.getResult().isEmpty()) {
                     logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
-
-                    sampleIds = null;
-                    __idSamples = null;
                 } else {
-                    setSamples((List<String>) samplesBySource.getResult().get(0));
+                    setSamples(studyId, (List<String>) samplesBySource.getResult().get(0));
                 }
             } else {
-                setSampleIds(queryResult.first().getSampleIds());
+                setSampleIds(queryResult.first().getStudyId(), queryResult.first().getSampleIds());
             }
 //            QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
 //                    object.get(FILEID_FIELD).toString(), null);
@@ -163,16 +170,16 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
 //            }
         }
 
+        Map<String, Integer> sampleIds = studySampleIds.get(studyId);
         if (sampleIds == null || sampleIds.isEmpty()) {
-            return new VariantSourceEntry(object.get(FILEID_FIELD).toString(), object.get(STUDYID_FIELD).toString());
+            return new VariantSourceEntry(fileId.toString(), studyId.toString());
         }
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(SAMPLES_FIELD);
 //        int numSamples = idSamples.size();
 
         // Temporary file, just to store the samples
-        VariantSourceEntry fileWithSamples = new VariantSourceEntry(object.get(FILEID_FIELD).toString(),
-                object.get(STUDYID_FIELD).toString());
+        VariantSourceEntry fileWithSamples = new VariantSourceEntry(fileId.toString(), studyId.toString());
 
         // Add the samples to the file
         for (Map.Entry<String, Integer> entry : sampleIds.entrySet()) {
@@ -192,7 +199,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         // in the position specified in the array, such as:
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
-        Map idSamples = getIdSamplesMap();
+        Map idSamples = getIdSamplesMap(studyId);
         for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
             if (!dbo.getKey().equals("def")) {
                 String genotype = genotypeToDataModelType(dbo.getKey());
@@ -211,6 +218,8 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     public DBObject convertToStorageType(VariantSourceEntry object) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
 
+        int studyId = Integer.parseInt(object.getStudyId());
+        Map<String, Integer> sampleIds = studySampleIds.get(studyId);
         // Classify samples by genotype
         for (Map.Entry<String, Map<String, String>> sample : object.getSamplesData().entrySet()) {
             String genotype = sample.getValue().get("GT");
@@ -256,23 +265,26 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     }
 
 
-    public void setSamples(List<String> samples) {
+    public void setSamples(int studyId, List<String> samples) {
         int i = 0;
         int size = samples == null? 0 : samples.size();
-        sampleIds = new HashMap<>(size);
-        __idSamples = new HashMap<>(size);
+        Map<String, Integer> sampleIds = new HashMap<>(size);
         if (samples != null) {
             for (String sample : samples) {
                 sampleIds.put(sample, i);
-                __idSamples.put(i, sample);
                 i++;
             }
         }
+        setSampleIds(studyId, sampleIds);
     }
 
-    public void setSampleIds(Map<String, Integer> sampleIds) {
-        this.sampleIds = sampleIds;
-        this.__idSamples = null;
+    public void setSampleIds(int studyId, Map<String, Integer> sampleIds) {
+        if (studySampleIds == null) {
+            studySampleIds = new HashMap<>();
+            __studyIdSamples = new HashMap<>();
+        }
+        this.studySampleIds.put(studyId, sampleIds);
+        this.__studyIdSamples.put(studyId, null);
     }
 
     /**
@@ -280,17 +292,21 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      *
      * @return  Inverts map "sampleIds". From Map<SampleName, SampleId> to Map<SampleId, SampleName>
      */
-    private Map getIdSamplesMap() {
-        if (__idSamples == null) {
-            this.__idSamples = new HashMap<>(sampleIds.size());
+    private Map getIdSamplesMap(int studyId) {
+        Map<String, Integer> sampleIds = studySampleIds.get(studyId);
+        if (this.__studyIdSamples.get(studyId) == null) {
+            HashMap idSamples = new HashMap<>(sampleIds.size());
             for (Map.Entry<String, Integer> entry : sampleIds.entrySet()) {
-                __idSamples.put(entry.getValue(), entry.getKey());
+                idSamples.put(entry.getValue(), entry.getKey());
             }
+            this.__studyIdSamples.put(studyId, idSamples);
         }
-        if(sampleIds.size() != __idSamples.size()) {
+
+        Map<Integer, String> idSamples = this.__studyIdSamples.get(studyId);
+        if(sampleIds.size() != idSamples.size()) {
             throw new IllegalStateException("Invalid sample ids map. SampleIDs must be unique.");
         }
-        return __idSamples;
+        return idSamples;
     }
 
     private VariantSourceEntry getLegacyNoncompressedSamples(BasicDBObject object) {

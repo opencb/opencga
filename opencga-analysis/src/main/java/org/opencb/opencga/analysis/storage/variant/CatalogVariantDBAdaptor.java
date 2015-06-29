@@ -68,11 +68,6 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public void setConstantSamples(String sourceEntry) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public QueryResult<Variant> getAllVariants(QueryOptions options) {
 
         try {

@@ -33,6 +33,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -52,11 +53,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private DBObjectToVariantConverter variantConverter;
-    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
+    private final DBObjectToVariantConverter variantConverter;
+    private final DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
-    private final StudyConfigurationManager studyConfigurationManager;
+    private StudyConfigurationManager studyConfigurationManager;
 
     private DataWriter dataWriter;
 
@@ -89,24 +90,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public void setConstantSamples(String sourceEntry) {
-        List<String> samples = null;
-        QueryResult samplesBySource = variantSourceMongoDBAdaptor.getSamplesBySource(sourceEntry, null);    // TODO jmmut: check when we remove fileId
-        if(samplesBySource.getResult().isEmpty()) {
-            logger.error("setConstantSamples(): couldn't find samples in source {} " + sourceEntry);
-        } else {
-            samples = (List<String>) samplesBySource.getResult().get(0);
-        }
-        
-        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
-                new DBObjectToSamplesConverter(samples)
-        );
-        
-        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
-    }
-
-    @Override
     public QueryResult<Variant> getAllVariants(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
@@ -115,7 +98,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject projection = parseProjectionQueryOptions(options);
         logger.debug("Query to be executed {}", qb.get().toString());
 
-        return coll.find(qb.get(), projection, variantConverter, options);
+        return coll.find(qb.get(), projection, getDbObjectToVariantConverter(options), options);
     }
 
 
@@ -137,7 +120,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("Query to be executed {}", qb.get().toString());
 
 //        return coll.find(query, options, variantConverter);
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
+        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, getDbObjectToVariantConverter(options), options);
         queryResult.setId(id);
         return queryResult;
     }
@@ -166,7 +149,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
+        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, getDbObjectToVariantConverter(options), options);
         queryResult.setId(region.toString());
         return queryResult;
     }
@@ -349,7 +332,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         options.put(GENE, geneName);
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
+        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, getDbObjectToVariantConverter(options), options);
         queryResult.setId(geneName);
         return queryResult;
     }
@@ -439,6 +422,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return studyConfigurationManager;
     }
 
+    public void setStudyConfigurationDBAdaptor(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
+
     @Override
     public VariantDBIterator iterator() {
         return iterator(new QueryOptions());
@@ -453,7 +440,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject projection = parseProjectionQueryOptions(options);
         DBCursor dbCursor = coll.nativeQuery().find(qb.get(), projection, options);
         dbCursor.batchSize(options.getInt("batchSize", 100));
-        return new VariantMongoDBIterator(dbCursor, variantConverter);
+        return new VariantMongoDBIterator(dbCursor, getDbObjectToVariantConverter(options));
     }
 
     //@Override
@@ -511,6 +498,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
+        DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
                     variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
@@ -537,6 +525,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
         String fileId = queryOptions.getString(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
+        DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(queryOptions);
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -703,6 +692,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public boolean close() {
         mongoManager.close(db.getDatabaseName());
         return true;
+    }
+
+    private DBObjectToVariantConverter getDbObjectToVariantConverter(QueryOptions options) {
+        List<Integer> studyIds = options.getAsIntegerList(STUDIES);
+
+        if(studyIds.isEmpty()) {
+            return variantConverter;
+        } else {
+            List<StudyConfiguration> studyConfigurations = new LinkedList<>();
+            for (Integer studyId : studyIds) {
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
+                if(queryResult.getResult().isEmpty()) {
+                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId {} " + studyId);
+                } else {
+                    studyConfigurations.add(queryResult.first());
+                }
+            }
+            DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                    true,
+                    new DBObjectToSamplesConverter(false, studyConfigurations)
+            );
+            return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
+        }
     }
 
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {

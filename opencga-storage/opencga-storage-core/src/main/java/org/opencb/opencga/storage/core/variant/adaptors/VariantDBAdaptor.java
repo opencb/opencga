@@ -121,12 +121,6 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     void setDataWriter(DataWriter dataWriter);
 
     /**
-     * This method can be used if the samples are going to be the same, so optimizations can be done, e.g. skipping the 
-     * samples name retrieval for each variant.
-     */
-    void setConstantSamples(String sourceEntry);
-
-    /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
      * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
      * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.

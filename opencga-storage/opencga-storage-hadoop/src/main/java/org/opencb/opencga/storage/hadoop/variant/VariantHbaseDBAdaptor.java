@@ -77,12 +77,7 @@ public class VariantHbaseDBAdaptor implements VariantDBAdaptor {
         mongoClient = new MongoClient(credentials.getMongoHost());
         db = mongoClient.getDB(credentials.getMongoDbName());
     }
-
-    @Override
-    public void setConstantSamples(String sourceEntry) {
-        throw new UnsupportedOperationException();
-    }
-
+    
     @Override
     public QueryResult<Variant> getAllVariantsByRegionAndStudy(Region region, String sourceId, QueryOptions options) {
         Long start, end, dbstart, dbend;
