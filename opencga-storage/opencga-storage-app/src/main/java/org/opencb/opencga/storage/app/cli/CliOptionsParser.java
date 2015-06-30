@@ -94,25 +94,17 @@ public class CliOptionsParser {
         return getCommonCommandOptions().help;
     }
 
-    public void printUsage(){
-        if(getCommand().isEmpty()) {
-            jcommander.usage();
-        } else {
-            jcommander.usage(getCommand());
-        }
-    }
-
-    @Deprecated
-    public String usage() {
-        StringBuilder builder = new StringBuilder();
-        String parsedCommand = jcommander.getParsedCommand();
-        if(parsedCommand != null && !parsedCommand.isEmpty()){
-            jcommander.usage(parsedCommand, builder);
-        } else {
-            jcommander.usage(builder);
-        }
-        return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
-    }
+//    @Deprecated
+//    public String usage() {
+//        StringBuilder builder = new StringBuilder();
+//        String parsedCommand = jcommander.getParsedCommand();
+//        if(parsedCommand != null && !parsedCommand.isEmpty()){
+//            jcommander.usage(parsedCommand, builder);
+//        } else {
+//            jcommander.usage(builder);
+//        }
+//        return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
+//    }
 
     public class GeneralOptions {
 
@@ -171,14 +163,6 @@ public class CliOptionsParser {
         @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
         public String resumeFromAccession;
 
-//        class StudyIdValidator implements IValueValidator<String> {
-//            @Override
-//            public void validate(String name, String defaultValue) throws ParameterException {
-//                if (defaultValue.length() < 6) {
-//                    throw new ParameterException("The study ID must be at least 6 characters long");
-//                }
-//            }
-//        }
     }
 
 
@@ -476,6 +460,51 @@ public class CliOptionsParser {
         */
     }
 
+    public void printUsage(){
+        if(getCommand().isEmpty()) {
+            System.err.println("");
+            System.err.println("Program:     OpenCGA Storage (OpenCB)");
+            System.err.println("Version:     0.6.0");
+            System.err.println("Description: Big Data platform for processing and analysing NGS data");
+            System.err.println("");
+            System.err.println("Usage:       opencga-storage.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("");
+            System.err.println("Commands:");
+            printMainUsage();
+            System.err.println("");
+        } else {
+            String parsedCommand = getCommand();
+            System.err.println("");
+            System.err.println("Usage:   opencga-storage.sh " + parsedCommand + " [options]");
+            System.err.println("");
+            System.err.println("Options:");
+            printCommandUsage(jcommander.getCommands().get(parsedCommand));
+            System.err.println("");
+        }
+    }
+
+    private void printMainUsage() {
+        for (String s : jcommander.getCommands().keySet()) {
+            System.err.printf("%20s  %s\n", s, jcommander.getCommandDescription(s));
+        }
+    }
+
+    private void printCommandUsage(JCommander commander) {
+        for (ParameterDescription parameterDescription : commander.getParameters()) {
+            String type = "";
+            if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() > 0) {
+                type = parameterDescription.getParameterized().getGenericType().getTypeName().replace("java.lang.", "").toUpperCase();
+            }
+            System.err.printf("%5s %-20s %-10s %s [%s]\n",
+                    (parameterDescription.getParameterized().getParameter() != null
+                            && parameterDescription.getParameterized().getParameter().required()) ? "*": "",
+                    parameterDescription.getNames(),
+                    type,
+                    parameterDescription.getDescription(),
+                    parameterDescription.getDefault());
+        }
+    }
+
 
     public GeneralOptions getGeneralOptions() {
         return generalOptions;
@@ -489,29 +518,26 @@ public class CliOptionsParser {
         return createAccessionsCommandOption;
     }
 
-    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
-        return indexVariantsCommandOptions;
-    }
-
     public IndexAlignmentsCommandOptions getIndexAlignmentsCommandOptions() {
         return indexAlignmentsCommandOptions;
     }
 
-//    IndexSequenceCommandOptions getIndexSequenceCommandOptions() {
-//        return indexSequenceCommandOptions;
-//    }
-
-    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
-        return queryVariantsCommandOptions;
+    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
+        return indexVariantsCommandOptions;
     }
 
     public QueryAlignmentsCommandOptions getQueryAlignmentsCommandOptions() {
         return queryAlignmentsCommandOptions;
     }
 
+    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
+        return queryVariantsCommandOptions;
+    }
+
     public AnnotateVariantsCommandOptions getAnnotateVariantsCommandOptions() {
         return annotateVariantsCommandOptions;
     }
+
     public StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
         return statsVariantsCommandOptions;
     }
