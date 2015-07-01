@@ -276,6 +276,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
 
         if(queryResponse != null && queryResponse.getResponse().size() != genomicVariantList.size()) {
+            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != genomicVariantList size (" + genomicVariantList.size() + ").");
             //throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
             queryError = true;
         }
