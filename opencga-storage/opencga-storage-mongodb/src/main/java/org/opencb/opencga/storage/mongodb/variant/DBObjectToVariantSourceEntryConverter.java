@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -43,6 +44,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     private boolean includeSrc;
 
+    private String fileId;
     private DBObjectToSamplesConverter samplesConverter;
 
     /**
@@ -54,6 +56,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
+        this.fileId = null;
     }
 
 
@@ -71,15 +74,40 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         this.samplesConverter = samplesConverter;
     }
 
+    /**
+     * Create a converter from VariantSourceEntry to DBObject entities. A
+     * samples converter and a statistics converter may be provided in case those
+     * should be processed during the conversion.
+     *  @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
+     *  @param fileId           If present, reads the information of this file from FILES_FIELD
+     *  @param samplesConverter The object used to convert the samples. If null, won't convert
+     *
+     */
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, String fileId,
+                                                 DBObjectToSamplesConverter samplesConverter) {
+        this(includeSrc);
+        this.fileId = fileId;
+        this.samplesConverter = samplesConverter;
+    }
+
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
-        String fileId = (String) object.get(FILEID_FIELD);
         String studyId = (String) object.get(STUDYID_FIELD);
         VariantSourceEntry file = new VariantSourceEntry(fileId, studyId);
-        
+
+//        String fileId = (String) object.get(FILEID_FIELD);
+        DBObject fileObject = null;
+        if (fileId != null && object.containsField(FILES_FIELD)) {
+            for (DBObject dbObject : (List<DBObject>) object.get(FILES_FIELD)) {
+                if (fileId.equals(dbObject.get(FILEID_FIELD))) {
+                    fileObject = dbObject;
+                    break;
+                }
+            }
+        }
         // Alternate alleles
-        if (object.containsField(ALTERNATES_FIELD)) {
-            List list = (List) object.get(ALTERNATES_FIELD);
+        if (fileObject != null && fileObject.containsField(ALTERNATES_FIELD)) {
+            List list = (List) fileObject.get(ALTERNATES_FIELD);
             String[] alternatives = new String[list.size()];
             int i = 0;
             for (Object o : list) {
@@ -90,11 +118,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         
         // Attributes
-        if (object.containsField(ATTRIBUTES_FIELD)) {
-            file.setAttributes(((DBObject) object.get(ATTRIBUTES_FIELD)).toMap());
+        if (fileObject != null && fileObject.containsField(ATTRIBUTES_FIELD)) {
+            file.setAttributes(((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap());
             // Unzip the "src" field, if available
-            if (((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
-                byte[] o = (byte[]) ((DBObject) object.get(ATTRIBUTES_FIELD)).get("src");
+            if (((DBObject) fileObject.get(ATTRIBUTES_FIELD)).containsField("src")) {
+                byte[] o = (byte[]) ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).get("src");
                 try {
                     file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
                 } catch (IOException ex) {
@@ -104,15 +132,17 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         if (object.containsField(FORMAT_FIELD)) {
             file.setFormat((String) object.get(FORMAT_FIELD));
+        } else {
+            file.setFormat("GT");
         }
         
         // Samples
         if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
-            VariantSourceEntry fileWithSamplesData = samplesConverter.convertToDataModelType(object);
-            
+            Map<String, Map<String, String>> samplesData = samplesConverter.convertToDataModelType(object, studyId);
+
             // Add the samples to the Java object, combining the data structures
             // with the samples' names and the genotypes
-            for (Map.Entry<String, Map<String, String>> sampleData : fileWithSamplesData.getSamplesData().entrySet()) {
+            for (Map.Entry<String, Map<String, String>> sampleData : samplesData.entrySet()) {
                 file.addSampleData(sampleData.getKey(), sampleData.getValue());
             }
         }
@@ -122,11 +152,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     @Override
     public DBObject convertToStorageType(VariantSourceEntry object) {
-        BasicDBObject mongoFile = new BasicDBObject(FILEID_FIELD, object.getFileId()).append(STUDYID_FIELD, object.getStudyId());
+        BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, object.getFileId());
 
         // Alternate alleles
         if (object.getSecondaryAlternates().length > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
-            mongoFile.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
+            fileObject.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
         }
         
         // Attributes
@@ -154,17 +184,20 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             }
 
             if (attrs != null) {
-                mongoFile.put(ATTRIBUTES_FIELD, attrs);
+                fileObject.put(ATTRIBUTES_FIELD, attrs);
             }
         }
 
+        BasicDBObject mongoFile = new BasicDBObject(STUDYID_FIELD, object.getStudyId());
+        mongoFile.append(FILES_FIELD, Collections.singletonList(fileObject));
+
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
-            mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object));
+            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
+            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), object.getStudyId()));
         }
         
-        
+
         return mongoFile;
     }
 

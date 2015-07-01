@@ -449,11 +449,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
         boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
         boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
-        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
+//        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
+        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
 
         DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
-                includeGenotypes? new DBObjectToSamplesConverter(compressGenotypes, studyConfiguration) : null);
+                includeGenotypes? new DBObjectToSamplesConverter(new Genotype(defaultGenotype), studyConfiguration) : null);
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
     }
 
@@ -538,8 +539,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
 
-                DBObject genotypes = sourceEntryConverter.getSamplesConverter().convertToStorageType(variantSourceEntry);
+//                DBObject genotypes = sourceEntryConverter.getSamplesConverter().convertToStorageType(variantSourceEntry);
                 DBObject dbObject = sourceEntryConverter.convertToStorageType(variantSourceEntry);
+                DBObject genotypes = (DBObject) dbObject.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
 //                if (genotypes.keySet().isEmpty()) {
 //                    continue;
 //                }
@@ -547,10 +549,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 for (String genotype : genotypes.keySet()) {
                     push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
                 }
-                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, new BasicDBObject()
-                                .append(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId())
-
-                );
+                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, dbObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD));
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
 
 

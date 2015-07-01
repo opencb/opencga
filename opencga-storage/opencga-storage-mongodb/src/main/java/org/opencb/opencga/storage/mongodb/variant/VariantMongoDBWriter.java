@@ -420,17 +420,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
-        if (includeSamples) {
-            sampleConverter = new DBObjectToSamplesConverter(compressDefaultGenotype, studyConfiguration); //TODO: Add default genotype
-            sampleConverter.setDefaultGenotype(new Genotype(defaultGenotype));
-        } else {
-            sampleConverter = null; //TODO: Add default genotype
-        }
+        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(new Genotype(defaultGenotype), studyConfiguration) : null;
 
-        sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                includeSrc,
-                sampleConverter
-        );
+        sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
+
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter.

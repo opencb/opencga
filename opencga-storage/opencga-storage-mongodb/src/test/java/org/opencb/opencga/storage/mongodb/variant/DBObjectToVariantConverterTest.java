@@ -102,7 +102,7 @@ public class DBObjectToVariantConverterTest {
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
         BasicDBObject genotypeCodes = new BasicDBObject();
-        genotypeCodes.append("def", "0/0");
+//        genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
         BasicDBList files = new BasicDBList();
@@ -125,18 +125,22 @@ public class DBObjectToVariantConverterTest {
         variant.addSourceEntry(variantSourceEntry);
 
         // MongoDB object
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId())
-                .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId());
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId());
+
         mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
+
+        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId())
+                .append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
         BasicDBObject genotypeCodes = new BasicDBObject();
-        genotypeCodes.append("def", "0/0");
-        genotypeCodes.append("0/1", Arrays.asList(1));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
-        BasicDBList files = new BasicDBList();
-        files.add(mongoFile);
-        mongoVariant.append("files", files);
+//        genotypeCodes.append("def", "0/0");
+        genotypeCodes.append("0/1", Collections.singletonList(1));
+        mongoStudy.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
+
+        BasicDBList studies = new BasicDBList();
+        studies.add(mongoStudy);
+        mongoVariant.append(DBObjectToVariantConverter.STUDIES_FIELD, studies);
         
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(

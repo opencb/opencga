@@ -64,7 +64,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfigurationMultiFile = newStudyConfiguration();
 
         ETLResult etlResult;
-        ObjectMap options = new ObjectMap().append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true).append(VariantStorageManager.Options.CALCULATE_STATS.key(), false).append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        ObjectMap options = new ObjectMap()
+                .append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
         runDefaultETL(getResourceUri("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
         runDefaultETL(getResourceUri("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 7));
@@ -79,7 +82,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         int singleFileStudyId = 2;
         StudyConfiguration studyConfigurationSingleFile = newStudyConfiguration();
         studyConfigurationSingleFile.setStudyId(singleFileStudyId);
-        etlResult = runDefaultETL(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationSingleFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 10).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
+        etlResult = runDefaultETL(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationSingleFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 10));
         checkTransformedVariants(etlResult.transformResult, studyConfigurationSingleFile, expectedNumVariants);
 
 

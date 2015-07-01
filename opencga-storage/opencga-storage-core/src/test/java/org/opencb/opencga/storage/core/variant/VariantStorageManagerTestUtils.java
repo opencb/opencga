@@ -146,28 +146,29 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         preTransformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
 
         ObjectMap transformParams = new ObjectMap(params);
-        transformParams.putIfAbsent(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        transformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         transformParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
         transformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
+
         ObjectMap postTransformParams = new ObjectMap(params);
 
         ObjectMap preLoadParams = new ObjectMap(params);
-        preLoadParams.putIfAbsent(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        preLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+
         ObjectMap loadParams = new ObjectMap(params);
-        loadParams.putIfAbsent(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         loadParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
         loadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
         loadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        ObjectMap postLoadParams = new ObjectMap(params);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
 
+        ObjectMap postLoadParams = new ObjectMap(params);
+        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
         postLoadParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
         postLoadParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         postLoadParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
         postLoadParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);
     }

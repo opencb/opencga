@@ -42,18 +42,15 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSource
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantSourceEntry, DBObject> {
+public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
-    public static final String UNKNOWN_GENOTYPE = "?/?";
-    //    private boolean compressSamples;
-//    private List<String> samples;
+    public static final String UNKNOWN_GENOTYPE = "?";
+
     private Map<Integer, Map<String, Integer>> studySampleIds;
     private Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
-//    private Map<String, Integer> sampleIds;
-//    private Map<Integer, String> __idSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
-    private boolean compressDefaultGenotype;
+    @Deprecated private boolean compressDefaultGenotype;
     private Genotype defaultGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
@@ -63,7 +60,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
      *
      * @param compressDefaultGenotype Whether to compress samples default genotype or not
      */
-    public DBObjectToSamplesConverter(boolean compressDefaultGenotype) {
+    DBObjectToSamplesConverter(boolean compressDefaultGenotype) {
         this.__studyIdSamples = null;
         this.studySampleIds = null;
         this.sourceDbAdaptor = null;
@@ -94,35 +91,6 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
     }
 
     /**
-     * Create a converter from DBObject to a Map of samples, providing the
-     * connection details to the database where the samples are stored.
-     *
-     * @param credentials Parameters for connecting to the database
-     * @param collectionName Collection that stores the variant sources
-     */
-    @Deprecated
-    public DBObjectToSamplesConverter(MongoCredentials credentials, String collectionName) {
-        this(true);
-        try {
-            this.sourceDbAdaptor = new VariantSourceMongoDBAdaptor(credentials, collectionName);
-        } catch (UnknownHostException ex) {
-            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    /**
-     * Create a converter from DBObject to a Map of samples, providing the
-     * VariantSourceDBAdaptor where the samples are stored.
-     *
-     * @param variantSourceDBAdaptor  VariantSourceDBAdaptor where the samples are stored.
-     */
-    @Deprecated
-    public DBObjectToSamplesConverter(VariantSourceDBAdaptor variantSourceDBAdaptor) {
-        this(true);
-        this.sourceDbAdaptor = variantSourceDBAdaptor;
-    }
-
-    /**
      *
      */
     public DBObjectToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
@@ -131,10 +99,17 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    public DBObjectToSamplesConverter(boolean compressDefaultGenotype, StudyConfiguration studyConfiguration) {
-        this(compressDefaultGenotype, Collections.singletonList(studyConfiguration));
+    /**
+     *
+     */
+    public DBObjectToSamplesConverter(Genotype defaultGenotype, StudyConfiguration studyConfiguration) {
+        this(defaultGenotype != null, Collections.singletonList(studyConfiguration));
+        this.defaultGenotype = defaultGenotype;
     }
 
+    /**
+     *
+     */
     public DBObjectToSamplesConverter(boolean compressDefaultGenotype, List<StudyConfiguration> studyConfigurations) {
         this(compressDefaultGenotype);
         for (StudyConfiguration studyConfiguration : studyConfigurations) {
@@ -142,15 +117,14 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         }
     }
 
-    @Override
-    public VariantSourceEntry convertToDataModelType(DBObject object) {
-        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
-//        Integer fileId = Integer.parseInt(object.get(FILEID_FIELD).toString());
-        Integer fileId = 0;
+//    @Override
+    public Map<String, Map<String, String>> convertToDataModelType(DBObject object, String studyIdStr) {
+//        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
+        Integer studyId = Integer.parseInt(studyIdStr);
         if (sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
-            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions(/*"fileId", fileId*/));
+            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions());
             if(queryResult.first() == null) {
-                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}, fileId: {}} not found! Looking for VariantSource", studyId, fileId);
+                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);
 
                 QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
                         object.get(FILEID_FIELD).toString(), null);
@@ -175,19 +149,19 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
 
         Map<String, Integer> sampleIds = studySampleIds.get(studyId);
         if (sampleIds == null || sampleIds.isEmpty()) {
-            return new VariantSourceEntry(fileId.toString(), studyId.toString());
+            return Collections.emptyMap();
         }
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
 //        int numSamples = idSamples.size();
 
         // Temporary file, just to store the samples
-        VariantSourceEntry fileWithSamples = new VariantSourceEntry(fileId.toString(), studyId.toString());
+//        VariantSourceEntry fileWithSamples = new VariantSourceEntry(fileId.toString(), studyId.toString());
+        Map<String, Map<String, String>> samplesData = new LinkedHashMap<>();//new VariantSourceEntry(fileId.toString(), studyId.toString());
 
         // Add the samples to the file
         for (Map.Entry<String, Integer> entry : sampleIds.entrySet()) {
-            Map<String, String> sampleData = new HashMap<>(1);  //size == 1, only will contain GT field
-            fileWithSamples.addSampleData(entry.getKey(), sampleData);
+            samplesData.put(entry.getKey(), new HashMap<>(1)); //size == 1, only will contain GT field
         }
 
         // An array of genotypes is initialized with the most common one
@@ -195,7 +169,7 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
         if (defaultGenotype != null) {
             String mostCommonGtString = defaultGenotype.toString();
             if (mostCommonGtString != null) {
-                for (Map.Entry<String, Map<String, String>> entry : fileWithSamples.getSamplesData().entrySet()) {
+                for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
                     entry.getValue().put("GT", mostCommonGtString);
                 }
             }
@@ -211,23 +185,24 @@ public class DBObjectToSamplesConverter implements ComplexTypeConverter<VariantS
                 String genotype = genotypeToDataModelType(dbo.getKey());
                 for (Integer sampleId : (List<Integer>) dbo.getValue()) {
                     if (idSamples.containsKey(sampleId)) {
-                        fileWithSamples.getSamplesData().get(idSamples.get(sampleId)).put("GT", genotype);
+                        samplesData.get(idSamples.get(sampleId)).put("GT", genotype);
                     }
                 }
             }
         }
 
-        return fileWithSamples;
+        return samplesData;
     }
 
-    @Override
-    public DBObject convertToStorageType(VariantSourceEntry object) {
+//    @Override
+    public DBObject convertToStorageType(Map<String, Map<String, String>> object, String studyIdStr) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
 
-        int studyId = Integer.parseInt(object.getStudyId());
+//        Integer studyId = Integer.parseInt(object.getStudyId());
+        Integer studyId = Integer.parseInt(studyIdStr);
         Map<String, Integer> sampleIds = studySampleIds.get(studyId);
         // Classify samples by genotype
-        for (Map.Entry<String, Map<String, String>> sample : object.getSamplesData().entrySet()) {
+        for (Map.Entry<String, Map<String, String>> sample : object.entrySet()) {
             String genotype = sample.getValue().get("GT");
             if (genotype != null) {
                 Genotype g = new Genotype(genotype);
