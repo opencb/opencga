@@ -19,7 +19,9 @@ package org.opencb.opencga.storage.mongodb.variant;
 import java.util.*;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+import com.mongodb.WriteResult;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
@@ -87,6 +89,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    private VariantSource source;
 
     private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+    private List<Integer> fileSampleIds;
+    private List<Integer> loadedSampleIds;
 
 //
 //    public VariantMongoDBWriter(Integer fileId, StudyConfiguration studyConfiguration, MongoCredentials credentials, String variantsCollection, String filesCollection,
@@ -135,6 +139,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override
     public boolean pre() {
+        this.fileSampleIds = null;
         // Mongo collection creation
 //        variantMongoCollection = mongoDataStore.getCollection(variantsCollectionName);
 //        filesMongoCollection = mongoDataStore.getCollection(filesCollectionName);
@@ -164,7 +169,18 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             }
         }
 
-        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration);
+        if (fileSampleIds == null) {
+            fileSampleIds = new LinkedList<>();
+            loadedSampleIds = new LinkedList<>();
+            data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileId).iterator().forEachRemaining(s -> fileSampleIds.add(studyConfiguration.getSampleIds().get(s)));
+            LinkedHashSet<Integer> fileSampleIdsSet = new LinkedHashSet<>(fileSampleIds);
+            loadedSampleIds.addAll(studyConfiguration.getSampleIds().keySet().stream()
+                    .filter(sample -> !fileSampleIdsSet.contains(studyConfiguration.getSampleIds().get(sample)))
+                    .map(sample -> studyConfiguration.getSampleIds().get(sample))
+                    .collect(Collectors.toList()));
+        }
+
+        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
         insertionTime += queryResult.getDbTime();
         return true;
     }
@@ -331,6 +347,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            if (writeVariantSource) {
 //                writeSourceSummary(source);
 //            }
+
+            dbAdaptor.fillFileGaps(fileId, null, fileSampleIds, studyConfiguration);
             dbAdaptor.createIndexes(new QueryOptions());
 //            DBObject onBackground = new BasicDBObject("background", true);
 //            variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);

@@ -64,11 +64,12 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfigurationMultiFile = newStudyConfiguration();
 
         ETLResult etlResult;
-        runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 5).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
-        runDefaultETL(getResourceUri("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 6).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
-        runDefaultETL(getResourceUri("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 7).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
-        runDefaultETL(getResourceUri("1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 8).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
-        runDefaultETL(getResourceUri("2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), 9).append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true));
+        ObjectMap options = new ObjectMap().append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true).append(VariantStorageManager.Options.CALCULATE_STATS.key(), false).append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
+        runDefaultETL(getResourceUri("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
+        runDefaultETL(getResourceUri("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 7));
+        runDefaultETL(getResourceUri("1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 8));
+        runDefaultETL(getResourceUri("2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
@@ -84,9 +85,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         //Check that both studies contains the same information
         VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.STUDIES, STUDY_ID + "," + singleFileStudyId));
-        Variant variant = iterator.next();
         int numVariants = 0;
-        for (; iterator.hasNext(); variant = iterator.next()) {
+        for (; iterator.hasNext();) {
+            Variant variant = iterator.next();
             numVariants++;
             Map<Integer, VariantSourceEntry> map = variant.getSourceEntries().values().stream().collect(Collectors.toMap(e -> Integer.parseInt(e.getStudyId()), Function.<VariantSourceEntry>identity()));
             assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyId()));
