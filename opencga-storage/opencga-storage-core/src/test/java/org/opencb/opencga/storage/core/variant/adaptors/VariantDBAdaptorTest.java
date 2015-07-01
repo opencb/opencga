@@ -41,9 +41,7 @@ import static org.junit.Assert.*;
 @Ignore
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
 
-    public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final int NUM_VARIANTS = 999;
-    protected static URI inputUri;
     protected static boolean fileIndexed;
     protected static ETLResult etlResult;
     protected VariantDBAdaptor dbAdaptor;
@@ -55,10 +53,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public static void beforeClass() throws IOException {
         fileIndexed = false;
         etlResult = null;
-        Path rootDir = getTmpRootDir();
-        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
-        inputUri = inputPath.toUri();
+//        Path rootDir = getTmpRootDir();
+//        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
+//        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+//        inputUri = inputPath.toUri();
     }
 
     @Override
@@ -66,9 +64,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void before() throws Exception {
         if (!fileIndexed) {
             studyConfiguration = newStudyConfiguration();
-//            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
+//            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
+            etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration);
             fileIndexed = true;
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);

@@ -47,8 +47,9 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String TYPE_FIELD = "type";
     public final static String NAME_FIELD = "name";
     
-    public final static String FILES_FIELD = "files";
-    
+    public final static String STUDIES_FIELD = "studies";
+//    public final static String FILES_FIELD = "files";
+
     public final static String EFFECTS_FIELD = "effs";
     public final static String SOTERM_FIELD = "so";
     public final static String GENE_FIELD = "gene";
@@ -70,7 +71,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("hgvs", HGVS_FIELD);
         fieldsMap.put("type", TYPE_FIELD);
 //        fields.put("name", NAME_FIELD);
-        fieldsMap.put("sourceEntries", FILES_FIELD);
+        fieldsMap.put("sourceEntries", STUDIES_FIELD);
         fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
         fieldsMap.put("annotation", ANNOTATION_FIELD);
     }
@@ -126,7 +127,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         
         // Files
         if (variantSourceEntryConverter != null) {
-            BasicDBList mongoFiles = (BasicDBList) object.get(FILES_FIELD);
+            BasicDBList mongoFiles = (BasicDBList) object.get(STUDIES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
@@ -192,7 +193,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             for (VariantSourceEntry archiveFile : object.getSourceEntries().values()) {
                 mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
-            mongoVariant.append(FILES_FIELD, mongoFiles);
+            mongoVariant.append(STUDIES_FIELD, mongoFiles);
         }
         
 //        // Annotations

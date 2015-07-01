@@ -47,11 +47,13 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.name", "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
+    private final ObjectMapper objectMapper;
 
     public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
         super(objectMap);
         catalogManager = new CatalogManager(Config.getCatalogProperties());
         sessionId = objectMap.getString("sessionId");
+        objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -67,7 +69,6 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             } else if (o instanceof StudyConfiguration) {
                 studyConfiguration = (StudyConfiguration) o;
             } else {
-                ObjectMapper objectMapper = new ObjectMapper();
                 studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
             }
             logger.trace("Read StudyConfiguration studyConfiguration {}", studyConfiguration);

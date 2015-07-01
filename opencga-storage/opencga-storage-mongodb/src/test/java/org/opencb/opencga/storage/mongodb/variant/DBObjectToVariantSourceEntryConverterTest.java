@@ -27,10 +27,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**
  *
@@ -77,7 +74,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
         genotypeCodes.append("1/1", Arrays.asList(2));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
         sampleIds = new HashMap<>();
         sampleIds.put("NA001", 15);

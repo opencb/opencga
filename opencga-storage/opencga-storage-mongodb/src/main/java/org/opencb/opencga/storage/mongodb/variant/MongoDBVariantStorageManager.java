@@ -169,7 +169,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
 
-        String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "");
+        String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "0|0");
         boolean compressSamples = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()

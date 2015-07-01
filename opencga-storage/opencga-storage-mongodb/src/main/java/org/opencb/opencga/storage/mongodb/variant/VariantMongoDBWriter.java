@@ -16,14 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.mongodb.*;
-
 import java.util.*;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -166,7 +164,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
             }
         }
 
-        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter);
+        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration);
         insertionTime += queryResult.getDbTime();
         return true;
     }
@@ -216,7 +214,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                    DBObject mongoFile = sourceEntryConverter.convertToStorageType(variantSourceEntry);
 //                    mongoFiles.add(mongoFile);
 //                }
-//                variantDocument.put(DBObjectToVariantConverter.FILES_FIELD, mongoFiles);
+//                variantDocument.put(DBObjectToVariantConverter.STUDIES_FIELD, mongoFiles);
 //                bulk.insert(variantDocument);
 //                currentBulkSize++;
 //            } else {
@@ -225,7 +223,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                        continue;
 //                    }
 //                    bulk.find(new BasicDBObject("_id", id)).updateOne(new BasicDBObject().append("$push",
-//                            new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD, sourceEntryConverter.convertToStorageType(variantSourceEntry))));
+//                            new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, sourceEntryConverter.convertToStorageType(variantSourceEntry))));
 //                    currentBulkSize++;
 //                }
 //            }
@@ -260,7 +258,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                    continue;
 //                }
 //                BasicDBObject addToSet = new BasicDBObject(
-//                        DBObjectToVariantConverter.FILES_FIELD,
+//                        DBObjectToVariantConverter.STUDIES_FIELD,
 //                        sourceEntryConverter.convertToStorageType(variantSourceEntry));
 //
 //                BasicDBObject update = new BasicDBObject()
@@ -341,8 +339,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
 //            variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
 //            variantMongoCollection.createIndex(
-//                    new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-//                            .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
+//                    new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+//                            .append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
 //            variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), onBackground);
 //            variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), onBackground);
 //            variantMongoCollection.createIndex(
@@ -404,7 +402,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(compressDefaultGenotype, studyConfiguration): null; //TODO: Add default genotype
+        if (includeSamples) {
+            sampleConverter = new DBObjectToSamplesConverter(compressDefaultGenotype, studyConfiguration); //TODO: Add default genotype
+            sampleConverter.setDefaultGenotype(new Genotype(defaultGenotype));
+        } else {
+            sampleConverter = null; //TODO: Add default genotype
+        }
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 includeSrc,

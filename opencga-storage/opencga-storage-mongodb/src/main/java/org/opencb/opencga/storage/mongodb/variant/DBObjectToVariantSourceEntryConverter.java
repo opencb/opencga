@@ -19,17 +19,13 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 /**
  * 
@@ -42,8 +38,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String ALTERNATES_FIELD = "alts";
     public final static String ATTRIBUTES_FIELD = "attrs";
     public final static String FORMAT_FIELD = "fm";
-    public final static String SAMPLES_FIELD = "samp";
-    
+    public final static String GENOTYPES_FIELD = "gt";
+    public static final String FILES_FIELD = "files";
+
     private boolean includeSrc;
 
     private DBObjectToSamplesConverter samplesConverter;
@@ -110,7 +107,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
         
         // Samples
-        if (samplesConverter != null && object.containsField(SAMPLES_FIELD)) {
+        if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
             VariantSourceEntry fileWithSamplesData = samplesConverter.convertToDataModelType(object);
             
             // Add the samples to the Java object, combining the data structures
@@ -164,11 +161,15 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
             mongoFile.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.put(SAMPLES_FIELD, samplesConverter.convertToStorageType(object));
+            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object));
         }
         
         
         return mongoFile;
+    }
+
+    public DBObjectToSamplesConverter getSamplesConverter() {
+        return samplesConverter;
     }
 
     public void setIncludeSrc(boolean includeSrc) {

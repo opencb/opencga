@@ -104,7 +104,7 @@ public class DBObjectToVariantConverterTest {
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
         mongoVariant.append("files", files);
@@ -133,7 +133,7 @@ public class DBObjectToVariantConverterTest {
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Arrays.asList(1));
-        mongoFile.append(DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD, genotypeCodes);
+        mongoFile.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
         BasicDBList files = new BasicDBList();
         files.add(mongoFile);
         mongoVariant.append("files", files);
