@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static org.opencb.opencga.lib.common.ExceptionUtils.getExceptionString;
+
 /**
  * Created by fjlopez on 10/04/15.
  */
@@ -55,13 +57,6 @@ public class VepVariantAnnotator implements VariantAnnotator {
     }
 
     /////// LOAD ANNOTATION
-    private String getExceptionString(Exception e) {
-        StringBuilder stack = new StringBuilder(e.toString()).append("\n");
-        for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-            stack.append("    ").append(stackTraceElement).append("\n");
-        }
-        return stack.toString();
-    }
 
     @Override
     public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor, final URI uri, QueryOptions options) throws IOException {
