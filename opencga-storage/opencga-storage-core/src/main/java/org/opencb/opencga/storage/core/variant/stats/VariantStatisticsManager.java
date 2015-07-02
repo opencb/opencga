@@ -49,7 +49,7 @@ public class VariantStatisticsManager {
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
      * @param samples cohorts (subsets) of the samples. key: cohort name, value: list of sample names.
-     * @param options filters to the query, batch size, number of threads to use...
+     * @param options VariantSource, filters to the query, batch size, number of threads to use...
      *
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
      * @throws IOException
@@ -69,16 +69,18 @@ public class VariantStatisticsManager {
         ObjectWriter sourceWriter = jsonObjectMapper.writerWithType(VariantSourceStats.class);
 
         /** Variables for statistics **/
-        int batchSize = 1000;  // future optimization, threads, etc
-        boolean overwrite = false;
-        if(options != null) { //Parse query options
-            batchSize = options.getInt(BATCH_SIZE, batchSize);
-            overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
-        }
-        List<Variant> variantBatch = new ArrayList<>(batchSize);
-        int retrievedVariants = 0;
         VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(variantSource.getFileId(), variantSource.getStudyId());
+        options.put(VariantDBAdaptor.STUDIES, Collections.singletonList(variantSource.getStudyId()));
+        options.put(VariantDBAdaptor.FILES, Collections.singletonList(variantSource.getFileId())); // query just the asked file
+
+        int batchSize = 1000;  // future optimization, threads, etc
+        boolean overwrite = false;
+        batchSize = options.getInt(BATCH_SIZE, batchSize);
+        overwrite = options.getBoolean(VariantStorageManager.OVERWRITE_STATS, overwrite);
+
+        List<Variant> variantBatch = new ArrayList<>(batchSize);
+        int retrievedVariants = 0;
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
         boolean defaultCohortAbsent = false;
 
@@ -200,6 +202,7 @@ public class VariantStatisticsManager {
         long start = System.currentTimeMillis();
 
         loadVariantStats(variantDBAdaptor, variantStatsUri, options);
+        logger.info("variant stats loaded, next is loading source stats");
         loadSourceStats(variantDBAdaptor, sourceStatsUri, options);
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);

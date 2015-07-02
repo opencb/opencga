@@ -396,7 +396,7 @@ public class OptionsParser {
             String alias;
 
             @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
-            Study.Type type = Study.Type.CASE_CONTROL;
+            Study.Type type = Study.Type.COLLECTION;
 
             @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
             String description;

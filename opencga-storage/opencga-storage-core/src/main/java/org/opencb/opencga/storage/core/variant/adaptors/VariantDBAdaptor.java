@@ -5,9 +5,7 @@ import java.util.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -18,7 +16,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
-    public static final String ID = "id";
+    public static final String ID = "ids";
     public static final String REGION = "region";
     public static final String CHROMOSOME = "chromosome";
     public static final String GENE = "gene";
@@ -43,6 +41,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     public static final String PROTEIN_SUBSTITUTION = "protein_substitution";
     public static final String CONSERVED_REGION = "conserved_region";
     public static final String MERGE = "merge";
+    public static final String SORT = "sort";
 
     static public class QueryParams {
         public static final Set<String> acceptedValues;
@@ -101,6 +100,12 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * QueryResult object.
      */
     public void setDataWriter(DataWriter dataWriter);
+
+    /**
+     * This method can be used if the samples are going to be the same, so optimizations can be done, e.g. skipping the 
+     * samples name retrieval for each variant.
+     */
+    public void setConstantSamples(String sourceEntry);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information

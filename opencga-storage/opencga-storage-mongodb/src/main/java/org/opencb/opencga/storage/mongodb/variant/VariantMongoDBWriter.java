@@ -244,10 +244,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
     public boolean write_setOnInsert(List<Variant> data) {
-            numVariantsWritten += data.size();
-            if(numVariantsWritten % 1000 == 0) {
-                logger.info("Num variants written " + numVariantsWritten);
-            }
+        numVariantsWritten += data.size();
+        if(numVariantsWritten % 1000 == 0) {
+            logger.info("Num variants written " + numVariantsWritten);
+        }
 
 
         for (Variant variant : data) {
@@ -258,21 +258,32 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                 if (!variantSourceEntry.getFileId().equals(source.getFileId())) {
                     continue;
                 }
-                BasicDBObject addToSet = new BasicDBObject(
-                        DBObjectToVariantConverter.FILES_FIELD,
-                        sourceEntryConverter.convertToStorageType(variantSourceEntry));
-                BasicDBObject update = new BasicDBObject()
-                        .append("$addToSet", addToSet)
-                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+
+                BasicDBObject addToSet = new BasicDBObject()
+                        .append(DBObjectToVariantConverter.FILES_FIELD,
+                                sourceEntryConverter.convertToStorageType(variantSourceEntry));
+
+                if (includeStats) {
+                    List<DBObject> sourceEntryStats = statsConverter.convertCohortsToStorageType(variantSourceEntry.getCohortStats(),
+                            variantSourceEntry.getStudyId(), variantSourceEntry.getFileId());
+                    addToSet.put(DBObjectToVariantConverter.STATS_FIELD, new BasicDBObject("$each", sourceEntryStats));
+                }
+
                 if (variant.getIds() != null && !variant.getIds().isEmpty()) {
                     addToSet.put(DBObjectToVariantConverter.IDS_FIELD, new BasicDBObject("$each", variant.getIds()));
                 }
+
+                BasicDBObject update = new BasicDBObject()
+                        .append("$addToSet", addToSet)
+                        .append("$setOnInsert", variantConverter.convertToStorageType(variant));    // assuming variantConverter.statsConverter == null
+
                 bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
+
                 currentBulkSize++;
             }
 
         }
-        if (currentBulkSize >= bulkSize) {
+        if (currentBulkSize >= bulkSize && currentBulkSize != 0) {
             executeBulk();
         }
         return true;
@@ -460,6 +471,24 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         }
         logger.info("POST");
         writeSourceSummary(source);
+
+        DBObject onBackground = new BasicDBObject("background", true);
+        variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.xrefs.id", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("annot.ct.so", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
+                        .append(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("st.maf", 1), onBackground);
+        variantMongoCollection.createIndex(new BasicDBObject("st.mgf", 1), onBackground);
+        variantMongoCollection.createIndex(
+                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                        .append(DBObjectToVariantConverter.START_FIELD, 1)
+                        .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        logger.debug("sent order to create indices");
+
         logger.debug("checkExistsTime " + checkExistsTime / 1000000.0 + "ms ");
         logger.debug("checkExistsDBTime " + checkExistsDBTime / 1000000.0 + "ms ");
         logger.debug("bulkTime " + bulkTime / 1000000.0 + "ms ");
@@ -520,10 +549,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         );
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
-        // Do not create the VariantConverter with the sourceEntryConverter.
-        // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
+        // Do not create the VariantConverter with the sourceEntryConverter nor the statsconverter.
+        // The variantSourceEntry and stats conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
+        variantConverter = new DBObjectToVariantConverter(null, null);
     }
 
     @Deprecated private void addConsequenceType(VariantEffect effect) {

@@ -51,8 +51,12 @@ public class Study {
         CASE_SET,
         CONTROL_SET,
         PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
         FAMILY,
-        TRIO
+        TRIO,
+        COLLECTION
     }
 
     public Study() {

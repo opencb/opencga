@@ -6,12 +6,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.5.2-SNAPSHOT</version>
+        <version>0.5.2</version>
         <relativePath>..</relativePath>
     </parent>
 
+    <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
-    <version>0.5.2-SNAPSHOT</version>
+    <version>0.5.2</version>
     <packaging>pom</packaging>
 
     <modules>

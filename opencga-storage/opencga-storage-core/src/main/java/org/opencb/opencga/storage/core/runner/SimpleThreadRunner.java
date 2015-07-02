@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.runner;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.lib.common.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class SimpleThreadRunner {
         try {
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.error(ExceptionUtils.getExceptionString(e));
         }
 
         for (Task task : tasks) {
@@ -96,6 +97,7 @@ public class SimpleThreadRunner {
         }
 
     }
+
     class ReaderRunnable implements Runnable {
 
         final DataReader dataReader;
@@ -113,21 +115,21 @@ public class SimpleThreadRunner {
 
             while (batch != null && !batch.isEmpty()) {
                 try {
-//                    System.out.println("reader: prePut readBlockingQueue " + readBlockingQueue.size());
+                    logger.trace("reader: prePut readBlockingQueue.size: " + readBlockingQueue.size());
                     readBlockingQueue.put(batch);
-//                    System.out.println("reader: postPut");
+                    logger.trace("reader: postPut, readqueue.size: " + readBlockingQueue.size());
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error(ExceptionUtils.getExceptionString(e));
                 }
 //                System.out.println("reader: preRead");
                 batch = dataReader.read(batchSize);
 //                System.out.println("reader: batch.size = " + batch.size());
             }
             try {
-                logger.debug("reader: POISON_PILL");
+                logger.debug("reader: putting POISON_PILL");
                 readBlockingQueue.put(POISON_PILL);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
         }
     }
@@ -152,26 +154,28 @@ public class SimpleThreadRunner {
             try {
                 batch = getBatch();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
             while (!batch.isEmpty()) {
                 try {
                     long s;
-//                        System.out.println("task: apply");
                     s = System.nanoTime();
                     for (Task task : tasks) {
                         task.apply(batch);
                     }
                     timeTaskApply += s - System.nanoTime();
-//                    System.out.println("task: apply done " + writeBlockingQueue.size());
+//                    logger.trace("task: apply done, pre put, writeBlockingQueue.size: " + writeBlockingQueue.size());
 
                     s = System.nanoTime();
                     writeBlockingQueue.put(batch);
-//                    System.out.println("task: apply done");
+                    logger.trace("task: apply done (post put) writeQueue.size: " + writeBlockingQueue.size());
                     timeBlockedAtSendWrite += s - System.nanoTime();
                     batch = getBatch();
                 } catch (InterruptedException | IOException e) {
-                    e.printStackTrace();
+                    logger.error(ExceptionUtils.getExceptionString(e));
+                } catch (Exception e) {
+                    logger.error("UNEXPECTED ENDING of a task thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
+                    return;
                 }
             }
             synchronized (numTasks) {
@@ -181,23 +185,25 @@ public class SimpleThreadRunner {
                 if (numTasks == finishedTasks) {
                     logger.debug("task; timeBlockedAtSendWrite = " + timeBlockedAtSendWrite / -1000000000.0 + "s");
                     logger.debug("task; timeTaskApply = " + timeTaskApply / -1000000000.0 + "s");
+                    logger.trace("task: putting POISON PILL");
                     try {
                         writeBlockingQueue.put(POISON_PILL);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error(ExceptionUtils.getExceptionString(e));
                     }
                 }
             }
 
+            logger.trace("task: leaving run(). sizes: read: " + readBlockingQueue.size() + ", write: " + writeBlockingQueue.size());
 
         }
         private int finishedTasks = 0;
         private List<String> getBatch() throws InterruptedException {
             List<String> batch;
             batch = readBlockingQueue.take();
-//                System.out.println("task: readBlockingQueue = " + readBlockingQueue.size() + " batch.size : " + batch.size() + " : " + batchSize);
+            logger.trace("task: taken batch, readBlockingQueue.size = " + readBlockingQueue.size() + " batch.size : " + batch.size() + " : " + batchSize);
             if (batch == POISON_PILL) {
-                logger.debug("task: POISON_PILL");
+                logger.debug("task: received POISON_PILL");
                 readBlockingQueue.put(POISON_PILL);
             }
             return batch;
@@ -219,20 +225,20 @@ public class SimpleThreadRunner {
             try {
                 batch = getBatch();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
             long s, timeWriting = 0;
 //            while (!batch.isEmpty()) {
             while (batch != POISON_PILL) {
                 try {
                     s = System.nanoTime();
-//                    System.out.println("writer: write");
+                    logger.trace("writer: writing...");
                     dataWriter.write(batch);
-//                    System.out.println("writer: wrote");
+                    logger.trace("writer: wrote");
                     timeWriting += s - System.nanoTime();
                     batch = getBatch();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error(ExceptionUtils.getExceptionString(e));
                 }
             }
             logger.debug("write: timeWriting = " + timeWriting / -1000000000.0 + "s");
@@ -241,10 +247,11 @@ public class SimpleThreadRunner {
 
         private List<String> getBatch() throws InterruptedException {
             List<String> batch;
-//                System.out.println("writer: writeBlockingQueue = " + writeBlockingQueue.size());
+                logger.trace("writer: about to block, writeBlockingQueue.size() = " + writeBlockingQueue.size());
 
             long s = System.nanoTime();
             batch = writeBlockingQueue.take();
+            logger.trace("writer: received batch, writing...");
             timeBlockedWatingDataToWrite += s - System.nanoTime();
             if (batch == POISON_PILL) {
                 logger.debug("writer: POISON_PILL");
