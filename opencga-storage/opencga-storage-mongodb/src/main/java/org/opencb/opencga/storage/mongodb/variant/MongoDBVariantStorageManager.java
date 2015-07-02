@@ -83,7 +83,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
     @Override
-    public VariantMongoDBWriter getDBWriter(String dbName) {
+    public VariantMongoDBWriter getDBWriter(String dbName) throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         int fileId = options.getInt(Options.FILE_ID.key());
@@ -98,7 +98,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantMongoDBAdaptor getDBAdaptor(String dbName) {
+    public VariantMongoDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
@@ -106,7 +106,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection);
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection, studyConfigurationManager);
         } catch (UnknownHostException e) {
             e.printStackTrace();
             return null;
@@ -114,11 +115,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());
         return variantMongoDBAdaptor;
-    }
-
-
-    /* package */ MongoCredentials getMongoCredentials() {
-        return getMongoCredentials(null);
     }
 
     /* package */ MongoCredentials getMongoCredentials(String dbName) {
@@ -162,6 +158,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         // input: getDBSchemaReader
         // output: getDBWriter()
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
 
         Path input = Paths.get(inputUri.getPath());
 
@@ -169,8 +166,17 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
 
-        String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "0|0");
-        boolean compressSamples = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
+        String defaultGenotype;
+        if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE)) {
+            defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE);
+            logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
+        } else {
+            defaultGenotype = options.getString(DEFAULT_GENOTYPE, "0|0");
+            studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE, defaultGenotype);
+        }
+
+//        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
+        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
@@ -206,7 +212,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
-            variantDBWriter.setCompressDefaultGenotype(compressSamples);
+            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
             variantDBWriter.setDefaultGenotype(defaultGenotype);
 //            variantDBWriter.setVariantSource(source);
 //            variantDBWriter.setSamplesIds(samplesIds);
@@ -315,12 +321,18 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     /* --------------------------------------- */
 
     @Override
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) {
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.buildStudyConfigurationManager(options);
         } else {
-            String string = options == null? null : options.getString(Options.DB_NAME.key());
-            return getDBAdaptor(string).getStudyConfigurationDBAdaptor();
+            String dbName = options == null? null : options.getString(Options.DB_NAME.key());
+            String collectionName = options == null? null : options.getString(COLLECTION_FILES, "files");
+            try {
+                return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
+//                return getDBAdaptor(dbName).getStudyConfigurationDBAdaptor();
+            } catch (UnknownHostException e) {
+                throw new StorageManagerException("Unable to build MongoStorageConfigurationManager", e);
+            }
         }
     }
 

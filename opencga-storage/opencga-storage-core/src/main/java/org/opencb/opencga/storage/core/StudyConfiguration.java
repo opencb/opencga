@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,6 +37,8 @@ public class StudyConfiguration implements Cloneable {
     private Map<String, Integer> cohortIds;
     private Map<Integer, Set<Integer>> cohorts;
 
+    private ObjectMap attributes;
+
     public StudyConfiguration() {
     }
 
@@ -46,6 +49,7 @@ public class StudyConfiguration implements Cloneable {
         this.sampleIds = new HashMap<>(other.sampleIds);
         this.cohortIds = new HashMap<>(other.cohortIds);
         this.cohorts = new HashMap<>(other.cohorts);
+        this.attributes = new ObjectMap(other.attributes);
     }
 
     @Override
@@ -60,6 +64,7 @@ public class StudyConfiguration implements Cloneable {
         setSampleIds(new HashMap<>());
         setCohortIds(new HashMap<>());
         this.cohorts = new HashMap<>();
+        this.attributes = new ObjectMap();
     }
 
     public StudyConfiguration(int studyId, String studyName, int fileId, String fileName) {
@@ -70,6 +75,7 @@ public class StudyConfiguration implements Cloneable {
         setSampleIds(new HashMap<>());
         setCohortIds(new HashMap<>());
         this.cohorts = new HashMap<>();
+        this.attributes = new ObjectMap();
     }
 
     public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
@@ -81,6 +87,7 @@ public class StudyConfiguration implements Cloneable {
         this.sampleIds = sampleIds;
         this.cohortIds = cohortIds;
         this.cohorts = cohorts;
+        this.attributes = new ObjectMap();
     }
 
 
@@ -96,13 +103,14 @@ public class StudyConfiguration implements Cloneable {
 
     @Override
     public String toString() {
-        return "StudyInformation{" +
+        return "StudyConfiguration{" +
                 "studyId=" + studyId +
                 ", studyName='" + studyName + '\'' +
                 ", fileIds=" + fileIds +
                 ", sampleIds=" + sampleIds +
                 ", cohortIds=" + cohortIds +
                 ", cohorts=" + cohorts +
+                ", attributes=" + attributes +
                 '}';
     }
 
@@ -157,6 +165,14 @@ public class StudyConfiguration implements Cloneable {
         this.cohorts = cohorts;
     }
 
+    public ObjectMap getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(ObjectMap attributes) {
+        this.attributes = attributes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -165,13 +181,13 @@ public class StudyConfiguration implements Cloneable {
         StudyConfiguration that = (StudyConfiguration) o;
 
         if (studyId != that.studyId) return false;
-        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) return false;
-        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) return false;
+        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) return false;
         if (fileIds != null ? !fileIds.equals(that.fileIds) : that.fileIds != null) return false;
         if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) return false;
-        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) return false;
+        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) return false;
+        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) return false;
+        return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
-        return true;
     }
 
     @Override
@@ -182,6 +198,7 @@ public class StudyConfiguration implements Cloneable {
         result = 31 * result + (sampleIds != null ? sampleIds.hashCode() : 0);
         result = 31 * result + (cohortIds != null ? cohortIds.hashCode() : 0);
         result = 31 * result + (cohorts != null ? cohorts.hashCode() : 0);
+        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return result;
     }
 

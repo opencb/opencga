@@ -25,8 +25,8 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 
 /**
  *
@@ -38,10 +38,10 @@ public class DBObjectToVariantSourceEntryConverterTest {
     private BasicDBObject mongoStudy;
     private DBObject mongoFileWithIds;
 
-    private Map<String, Integer> sampleIds;
     private List<String> sampleNames;
     private Integer fileId;
     private Integer studyId;
+    private StudyConfiguration studyConfiguration;
 
     @Before
     public void setUp() {
@@ -78,10 +78,13 @@ public class DBObjectToVariantSourceEntryConverterTest {
         genotypeCodes.append("1/1", Arrays.asList(2));
         mongoStudy.append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
-        sampleIds = new HashMap<>();
+        studyConfiguration = new StudyConfiguration(studyId, "");
+        Map<String, Integer> sampleIds = new HashMap<>();
         sampleIds.put("NA001", 15);
         sampleIds.put("NA002", 25);
         sampleIds.put("NA003", 35);
+        studyConfiguration.setSampleIds(sampleIds);
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0/0");
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 
@@ -163,12 +166,12 @@ public class DBObjectToVariantSourceEntryConverterTest {
         List<String> sampleNames = null;
         
         // Test with no stats converter provided
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId), new DBObjectToSamplesConverter(studyId, sampleNames));
+        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId), new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         VariantSourceEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(file, converted);
         
         // Test with a stats converter provided but no stats object
-        converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId), new DBObjectToSamplesConverter(studyId, sampleNames));
+        converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId), new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(file, converted);
     }
@@ -176,7 +179,8 @@ public class DBObjectToVariantSourceEntryConverterTest {
     @Test
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId), new DBObjectToSamplesConverter(studyId, sampleNames));
+        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, Integer.toString(fileId),
+                new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         DBObject converted = converter.convertToStorageType(file);
         assertEquals(mongoStudy, converted);
     }
@@ -189,8 +193,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
 
 
         // Test with no stats converter provided
-        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyId, true, sampleIds);
-        samplesConverter.setDefaultGenotype(new Genotype("0/0"));
+        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyConfiguration);
         converter = new DBObjectToVariantSourceEntryConverter(
                 true, Integer.toString(fileId),
                 samplesConverter
@@ -210,8 +213,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
 
 
         // Test with no stats converter provided
-        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyId, true, sampleIds);
-        samplesConverter.setDefaultGenotype(new Genotype("0/0"));
+        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyConfiguration);
         converter = new DBObjectToVariantSourceEntryConverter(
                 true, Integer.toString(fileId),
                 samplesConverter

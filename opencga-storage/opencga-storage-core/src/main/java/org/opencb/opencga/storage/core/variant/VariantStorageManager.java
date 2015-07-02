@@ -567,7 +567,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
 
-    final public StudyConfiguration getStudyConfiguration(ObjectMap params) {
+    final public StudyConfiguration getStudyConfiguration(ObjectMap params) throws StorageManagerException {
         if (params.containsKey(Options.STUDY_CONFIGURATION.key)) {
             return params.get(Options.STUDY_CONFIGURATION.key, StudyConfiguration.class);
         } else {
@@ -585,7 +585,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      * @param options
      * @return
      */
-    final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) {
+    final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
             if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key)) {
@@ -611,7 +611,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
      * @param options
      * @return
      */
-    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) {
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         return new FileStudyConfigurationManager(options);
     }
 

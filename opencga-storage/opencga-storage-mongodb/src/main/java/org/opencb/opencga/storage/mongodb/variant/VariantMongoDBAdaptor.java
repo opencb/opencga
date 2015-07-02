@@ -63,18 +63,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
+    @Deprecated
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
+            throws UnknownHostException {
+        this(credentials, variantsCollectionName, filesCollectionName, new MongoDBStudyConfigurationManager(credentials, filesCollectionName));
+    }
+
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName, StudyConfigurationManager studyConfigurationManager)
             throws UnknownHostException {
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
-
-        String studiesCollectionName = filesCollectionName;
-        studyConfigurationManager = new MongoDBStudyConfigurationManager(credentials, studiesCollectionName);
-
         collectionName = variantsCollectionName;
-        
+
+        this.studyConfigurationManager = studyConfigurationManager;
+
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
         variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
@@ -451,11 +455,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
         boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
-        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
+//        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
 
         DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
-                includeGenotypes? new DBObjectToSamplesConverter(new Genotype(defaultGenotype), studyConfiguration) : null);
+                includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
     }
 
@@ -815,11 +819,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                     true,
-                    new DBObjectToSamplesConverter(false, studyConfigurations)
+                    new DBObjectToSamplesConverter(studyConfigurations)
             );
-            if (options.containsKey("defaultGenotype")) {
-                sourceEntryConverter.getSamplesConverter().setDefaultGenotype(new Genotype(options.getString("defaultGenotype")));
-            }
             return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
         }
     }
@@ -1271,6 +1272,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryBuilder getRegionFilter(List<Region> regions, QueryBuilder builder) {
+        if (regions == null || regions.isEmpty()) {
+            return builder;
+        }
         DBObject[] objects = new DBObject[regions.size()];
 
         int i = 0;

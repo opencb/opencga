@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import com.mongodb.WriteResult;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -348,7 +349,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                writeSourceSummary(source);
 //            }
 
-            dbAdaptor.fillFileGaps(fileId, null, fileSampleIds, studyConfiguration);
+            dbAdaptor.fillFileGaps(fileId, Collections.<Region>emptyList(), fileSampleIds, studyConfiguration);
             dbAdaptor.createIndexes(new QueryOptions());
 //            DBObject onBackground = new BasicDBObject("background", true);
 //            variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
@@ -420,7 +421,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(new Genotype(defaultGenotype), studyConfiguration) : null;
+        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
 
