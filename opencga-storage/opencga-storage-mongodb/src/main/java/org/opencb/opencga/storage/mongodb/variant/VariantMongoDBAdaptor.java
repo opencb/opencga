@@ -491,7 +491,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int defaultValue
         //TODO: Use the StudyConfiguration to change names to ids
         
-        boolean overwrite = queryOptions.getBoolean(VariantStorageManager.OVERWRITE_STATS, false);
+        boolean overwrite = queryOptions.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
