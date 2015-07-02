@@ -497,13 +497,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (!loadedSampleIds.isEmpty()) {
                 missingSamples = new BasicDBObject(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, loadedSampleIds);   // ?/?
             }
-            List missingFiles = Collections.emptyList();
-//            if (!studyConfiguration.getFileIds().isEmpty()) { // TODO: Should add other fileIds?
-//                missingFiles = new LinkedList();
-//                for (Map.Entry<String, Integer> entry : studyConfiguration.getFileIds().entrySet()) {
-//                    missingFiles.add(new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, Integer.toString(entry.getValue())));
-//                }
-//            }
+
             for (Variant variant : data) {
                 String id = variantConverter.buildStorageId(variant);
                 for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
@@ -511,14 +505,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         continue;
                     }
                     String studyId = variantSourceEntry.getStudyId();
-//                    BasicDBObject addToSet = new BasicDBObject(
-//                            DBObjectToVariantConverter.STUDIES_FIELD,
-//                            sourceEntryConverter.convertToStorageType(variantSourceEntry));
-
-//                    BasicDBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD,
-//                            new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId)
-//                                    .append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, missingSamples)
-//                                    .append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, missingFiles));
                     DBObject study = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
                     ((DBObject) study.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD)).putAll(missingSamples);
                     DBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, study);
@@ -529,6 +515,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         update.put("$addToSet", new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, new BasicDBObject("$each", variant.getIds())));
                     }
                     // { _id: <variant_id>, "studies.sid": {$ne: <studyId> } }
+                    //If the variant exists and contains the study, this find will fail, will try to do the upsert, and throw a duplicated key exception.
                     queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
                             new BasicDBObject("$ne", studyId)));
                     updates.add(update);
@@ -538,13 +525,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options.put("multi", false);
             try {
                 db.getCollection(collectionName).update(queries, updates, options);
-            } catch (BulkWriteException ignore) {
-                if (ignore.getWriteErrors().size() != data.size()) {
-                    System.out.println(ignore.getWriteErrors().size());
-                    for (BulkWriteError writeError : ignore.getWriteErrors()) {
-                        if (writeError.getCode() == 11000) {
-                            nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
-                        }
+            } catch (BulkWriteException e) {
+                for (BulkWriteError writeError : e.getWriteErrors()) {
+                    if (writeError.getCode() == 11000) { //Dup Key error code
+                        nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
+                    } else {
+                        throw e;
                     }
                 }
             }
@@ -565,17 +551,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
 
-//                DBObject genotypes = sourceEntryConverter.getSamplesConverter().convertToStorageType(variantSourceEntry);
-                DBObject dbObject = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
-                DBObject genotypes = (DBObject) dbObject.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
-//                if (genotypes.keySet().isEmpty()) {
-//                    continue;
-//                }
+                DBObject studyObject = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
+                DBObject genotypes = (DBObject) studyObject.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
                 DBObject push = new BasicDBObject();
                 for (String genotype : genotypes.keySet()) {
                     push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
                 }
-                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, dbObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD));
+                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, studyObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD));
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
 
 
@@ -598,15 +580,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
         // { $push : {
-        //      "studies.$.files" : { fid: <fileId> },                  // TODO: Should add this fileId?
         //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
         // } }
 
-        BasicDBObject query = new BasicDBObject()
-                .append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, Integer.toString(studyConfiguration.getStudyId()))
-                .append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, new BasicDBObject("$ne", fileId));
+        DBObject query = getRegionFilter(regions, new QueryBuilder()).get();
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, Integer.toString(studyConfiguration.getStudyId()));
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, new BasicDBObject("$ne", fileId));
+
         BasicDBObject update = new BasicDBObject("$push", new BasicDBObject()
-//                .append(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, new BasicDBObject("fid", fileId))  // TODO: Should add this fileId?
                 .append(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds)));
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
