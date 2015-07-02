@@ -431,6 +431,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return iterator(new QueryOptions());
     }
 
+
     @Override
     public VariantDBIterator iterator(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
@@ -458,18 +459,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
     }
 
+    /**
+     * Two steps insertion:
+     *      First check that the variant and study exists making an update.
+     *      For those who doesn't exist, pushes a study with the file and genotype information
+     *
+     *      The documents that throw a "dup key" exception are those variants that exist and have the study.
+     *      Then, only for those variants, make a second update.
+     *
+     * *An interesting idea would be to invert this actions depending on the number of already inserted variants.
+     *
+     * @param data  Variants to insert
+     */
     /*package*/ QueryResult insert(List<Variant> data, String fileId, DBObjectToVariantConverter variantConverter,
-                                   DBObjectToVariantSourceEntryConverter sourceEntryConverter, StudyConfiguration studyConfiguration, List<Integer> loadedSampleIds) {
+                                   DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, StudyConfiguration studyConfiguration, List<Integer> loadedSampleIds) {
         if (data.isEmpty()) {
             return new QueryResult("insertVariants");
         }
         List<DBObject> queries = new ArrayList<>(data.size());
         List<DBObject> updates = new ArrayList<>(data.size());
-
+        Set<String> nonInsertedVariants = null;
         if (true) {
-            HashSet<String> fileSamples = new HashSet<>();
+            nonInsertedVariants = new HashSet<>();
 
             if (loadedSampleIds == null) {
+                HashSet<String> fileSamples = new HashSet<>();
                 data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileId).iterator().forEachRemaining(fileSamples::add);
                 loadedSampleIds = new LinkedList<>();
                 Set<String> allSamples = studyConfiguration.getSampleIds().keySet();
@@ -501,10 +515,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                            DBObjectToVariantConverter.STUDIES_FIELD,
 //                            sourceEntryConverter.convertToStorageType(variantSourceEntry));
 
-                    BasicDBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD,
-                            new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId)
-                                    .append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, missingSamples)
-                                    .append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, missingFiles));
+//                    BasicDBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD,
+//                            new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId)
+//                                    .append(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, missingSamples)
+//                                    .append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, missingFiles));
+                    DBObject study = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
+                    ((DBObject) study.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD)).putAll(missingSamples);
+                    DBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, study);
                     BasicDBObject update = new BasicDBObject()
                             .append("$push", push)
                             .append("$setOnInsert", variantConverter.convertToStorageType(variant));
@@ -523,7 +540,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 db.getCollection(collectionName).update(queries, updates, options);
             } catch (BulkWriteException ignore) {
                 if (ignore.getWriteErrors().size() != data.size()) {
-//                    System.out.println(ignore.getWriteErrors().size());
+                    System.out.println(ignore.getWriteErrors().size());
+                    for (BulkWriteError writeError : ignore.getWriteErrors()) {
+                        if (writeError.getCode() == 11000) {
+                            nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
+                        }
+                    }
                 }
             }
             queries.clear();
@@ -534,13 +556,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             variant.setAnnotation(null);
             String id = variantConverter.buildStorageId(variant);
 
+            if (nonInsertedVariants != null && !nonInsertedVariants.contains(id)) {
+                continue;   //Already inserted variant
+            }
+
             for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
                 if (!variantSourceEntry.getFileId().equals(fileId)) {
                     continue;
                 }
 
 //                DBObject genotypes = sourceEntryConverter.getSamplesConverter().convertToStorageType(variantSourceEntry);
-                DBObject dbObject = sourceEntryConverter.convertToStorageType(variantSourceEntry);
+                DBObject dbObject = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
                 DBObject genotypes = (DBObject) dbObject.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
 //                if (genotypes.keySet().isEmpty()) {
 //                    continue;
@@ -559,9 +585,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
         }
-        QueryOptions options = new QueryOptions("upsert", false);
-        options.put("multi", false);
-        return db.getCollection(collectionName).update(queries, updates, options);
+        if (queries.isEmpty()) {
+            return new QueryResult();
+        } else {
+            QueryOptions options = new QueryOptions("upsert", false);
+            options.put("multi", false);
+            return db.getCollection(collectionName).update(queries, updates, options);
+        }
     }
 
     /* package */ QueryResult<WriteResult> fillFileGaps(String fileId, List<Region> regions, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
