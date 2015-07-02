@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.runner;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.lib.common.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class SimpleThreadRunner {
         try {
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
         } catch (InterruptedException e) {
-            logger.error(getExceptionString(e));
+            logger.error(ExceptionUtils.getExceptionString(e));
         }
 
         for (Task task : tasks) {
@@ -97,14 +98,6 @@ public class SimpleThreadRunner {
 
     }
 
-    private String getExceptionString(Exception e) {
-        StringBuilder stack = new StringBuilder(e.toString()).append("\n");
-        for (StackTraceElement stackTraceElement : e.getStackTrace()) {
-            stack.append("    ").append(stackTraceElement).append("\n");
-        }
-        return stack.toString();
-    }
-    
     class ReaderRunnable implements Runnable {
 
         final DataReader dataReader;
@@ -126,7 +119,7 @@ public class SimpleThreadRunner {
                     readBlockingQueue.put(batch);
                     logger.trace("reader: postPut, readqueue.size: " + readBlockingQueue.size());
                 } catch (InterruptedException e) {
-                    logger.error(getExceptionString(e));
+                    logger.error(ExceptionUtils.getExceptionString(e));
                 }
 //                System.out.println("reader: preRead");
                 batch = dataReader.read(batchSize);
@@ -136,7 +129,7 @@ public class SimpleThreadRunner {
                 logger.debug("reader: putting POISON_PILL");
                 readBlockingQueue.put(POISON_PILL);
             } catch (InterruptedException e) {
-                logger.error(getExceptionString(e));
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
         }
     }
@@ -161,7 +154,7 @@ public class SimpleThreadRunner {
             try {
                 batch = getBatch();
             } catch (InterruptedException e) {
-                logger.error(getExceptionString(e));
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
             while (!batch.isEmpty()) {
                 try {
@@ -179,9 +172,9 @@ public class SimpleThreadRunner {
                     timeBlockedAtSendWrite += s - System.nanoTime();
                     batch = getBatch();
                 } catch (InterruptedException | IOException e) {
-                    logger.error(getExceptionString(e));
+                    logger.error(ExceptionUtils.getExceptionString(e));
                 } catch (Exception e) {
-                    logger.error("UNEXPECTED ENDING of a task thread due to an error:\n" + getExceptionString(e));
+                    logger.error("UNEXPECTED ENDING of a task thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
                     return;
                 }
             }
@@ -196,7 +189,7 @@ public class SimpleThreadRunner {
                     try {
                         writeBlockingQueue.put(POISON_PILL);
                     } catch (InterruptedException e) {
-                        logger.error(getExceptionString(e));
+                        logger.error(ExceptionUtils.getExceptionString(e));
                     }
                 }
             }
@@ -232,7 +225,7 @@ public class SimpleThreadRunner {
             try {
                 batch = getBatch();
             } catch (InterruptedException e) {
-                logger.error(getExceptionString(e));
+                logger.error(ExceptionUtils.getExceptionString(e));
             }
             long s, timeWriting = 0;
 //            while (!batch.isEmpty()) {
@@ -245,7 +238,7 @@ public class SimpleThreadRunner {
                     timeWriting += s - System.nanoTime();
                     batch = getBatch();
                 } catch (InterruptedException e) {
-                    logger.error(getExceptionString(e));
+                    logger.error(ExceptionUtils.getExceptionString(e));
                 }
             }
             logger.debug("write: timeWriting = " + timeWriting / -1000000000.0 + "s");
