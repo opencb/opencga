@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.core.UriUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.slf4j.Logger;
@@ -264,7 +264,7 @@ public class OpenCGAMain {
 
                         URI uri = null;
                         if (c.uri != null && !c.uri.isEmpty()) {
-                            uri = UriUtils.getUri(c.uri);
+                            uri = UriUtils.createUri(c.uri);
                         }
                         Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
                         int projectId = catalogManager.getProjectId(c.projectId);
@@ -439,7 +439,9 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.LinkCommand c = optionsParser.getFileCommands().linkCommand;
 
                         Path inputFile = Paths.get(c.inputFile);
-                        URI inputUri = UriUtils.getUri(c.inputFile);
+
+                        URI inputUri = UriUtils.createUri(c.inputFile);
+
 
                         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(inputUri);
                         if (!ioManager.exists(inputUri)) {
@@ -468,7 +470,7 @@ public class OpenCGAMain {
                         OptionsParser.FileCommands.RelinkCommand c = optionsParser.getFileCommands().relinkCommand;
 
                         Path inputFile = Paths.get(c.inputFile);
-                        URI uri = UriUtils.getUri(c.inputFile);
+                        URI uri = UriUtils.createUri(c.inputFile);
 
                         if (!inputFile.toFile().exists()) {
                             throw new FileNotFoundException("File " + uri + " not found");
@@ -576,6 +578,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        System.out.println("c.cOpt.logLevel = " + c.cOpt.logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -597,6 +601,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
@@ -616,6 +621,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
 
                         break;
@@ -744,7 +750,7 @@ public class OpenCGAMain {
                                 for (Sample sample : entry.getValue()) {
                                     sampleIds.add(sample.getId());
                                 }
-                                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
+                                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, entry.getKey(), c.type, c.description, sampleIds, c.cOpt.getQueryOptions(), sessionId);
                                 queryResults.add(cohort);
                             }
                             System.out.println(createOutput(c.cOpt, queryResults, null));
@@ -805,7 +811,7 @@ public class OpenCGAMain {
     private Map<File.Bioformat, DataStore> parseBioformatDataStoreMap(OptionsParser.StudyCommands.CreateCommand c) throws Exception {
         Map<File.Bioformat, DataStore> dataStoreMap;
         dataStoreMap = new HashMap<>();
-        HashSet<String> storageEnginesSet = new HashSet<>(Arrays.asList(StorageManagerFactory.getDefaultStorageManagerNames()));
+        HashSet<String> storageEnginesSet = new HashSet<>(StorageManagerFactory.get().getDefaultStorageManagerNames());
         if (c.datastores != null) {
             for (String datastore : c.datastores) {
                 logger.debug("Parsing datastore {} ", datastore);

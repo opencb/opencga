@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -33,8 +32,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -67,10 +64,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         if (etlResult == null) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
-            clearDB();
+            clearDB(DB_NAME);
             etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
         }
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
     @After
@@ -84,6 +81,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(999, queryResult.getNumTotalResults());
         assertEquals(1, queryResult.getNumResults());
+    }
+
+    @Test
+    public void testGetAllVariants_frequency() {
+        options = new QueryOptions("reference_frequency","1000GENOMES:phase_1_AFR:<=0.05");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(55, queryResult.getNumResults());
+        options = new QueryOptions("alternate_frequency","ESP_6500:African_American:>0.05");
+        queryResult = dbAdaptor.getAllVariants(options);
+        assertEquals(673, queryResult.getNumResults());
     }
 
     @Test

@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 
+@Deprecated
 public class BamManager {
 
     protected static ObjectMapper jsonObjectMapper;
@@ -223,8 +224,8 @@ public class BamManager {
         }
 
 //        String tableName = "global_stats";
-//        String queryString = "SELECT value FROM " + tableName + " WHERE name='CHR_PREFIX'";
-//        String chrPrefix = sqliteManager.query(queryString).get(0).getString("value");
+//        String queryString = "SELECT defaultValue FROM " + tableName + " WHERE name='CHR_PREFIX'";
+//        String chrPrefix = sqliteManager.query(queryString).get(0).getString("defaultValue");
 
         long tq = System.currentTimeMillis();
         String tableName = "record_query_fields";
@@ -658,7 +659,7 @@ public class BamManager {
                 intervalObj.put("start", intervalStart);
                 intervalObj.put("end", intervalEnd);
                 intervalObj.put("interval", i);
-                intervalObj.put("value", intervalCount[i]);
+                intervalObj.put("defaultValue", intervalCount[i]);
                 intervalList.add(intervalObj);
                 intervalStart = intervalEnd + 1;
                 intervalEnd = intervalStart + interval - 1;

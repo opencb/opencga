@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.core.UriUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +50,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
         try {
-            String property = properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR);
-            rootDir = UriUtils.getUri(property.endsWith("/") ? property : property + "/");
+            rootDir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
         }
@@ -164,7 +163,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public boolean isDirectory(URI uri) {
-        return uri.getRawPath().endsWith("/");
+        return Paths.get(uri).toFile().isDirectory();
+//        return uri.getRawPath().endsWith("/");
     }
 
     @Override
@@ -542,7 +542,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         String checksum;
         try {
             String[] command = {"md5sum", file.getPath()};
-            logger.info("command = {} {}", command[0], command[1]);
+            logger.debug("command = {} {}", command[0], command[1]);
             Process p = Runtime.getRuntime().exec(command);
             BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
             checksum = br.readLine();

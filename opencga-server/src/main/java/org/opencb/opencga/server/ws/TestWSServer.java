@@ -40,7 +40,6 @@ public class TestWSServer extends OpenCGAWSServer {
         super(version, uriInfo, httpServletRequest);
     }
 
-    //
 
     @POST
     @Consumes({MediaType.MULTIPART_FORM_DATA})
@@ -52,11 +51,10 @@ public class TestWSServer extends OpenCGAWSServer {
     }
 
 
-
 //    @GET
 //    @Path("/{param}")
-//    @ApiOperation(value="just to test the sample api")
-//    public Response getMsg(@ApiParam(value="param",required=true)@PathParam("param") String msg ) {
+//    @ApiOperation(defaultValue="just to test the sample api")
+//    public Response getMsg(@ApiParam(defaultValue="param",required=true)@PathParam("param") String msg ) {
 //        String output = "Hello : " + msg;
 //        return Response.status(200).entity(output).build();
 //    }

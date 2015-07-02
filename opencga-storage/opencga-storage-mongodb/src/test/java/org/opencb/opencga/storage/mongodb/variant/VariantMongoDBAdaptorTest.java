@@ -30,8 +30,8 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
     }
 
     @Override
-    protected void clearDB() throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB();
+    protected void clearDB(String dbName) throws Exception {
+        MongoVariantStorageManagerTestUtils.clearDB(dbName);
     }
 
 }

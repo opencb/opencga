@@ -30,8 +30,8 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest {
     }
 
     @Override
-    protected void clearDB() throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB();
+    protected void clearDB(String dbName) throws Exception {
+        MongoVariantStorageManagerTestUtils.clearDB(dbName);
     }
 
 }

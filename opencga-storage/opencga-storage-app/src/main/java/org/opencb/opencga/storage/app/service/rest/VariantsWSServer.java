@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.app.service.rest;
 
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 //import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -60,7 +59,7 @@ public class VariantsWSServer extends DaemonServlet {
 
         try {
 //            CatalogVariantDBAdaptor variants = new CatalogVariantDBAdaptor(OpenCGAStorageService.getInstance().getCatalogManager(), fileId, sessionId);
-            VariantDBAdaptor variants = StorageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName, null);
+            VariantDBAdaptor variants = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
             for (String acceptedValue : VariantDBAdaptor.QueryParams.acceptedValues) {
                 addQueryOption(acceptedValue);

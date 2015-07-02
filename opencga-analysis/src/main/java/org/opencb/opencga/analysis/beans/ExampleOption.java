@@ -33,7 +33,7 @@ public class ExampleOption {
     public String toString() {
         return "ExampleOption{" +
                 "paramName='" + paramName + '\'' +
-                ", value='" + value + '\'' +
+                ", defaultValue='" + value + '\'' +
                 '}';
     }
 

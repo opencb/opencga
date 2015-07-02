@@ -86,7 +86,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
                 for(; i < lim; i++) {
                     accumulator += all[i];
                 }
-                if(!lastIteration) {    //The last iteration will keep the value for the next call to this function
+                if(!lastIteration) {    //The last iteration will keep the defaultValue for the next call to this function
                     Region region = new Region(coverage.getChromosome(), (int) next - size, (int) next - 1);
                     list.add(new MeanCoverage(size, name, region, (float) accumulator / size));
                     next += size;
@@ -222,7 +222,7 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
                 Initialize
              */
             long coverageStart = start;
-            if(start == 0){                 //Set Default value
+            if(start == 0){                 //Set Default defaultValue
                 coverageStart = start = end = alignmentRegion.getStart();
                 for(MeanCoverageCalculator aux : meanCoverageCalculator){
                     aux.reset(start);

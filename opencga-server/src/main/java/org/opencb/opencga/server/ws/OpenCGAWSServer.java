@@ -36,6 +36,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
@@ -101,6 +103,7 @@ public class OpenCGAWSServer {
 //    protected String outputFormat;
 
     protected static CatalogManager catalogManager;
+    protected static StorageManagerFactory storageManagerFactory;
 
     static {
         logger = LoggerFactory.getLogger("org.opencb.opencga.server.ws.OpenCGAWSServer");
@@ -145,8 +148,15 @@ public class OpenCGAWSServer {
 //        }
 
         try {
+            StorageConfiguration storageConfiguration = StorageConfiguration.load();
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogIOException | CatalogDBException e) {
+        } catch (CatalogException e) {
             System.out.println("ERROR when creating CatalogManager: " + e.getMessage());
             e.printStackTrace();
         }
@@ -315,11 +325,11 @@ public class OpenCGAWSServer {
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new HashMap<>().put("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        return null;
+        return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
     protected Response createOkResponse(Object obj) {

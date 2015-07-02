@@ -57,7 +57,7 @@ public class AdminServlet extends DaemonServlet {
     @GET
     @Path("/hello")
     @Produces("text/plain")
-//    @ApiOperation(value = "Just to test the api")
+//    @ApiOperation(defaultValue = "Just to test the api")
     public Response helloWorld() {
         System.out.println("Hello World ");
         return createOkResponse("Hello world");

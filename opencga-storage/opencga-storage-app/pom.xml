@@ -94,14 +94,14 @@
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
-                            <name>${app.name}.sh</name>
+                            <name>${app.name}-old.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.cli.StorageMain</mainClass>
-                            <name>opencga-storage2.sh</name>
+                            <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
+                            <name>${app.name}.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -148,6 +148,11 @@
                                     <arg value="+x"/>
                                     <arg value="${build.dir}/bin/${app.name}.sh"/>
                                     <arg value="${build.dir}/bin/${service.name}.sh"/>
+                                </exec>
+                                <echo>Coping configuration file</echo>
+                                <exec executable="cp">
+                                    <arg value="${pom.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
+                                    <arg value="${build.dir}/conf/"/>
                                 </exec>
                             </target>
                         </configuration>

@@ -4,12 +4,13 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -28,9 +29,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
 
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                         CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                          Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 
@@ -72,7 +73,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
         if (checkAnnotationSet) {
-            CatalogSampleAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }
 
         return sampleDBAdaptor.annotateSample(sampleId, annotationSet);
@@ -105,13 +106,14 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(name, "name");
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
+        attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             throw new CatalogException("Permission denied. User " + userId + " can't modify study");
         }
-        Sample sample = new Sample(-1, name, source, null, description, Collections.<AnnotationSet>emptyList(),
+        Sample sample = new Sample(-1, name, source, -1, description, Collections.<AnnotationSet>emptyList(),
                 attributes);
 
         return sampleDBAdaptor.createSample(studyId, sample, options);
@@ -143,7 +145,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
         query.putAll(options);
-        return sampleDBAdaptor.getAllSamples(studyId, query);
+        query.put(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId);
+        return sampleDBAdaptor.getAllSamples(query);
     }
 
     @Override
@@ -154,7 +157,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> update(Integer id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ParamUtils.checkObj(parameters, "parameters");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        options.putAll(parameters);
+        return sampleDBAdaptor.modifySample(id, options);
+
     }
 
     @Override
@@ -209,19 +224,33 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogSampleAnnotationsValidator.checkVariableSet(variableSet);
+        CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         return sampleDBAdaptor.createVariableSet(studyId, variableSet);
     }
 
     @Override
-    public QueryResult<VariableSet> readVariableset(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSet);
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. User " + userId + " can't read study");
         }
         return sampleDBAdaptor.getVariableSet(variableSet, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        return sampleDBAdaptor.getAllVariableSets(studyId, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
     }
 
 
@@ -250,18 +279,53 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Cohort> createCohort(int studyId, String name, String description, List<Integer> sampleIds,
+    public QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
+            throw new CatalogException("Permission denied. User " + userId + " can't read study");
+        }
+        return sampleDBAdaptor.getAllCohorts(studyId, options);
+    }
+
+    @Override
+    public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(sampleIds, "Samples list");
+        type = ParamUtils.defaultObject(type, Cohort.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (readAll(studyId, new QueryOptions("id", sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
+        if (!sampleIds.isEmpty() && readAll(studyId, new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
-        Cohort cohort = new Cohort(name, TimeUtils.getTime(), description, sampleIds, attributes);
+        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         return sampleDBAdaptor.createCohort(studyId, cohort);
+    }
+
+    @Override
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(params, "Update parameters");
+        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            return sampleDBAdaptor.updateCohort(cohortId, params);
+        } else {
+            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
+        }
+    }
+
+    @Override
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            return sampleDBAdaptor.deleteCohort(cohortId, options);
+        } else {
+            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
+        }
     }
 
 

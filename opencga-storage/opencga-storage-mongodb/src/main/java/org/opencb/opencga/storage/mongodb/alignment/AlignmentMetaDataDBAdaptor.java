@@ -31,7 +31,7 @@ import java.util.Properties;
 /**
  * TODO: In future, this will call to the metadata DB
  * <p/>
- * Takes the index from a properties file where "key" is the index, and "value" is the path to the file.
+ * Takes the index from a properties file where "key" is the index, and "defaultValue" is the path to the file.
  * If missing, it's created in "/tmp/files-index.properties"
  */
 @Deprecated

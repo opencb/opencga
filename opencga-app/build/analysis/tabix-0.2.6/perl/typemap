@@ -1,3 +1,0 @@
-TYPEMAP
-tabix_t*   T_PTROBJ
-ti_iter_t  T_PTROBJ

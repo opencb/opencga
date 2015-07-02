@@ -16,37 +16,26 @@
 
 package org.opencb.opencga.server.ws;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.tools.ant.types.Commandline;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.opencb.biodata.models.alignment.Alignment;
-import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import javax.ws.rs.client.Client;
@@ -64,99 +53,36 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
 public class OpenCGAWSServerTest {
 
     public static final String TEST_SERVER_USER = "test_server_user";
-    private Client webClient;
+    private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
-
-    public static Server server;
-    public static final int PORT = 8889;
-    public static String restURL;
-    //    WebResource webResource;
-
-//    ObjectMapper objectMapper;
-//
-//    /** User variables **/
-//    String userId;
-//    String sessionId;
-//
-//    /** Project variables **/
-//    int prId;
-
 
     @BeforeClass
     static public void initServer() throws Exception {
-
-        ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(false, "org.opencb.opencga.server.ws");
-        resourceConfig.property("jersey.config.server.provider.packages", "org.opencb.opencga.server.ws;com.wordnik.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json");
-        resourceConfig.property("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature");
-
-        ServletContainer sc = new ServletContainer(resourceConfig);
-        ServletHolder sh = new ServletHolder(sc);
-
-        server = new Server(PORT);
-
-        ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
-        context.addServlet(sh, "/opencga/webservices/rest/*");
-
-        System.err.println("Starting server");
-        server.start();
-        System.err.println("Waiting for conections");
-        System.out.println(server.getState());
-
-
-        restURL = server.getURI().resolve("/opencga/webservices/rest/").resolve("v1/").toString();
-        System.out.println(server.getURI());
+        serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.initServer();
     }
 
     @AfterClass
     static public void shutdownServer() throws Exception {
-        System.err.println("Shout down server");
-        server.stop();
-        server.join();
+        serverTestUtils.shutdownServer();
     }
 
 
     @Before
-    public void init() throws IOException, CatalogException {
-        webClient = ClientBuilder.newClient();
-        webClient.register(MultiPartFeature.class);
-        webTarget = webClient.target(restURL);
-
-        //Create test environment. Override OpenCGA_Home
-        Path opencgaHome = Paths.get("/tmp/opencga-server-test");
-        System.setProperty("app.home", opencgaHome.toString());
-        Config.setOpenCGAHome(opencgaHome.toString());
-
-        Files.createDirectories(opencgaHome);
-        Files.createDirectories(opencgaHome.resolve("conf"));
-
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
-        String databasePrefix = "opencga_server_test_";
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
-                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + databasePrefix).getBytes());
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("storage-mongodb.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-mongodb.properties"), StandardCopyOption.REPLACE_EXISTING);
-
-        CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
+    public void init() throws Exception {
 
         //Drop default user mongoDB database.
-        String databaseName = databasePrefix + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
+        String databaseName = WSServerTestUtils.DATABASE_PREFIX + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
         new MongoDataStoreManager("localhost", 27017).drop(databaseName);
 
-        catalogManagerTest.setUp(); //Clear and setup CatalogDatabase
-        OpenCGAWSServer.catalogManager = catalogManagerTest.getTestCatalogManager();
+        serverTestUtils.setUp();
+        webTarget = serverTestUtils.getWebTarget();
 
     }
 
@@ -208,7 +134,7 @@ public class OpenCGAWSServerTest {
         study = stTest.info(study.getId(), sessionId);
         prTest.getAllStudies(project.getId(), sessionId);
 
-        FileWSServerTest fileTest = new FileWSServerTest(webTarget);
+        FileWSServerTest fileTest = new FileWSServerTest(); fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
         assertEquals(File.Status.READY, fileVcf.getStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
@@ -247,7 +173,7 @@ public class OpenCGAWSServerTest {
      */
     private Job runIndexJob(String sessionId, Job indexJob) throws AnalysisExecutionException, IOException, CatalogException {
         String[] args = Commandline.translateCommandline(indexJob.getCommandLine());
-        org.opencb.opencga.storage.app.cli.OpenCGAStorageMain.main(Arrays.copyOfRange(args, 1, args.length));
+        org.opencb.opencga.storage.app.StorageMain.main(Arrays.copyOfRange(args, 1, args.length));
         indexJob.setCommandLine("echo 'Executing fake CLI'");
         AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, indexJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(indexJob.getId(), null, sessionId).first();

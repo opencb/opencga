@@ -26,7 +26,9 @@ import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.*;
@@ -40,7 +42,7 @@ import java.util.List;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-class VariantJsonTransformTask extends Task<String> {
+class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String> {
 
     final VariantFactory factory;
     final ObjectWriter objectWriter;
@@ -55,36 +57,29 @@ class VariantJsonTransformTask extends Task<String> {
 
         JsonFactory jsonFactory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(jsonFactory);
-        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
 
         this.jsonObjectMapper = jsonObjectMapper;
-        this.objectWriter = jsonObjectMapper.writerWithType(Variant.class);
+        this.objectWriter = jsonObjectMapper.writerFor(Variant.class);
     }
 
     @Override
-    public boolean pre() {
-        return super.pre();
-    }
-
-    @Override
-    public boolean post() {
-        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerWithType(VariantSource.class);
+    public void post() {
+        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
             StringDataWriter.write(outputFileJsonFile, Collections.singletonList(sourceJsonString));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
-            return false;
         }
-        return super.post();
     }
 
     @Override
-    public boolean apply(List<String> batch) {
+    public List<String> apply(List<String> batch) {
         List<String> outputBatch = new ArrayList<>(batch.size());
 //            logger.info("batch.size() = " + batch.size());
         try {
@@ -92,7 +87,12 @@ class VariantJsonTransformTask extends Task<String> {
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
-                List<Variant> variants = factory.create(source, line);
+                List<Variant> variants = null;
+                try {
+                    variants = factory.create(source, line);
+                } catch (NotAVariantException e) {
+                    variants = Collections.emptyList();
+                }
                 for (Variant variant : variants) {
                     try {
                         String e = objectWriter.writeValueAsString(variant);
@@ -107,8 +107,8 @@ class VariantJsonTransformTask extends Task<String> {
             batch.addAll(outputBatch);
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
-        return true;
+        return batch;
     }
 }

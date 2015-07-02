@@ -43,6 +43,7 @@ public class Study {
 
     private List<File> files;
     private List<Job> jobs;
+    private List<Individual> individuals;
     private List<Sample> samples;
 
     private List<Dataset> datasets;
@@ -55,13 +56,6 @@ public class Study {
     private Map<File.Bioformat, DataStore> dataStores;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
-
-    /**
-     * To think about:
-        public static final String STUDY_TYPE = "study_type";
-        private List<Sample> files;
-        private List<SampleAnnotationDescription> files;
-     */
 
     public enum Type {
         CASE_CONTROL,
@@ -262,6 +256,14 @@ public class Study {
 
     public void setJobs(List<Job> jobs) {
         this.jobs = jobs;
+    }
+
+    public List<Individual> getIndividuals() {
+        return individuals;
+    }
+
+    public void setIndividuals(List<Individual> individuals) {
+        this.individuals = individuals;
     }
 
     public List<Sample> getSamples() {

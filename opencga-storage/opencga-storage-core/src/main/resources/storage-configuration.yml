@@ -1,0 +1,66 @@
+---
+defaultStorageEngineId: "mongodb"
+logLevel: info
+cellbase:
+  hosts:
+  - ${OPENCGA.CELLBASE.HOST}
+  version: ${OPENCGA.CELLBASE.VERSION}
+storageEngines:
+- id: "mongodb"
+  options: {}
+  alignment:
+    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
+    options:
+      database.name: "opencga"
+      tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"
+      transform.region_size: 200000
+      transform.coverage_chunk_size: 1000
+      mean_coverage_size_list: [200, 10000]
+    database:
+      hosts:
+      - "localhost:27017"
+      user: ""
+      password: ""
+  variant:
+    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
+    options:
+      database.name: "opencga"
+      collection.variants: "variants"
+      include.genotypes: true
+      include.stats: false
+      annotator: cellbase_rest
+      species: "hsapiens"
+      assembly: "GRc37"
+      transform.batch_size: 200
+      transform.threads: 4
+      load.batch_size: 100
+      load.bulk_size: 100
+      load.compress_genotypes: true
+      load.threads: 4
+#      authentication.db:
+      ## To delete:
+      include.src: false
+      collection.files: "files"
+    database:
+      hosts:
+      - ${OPENCGA.STORAGE.VARIANT.DB.HOST}
+      user: ${OPENCGA.STORAGE.VARIANT.DB.USER}
+      password: ${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}
+- id: "hadoop"
+  options: {}
+  alignment:
+    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"
+  variant:
+    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"

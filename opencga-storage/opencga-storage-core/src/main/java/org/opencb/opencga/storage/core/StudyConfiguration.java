@@ -56,19 +56,19 @@ public class StudyConfiguration implements Cloneable {
     public StudyConfiguration(int studyId, String studyName) {
         this.studyId = studyId;
         this.studyName = studyName;
-        setFileIds(new HashMap<String, Integer>(1));
-        setSampleIds(new HashMap<String, Integer>());
-        setCohortIds(new HashMap<String, Integer>());
+        setFileIds(new HashMap<>(1));
+        setSampleIds(new HashMap<>());
+        setCohortIds(new HashMap<>());
         this.cohorts = new HashMap<>();
     }
 
     public StudyConfiguration(int studyId, String studyName, int fileId, String fileName) {
         this.studyId = studyId;
         this.studyName = studyName;
-        setFileIds(new HashMap<String, Integer>(1));
+        setFileIds(new HashMap<>(1));
         fileIds.put(fileName, fileId);
-        setSampleIds(new HashMap<String, Integer>());
-        setCohortIds(new HashMap<String, Integer>());
+        setSampleIds(new HashMap<>());
+        setCohortIds(new HashMap<>());
         this.cohorts = new HashMap<>();
     }
 

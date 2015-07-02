@@ -155,13 +155,13 @@ public class OpenCGAStorageMain {
                 /**
                  * Open connection
                  */
-                VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(c.backend);
-                if (c.credentials != null && !c.credentials.isEmpty()) {
-                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-                }
+                VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(c.backend);
+//                if (c.credentials != null && !c.credentials.isEmpty()) {
+//                    variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//                }
 
                 ObjectMap params = new ObjectMap();
-                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+                VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 
                 /**
                  * Parse Regions
@@ -287,13 +287,13 @@ public class OpenCGAStorageMain {
                 /**
                  * Open connection
                  */
-                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(c.backend);
-                if (c.credentials != null && !c.credentials.isEmpty()) {
-                    alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-                }
+                AlignmentStorageManager alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(c.backend);
+//                if (c.credentials != null && !c.credentials.isEmpty()) {
+//                    alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//                }
 
                 ObjectMap params = new ObjectMap();
-                AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName, params);
+                AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(c.dbName);
 
                 /**
                  * Parse Regions
@@ -448,14 +448,14 @@ public class OpenCGAStorageMain {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
-            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager();
+            alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager();
         } else {
-            alignmentStorageManager = StorageManagerFactory.getAlignmentStorageManager(storageEngine);
+            alignmentStorageManager = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
         }
         URI input = new URI(null, c.input, null);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            alignmentStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
 
         URI outdir;
         if (c.outdir != null && !c.outdir.isEmpty()) {
@@ -470,14 +470,14 @@ public class OpenCGAStorageMain {
         params.putAll(parser.getGeneralParameters().params);
 
         if (c.fileId != 0) {
-            params.put(AlignmentStorageManager.FILE_ID, c.fileId);
+            params.put(AlignmentStorageManager.Options.FILE_ID.key(), c.fileId);
         }
-        params.put(AlignmentStorageManager.PLAIN, false);
-        params.put(AlignmentStorageManager.MEAN_COVERAGE_SIZE_LIST, c.meanCoverage);
-        params.put(AlignmentStorageManager.INCLUDE_COVERAGE, c.calculateCoverage);
-        params.put(AlignmentStorageManager.DB_NAME, c.dbName);
-        params.put(AlignmentStorageManager.COPY_FILE, false);
-        params.put(AlignmentStorageManager.ENCRYPT, "null");
+        params.put(AlignmentStorageManager.Options.PLAIN.key(), false);
+        params.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), c.meanCoverage);
+        params.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), c.calculateCoverage);
+        params.put(AlignmentStorageManager.Options.DB_NAME.key(), c.dbName);
+        params.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
+        params.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
 
         params.putAll(c.params);
 
@@ -496,25 +496,25 @@ public class OpenCGAStorageMain {
 
         if (extract) {
             logger.info("-- Extract alignments -- {}", input);
-            nextFileUri = alignmentStorageManager.extract(input, outdir, params);
+            nextFileUri = alignmentStorageManager.extract(input, outdir);
         }
 
         if (transform) {
             logger.info("-- PreTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preTransform(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
             logger.info("-- Transform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir, params);
+            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdir);
             logger.info("-- PostTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postTransform(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir, params);
+            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdir);
             logger.info("-- Load alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.load(nextFileUri, params);
+            nextFileUri = alignmentStorageManager.load(nextFileUri);
             logger.info("-- PostLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir, params);
+            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdir);
         }
     }
 
@@ -522,10 +522,10 @@ public class OpenCGAStorageMain {
             throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
-        variantStorageManager = StorageManagerFactory.getVariantStorageManager(storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+        variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(storageEngine);
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
 
         URI variantsUri = new URI(null, c.input, null);
         URI pedigreeUri = c.pedigree != null && !c.pedigree.isEmpty() ? new URI(null, c.pedigree, null) : null;
@@ -538,18 +538,18 @@ public class OpenCGAStorageMain {
         assertDirectoryExists(outdirUri);
 
         ObjectMap params = new ObjectMap();
-        params.put(VariantStorageManager.STUDY_ID, c.studyId);
-        params.put(VariantStorageManager.FILE_ID, c.fileId);
-        params.put(VariantStorageManager.SAMPLE_IDS, c.sampleIds);
-        params.put(VariantStorageManager.CALCULATE_STATS, c.calculateStats);
-        params.put(VariantStorageManager.INCLUDE_STATS, c.includeStats);
-        params.put(VariantStorageManager.INCLUDE_SAMPLES, c.includeGenotype);   // TODO rename samples to genotypes
-        params.put(VariantStorageManager.INCLUDE_SRC, c.includeSrc);
-        params.put(VariantStorageManager.COMPRESS_GENOTYPES, c.compressGenotypes);
-        params.put(VariantStorageManager.AGGREGATED_TYPE, c.aggregated);
-        params.put(VariantStorageManager.DB_NAME, c.dbName);
-        params.put(VariantStorageManager.ANNOTATE, c.annotate);
-        params.put(VariantStorageManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), c.studyId);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), c.fileId);
+        params.put(VariantStorageManager.Options.SAMPLE_IDS.key(), c.sampleIds);
+        params.put(VariantStorageManager.Options.CALCULATE_STATS.key(), c.calculateStats);
+        params.put(VariantStorageManager.Options.INCLUDE_STATS.key(), c.includeStats);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), c.includeGenotype);   // TODO rename samples to genotypes
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), c.includeSrc);
+        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
+        params.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
+        params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, c.overwriteAnnotations);
         if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
             params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
         }
@@ -560,7 +560,7 @@ public class OpenCGAStorageMain {
             if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
                 annotatorProperties.load(new FileInputStream(c.annotatorConfig));
             }
-            params.put(VariantStorageManager.ANNOTATOR_PROPERTIES, annotatorProperties);
+//            params.put(VariantAnnotationManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
             //Get annotation source
             VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
@@ -572,14 +572,14 @@ public class OpenCGAStorageMain {
                         ).toUpperCase()
                 );
             }
-            params.put(VariantStorageManager.ANNOTATION_SOURCE, annotatorSource);
+            params.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotatorSource);
         }
         
         if (c.aggregationMappingFile != null) {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(c.aggregationMappingFile));
-                params.put(VariantStorageManager.AGGREGATION_MAPPING_PROPERTIES, aggregationMappingProperties);
+                params.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", c.aggregationMappingFile);
             }
@@ -604,25 +604,25 @@ public class OpenCGAStorageMain {
 
         if (extract) {
             logger.info("-- Extract variants -- {}", variantsUri);
-            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri, params);
+            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
         }
 
         if (transform) {
             logger.info("-- PreTransform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.preTransform(nextFileUri, params);
+            nextFileUri = variantStorageManager.preTransform(nextFileUri);
             logger.info("-- Transform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri, params);
+            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
             logger.info("-- PostTransform variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.postTransform(nextFileUri, params);
+            nextFileUri = variantStorageManager.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri, params);
+            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
             logger.info("-- Load variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.load(nextFileUri, params);
+            nextFileUri = variantStorageManager.load(nextFileUri);
             logger.info("-- PostLoad variants -- {}", nextFileUri);
-            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri, params);
+            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
         }
 
     }
@@ -655,12 +655,12 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
         ObjectMap params = new ObjectMap();
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, params);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 
         /**
          * Create Annotator
@@ -681,7 +681,7 @@ public class OpenCGAStorageMain {
             );
         }
         logger.info("Annotating with {}", annotatorSource);
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
+        VariantAnnotator annotator = null; //VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
         VariantAnnotationManager variantAnnotationManager =
                 new VariantAnnotationManager(annotator, dbAdaptor);
 
@@ -752,10 +752,10 @@ public class OpenCGAStorageMain {
         QueryOptions queryOptions = new QueryOptions();
 //        VariantSource variantSource = new VariantSource(null, c.fileId, c.studyId, null);
 //        queryOptions.put(VariantStorageManager.VARIANT_SOURCE, variantSource);
-        queryOptions.put(VariantStorageManager.DB_NAME, c.dbName);
-        queryOptions.put(VariantStorageManager.OVERWRITE_STATS, c.overwriteStats);
-        queryOptions.put(VariantStorageManager.FILE_ID, c.fileId);
-        queryOptions.put(VariantStorageManager.STUDY_ID, c.studyId);
+        queryOptions.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
+        queryOptions.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), c.overwriteStats);
+        queryOptions.put(VariantStorageManager.Options.FILE_ID.key(), c.fileId);
+        queryOptions.put(VariantStorageManager.Options.STUDY_ID.key(), c.studyId);
 //        queryOptions.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
         if (c.studyConfigurationFile != null && !c.studyConfigurationFile.isEmpty()) {
             queryOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
@@ -773,11 +773,11 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.getVariantStorageManager(parser.getGeneralParameters().storageEngine);
-        if(c.credentials != null && !c.credentials.isEmpty()) {
-            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
-        }
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName, queryOptions);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+//        if(c.credentials != null && !c.credentials.isEmpty()) {
+//            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
+//        }
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(c.dbName);
 //        dbAdaptor.setConstantSamples(Integer.toString(c.fileId));    // TODO jmmut: change to studyId when we remove fileId
         StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(queryOptions);
         /**

@@ -50,9 +50,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     @Before
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        clearDB();
+        clearDB(DB_NAME);
         etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null, null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
     }
 
     @Test
@@ -61,8 +61,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         VariantStatisticsManager vsm = new VariantStatisticsManager();
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.FILE_ID, fileId);
-        options.put(VariantStorageManager.BATCH_SIZE, 100);
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
 
         /** Create cohorts **/
@@ -99,8 +99,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
 
         int studyId = studyConfiguration.getStudyId();
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.FILE_ID, fileId);
-        options.put(VariantStorageManager.BATCH_SIZE, 100);
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
         StudyConfiguration studyConfiguration;
 

@@ -26,6 +26,7 @@ package org.opencb.opencga.storage.core.runner;
 /**
  * Created by jacobo on 5/02/15.
  */
+@Deprecated
 public class ThreadRunner {
     private ExecutorService executorService;
 

@@ -39,19 +39,26 @@
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>${storage.configuration.file}</include>
+                </includes>
+            </resource>
+        </resources>
         <testResources>
             <testResource>
-                <includes><include>*.properties</include></includes>
                 <directory>src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-            <testResource>
-                <excludes><exclude>*.properties</exclude></excludes>
-                <directory>src/test/resources</directory>
-                <filtering>false</filtering>
             </testResource>
         </testResources>
         <plugins>

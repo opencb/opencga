@@ -48,7 +48,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.name", "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
 
-    public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogDBException, CatalogIOException {
+    public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
         super(objectMap);
         catalogManager = new CatalogManager(Config.getCatalogProperties());
         sessionId = objectMap.getString("sessionId");

@@ -64,7 +64,7 @@ public class Command extends RunnableProcess {
             setStatus(Status.RUNNING);
 
             startTime();
-            logger.info(Commandline.describeCommand(cmdArray));
+            logger.debug(Commandline.describeCommand(cmdArray));
             if (environment != null && environment.size() > 0) {
                 proc = Runtime.getRuntime().exec(cmdArray, ListUtils.toArray(environment));
             } else {

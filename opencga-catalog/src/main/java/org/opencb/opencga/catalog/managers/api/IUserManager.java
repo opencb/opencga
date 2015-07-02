@@ -19,7 +19,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @param sessionId     SessionId
      * @return              UserId owner of the sessionId. Empty string if SessionId does not match.
      */
-    public String getUserId(String sessionId);
+    String getUserId(String sessionId);
 
     /**
      * Create a new user
@@ -34,7 +34,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return                      The created user
      * @throws CatalogException     If user already exists, or unable to create a new user.
      */
-    public QueryResult<User> create(String userId, String name, String email, String password, String organization,
+    QueryResult<User> create(String userId, String name, String email, String password, String organization,
                                     QueryOptions options, String sessionId) throws CatalogException;
 
     /**
@@ -46,10 +46,10 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return                      The requested user
      * @throws CatalogException
      */
-    public QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
+    QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
             throws CatalogException;
 
-    public void changePassword(String userId, String oldPassword, String newPassword)
+    void changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogException;
 
 

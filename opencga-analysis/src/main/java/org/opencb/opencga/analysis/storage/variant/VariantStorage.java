@@ -101,19 +101,21 @@ public class VariantStorage {
         StringBuilder sb = new StringBuilder()
 
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(dataStore.getStorageEngine())
-                .append(" --verbose ")
                 .append(" stats-variants ")
+                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
                 .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
 //                .append(" --study-id ").append(studyId)
                 .append(" --database ").append(dataStore.getDbName())
-                .append(" -D").append(VariantStorageManager.STUDY_CONFIGURATION_MANAGER_CLASS_NAME).append("=").append(CatalogStudyConfigurationManager.class.getName())
+                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                 .append(" -D").append("sessionId").append("=").append(sessionId)
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
+        if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
+            sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
+        }
         for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
             sb.append(" --cohort-sample-ids ").append(entry.getKey().getName()).append(":");
             for (Sample sample : entry.getValue()) {
@@ -177,11 +179,13 @@ public class VariantStorage {
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
-                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" annotate-variants ")
+                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --outdir ").append(temporalOutDirUri.toString())
-                .append(" --database ").append(dataStore.getDbName())
-                ;
+                .append(" --database ").append(dataStore.getDbName());
+        if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
+            sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
+        }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
             for (String extraParam : extraParams) {

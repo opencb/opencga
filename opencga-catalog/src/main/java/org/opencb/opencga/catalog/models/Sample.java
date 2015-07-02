@@ -26,7 +26,7 @@ public class Sample {
     private int id;
     private String name;
     private String source;
-    private Individual individual;
+    private int individualId;
     private String description;
 
     private List<AnnotationSet> annotationSets;
@@ -36,16 +36,16 @@ public class Sample {
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, Individual individual, String description) {
-        this(id, name, source, individual, description, new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+    public Sample(int id, String name, String source, int individualId, String description) {
+        this(id, name, source, individualId, description, new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
     }
 
-    public Sample(int id, String name, String source, Individual individual, String description,
+    public Sample(int id, String name, String source, int individualId, String description,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
-        this.individual = individual;
+        this.individualId = individualId;
         this.description = description;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -57,7 +57,7 @@ public class Sample {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", source='" + source + '\'' +
-                ", individual=" + individual +
+                ", individualId=" + individualId +
                 ", description='" + description + '\'' +
                 ", annotationSets=" + annotationSets +
                 ", attributes=" + attributes +
@@ -88,12 +88,12 @@ public class Sample {
         this.source = source;
     }
 
-    public Individual getIndividual() {
-        return individual;
+    public int getIndividualId() {
+        return individualId;
     }
 
-    public void setIndividual(Individual individual) {
-        this.individual = individual;
+    public void setIndividualId(int individualId) {
+        this.individualId = individualId;
     }
 
     public String getDescription() {

@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.io;
 
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.core.UriUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +41,8 @@ public class CatalogIOManagerFactory {
 
     public CatalogIOManagerFactory(Properties properties) throws CatalogIOException {
         this.properties = properties;
-        String property = properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR);
         try {
-            mainRootdir = UriUtils.getUri(property.endsWith("/") ? property : property + "/");
+            mainRootdir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
         }

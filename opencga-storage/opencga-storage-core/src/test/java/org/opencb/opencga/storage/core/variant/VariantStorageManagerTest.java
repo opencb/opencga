@@ -23,11 +23,13 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +42,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
     @Test
     public void basicIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         ETLResult etlResult = runDefaultETL(variantStorageManager, studyConfiguration);
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, true, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
     }
 
     /**
@@ -57,23 +59,24 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
      **/
     @Test
     public void singleThreadIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        params.put(VariantStorageManager.FILE_ID, 6);
-        params.put(VariantStorageManager.COMPRESS_METHOD, "gZiP");
-        params.put(VariantStorageManager.TRANSFORM_THREADS, 1);
-        params.put(VariantStorageManager.LOAD_THREADS, 1);
-        params.put(VariantStorageManager.INCLUDE_SAMPLES, true);
-        params.put(VariantStorageManager.INCLUDE_SRC, true);
+        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), true);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.gz'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.gz"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, true, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
 
     }
 
@@ -86,26 +89,37 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
      **/
     @Test
     public void fastIndex() throws Exception {
-        clearDB();
+        clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.STUDY_CONFIGURATION, studyConfiguration);
-        params.put(VariantStorageManager.FILE_ID, 6);
-        params.put(VariantStorageManager.COMPRESS_METHOD, "snappy");
-        params.put(VariantStorageManager.TRANSFORM_THREADS, 8);
-        params.put(VariantStorageManager.LOAD_THREADS, 8);
-        params.put(VariantStorageManager.INCLUDE_SAMPLES, false);
-        params.put(VariantStorageManager.INCLUDE_SRC, false);
+        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "snappy");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 8);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 8);
+        params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), false);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), false);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(null, null), studyConfiguration, false, false);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, false, false);
 
     }
 
+    /**
+     * Corrupted file index. This test must fail
+     */
+    @Test
+    public void corruptedIndexTest() throws Exception {
+
+        thrown.expect(StorageManagerException.class);
+        runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
+
+    }
     /* ---------------------------------------------------- */
     /* Check methods for loaded and transformed Variants    */
     /* ---------------------------------------------------- */

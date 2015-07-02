@@ -18,8 +18,11 @@ package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -27,9 +30,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.net.URI;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Path("/{version}/studies")
@@ -189,15 +192,69 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/status")
+    @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 8)
+    public Response status(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            Study study = catalogManager.getStudy(studyId, sessionId).first();
+            FileScanner fileScanner = new FileScanner(catalogManager);
+
+            /** First, run CheckStudyFiles to find new missing files **/
+            List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().equals(File.Status.READY)).collect(Collectors.toList());
+
+            /** Get untracked files **/
+            Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
+
+            /** Get missing files **/
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+
+            ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
+
+            return createOkResponse(new QueryResult<>("status", 0, 1, 1, null, null, Collections.singletonList(fileStatus)));
+//            /** Print pretty **/
+//            int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//            int maxUntracked = untrackedFiles.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//            int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//
+//            String format = "\t%-" + Math.max(Math.max(maxMissing, maxUntracked), maxFound) + "s  -> %s\n";
+//
+//            if (!untrackedFiles.isEmpty()) {
+//                System.out.println("UNTRACKED files");
+//                untrackedFiles.forEach((s, u) -> System.out.printf(format, s, u));
+//                System.out.println("\n");
+//            }
+//
+//            if (!missingFiles.isEmpty()) {
+//                System.out.println("MISSING files");
+//                for (File file : missingFiles) {
+//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+//                }
+//                System.out.println("\n");
+//            }
+//
+//            if (!found.isEmpty()) {
+//                System.out.println("FOUND files");
+//                for (File file : found) {
+//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+//                }
+//            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{studyId}/update")
-    @ApiOperation(value = "Study modify", position = 8)
+    @ApiOperation(value = "Study modify", position = 9)
     public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
-//            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-//            @ApiParam(value = "stats", required = false) @QueryParam("stats") String stats)
+//            @ApiParam(defaultValue = "attributes", required = false) @QueryParam("attributes") String attributes,
+//            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
@@ -219,15 +276,14 @@ public class StudiesWSServer extends OpenCGAWSServer {
             System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
     @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 9)
+    @ApiOperation(value = "Delete a study [PENDING]", position = 10)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
     }
