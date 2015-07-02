@@ -460,11 +460,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, QueryOptions queryOptions) {
         DBCollection coll = db.getDb().getCollection(collectionName);
-        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
+        BulkWriteOperation pullBuilder = coll.initializeUnorderedBulkOperation();
+        BulkWriteOperation pushBuilder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
         VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+        boolean overwrite = queryOptions.getBoolean(VariantStorageManager.OVERWRITE_STATS, false);
+
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
@@ -486,43 +489,35 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
-                List<String> cohortIds = new ArrayList<>(cohorts.size());
-                List<String> fileIds = new ArrayList<>(cohorts.size());
-                List<String> studyIds = new ArrayList<>(cohorts.size());
-                for (DBObject cohort : cohorts) {
-                    cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-                    fileIds.add((String) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
-                    studyIds.add((String) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
-                }
-
                 DBObject find = new BasicDBObject("_id", id);
+                if (overwrite) {
+                    List<BasicDBObject> idsList = new ArrayList<>(cohorts.size());
+                    for (DBObject cohort : cohorts) {
+                        BasicDBObject ids = new BasicDBObject()
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohort.get(DBObjectToVariantStatsConverter.COHORT_ID))
+                                .append(DBObjectToVariantStatsConverter.FILE_ID, cohort.get(DBObjectToVariantStatsConverter.FILE_ID))
+                                .append(DBObjectToVariantStatsConverter.STUDY_ID, cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
+                        idsList.add(ids);
+                    }
+                    DBObject update = new BasicDBObject("$pull",
+                            new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                                    new BasicDBObject("$or", idsList)));
 
-                DBObject update = new BasicDBObject("$pull",
-                        new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
-                                new BasicDBObject()
-                                        .append(
-                                                DBObjectToVariantStatsConverter.STUDY_ID,
-                                                new BasicDBObject("$in", studyIds))
-                                        .append(
-                                                DBObjectToVariantStatsConverter.FILE_ID,
-                                                new BasicDBObject("$in", fileIds))
-                                        .append(
-                                                DBObjectToVariantStatsConverter.COHORT_ID,
-                                                new BasicDBObject("$in", cohortIds))));
-
-                builder.find(find).updateOne(update);
-
+                    pullBuilder.find(find).updateOne(update);
+                }
                 DBObject push = new BasicDBObject("$push",
                         new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                                 new BasicDBObject("$each", cohorts)));
 
-                builder.find(find).update(push);
+                pushBuilder.find(find).updateOne(push);
             }
         }
 
         // TODO handle if the variant didn't had that studyId in the files array
-        // TODO check the substitution is done right if the stats are already present
-        BulkWriteResult writeResult = builder.execute();
+        if (overwrite) {
+            pullBuilder.execute();
+        }
+        BulkWriteResult writeResult = pushBuilder.execute();
         int writes = writeResult.getModifiedCount();
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
