@@ -509,7 +509,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                                 new BasicDBObject("$each", cohorts)));
 
-                pushBuilder.find(find).update(push);
+                pushBuilder.find(find).updateOne(push);
             }
         }
 
