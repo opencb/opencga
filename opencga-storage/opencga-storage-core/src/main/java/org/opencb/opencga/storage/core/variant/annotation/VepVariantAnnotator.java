@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static org.opencb.opencga.lib.common.ExceptionUtils.getExceptionString;
+
 /**
  * Created by fjlopez on 10/04/15.
  */
@@ -93,7 +95,19 @@ public class VepVariantAnnotator implements VariantAnnotator {
                     vepFormatReader.post();
                     vepFormatReader.close();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    logger.error(getExceptionString(e));
+                } catch (Exception e) {
+                    logger.error(getExceptionString(e));
+                    logger.error("Thread ends UNEXPECTEDLY due to an exception raising.");
+                    try {
+                        for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
+                            queue.put(lastElement);
+                        }
+                        logger.debug("Consumers were notified to finish.");
+                    } catch (InterruptedException ie) {
+                        logger.error("Another exception occurred when finishing.");
+                        logger.error(getExceptionString(e));
+                    }
                 }
             }
         });
@@ -119,7 +133,10 @@ public class VepVariantAnnotator implements VariantAnnotator {
                         }
                         logger.debug("thread finished updating annotations");
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        logger.error(getExceptionString(e));
+                    } catch (Exception e) {
+                        logger.error(getExceptionString(e));
+                        logger.error("Thread ends UNEXPECTEDLY due to exception raising.");
                     }
                 }
             });
@@ -130,7 +147,11 @@ public class VepVariantAnnotator implements VariantAnnotator {
             executor.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             logger.error("annotation interrupted");
-            e.printStackTrace();
+            logger.error(getExceptionString(e));
+        } catch (Exception e) {
+            logger.error(getExceptionString(e));
+            logger.error("Thread executor ends UNEXPECTEDLY due to exception raising.");
+            executor.shutdown();
         }
 
         /** Join
