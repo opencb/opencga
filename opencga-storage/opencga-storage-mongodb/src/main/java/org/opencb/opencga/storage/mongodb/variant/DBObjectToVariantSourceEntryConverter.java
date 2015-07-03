@@ -44,7 +44,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     private boolean includeSrc;
 
-    private String fileId;
+    private Integer fileId;
     private DBObjectToSamplesConverter samplesConverter;
 
     /**
@@ -83,7 +83,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      *  @param samplesConverter The object used to convert the samples. If null, won't convert
      *
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, String fileId,
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer fileId,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.fileId = fileId;
@@ -92,8 +92,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
-        String studyId = (String) object.get(STUDYID_FIELD);
-        VariantSourceEntry file = new VariantSourceEntry(fileId, studyId);
+        int studyId = ((Number) object.get(STUDYID_FIELD)).intValue();
+        VariantSourceEntry file = new VariantSourceEntry(String.valueOf(fileId), Integer.toString(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
         DBObject fileObject = null;
@@ -152,13 +152,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     @Override
     public DBObject convertToStorageType(VariantSourceEntry object) {
-        BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, object.getFileId());
+        int fileId = Integer.parseInt(object.getFileId());
+        BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, fileId);
 
         // Alternate alleles
         if (object.getSecondaryAlternates().length > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
             fileObject.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
         }
-        
+
         // Attributes
         if (object.getAttributes().size() > 0) {
             BasicDBObject attrs = null;
@@ -188,15 +189,16 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             }
         }
 
-        BasicDBObject mongoFile = new BasicDBObject(STUDYID_FIELD, object.getStudyId());
+        int studyId = Integer.parseInt(object.getStudyId());
+        BasicDBObject mongoFile = new BasicDBObject(STUDYID_FIELD, studyId);
         mongoFile.append(FILES_FIELD, Collections.singletonList(fileObject));
 
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
             fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), object.getStudyId()));
+            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
         }
-        
+
 
         return mongoFile;
     }

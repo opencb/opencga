@@ -450,7 +450,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     //@Override
     public QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions options) {
-        String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
+        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
         boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
         boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
@@ -475,7 +475,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param data  Variants to insert
      */
-    /*package*/ QueryResult insert(List<Variant> data, String fileId, DBObjectToVariantConverter variantConverter,
+    /*package*/ QueryResult insert(List<Variant> data, int fileId, DBObjectToVariantConverter variantConverter,
                                    DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, StudyConfiguration studyConfiguration, List<Integer> loadedSampleIds) {
         if (data.isEmpty()) {
             return new QueryResult("insertVariants");
@@ -483,12 +483,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> queries = new ArrayList<>(data.size());
         List<DBObject> updates = new ArrayList<>(data.size());
         Set<String> nonInsertedVariants = null;
+        String fileIdStr = Integer.toString(fileId);
         if (true) {
             nonInsertedVariants = new HashSet<>();
 
             if (loadedSampleIds == null) {
                 HashSet<String> fileSamples = new HashSet<>();
-                data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileId).iterator().forEachRemaining(fileSamples::add);
+                data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileIdStr).iterator().forEachRemaining(fileSamples::add);
                 loadedSampleIds = new LinkedList<>();
                 Set<String> allSamples = studyConfiguration.getSampleIds().keySet();
                 for (String sample : allSamples) {
@@ -501,14 +502,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (!loadedSampleIds.isEmpty()) {
                 missingSamples = new BasicDBObject(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, loadedSampleIds);   // ?/?
             }
-
             for (Variant variant : data) {
                 String id = variantConverter.buildStorageId(variant);
                 for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                    if (!variantSourceEntry.getFileId().equals(fileId)) {
+                    if (!variantSourceEntry.getFileId().equals(fileIdStr)) {
                         continue;
                     }
-                    String studyId = variantSourceEntry.getStudyId();
+                    int studyId = studyConfiguration.getStudyId();
                     DBObject study = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
                     ((DBObject) study.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD)).putAll(missingSamples);
                     DBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, study);
@@ -551,7 +551,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                if (!variantSourceEntry.getFileId().equals(fileId)) {
+                if (!variantSourceEntry.getFileId().equals(fileIdStr)) {
                     continue;
                 }
 
@@ -565,7 +565,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
 
 
-                queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId()));
+                queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyConfiguration.getStudyId()));
                 updates.add(update);
 
             }
@@ -580,7 +580,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    /* package */ QueryResult<WriteResult> fillFileGaps(String fileId, List<Region> regions, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
+    /* package */ QueryResult<WriteResult> fillFileGaps(int fileId, List<Region> regions, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
 
         // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
         // { $push : {
@@ -588,8 +588,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // } }
 
         DBObject query = getRegionFilter(regions, new QueryBuilder()).get();
-        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, Integer.toString(studyConfiguration.getStudyId()));
-        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, new BasicDBObject("$ne", fileId));
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                studyConfiguration.getStudyId());
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." +
+                        DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                new BasicDBObject("$ne", fileId));
 
         BasicDBObject update = new BasicDBObject("$push", new BasicDBObject()
                 .append(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds)));
@@ -631,7 +635,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        String fileId = queryOptions.getString(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
+        int fileId = queryOptions.getInt(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(queryOptions);
         //TODO: Use the StudyConfiguration to change names to ids
 
@@ -640,7 +644,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, ""+ studyId, fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId, fileId);   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
@@ -658,12 +662,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
                 List<String> cohortIds = new ArrayList<>(cohorts.size());
-                List<String> fileIds = new ArrayList<>(cohorts.size());
-                List<String> studyIds = new ArrayList<>(cohorts.size());
+                List<Integer> fileIds = new ArrayList<>(cohorts.size());
+                List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
                     cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-                    fileIds.add((String) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
-                    studyIds.add((String) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
+                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
+                    studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
                 DBObject find = new BasicDBObject("_id", id);
@@ -715,7 +719,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new BasicDBObject(
                         DBObjectToVariantConverter.STUDIES_FIELD,
                         new BasicDBObject(
-                                DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, Integer.toString(studyId)
+                                DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId
                         )
                 )
         );
@@ -1027,13 +1031,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
                 addQueryListFilter(
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getAsStringList(STUDIES),
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getAsIntegerList(STUDIES),
                         fileBuilder, QueryOperation.AND);
             }
 
             if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
                 addQueryListFilter(
-                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getAsStringList(FILES),
+                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getAsIntegerList(FILES),
                         fileBuilder, QueryOperation.AND);
             }
 
@@ -1122,7 +1126,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (options.containsKey(FILE_ID) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
 //            List<String> files = options.getListAs(FILES, String.class);
-            String file = options.getString(FILE_ID);
+            int file = options.getInt(FILE_ID);
             projection.put(
                     DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(

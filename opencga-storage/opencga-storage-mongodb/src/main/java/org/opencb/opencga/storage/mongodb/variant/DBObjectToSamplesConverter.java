@@ -99,9 +99,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
 //    @Override
-    public Map<String, Map<String, String>> convertToDataModelType(DBObject object, String studyIdStr) {
+    public Map<String, Map<String, String>> convertToDataModelType(DBObject object, int studyId) {
 //        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
-        Integer studyId = Integer.parseInt(studyIdStr);
+//        Integer studyId = Integer.parseInt(studyIdStr);
         if (!studyConfigurations.containsKey(studyId) && sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions());
             if(queryResult.first() == null) {
@@ -181,11 +181,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
 //    @Override
-    public DBObject convertToStorageType(Map<String, Map<String, String>> object, String studyIdStr) {
+    public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
 
 //        Integer studyId = Integer.parseInt(object.getStudyId());
-        Integer studyId = Integer.parseInt(studyIdStr);
+//        Integer studyId = Integer.parseInt(studyIdStr);
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = studyConfiguration.getSampleIds();
         // Classify samples by genotype

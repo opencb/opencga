@@ -84,7 +84,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private long insertionTime = 0;
     private StudyConfiguration studyConfiguration;
 //    private Integer fileId;
-    private String fileId;
+    private int fileId;
     private boolean writeStudyConfiguration = true;
 //    private boolean writeVariantSource = true;
 //    private VariantSource source;
@@ -117,7 +117,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            throw new IllegalArgumentException("Credentials for accessing the database must be specified");
 //        }
         this.studyConfiguration = studyConfiguration;
-        this.fileId = String.valueOf(fileId);
+        this.fileId = fileId;
 
         this.includeSamples = includeSamples;
         this.includeStats = includeStats;
@@ -173,7 +173,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (fileSampleIds == null) {
             fileSampleIds = new LinkedList<>();
             loadedSampleIds = new LinkedList<>();
-            data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileId).iterator().forEachRemaining(s -> fileSampleIds.add(studyConfiguration.getSampleIds().get(s)));
+            data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), Integer.toString(fileId)).iterator().forEachRemaining(s -> fileSampleIds.add(studyConfiguration.getSampleIds().get(s)));
             LinkedHashSet<Integer> fileSampleIdsSet = new LinkedHashSet<>(fileSampleIds);
             loadedSampleIds.addAll(studyConfiguration.getSampleIds().keySet().stream()
                     .filter(sample -> !fileSampleIdsSet.contains(studyConfiguration.getSampleIds().get(sample)))

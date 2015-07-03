@@ -136,7 +136,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         List<DBObject> cohortsStatsList = new LinkedList<>();
         for (String studyIdFileId : sourceEntries.keySet()) {
             VariantSourceEntry sourceEntry = sourceEntries.get(studyIdFileId);
-            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getCohortStats(), sourceEntry.getStudyId(), sourceEntry.getFileId());
+            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getCohortStats(),
+                    Integer.parseInt(sourceEntry.getStudyId()), Integer.parseInt(sourceEntry.getFileId()));
             cohortsStatsList.addAll(list);
         }
         return cohortsStatsList;
@@ -149,7 +150,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      * @param fileId of the source entry
      * @return list of VariantStats (as DBObjects)
      */
-    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, String studyId, String fileId) {
+    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId, int fileId) {
         List<DBObject> cohortsStatsList = new LinkedList<>();
         VariantStats variantStats;
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
