@@ -41,7 +41,7 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSource
  */
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
-    public static final String UNKNOWN_GENOTYPE = "?";
+    public static final String UNKNOWN_GENOTYPE = "?/?";
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
@@ -102,7 +102,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public Map<String, Map<String, String>> convertToDataModelType(DBObject object, int studyId) {
 //        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
 //        Integer studyId = Integer.parseInt(studyIdStr);
-        if (!studyConfigurations.containsKey(studyId) && sourceDbAdaptor != null) { // Samples not set as constructor argument, need to query
+        if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument, need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions());
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);

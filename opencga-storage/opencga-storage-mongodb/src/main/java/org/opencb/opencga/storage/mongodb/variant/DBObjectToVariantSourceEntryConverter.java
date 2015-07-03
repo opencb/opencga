@@ -130,8 +130,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 }
             }
         }
-        if (object.containsField(FORMAT_FIELD)) {
-            file.setFormat((String) object.get(FORMAT_FIELD));
+        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
+            file.setFormat((String) fileObject.get(FORMAT_FIELD));
         } else {
             file.setFormat("GT");
         }

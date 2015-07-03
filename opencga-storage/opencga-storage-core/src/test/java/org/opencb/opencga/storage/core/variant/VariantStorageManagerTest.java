@@ -20,6 +20,7 @@ import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -65,7 +66,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         ETLResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), true)
+                .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));

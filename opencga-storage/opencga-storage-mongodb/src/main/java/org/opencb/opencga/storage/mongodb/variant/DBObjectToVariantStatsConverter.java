@@ -107,12 +107,18 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setRefAllele(variant.getReference());
                     variantStats.setAltAllele(variant.getAlternate());
                     variantStats.setVariantType(variant.getType());
-                    String fid = (String) vs.get(FILE_ID);
-                    String sid = (String) vs.get(STUDY_ID);
+                    Integer fid = (Integer) vs.get(FILE_ID);
+                    Integer sid = (Integer) vs.get(STUDY_ID);
                     String cid = (String) vs.get(COHORT_ID);
-                    VariantSourceEntry sourceEntry;
+                    VariantSourceEntry sourceEntry = null;
                     if (fid != null && sid != null && cid != null) {
-                       sourceEntry = variant.getSourceEntry(fid, sid);
+                        for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+                            if (entry.getValue().getStudyId().equals(Integer.toString(sid))) {
+                                sourceEntry = entry.getValue();
+                                break;
+                            }
+                        }
+//                        sourceEntry = variant.getSourceEntry(Integer.toString(fid), Integer.toString(sid));
                         if (sourceEntry != null) {
                             Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
                             cohortStats.put(cid, variantStats);

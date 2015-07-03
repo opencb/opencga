@@ -29,6 +29,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
@@ -171,7 +172,24 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE);
             logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
         } else {
-            defaultGenotype = options.getString(DEFAULT_GENOTYPE, "0|0");
+            if (options.containsKey(DEFAULT_GENOTYPE)) {
+                defaultGenotype = options.getString(DEFAULT_GENOTYPE);
+            } else {
+                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
+                switch (studyType) {
+                    case FAMILY:
+                    case TRIO:
+                    case PAIRED:
+                    case PAIRED_TUMOR:
+                        defaultGenotype = DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
+                        logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
+                        break;
+                    default:
+                        defaultGenotype = "0|0";
+                        logger.debug("No default genotype found. Using default genotype: {}", defaultGenotype);
+                        break;
+                }
+            }
             studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE, defaultGenotype);
         }
 

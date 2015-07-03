@@ -20,9 +20,12 @@ import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 
@@ -43,7 +46,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     public static final int NUM_VARIANTS = 999;
     protected static boolean fileIndexed;
-    protected static ETLResult etlResult;
     protected VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -52,11 +54,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @BeforeClass
     public static void beforeClass() throws IOException {
         fileIndexed = false;
-        etlResult = null;
-//        Path rootDir = getTmpRootDir();
-//        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-//        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
-//        inputUri = inputPath.toUri();
     }
 
     @Override
@@ -66,7 +63,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration);
+            runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY));
             fileIndexed = true;
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
@@ -145,11 +142,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testIterator() {
         int numVariants = 0;
-        for (Variant variant : dbAdaptor) {
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.FILE_ID, 6)); iterator.hasNext(); ) {
+            Variant variant = iterator.next();
             numVariants++;
             VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
             assertEquals("6", entry.getFileId());
-            assertEquals("5", entry.getStudyId());
+            assertEquals(Integer.toString(studyConfiguration.getStudyId()), entry.getStudyId());
             assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSampleNames());
         }
         assertEquals(NUM_VARIANTS, numVariants);

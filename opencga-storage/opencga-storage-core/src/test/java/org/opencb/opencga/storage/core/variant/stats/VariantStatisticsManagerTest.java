@@ -30,7 +30,6 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerTest extends VariantStorageManagerTestUtils {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
-    private static Object etlResult;
     private StudyConfiguration studyConfiguration;
     private VariantDBAdaptor dbAdaptor;
 
@@ -39,7 +38,6 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        etlResult = null;
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
@@ -51,7 +49,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
-        etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
+        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
     }
 

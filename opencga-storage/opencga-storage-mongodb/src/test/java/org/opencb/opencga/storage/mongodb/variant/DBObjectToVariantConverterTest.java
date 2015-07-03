@@ -125,13 +125,13 @@ public class DBObjectToVariantConverterTest {
         variant.addSourceEntry(variantSourceEntry);
 
         // MongoDB object
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, variantSourceEntry.getFileId());
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, fileId);
 
         mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
                 new BasicDBObject("QUAL", "0.01").append("AN", "2"));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
 
-        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, variantSourceEntry.getStudyId())
+        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId)
                 .append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
         BasicDBObject genotypeCodes = new BasicDBObject();
 //        genotypeCodes.append("def", "0/0");
