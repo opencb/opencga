@@ -88,7 +88,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
-        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
+//        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
 
         STUDY_CONFIGURATION ("studyConfiguration", ""),      //
         STUDY_CONFIGURATION_MANAGER_CLASS_NAME ("studyConfigurationManagerClassName", ""),

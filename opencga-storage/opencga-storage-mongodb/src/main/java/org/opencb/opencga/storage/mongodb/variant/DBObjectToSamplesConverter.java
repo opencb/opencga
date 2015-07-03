@@ -93,9 +93,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      */
     public DBObjectToSamplesConverter(List<StudyConfiguration> studyConfigurations) {
         this();
-        for (StudyConfiguration studyConfiguration : studyConfigurations) {
-            addStudyConfiguration(studyConfiguration);
-        }
+        studyConfigurations.forEach(this::addStudyConfiguration);
     }
 
 //    @Override

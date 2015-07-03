@@ -243,7 +243,8 @@ public class CliOptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         public boolean includeGenotype = false;
 
-        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
+        @Deprecated
+        @Parameter(names = {"--compress-genotypes"}, description = "[DEPRECATED]")
         public boolean compressGenotypes = false;
 
         @Deprecated

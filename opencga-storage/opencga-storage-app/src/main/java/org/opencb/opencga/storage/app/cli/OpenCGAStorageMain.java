@@ -545,7 +545,7 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.Options.INCLUDE_STATS.key(), c.includeStats);
         params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), c.includeSrc);
-        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
+//        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
         params.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated);
         params.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
         params.put(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
