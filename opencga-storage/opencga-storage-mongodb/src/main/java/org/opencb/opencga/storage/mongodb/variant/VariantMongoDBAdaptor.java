@@ -20,6 +20,7 @@ import com.mongodb.*;
 
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.opencb.biodata.models.feature.Region;
@@ -28,6 +29,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -83,6 +85,119 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.dataWriter = dataWriter;
     }
 
+
+    @Override
+    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        return null;
+    }
+
+    @Override
+    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult delete(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult deleteStudy(String studyName, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult get(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public List<QueryResult> get(List<Query> queries, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult distinct(Query query, String field, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public void forEach(Consumer<? super Variant> action) {
+
+    }
+
+    @Override
+    public void forEach(Query query, Consumer<Variant> action, QueryOptions options) {
+
+    }
+
+    @Override
+    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        return null;
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        return null;
+    }
+
+    @Override
+    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public QueryResult deleteAnnotation(String studyName, int annotationId, QueryOptions queryOptions) {
+        return null;
+    }
+
+
+    @Override
+    public boolean close() {
+        mongoManager.close(db.getDatabaseName());
+        return true;
+    }
+
+
+
+
+
+    /* OLD METHODS*/
     @Override
     public QueryResult<Variant> getAllVariants(QueryOptions options) {
 
@@ -173,7 +288,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return allResults;
     }
 
-    @Override
+    @Deprecated
     public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
 
         // Aggregation for filtering when more than one study is present
@@ -308,7 +423,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
 
-    @Override
+    @Deprecated
     public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
 
         QueryBuilder qb = QueryBuilder.start();
@@ -359,12 +474,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection.aggregate(Arrays.asList(match, project, unwind, group, sort, limit), options);
     }
 
-    @Override
+    @Deprecated
     public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
         return getGenesRanking(numGenes, -1, options);
     }
 
-    @Override
+    @Deprecated
     public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
         return getGenesRanking(numGenes, 1, options);
     }
@@ -380,12 +495,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
 
-    @Override
+    @Deprecated
     public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
         return getConsequenceTypesRanking(numConsequenceTypes, -1, options);
     }
 
-    @Override
+    @Deprecated
     public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
         return getConsequenceTypesRanking(numConsequenceTypes, 1, options);
     }
@@ -800,11 +915,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("sent order to create indices");
     }
 
-    @Override
-    public boolean close() {
-        mongoManager.close(db.getDatabaseName());
-        return true;
-    }
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(QueryOptions options) {
         List<Integer> studyIds = options.getAsIntegerList(VariantQueryParams.STUDIES.key());
