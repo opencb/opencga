@@ -16,16 +16,17 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import java.util.*;
-
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -114,11 +115,79 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         }
     }
 
+
+
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
      * QueryResult object.
      */
     void setDataWriter(DataWriter dataWriter);
+
+    /**
+     * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample
+     * genotypes, also new variants are inserted. If it is a new Study then Sample genotypes are added to the new Study.
+     * @param variants List of variants in OpenCB data model to be inserted
+     * @param studyName Name or alias of the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return QueryResult with the number of inserted variants
+     */
+    QueryResult insert(List<Variant> variants, String studyName, QueryOptions options);
+
+    QueryResult delete(Query query, QueryOptions options);
+
+    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions queryOptions);
+
+    QueryResult deleteFile(String studyName, String fileName, QueryOptions queryOptions);
+
+    QueryResult deleteStudy(String studyName, QueryOptions queryOptions);
+
+
+
+    QueryResult get(Query query, QueryOptions options);
+
+    List<QueryResult> get(List<Query> queries, QueryOptions options);
+
+    QueryResult distinct(Query query, String field, QueryOptions options);
+
+    @Override
+    VariantDBIterator iterator();
+
+    VariantDBIterator iterator(Query query, QueryOptions options);
+
+    @Override
+    void forEach(Consumer<Variant> action);
+
+    void forEach(Query query, Consumer<Variant> action, QueryOptions options);
+
+
+
+    QueryResult getFrequency(Query query, Region region, int regionIntervalSize, QueryOptions options);
+
+    QueryResult rank(Query query, String field, int numResults, boolean asc, QueryOptions options);
+
+    QueryResult groupBy(Query query, String field, QueryOptions options);
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
+
+
+
+    QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+
+    QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
+
+
+
+    QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    QueryResult deleteAnnotation(String studyName, int annotationId, QueryOptions queryOptions);
+
+
+    boolean close();
+
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -128,11 +197,13 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
+    @Deprecated
     QueryResult<Variant> getAllVariants(QueryOptions options);
 
-
+    @Deprecated
     QueryResult<Variant> getVariantById(String id, QueryOptions options);
 
+    @Deprecated
     List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
 
     /**
@@ -144,6 +215,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
+    @Deprecated
     QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
 
     /**
@@ -152,97 +224,39 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     @Deprecated
     List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
-
+    @Deprecated
     QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
 
+    @Deprecated
     QueryResult groupBy(String field, QueryOptions options);
 
 
     VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
-    @Override
-    VariantDBIterator iterator();
+//    @Override
+//    VariantDBIterator iterator();
 
+    @Deprecated
     VariantDBIterator iterator(QueryOptions options);
 
-    //QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
-
-    //QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
-
+    @Deprecated
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
 
-    //QueryResult addAnnotation(List<VariantAnnotation> variantAnnotation, QueryOptions queryOptions);
-
-    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-    //QueryResult deleteStudy(int studyId, QueryOptions queryOptions);
-
-    //QueryResult deleteSamples(List<Integer> sampleIds, int studyId, QueryOptions queryOptions);
-
-    //QueryResult deleteSamples(List<String> sampleIds, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
-
-    //QueryResult deleteStats(int studyId, int cohortId, QueryOptions queryOptions);
-
-    //QueryResult deleteAnnotation(int annotationId, int studyId, QueryOptions queryOptions);
-
-    boolean close();
-
-
-    /**
-     * Given a genomic region and studies IDs, it retrieves a set of variants and, optionally, all the information
-     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
-     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
-     *
-     * @param region    The region where variants must be searched
-     * @param studyIds   The identifier of the studies where variants are classified
-     * @param options   Optional arguments
-     * @return A QueryResult containing a set of variants and other optional information
-     */
-    @Deprecated
-    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
-
-
-    @Deprecated
-    QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
-
-
-    @Deprecated
-    QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
-    @Deprecated
-    QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
-
-
-    @Deprecated
-    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-    @Deprecated
-    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-    
-//    QueryResult getStatsByVariant(Variant variant, QueryOptions options);
-
-//    QueryResult getStatsByVariantList(List<Variant> variant, QueryOptions options);
-
-//    QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options);
-
-
-//    QueryResult getEffectsByVariant(Variant variant, QueryOptions options);
-
-
-//    QueryResult getAllBySampleList(List<Sample> samples, QueryOptions options);
-
-
-    //    QueryResult getAllBySample(Sample sample, QueryOptions options);
-//
 //    @Deprecated
-//    List<VariantInfo> getRecords(Map<String, String> options);
-//
-//    @Deprecated
-//    List<VariantStats> getRecordsStats(Map<String, String> options);
-//
-//    @Deprecated
-//    List<VariantEffect> getEffect(Map<String, String> options);
-//
-//    @Deprecated
+//    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
-//    VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
+
+//    @Deprecated
+//    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
+//    @Deprecated
+//    QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
+//    @Deprecated
+//    QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
 
 }
