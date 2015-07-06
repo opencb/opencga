@@ -24,6 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -31,11 +34,58 @@ import java.lang.reflect.InvocationTargetException;
 public abstract class StudyConfigurationManager {
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
+    private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
+    private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
+
     public StudyConfigurationManager(ObjectMap objectMap) {}
 
-    public abstract QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options);
+    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options);
+    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
-    public abstract QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    protected abstract QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+
+    public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
+        QueryResult<StudyConfiguration> result;
+        if (stringStudyConfigurationMap.containsKey(studyName)) {
+            result = _getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            if (result.getNumTotalResults() == 0) { //No changes. Return old value
+                StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
+                return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(clone));
+            }
+        } else {
+            result = _getStudyConfiguration(studyName, null, options);
+        }
+
+        stringStudyConfigurationMap.put(studyName, result.first());
+        StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
+        result.setResult(Collections.singletonList(clone));
+        return result;
+
+    }
+
+    public final QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
+        QueryResult<StudyConfiguration> result;
+        if (intStudyConfigurationMap.containsKey(studyId)) {
+            result = _getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            if (result.getNumTotalResults() == 0) { //No changes. Return old value
+                StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
+                return new QueryResult<>(clone.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(clone));
+            }
+        } else {
+            result = _getStudyConfiguration(studyId, null, options);
+        }
+
+        intStudyConfigurationMap.put(studyId, result.first());
+        StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
+        result.setResult(Collections.singletonList(clone));
+        return result;
+    }
+
+    public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+        studyConfiguration.setTimeStamp(System.currentTimeMillis());
+        stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
+        return _updateStudyConfiguration(studyConfiguration, options);
+    }
 
     static public StudyConfigurationManager build(String className, ObjectMap params)
             throws ReflectiveOperationException {

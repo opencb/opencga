@@ -37,6 +37,14 @@ public class StudyConfiguration implements Cloneable {
     private Map<String, Integer> cohortIds;
     private Map<Integer, Set<Integer>> cohorts;
 
+    private Set<Integer> indexedFiles;
+//    private Set<Integer> sampesInFiles;
+    private Map<Integer, Set<Integer>> samplesInFiles;
+    private Set<Integer> calculatedStats;
+    private Set<Integer> invalidStats;
+
+    private Long timeStamp;
+
     private ObjectMap attributes;
 
     public StudyConfiguration() {
@@ -49,6 +57,10 @@ public class StudyConfiguration implements Cloneable {
         this.sampleIds = new HashMap<>(other.sampleIds);
         this.cohortIds = new HashMap<>(other.cohortIds);
         this.cohorts = new HashMap<>(other.cohorts);
+        this.indexedFiles = new HashSet<>(other.indexedFiles);
+        this.samplesInFiles = new HashMap<>(other.samplesInFiles);
+        this.calculatedStats = new HashSet<>(other.calculatedStats);
+        this.invalidStats = new HashSet<>(other.invalidStats);
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -64,18 +76,16 @@ public class StudyConfiguration implements Cloneable {
         setSampleIds(new HashMap<>());
         setCohortIds(new HashMap<>());
         this.cohorts = new HashMap<>();
+        this.indexedFiles = new HashSet<>();
+        this.samplesInFiles = new HashMap<>();
+        this.calculatedStats = new HashSet<>();
+        this.invalidStats = new HashSet<>();
         this.attributes = new ObjectMap();
     }
 
     public StudyConfiguration(int studyId, String studyName, int fileId, String fileName) {
-        this.studyId = studyId;
-        this.studyName = studyName;
-        setFileIds(new HashMap<>(1));
+        this(studyId, studyName);
         fileIds.put(fileName, fileId);
-        setSampleIds(new HashMap<>());
-        setCohortIds(new HashMap<>());
-        this.cohorts = new HashMap<>();
-        this.attributes = new ObjectMap();
     }
 
     public StudyConfiguration(int studyId, String studyName, Map<String, Integer> fileIds,
@@ -87,6 +97,10 @@ public class StudyConfiguration implements Cloneable {
         this.sampleIds = sampleIds;
         this.cohortIds = cohortIds;
         this.cohorts = cohorts;
+        this.indexedFiles = new HashSet<>();
+        this.samplesInFiles = new HashMap<>();
+        this.calculatedStats = new HashSet<>();
+        this.invalidStats = new HashSet<>();
         this.attributes = new ObjectMap();
     }
 
@@ -110,6 +124,11 @@ public class StudyConfiguration implements Cloneable {
                 ", sampleIds=" + sampleIds +
                 ", cohortIds=" + cohortIds +
                 ", cohorts=" + cohorts +
+                ", indexedFiles=" + indexedFiles +
+                ", samplesInFiles=" + samplesInFiles +
+                ", calculatedStats=" + calculatedStats +
+                ", invalidStats=" + invalidStats +
+                ", timeStamp=" + timeStamp +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -165,6 +184,46 @@ public class StudyConfiguration implements Cloneable {
         this.cohorts = cohorts;
     }
 
+    public Set<Integer> getIndexedFiles() {
+        return indexedFiles;
+    }
+
+    public void setIndexedFiles(Set<Integer> indexedFiles) {
+        this.indexedFiles = indexedFiles;
+    }
+
+    public Map<Integer, Set<Integer>> getSamplesInFiles() {
+        return samplesInFiles;
+    }
+
+    public void setSamplesInFiles(Map<Integer, Set<Integer>> samplesInFiles) {
+        this.samplesInFiles = samplesInFiles;
+    }
+
+    public Set<Integer> getCalculatedStats() {
+        return calculatedStats;
+    }
+
+    public void setCalculatedStats(Set<Integer> calculatedStats) {
+        this.calculatedStats = calculatedStats;
+    }
+
+    public Set<Integer> getInvalidStats() {
+        return invalidStats;
+    }
+
+    public void setInvalidStats(Set<Integer> invalidStats) {
+        this.invalidStats = invalidStats;
+    }
+
+    public Long getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(Long timeStamp) {
+        this.timeStamp = timeStamp;
+    }
+
     public ObjectMap getAttributes() {
         return attributes;
     }
@@ -186,6 +245,13 @@ public class StudyConfiguration implements Cloneable {
         if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) return false;
         if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) return false;
         if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) return false;
+        if (indexedFiles != null ? !indexedFiles.equals(that.indexedFiles) : that.indexedFiles != null) return false;
+        if (samplesInFiles != null ? !samplesInFiles.equals(that.samplesInFiles) : that.samplesInFiles != null)
+            return false;
+        if (calculatedStats != null ? !calculatedStats.equals(that.calculatedStats) : that.calculatedStats != null)
+            return false;
+        if (invalidStats != null ? !invalidStats.equals(that.invalidStats) : that.invalidStats != null) return false;
+        if (timeStamp != null ? !timeStamp.equals(that.timeStamp) : that.timeStamp != null) return false;
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
     }
@@ -198,6 +264,11 @@ public class StudyConfiguration implements Cloneable {
         result = 31 * result + (sampleIds != null ? sampleIds.hashCode() : 0);
         result = 31 * result + (cohortIds != null ? cohortIds.hashCode() : 0);
         result = 31 * result + (cohorts != null ? cohorts.hashCode() : 0);
+        result = 31 * result + (indexedFiles != null ? indexedFiles.hashCode() : 0);
+        result = 31 * result + (samplesInFiles != null ? samplesInFiles.hashCode() : 0);
+        result = 31 * result + (calculatedStats != null ? calculatedStats.hashCode() : 0);
+        result = 31 * result + (invalidStats != null ? invalidStats.hashCode() : 0);
+        result = 31 * result + (timeStamp != null ? timeStamp.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return result;
     }
@@ -206,9 +277,6 @@ public class StudyConfiguration implements Cloneable {
         Map<R,T> inverseMap = new HashMap<>(map.size());
         for (Map.Entry<T, R> entry : map.entrySet()) {
             inverseMap.put(entry.getValue(), entry.getKey());
-        }
-        if (inverseMap.size() != map.size()) {
-            return null;
         }
         return inverseMap;
     }

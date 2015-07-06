@@ -349,16 +349,21 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (originalFile.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
 
-            StringBuilder sampleIdsString = new StringBuilder();
-            for (Sample sample : sampleList) {
-                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
-            }
+//            StringBuilder sampleIdsString = new StringBuilder();
+//            for (Sample sample : sampleList) {
+//                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
+//            }
+
+            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
+            String userId = catalogManager.getUserIdByProjectId(projectId);
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
                     .append(" index-variants ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
-                    .append(" --study-name \'").append(study.getName()).append("\'")
+//                    .append(" --study-name \'").append(study.getName()).append("\'")
+                    .append(" --study-name \'").append(userId).append("@").append(projectAlias).append(":").append(study.getAlias()).append("\'")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dataStore.getDbName())
@@ -366,7 +371,7 @@ public class AnalysisFileIndexer {
                     .append(" --outdir ").append(outDirUri)
                     .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                     .append(" -D").append("sessionId").append("=").append(sessionId)
-                    .append(" --sample-ids ").append(sampleIdsString)
+//                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
             if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), true)) {

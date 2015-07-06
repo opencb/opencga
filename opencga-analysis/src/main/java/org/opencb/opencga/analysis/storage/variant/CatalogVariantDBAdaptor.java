@@ -134,53 +134,53 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         }
         return dbAdaptor.getVariantFrequencyByRegion(region, options);
     }
-
-    @Override
-    public QueryResult groupBy(String field, QueryOptions options) {
-        return null;
-    }
-
-    @Override
-    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
-        return null;
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
-        return null;
-    }
-
-
-    @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator(QueryOptions options) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public boolean close() {
-        return false;
-    }
+//
+//    @Override
+//    public QueryResult groupBy(String field, QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Deprecated
+//    @Override
+//    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
+//        return null;
+//    }
+//
+//
+//    @Override
+//    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+//        return null;
+//    }
+//
+//    @Override
+//    public VariantDBIterator iterator() {
+//        return null;
+//    }
+//
+//    @Override
+//    public VariantDBIterator iterator(QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+//        return null;
+//    }
+//
+//    @Override
+//    public boolean close() {
+//        return false;
+//    }
 
 
     //AuxMethods
@@ -255,30 +255,6 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 //        return new QueryResult(id, 0, 0, 0, "", e.getMessage(), Collections.emptyList());
 //    }
 
-
-    // DEPRECATED METHODS
-    @Deprecated
-    @Override
-    public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-    @Deprecated
-    @Override
-    public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
 
 
 }

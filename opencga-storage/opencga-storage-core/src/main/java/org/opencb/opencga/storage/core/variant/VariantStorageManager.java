@@ -50,6 +50,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 13/08/14.
@@ -351,8 +352,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
          * FileID and FileName is read from the VariantSource
          * Will fail if:
          *     fileId is not an integer
-         *     fileId was already in the studyConfiguration
-         *     fileName was already in the studyConfiguration
+         *     fileId was already in the studyConfiguration.indexedFiles
+         *     fileId was already in the studyConfiguration.fileIds with a different fileName
+         *     fileName was already in the studyConfiguration.fileIds with a different fileId
          */
 
         int fileId;
@@ -403,7 +405,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     } else {
                         if (studyConfiguration.getSampleIds().get(sampleName) == sampleId) {
                             //throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
-                            logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
+//                            logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
                         } else {
                             throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
                         }
@@ -416,7 +418,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             for (String sampleName : source.getSamples()) {
                 if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
                     missingSamples.add(sampleName);
-                }
+                } /*else {
+                    Integer sampleId = studyConfiguration.getSampleIds().get(sampleName);
+                    if (studyConfiguration.getIndexedSamples().contains(sampleId)) {
+                        logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration.indexedSamples");
+                    }
+                }*/
             }
             if (!missingSamples.isEmpty()) {
                 throw new StorageManagerException("Samples " + missingSamples.toString() + " has not assigned sampleId");
@@ -455,6 +462,29 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 }
             }
         }
+
+        if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
+            Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+            List<String> missingSamples = new LinkedList<>();
+            for (String sampleName : source.getSamples()) {
+                if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sampleName))) {
+                    missingSamples.add(sampleName);
+                }
+            }
+            if (!missingSamples.isEmpty()) {
+                throw new StorageManagerException("Samples "  + missingSamples.toString() + "where not in file " + fileId);
+            }
+            if (sampleIds.size() != source.getSamples().size()) {
+                throw new StorageManagerException("Incorrect number of samples in file " + fileId);
+            }
+        } else {
+            Set<Integer> sampleIdsInFile = new HashSet<>();
+            for (String sample : source.getSamples()) {
+                sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
+            }
+            studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
+        }
+
         options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
 
         return input;
@@ -464,14 +494,15 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
+        String dbName = options.getString(Options.DB_NAME.key, null);
+        int fileId = options.getInt(Options.FILE_ID.key);
         boolean annotate = options.getBoolean(Options.ANNOTATE.key, Options.ANNOTATE.defaultValue());
 
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        studyConfiguration.getIndexedFiles().add(fileId);
         getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-        String dbName = options.getString(Options.DB_NAME.key, null);
-        int fileId = options.getInt(Options.FILE_ID.key);
 
 //        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
 
@@ -571,7 +602,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             return params.get(Options.STUDY_CONFIGURATION.key, StudyConfiguration.class);
         } else {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
-            return studyConfigurationManager.getStudyConfiguration(params.getInt(Options.STUDY_ID.key), new QueryOptions(params)).first();
+            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getString(Options.STUDY_NAME.key), new QueryOptions(params)).first();
+            params.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
+            return studyConfiguration;
         }
     }
 
@@ -617,17 +650,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /**
      * Check if the file(name,id) can be added to the StudyConfiguration.
      * Will fail if:
-     *     fileId was already in the studyConfiguration
-     *     fileName was already in the studyConfiguration
+     *     fileName was already in the studyConfiguration.fileIds with a different fileId
+     *     fileId was already in the studyConfiguration.fileIds with a different fileName
+     *     fileId was already in the studyConfiguration.indexedFiles
      */
     protected void checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
+        Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
+
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
-            throw new StorageManagerException("FileName " + fileName + " was already loaded. It was in the StudyConfiguration " +
-                    "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
+            if (studyConfiguration.getFileIds().get(fileName) != fileId) {
+                throw new StorageManagerException("FileName " + fileName + " have a different fileId in the StudyConfiguration: " +
+                        "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
+            }
         }
-        if (studyConfiguration.getFileIds().containsKey(fileId)) {
-            throw new StorageManagerException("FileId " + fileId + " was already already loaded. It was in the StudyConfiguration" +
-                    "(" + StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).get(fileId) + ":" + fileId + ")");
+        if (idFiles.containsKey(fileId)) {
+            if (!idFiles.get(fileId).equals(fileName)) {
+                throw new StorageManagerException("FileId " + fileId + " have a different fileName in the StudyConfiguration: " +
+                        "(" + idFiles.containsKey(fileId) + ":" + fileId + ")");
+            }
+        }
+        if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+            throw new StorageManagerException("File (" + fileName + ":" + fileId + ")"
+                    + " was already already loaded ");
         }
     }
 

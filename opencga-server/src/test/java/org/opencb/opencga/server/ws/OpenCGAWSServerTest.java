@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -33,6 +34,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
@@ -52,7 +54,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -146,8 +150,14 @@ public class OpenCGAWSServerTest {
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
+        List<String> sampleNames = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(), new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), fileVcf.getSampleIds()), sessionId).getResult().stream().map(Sample::getName).collect(Collectors.toList());
         List<Variant> variants = fileTest.fetchVariants(fileVcf.getId(), sessionId, queryOptions);
         assertEquals(10, variants.size());
+        for (Variant variant : variants) {
+            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
+                assertEquals(new HashSet<>(sampleNames), sourceEntry.getSamplesData().keySet());
+            }
+        }
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);

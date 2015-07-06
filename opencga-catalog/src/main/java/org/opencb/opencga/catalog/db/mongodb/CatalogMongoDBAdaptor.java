@@ -1429,7 +1429,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
-
+        options.put(CohortFilterOption.studyId.toString(), studyId);
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {

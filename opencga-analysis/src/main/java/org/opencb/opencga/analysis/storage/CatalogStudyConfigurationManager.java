@@ -20,9 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -46,7 +49,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private final String sessionId;
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
-    public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.name", "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
+    public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.alias"));
     private final ObjectMapper objectMapper;
 
     public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
@@ -57,22 +60,61 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+        return _getStudyConfiguration(null, studyName, timeStamp, options);
+    }
+
+    @Override
+    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return _getStudyConfiguration(studyId, null, timeStamp, options);
+    }
+
+    private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
         StudyConfiguration studyConfiguration = null;
         long start = System.currentTimeMillis();
         try {
+            if (studyId == null) {
+                studyId = catalogManager.getStudyId(studyName);
+            }
             logger.debug("Reading StudyConfiguration from Catalog. studyId: {}", studyId);
             Study study = catalogManager.getStudy(studyId, options.getString("sessionId", sessionId), QUERY_OPTIONS).first();
-            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
-            if (o == null ) {
-                studyConfiguration = new StudyConfiguration(studyId, study.getName());
-            } else if (o instanceof StudyConfiguration) {
-                studyConfiguration = (StudyConfiguration) o;
-            } else {
-                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
-            }
+            studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
+//            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
+//            if (o == null ) {
+//                studyConfiguration = new StudyConfiguration(studyId, study.getName());
+//            } else if (o instanceof StudyConfiguration) {
+//                studyConfiguration = (StudyConfiguration) o;
+//            } else {
+//                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
+//            }
             logger.trace("Read StudyConfiguration studyConfiguration {}", studyConfiguration);
-        } catch (CatalogException | IOException e) {
+
+            QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
+                    .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds")), sessionId);
+            for (File file : indexedFiles.getResult()) {
+                studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
+            }
+
+            QueryResult<File> files = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
+                    .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds")), sessionId);
+            for (File file : files.getResult()) {
+                studyConfiguration.getFileIds().put(file.getName(), file.getId());
+            }
+
+            QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, new QueryOptions("include",
+                    Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name")), sessionId);
+            for (Sample sample : samples.getResult()) {
+                studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
+            }
+
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, new QueryOptions("include",
+                    Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name")), sessionId);
+            for (Cohort cohort : cohorts.getResult()) {
+                studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
+                studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
+            }
+
+        } catch (CatalogException e) {
             e.printStackTrace();
             logger.error("Unable to get StudyConfiguration from Catalog", e);
         }
@@ -84,11 +126,11 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             list = Collections.singletonList(studyConfiguration.clone());
         }
 
-        return new QueryResult<>(Integer.toString(studyId), (int) (System.currentTimeMillis() - start), 1, 1, "", "", list);
+        return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", list);
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         try {
             logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
             return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
