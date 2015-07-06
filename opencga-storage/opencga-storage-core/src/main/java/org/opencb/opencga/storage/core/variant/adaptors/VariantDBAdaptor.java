@@ -33,6 +33,7 @@ import static org.opencb.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
+ * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
@@ -82,8 +83,9 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     }
 
     /**
-     * This method set a data writer object for data serialization. When used no data will be return in
-     * QueryResult object.
+     * This method sets a data writer object for data serialization. When used no data will be return in
+     * QueryResult object but written into the writer
+     * @param dataWriter
      */
     void setDataWriter(DataWriter dataWriter);
 
@@ -93,24 +95,70 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param variants List of variants in OpenCB data model to be inserted
      * @param studyName Name or alias of the study
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return QueryResult with the number of inserted variants
+     * @return A QueryResult with the number of inserted variants
      */
     QueryResult insert(List<Variant> variants, String studyName, QueryOptions options);
 
+    /**
+     * Delete all the variants from the database resulting of executing the query.
+     * @param query Query to be executed in the database
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the number of deleted variants
+     */
     QueryResult delete(Query query, QueryOptions options);
 
-    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions queryOptions);
+    /**
+     * Delete all the given samples belonging to the study from the database.
+     * @param studyName The study name where samples belong to
+     * @param sampleNames Sample names to be deleted, these must belong to the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with a list with all the samples deleted
+     */
+    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options);
 
-    QueryResult deleteFile(String studyName, String fileName, QueryOptions queryOptions);
+    /**
+     * Delete the given file from the database with all the samples it has.
+     * @param studyName The study where the file belong
+     * @param fileName The file name to be deleted, it must belong to the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the file deleted
+     */
+    QueryResult deleteFile(String studyName, String fileName, QueryOptions options);
 
-    QueryResult deleteStudy(String studyName, QueryOptions queryOptions);
+    /**
+     * Delete the given study from the database
+     * @param studyName The study name to delete
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the study deleted
+     */
+    QueryResult deleteStudy(String studyName, QueryOptions options);
 
 
-
+    /**
+     * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
+     * @param query Query to be executed in the database
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the result of the query
+     */
     QueryResult get(Query query, QueryOptions options);
 
+    /**
+     * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
+     * @param queries List of queries to be executed in the database
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
+     * @return A list of QueryResult with the result of the queries
+     */
     List<QueryResult> get(List<Query> queries, QueryOptions options);
 
+    /**
+     * Performs a distinct operation of the given field over the returned results.
+     * @param query Query to be executed in the database
+     * @param field Field to be distinct, it must be a valid QueryParams id
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the all the distinct values
+     */
     QueryResult distinct(Query query, String field, QueryOptions options);
 
     @Override
@@ -119,7 +167,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     VariantDBIterator iterator(Query query, QueryOptions options);
 
     @Override
-    void forEach(Consumer<Variant> action);
+    void forEach(Consumer<? super Variant> action);
 
     void forEach(Query query, Consumer<Variant> action, QueryOptions options);
 
