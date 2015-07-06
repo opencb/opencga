@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -491,9 +490,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
             QueryOptions annotationOptions = new QueryOptions();
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
-                annotationOptions.put(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+                annotationOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
             }
-            annotationOptions.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId));    // annotate just the indexed variants
+            annotationOptions.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId));    // annotate just the indexed variants
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());

@@ -19,13 +19,11 @@ package org.opencb.opencga.storage.mongodb.variant;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.net.URI;
@@ -133,21 +131,21 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
     public void deleteAnnotationTest() throws Exception {
         VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
-        QueryOptions queryOptions = new QueryOptions(VariantDBAdaptor.ANNOTATION_EXISTS, true);
-        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        QueryOptions queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), true);
+        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         queryOptions.add("limit", 1);
         long numAnnotatedVariants = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
-        queryOptions = new QueryOptions(VariantDBAdaptor.CHROMOSOME, "1");
-        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
+        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         queryOptions.add("limit", 1);
         long numVariantsChr1 = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
-        dbAdaptor.deleteAnnotation(0, studyConfiguration.getStudyId(), new QueryOptions(VariantDBAdaptor.CHROMOSOME, "1"));
+        dbAdaptor.deleteAnnotation(0, studyConfiguration.getStudyId(), new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"));
 
-        queryOptions = new QueryOptions(VariantDBAdaptor.ANNOTATION_EXISTS, false);
-        queryOptions.add(VariantDBAdaptor.STUDIES, studyConfiguration.getStudyId());
+        queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         queryOptions.add("limit", 1);
         long numVariantsNoAnnotation = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
 

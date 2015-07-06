@@ -187,14 +187,14 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private Map<Integer, File> getFilesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantDBAdaptor.FILES);
+        Object files = options.get(VariantQueryParams.FILES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getFilesMap(fileIds, sessionId);
     }
 
     private Map<Integer, Study> getStudiesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantDBAdaptor.STUDIES);
+        Object files = options.get(VariantQueryParams.STUDIES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getStudiesMap(fileIds, sessionId);
     }

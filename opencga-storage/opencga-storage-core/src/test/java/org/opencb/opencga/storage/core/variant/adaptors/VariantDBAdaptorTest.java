@@ -26,14 +26,9 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -101,40 +96,40 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(variant.getStart(), 1650807);
         assertTrue(variant.getIds().contains("rs1137005"));
 
-        options = new QueryOptions(VariantDBAdaptor.ID, "rs1137005,rs150535390");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(2, queryResult.getNumResults());
     }
 
     @Test
     public void testGetAllVariants_region() {
-        options = new QueryOptions(VariantDBAdaptor.REGION, "1:13910417-13910417,1:165389129-165389129");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:13910417-13910417,1:165389129-165389129");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(2, queryResult.getNumResults());
 
-        options = new QueryOptions(VariantDBAdaptor.REGION, Arrays.asList("1:13910417-13910417", "1:165389129-165389129"));
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.REGION.key(), Arrays.asList("1:13910417-13910417", "1:165389129-165389129"));
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(2, queryResult.getNumResults());
 
-        options = new QueryOptions(VariantDBAdaptor.REGION,
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.REGION.key(),
                 Arrays.asList(Region.parseRegion("1:13910417-13910417"), Region.parseRegion("1:165389129-165389129")));
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(2, queryResult.getNumResults());
 
-        options = new QueryOptions(VariantDBAdaptor.REGION, "1:14000000-160000000");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(64, queryResult.getNumResults());
     }
 
     @Test
     public void testGetAllVariants_files() {
-        options = new QueryOptions(VariantDBAdaptor.FILES, 6);
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.FILES.key(), 6);
         options.put("limit", 1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
 
-        options = new QueryOptions(VariantDBAdaptor.FILES, -1);
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.FILES.key(), -1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals("There is no file with ID -1", 0, queryResult.getNumResults());
     }
@@ -142,7 +137,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testIterator() {
         int numVariants = 0;
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.FILE_ID, 6)); iterator.hasNext(); ) {
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.VariantQueryParams.FILE_ID.key(), 6)); iterator.hasNext(); ) {
             Variant variant = iterator.next();
             numVariants++;
             VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
@@ -158,34 +153,34 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Integer na19600 = studyConfiguration.getSampleIds().get("NA19600");
         Integer na19685 = studyConfiguration.getSampleIds().get("NA19685");
 
-        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":1|1");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":1|1");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(282, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
 
         //get for each genotype. Should return all variants
-        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":0|0,0|1,1|0,1|1,./.");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":0|0,0|1,1|0,1|1,./.");
         options.add("limit", 1);
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
 
         //Get all missing genotypes for sample na19600
-        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":./.");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":./.");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(9, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
 
         //This works, but is incorrect. Better use "./."
-        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":-1/-1");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":-1/-1");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(9, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
 
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
-        options = new QueryOptions(VariantDBAdaptor.GENOTYPE, na19600+":1|1"+";"+na19685+":0|0,1|0");
+        options = new QueryOptions(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":1|1"+";"+na19685+":0|0,1|0");
         queryResult = dbAdaptor.getAllVariants(options);
         assertEquals(14, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> {

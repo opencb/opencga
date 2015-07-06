@@ -690,19 +690,19 @@ public class OpenCGAStorageMain {
          */
         QueryOptions queryOptions = new QueryOptions();
         if (c.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.REGION.key(), c.filterRegion);
         }
         if (c.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), c.filterChromosome);
         }
         if (c.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.GENE, c.filterGene);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.GENE.key(), c.filterGene);
         }
         if (c.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), c.filterAnnotConsequenceType);
         }
         if (!c.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = new URI(null , c.outdir, null);
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {

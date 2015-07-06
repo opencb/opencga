@@ -97,8 +97,8 @@ public class VariantStatisticsManager {
 //        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyId);
 
-        options.put(VariantDBAdaptor.STUDIES, Collections.singletonList(studyId));
-        options.put(VariantDBAdaptor.FILES, Collections.singletonList(fileId)); // query just the asked file
+        options.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyId));
+        options.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId)); // query just the asked file
 
 
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);

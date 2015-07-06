@@ -88,7 +88,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
 
         //Check that both studies contains the same information
-        VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.STUDIES, STUDY_ID + "," + singleFileStudyId));
+        VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_ID + "," + singleFileStudyId));
         int numVariants = 0;
         for (; iterator.hasNext();) {
             Variant variant = iterator.next();

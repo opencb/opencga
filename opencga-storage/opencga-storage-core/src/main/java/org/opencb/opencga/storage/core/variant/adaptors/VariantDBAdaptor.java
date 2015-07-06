@@ -22,11 +22,14 @@ import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.*;
 import java.util.function.Consumer;
+
+import static org.opencb.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -34,88 +37,49 @@ import java.util.function.Consumer;
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
-    String ID = "ids";
-    String REGION = "region";
-    String CHROMOSOME = "chromosome";
-    String GENE = "gene";
-    String TYPE = "type";
-    String REFERENCE = "reference";
-    String ALTERNATE = "alternate";
-    String EFFECT = "effect";
-    String STUDIES = "studies";
-    String FILES = "files";
-    String FILE_ID = "fileId";
-    String MAF = "maf";
-    String MGF = "mgf";
-    String MISSING_ALLELES = "missingAlleles";
-    String MISSING_GENOTYPES = "missingGenotypes";
-    String ANNOTATION_EXISTS = "annotationExists";
-    String GENOTYPE = "genotype";
-    String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
-    String ANNOT_XREF = "annot-xref";
-    String ANNOT_BIOTYPE = "annot-biotype";
-    String POLYPHEN = "polyphen";
-    String SIFT = "sift";
-    String PROTEIN_SUBSTITUTION = "protein_substitution";
-    String CONSERVED_REGION = "conserved_region";
-    String ALTERNATE_FREQUENCY = "alternate_frequency";
-    String REFERENCE_FREQUENCY = "reference_frequency";
-    String MERGE = "merge";
-    String SORT = "sort";
+    enum VariantQueryParams implements QueryParam {
+        ID ("ids", TEXT_ARRAY, ""),
+        REGION ("region", TEXT_ARRAY, ""),
+        CHROMOSOME ("chromosome", TEXT_ARRAY, ""),
+        GENE ("gene", TEXT_ARRAY, ""),
+        TYPE ("type", TEXT_ARRAY, ""),
+        REFERENCE ("reference", TEXT_ARRAY, ""),
+        ALTERNATE ("alternate", TEXT_ARRAY, ""),
+        //EFFECT ("TEXT_ARRAY", null, ""),
+        STUDIES ("studies", TEXT_ARRAY, ""),
+        FILES ("files", TEXT_ARRAY, ""),
+        FILE_ID ("fileId", TEXT_ARRAY, ""),
+        MAF ("maf", TEXT_ARRAY, ""),
+        MGF ("mgf", TEXT_ARRAY, ""),
+        MISSING_ALLELES ("missingAlleles", TEXT_ARRAY, ""),
+        MISSING_GENOTYPES ("missingGenotypes", TEXT_ARRAY, ""),
+        ANNOTATION_EXISTS ("annotationExists", TEXT_ARRAY, ""),
+        GENOTYPE ("genotype", TEXT_ARRAY, ""),
+        ANNOT_CONSEQUENCE_TYPE ("annot-ct", TEXT_ARRAY, ""),
+        ANNOT_XREF ("annot-xref", TEXT_ARRAY, ""),
+        ANNOT_BIOTYPE ("annot-biotype", TEXT_ARRAY, ""),
+        POLYPHEN ("polyphen", TEXT_ARRAY, ""),
+        SIFT ("sift", TEXT_ARRAY, ""),
+        PROTEIN_SUBSTITUTION ("protein_substitution", TEXT_ARRAY, ""),
+        CONSERVED_REGION ("conserved_region", TEXT_ARRAY, ""),
+        ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
+        REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
+        ;
 
-    class QueryParams {
-        public static final Set<String> acceptedValues;
-        static {
-            acceptedValues = new HashSet<>();
-            acceptedValues.add(ID);
-            acceptedValues.add(REGION);
-            acceptedValues.add(CHROMOSOME);
-            acceptedValues.add(GENE);
-            acceptedValues.add(TYPE);
-            acceptedValues.add(REFERENCE);
-            acceptedValues.add(ALTERNATE);
-            acceptedValues.add(EFFECT);
-            acceptedValues.add(STUDIES);
-            acceptedValues.add(FILES);
-            acceptedValues.add(FILE_ID);
-            acceptedValues.add(MAF);
-            acceptedValues.add(MGF);
-            acceptedValues.add(MISSING_ALLELES);
-            acceptedValues.add(MISSING_GENOTYPES);
-            acceptedValues.add(ANNOTATION_EXISTS);
-            acceptedValues.add(GENOTYPE);
-            acceptedValues.add(ANNOT_CONSEQUENCE_TYPE);
-            acceptedValues.add(ANNOT_XREF);
-            acceptedValues.add(ANNOT_BIOTYPE);
-            acceptedValues.add(POLYPHEN);
-            acceptedValues.add(SIFT);
-            acceptedValues.add(PROTEIN_SUBSTITUTION);
-            acceptedValues.add(CONSERVED_REGION);
-            acceptedValues.add(MERGE);
+        VariantQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
         }
 
-        //TODO: Think about this
-        public static QueryOptions checkQueryOptions(QueryOptions options) throws Exception {
-            QueryOptions filteredQueryOptions = new QueryOptions(options);
-            Iterator<Map.Entry<String, Object>> iterator = filteredQueryOptions.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, Object> entry = iterator.next();
-                if (acceptedValues.contains(entry.getKey())) {
-                    if (entry.getValue() == null || entry.toString().isEmpty()) {
-                        iterator.remove();
-                    } else {
-                        //TODO: check type
-                    }
-                } else {
-                    iterator.remove();
-                    System.out.println("Unknown query param " + entry.getKey());
-                }
-            }
-            return filteredQueryOptions;
-        }
+        private final String key;
+        private Type type;
+        private String description;
+
+        @Override public String key() {return key;}
+        @Override public String description() {return description;}
+        @Override public Type type() {return type;}
     }
-
-
 
     /**
      * This method set a data writer object for data serialization. When used no data will be return in
