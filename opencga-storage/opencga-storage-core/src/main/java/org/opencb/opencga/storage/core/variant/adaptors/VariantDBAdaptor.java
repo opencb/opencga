@@ -87,6 +87,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * QueryResult object but written into the writer
      * @param dataWriter
      */
+    @Deprecated
     void setDataWriter(DataWriter dataWriter);
 
     /**
@@ -156,10 +157,9 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * Performs a distinct operation of the given field over the returned results.
      * @param query Query to be executed in the database
      * @param field Field to be distinct, it must be a valid QueryParams id
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the all the distinct values
      */
-    QueryResult distinct(Query query, String field, QueryOptions options);
+    QueryResult distinct(Query query, String field);
 
     @Override
     VariantDBIterator iterator();
@@ -169,10 +169,17 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     @Override
     void forEach(Consumer<? super Variant> action);
 
-    void forEach(Query query, Consumer<Variant> action, QueryOptions options);
+    void forEach(Query query, Consumer<? super Variant> action, QueryOptions options);
 
 
-
+    /**
+     *
+     * @param query
+     * @param region
+     * @param regionIntervalSize
+     * @param options
+     * @return
+     */
     QueryResult getFrequency(Query query, Region region, int regionIntervalSize, QueryOptions options);
 
     QueryResult rank(Query query, String field, int numResults, boolean asc, QueryOptions options);
@@ -195,10 +202,11 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
-    QueryResult deleteAnnotation(String studyName, int annotationId, QueryOptions queryOptions);
+    QueryResult deleteAnnotation(String annotationId, QueryOptions queryOptions);
 
 
     boolean close();
+
 
 
     /**
@@ -242,11 +250,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     @Deprecated
     QueryResult groupBy(String field, QueryOptions options);
 
-
+    @Deprecated
     VariantSourceDBAdaptor getVariantSourceDBAdaptor();
-
-//    @Override
-//    VariantDBIterator iterator();
 
     @Deprecated
     VariantDBIterator iterator(QueryOptions options);
@@ -256,7 +261,6 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
 //    @Deprecated
 //    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
 
 //    @Deprecated
 //    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
