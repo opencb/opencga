@@ -624,6 +624,11 @@ public class CatalogManagerTest extends GenericTest {
         int numFolders = result.getNumResults();
         assertEquals(5, numFolders);
 
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(".", result.first().getName());
+
 
         options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE,FOLDER");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);

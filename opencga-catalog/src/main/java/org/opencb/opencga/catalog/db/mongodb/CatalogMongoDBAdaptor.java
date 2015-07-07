@@ -1485,8 +1485,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        String[] acceptedMapParams = {"attributes"};
+        String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap("status", Cohort.Status.class);
+        filterEnumParams(parameters, cohortParams, acceptedEnumParams);
 
         if(!cohortParams.isEmpty()) {
             HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,11 +31,15 @@ public class Cohort {
     private String name;
     private Type type;
     private String creationDate;
+    private Status status;
     private String description;
 
     private List<Integer> samples;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
+
+    public enum Status {NONE, CALCULATING, READY, INVALID}
 
     //Represents the criteria of grouping samples in the cohort
     public enum Type {
@@ -53,17 +58,19 @@ public class Cohort {
 
     public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, description, samples, attributes);
+        this(-1, name, type, creationDate, Status.NONE, description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, Type type, String creationDate, String description, List<Integer> samples,
-                  Map<String, Object> attributes) {
+    public Cohort(int id, String name, Type type, String creationDate, Status status, String description, List<Integer> samples,
+                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.creationDate = creationDate;
+        this.status = status;
         this.description = description;
         this.samples = samples;
+        this.stats = stats;
         this.attributes = attributes;
     }
 
@@ -74,8 +81,10 @@ public class Cohort {
                 ", name='" + name + '\'' +
                 ", type=" + type +
                 ", creationDate='" + creationDate + '\'' +
+                ", status=" + status +
                 ", description='" + description + '\'' +
                 ", samples=" + samples +
+                ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -112,6 +121,14 @@ public class Cohort {
         this.creationDate = creationDate;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -126,6 +143,14 @@ public class Cohort {
 
     public void setSamples(List<Integer> samples) {
         this.samples = samples;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 
     public Map<String, Object> getAttributes() {
