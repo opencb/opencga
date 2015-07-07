@@ -142,7 +142,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the result of the query
      */
-    QueryResult get(Query query, QueryOptions options);
+    QueryResult<Variant> get(Query query, QueryOptions options);
 
     /**
      * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from

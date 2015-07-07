@@ -113,7 +113,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
         if (object.containsField(IDS_FIELD)) {
             Object ids = object.get(IDS_FIELD);
-            variant.setIds(new HashSet<String>(((Collection<String>) ids)));
+            variant.setIds(new HashSet<>(((Collection<String>) ids)));
         }
 
         // Transform HGVS: List of map entries -> Map of lists
