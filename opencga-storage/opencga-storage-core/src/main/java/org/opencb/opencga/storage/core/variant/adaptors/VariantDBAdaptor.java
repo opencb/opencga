@@ -138,16 +138,16 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     /**
      * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
-     * @param query Query to be executed in the database
+     * @param query Query to be executed in the database to filter variants
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the result of the query
      */
-    QueryResult get(Query query, QueryOptions options);
+    QueryResult<Variant> get(Query query, QueryOptions options);
 
     /**
      * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from
      * the 'include' and 'exclude' fields at options.
-     * @param queries List of queries to be executed in the database
+     * @param queries List of queries to be executed in the database to filter variants
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
      * @return A list of QueryResult with the result of the queries
      */
@@ -155,7 +155,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     /**
      * Performs a distinct operation of the given field over the returned results.
-     * @param query Query to be executed in the database
+     * @param query Query to be executed in the database to filter variants
      * @param field Field to be distinct, it must be a valid QueryParams id
      * @return A QueryResult with the all the distinct values
      */
@@ -173,16 +173,25 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
 
     /**
-     *
-     * @param query
-     * @param region
-     * @param regionIntervalSize
-     * @param options
+     * This methods calculates the number of variants at different equally-sized genome chunks. This can be renderer
+     * as a histogram of the number of variants across a genomic region.
+     * @param query Query to be executed in the database to filter variants
+     * @param region Region where to calculate the variant frequency
+     * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
      * @return
      */
-    QueryResult getFrequency(Query query, Region region, int regionIntervalSize, QueryOptions options);
+    QueryResult getFrequency(Query query, Region region, int regionIntervalSize);
 
-    QueryResult rank(Query query, String field, int numResults, boolean asc, QueryOptions options);
+    /**
+     * This method ranks different entities with the most or the least number of variants. These entities
+     * can be 'gene' or 'consequence_type' among others.
+     * @param query Query to be executed in the database to filter variants
+     * @param field The entity to rank
+     * @param numResults The max number of results to return
+     * @param asc Whether we want the top or the bottom part of the rank
+     * @return A QueryResult with a list of the entities and the number of elements
+     */
+    QueryResult rank(Query query, String field, int numResults, boolean asc);
 
     QueryResult groupBy(Query query, String field, QueryOptions options);
 
