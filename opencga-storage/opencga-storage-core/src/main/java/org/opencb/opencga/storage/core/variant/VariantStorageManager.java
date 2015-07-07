@@ -602,7 +602,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             return params.get(Options.STUDY_CONFIGURATION.key, StudyConfiguration.class);
         } else {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
-            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getString(Options.STUDY_NAME.key), new QueryOptions(params)).first();
+            StudyConfiguration studyConfiguration;
+            if (params.containsKey(Options.STUDY_NAME.key)) {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getString(Options.STUDY_NAME.key), new QueryOptions(params)).first();
+            } else if (params.containsKey(Options.STUDY_ID.key)) {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getInt(Options.STUDY_ID.key), new QueryOptions(params)).first();
+            } else {
+                throw new StorageManagerException("Unable to get StudyConfiguration. Missing studyId or studyName");
+            }
             params.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
             return studyConfiguration;
         }

@@ -802,9 +802,9 @@ public class OpenCGAStorageMain {
 
         try {
 
-            Map<String, Integer> cohortIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
+            Map<String, Integer> cohortNameIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
             /** Check and update StudyConfiguration **/
-            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
+            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortNameIds);
 
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();

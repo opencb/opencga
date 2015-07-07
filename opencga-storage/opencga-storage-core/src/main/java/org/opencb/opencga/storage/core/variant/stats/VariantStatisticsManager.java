@@ -202,25 +202,26 @@ public class VariantStatisticsManager {
         int numTasks = 6;
         int batchSize = 100;  // future optimization, threads, etc
         boolean overwrite = false;
-        String fileId;
+//        String fileId;
         if(options != null) { //Parse query options
             batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), batchSize);
             numTasks = options.getInt(VariantStorageManager.Options.LOAD_THREADS.key(), numTasks);
             overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), overwrite);
-            fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
+//            fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
         } else {
             logger.error("missing required fileId in QueryOptions");
             throw new Exception("createStats: need a fileId to calculate stats from.");
         }
 
-        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, Integer.toString(studyConfiguration.getStudyId()));
+        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
 
        // reader, tasks and writer
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, options);
+        QueryOptions readerQueryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQueryOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, samples, studyConfiguration, fileId, variantSourceStats));
+            tasks.add(new VariantStatsWrapperTask(overwrite, samples, studyConfiguration, null/*FILE_ID*/, variantSourceStats));
         }
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
@@ -250,7 +251,7 @@ public class VariantStatisticsManager {
         private boolean overwrite;
         private Map<String, Set<String>> samples;
         private StudyConfiguration studyConfiguration;
-        private String fileId;
+//        private String fileId;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
         private VariantSourceStats variantSourceStats;
@@ -261,7 +262,7 @@ public class VariantStatisticsManager {
             this.overwrite = overwrite;
             this.samples = samples;
             this.studyConfiguration = studyConfiguration;
-            this.fileId = fileId;
+//            this.fileId = fileId;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
@@ -274,7 +275,7 @@ public class VariantStatisticsManager {
             boolean defaultCohortAbsent = false;
 
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyId()+"", fileId, samples);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyId()+"", null/*fileId*/, samples);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
@@ -382,6 +383,10 @@ public class VariantStatisticsManager {
     /**
      * check that all SampleIds are in the StudyConfiguration
      *
+     * If some cohort does not have samples, reads the content from StudyConfiguration.
+     * If there is no cohortId for come cohort, reads the content from StudyConfiguration or auto-generate a cohortId
+     *
+     *
      */
     public List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                         Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds)
@@ -394,14 +399,18 @@ public class VariantStatisticsManager {
             final int cohortId;
 
             if (cohortIds == null || cohortIds.isEmpty()) {
-                //Auto-generate cohortId. Max CohortId + 1
-                int maxCohortId = 0;
-                for (int cid : studyConfiguration.getCohortIds().values()) {
-                    if (cid > maxCohortId) {
-                        maxCohortId = cid;
+                if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
+                    cohortId = studyConfiguration.getCohortIds().get(cohortName);
+                } else {
+                    //Auto-generate cohortId. Max CohortId + 1
+                    int maxCohortId = 0;
+                    for (int cid : studyConfiguration.getCohortIds().values()) {
+                        if (cid > maxCohortId) {
+                            maxCohortId = cid;
+                        }
                     }
+                    cohortId = maxCohortId + 1;
                 }
-                cohortId = maxCohortId + 1;
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
                     //ERROR Missing cohortId
@@ -409,28 +418,53 @@ public class VariantStatisticsManager {
                 }
                 cohortId = cohortIds.get(entry.getKey());
             }
+
             if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
-                //ERROR Duplicated cohortName
-                throw new IOException("Duplicated cohortName " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as " +
-                        cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
-            }
-            if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
+                if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
+                    //ERROR Duplicated cohortName
+                    throw new IOException("Duplicated cohortName " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as " +
+                            cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
+                }
+            } else if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
                 //ERROR Duplicated cohortId
                 throw new IOException("Duplicated cohortId " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as " +
                         StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
             }
 
-            Set<Integer> sampleIds = new HashSet<>();
-            for (String sample : samples) {
-                if (!studyConfiguration.getSampleIds().containsKey(sample)) {
-                    //ERROR Sample not found
-                    throw new IOException("Sample " + sample + " not found in the StudyConfiguration");
-                } else {
-                    sampleIds.add(studyConfiguration.getSampleIds().get(sample));
+            Set<Integer> sampleIds;
+            if (samples == null || samples.isEmpty()) {
+                sampleIds = studyConfiguration.getCohorts().get(cohortId);
+                if (sampleIds == null || sampleIds.isEmpty()) {
+                    throw new IOException("Cohort \"" + cohortName + "\" is empty");
+                }
+                samples = new HashSet<>();
+                Map<Integer, String> idSamples = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+                for (Integer sampleId : sampleIds) {
+                    samples.add(idSamples.get(sampleId));
+                }
+                cohorts.put(cohortName, samples);
+            } else {
+                sampleIds = new HashSet<>(samples.size());
+                for (String sample : samples) {
+                    if (!studyConfiguration.getSampleIds().containsKey(sample)) {
+                        //ERROR Sample not found
+                        throw new IOException("Sample " + sample + " not found in the StudyConfiguration");
+                    } else {
+                        sampleIds.add(studyConfiguration.getSampleIds().get(sample));
+                    }
+                }
+                if (sampleIds.size() != samples.size()) {
+                    throw new IOException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
             }
-            if (sampleIds.size() != samples.size()) {
-                throw new IOException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
+
+            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+            }
+            if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
+                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
+            } else {
+                studyConfiguration.getCalculatedStats().add(cohortId);
             }
 
             cohortIdList.add(cohortId);
