@@ -620,8 +620,18 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     final public StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         StudyConfigurationManager studyConfigurationManager = null;
         if (studyConfigurationManager == null) {
+
+            // We read the StudyMetadataManager from the passed 'options', if not exists then we read configuration file
+            String studyConfigurationManagerClassName = null;
             if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key)) {
-                String studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key);
+                studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key);
+            } else {
+                if (configuration.getStudyMetadataManager() != null && !configuration.getStudyMetadataManager().isEmpty()) {
+                    studyConfigurationManagerClassName = configuration.getStudyMetadataManager();
+                }
+            }
+
+            if (studyConfigurationManagerClassName != null && !studyConfigurationManagerClassName.isEmpty()) {
                 try {
                     studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
                 } catch (ReflectiveOperationException e) {
@@ -630,6 +640,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     throw new RuntimeException(e);
                 }
             }
+            // This method can be override in children methods
             if (studyConfigurationManager == null) {
                 studyConfigurationManager = buildStudyConfigurationManager(options);
             }

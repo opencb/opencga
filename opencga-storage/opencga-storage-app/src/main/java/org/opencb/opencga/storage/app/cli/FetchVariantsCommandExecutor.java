@@ -33,6 +33,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
@@ -64,14 +65,30 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
     public void execute() throws Exception {
 
         /**
-         * Open connection
-         */
-        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
-//            if (queryVariantsCommandOptions.credentials != null && !queryVariantsCommandOptions.credentials.isEmpty()) {
-//                variantStorageManager.addConfigUri(new URI(null, queryVariantsCommandOptions.credentials, null));
-//            }
+        * Getting VariantStorageManager
+        * We need to find out the Storage Engine Id to be used
+        * If not storage engine is passed then the default is taken from storage-configuration.yml file
+        **/
+        String storageEngine = (queryVariantsCommandOptions.storageEngine != null && !queryVariantsCommandOptions.storageEngine.isEmpty())
+                ? queryVariantsCommandOptions.storageEngine
+                : configuration.getDefaultStorageEngineId();
+        logger.debug("Storage Engine set to '{}'", storageEngine);
+
+        StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
+
+        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+        VariantStorageManager variantStorageManager;
+        if (storageEngine == null || storageEngine.isEmpty()) {
+            variantStorageManager = storageManagerFactory.getVariantStorageManager();
+        } else {
+            variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
+        }
+        storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.params);
+//        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
+
 
         ObjectMap params = new ObjectMap();
+
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
 
         /**
@@ -149,7 +166,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         if (queryVariantsCommandOptions.reference != null && !queryVariantsCommandOptions.reference.isEmpty()) {   //csv
             options.add("reference", queryVariantsCommandOptions.reference);
         }
-
 
         /**
          * Run query
