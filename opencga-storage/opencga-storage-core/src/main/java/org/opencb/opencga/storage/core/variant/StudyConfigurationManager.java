@@ -60,7 +60,7 @@ public abstract class StudyConfigurationManager {
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
+            StudyConfiguration clone = studyConfiguration.clone();
             result.setResult(Collections.singletonList(clone));
         }
         return result;
@@ -83,7 +83,7 @@ public abstract class StudyConfigurationManager {
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
+            StudyConfiguration clone = studyConfiguration.clone();
             result.setResult(Collections.singletonList(clone));
         }
         return result;
