@@ -259,6 +259,27 @@ public class FileWSServerTest {
 
     }
 
+    public Job calculateVariantStats(int cohortId, int outdirId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+
+        String json = webTarget.path("cohorts").path(String.valueOf(cohortId)).path("stats")
+                .queryParam("sid", sessionId)
+                .queryParam("calculate", true)
+                .queryParam("outdirId", outdirId)
+                .queryParam("log", "debug")
+                .request().get(String.class);
+
+        QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        Job job = queryResponse.getResponse().get(0).first();
+
+        System.out.println("\nJSON RESPONSE");
+        System.out.println(json);
+
+        return job;
+
+    }
+
     public List<Variant> fetchVariants(int fileId, String sessionId, QueryOptions queryOptions) throws IOException {
         System.out.println("\nTesting file fetch variants...");
         System.out.println("---------------------");
