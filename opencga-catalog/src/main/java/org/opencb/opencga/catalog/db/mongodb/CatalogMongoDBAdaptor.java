@@ -1453,11 +1453,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 //        System.out.println("match = " + new BasicDBObject(_ID, studyId).append("$and", mongoQueryList));
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$project", new BasicDBObject("cohorts", 1)),
                 new BasicDBObject("$unwind", "$cohorts"),
-                new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+                new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
-        List<Cohort> cohorts = parseObjects(queryResult, Cohort.class);
+        List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0)).collect(Collectors.toList());
+
         return endQuery("getAllCohorts", startTime, cohorts);
     }
 
@@ -1483,8 +1485,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        String[] acceptedMapParams = {"attributes"};
+        String[] acceptedMapParams = {"attributes", "stats"};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap("status", Cohort.Status.class);
+        filterEnumParams(parameters, cohortParams, acceptedEnumParams);
 
         if(!cohortParams.isEmpty()) {
             HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();
@@ -1591,11 +1596,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
                 new BasicDBObject("$unwind", "$variableSets"),
-                new BasicDBObject("$match", new BasicDBObject(_ID, studyId).append("$and", mongoQueryList))
+                new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
-        List<VariableSet> variableSets = parseObjects(queryResult, VariableSet.class);
+        List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0)).collect(Collectors.toList());
 
         return endQuery("", startTime, variableSets);
     }

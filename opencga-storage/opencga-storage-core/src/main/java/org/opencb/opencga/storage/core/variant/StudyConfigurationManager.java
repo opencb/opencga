@@ -56,9 +56,13 @@ public abstract class StudyConfigurationManager {
             result = _getStudyConfiguration(studyName, null, options);
         }
 
-        stringStudyConfigurationMap.put(studyName, result.first());
-        StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
-        result.setResult(Collections.singletonList(clone));
+        StudyConfiguration studyConfiguration = result.first();
+        if (studyConfiguration != null) {
+            intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
+            stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
+            StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
+            result.setResult(Collections.singletonList(clone));
+        }
         return result;
 
     }
@@ -75,9 +79,13 @@ public abstract class StudyConfigurationManager {
             result = _getStudyConfiguration(studyId, null, options);
         }
 
-        intStudyConfigurationMap.put(studyId, result.first());
-        StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
-        result.setResult(Collections.singletonList(clone));
+        StudyConfiguration studyConfiguration = result.first();
+        if (studyConfiguration != null) {
+            intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
+            stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
+            StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
+            result.setResult(Collections.singletonList(clone));
+        }
         return result;
     }
 

@@ -46,6 +46,7 @@ public interface CatalogSampleDBAdaptor {
         id(Type.NUMERICAL, ""),
         name(Type.TEXT, ""),
         type(Type.TEXT, ""),
+        status(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
 
@@ -53,7 +54,12 @@ public interface CatalogSampleDBAdaptor {
 
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+
+        stats(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nstats("stats", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        bstats("stats", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        ;
 
 
         CohortFilterOption(Type type, String description) {this._key = name();this._description = description;this._type = type;}

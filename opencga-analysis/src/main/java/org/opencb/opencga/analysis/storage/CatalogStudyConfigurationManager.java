@@ -34,10 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -49,7 +46,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private final String sessionId;
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
-    public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.alias"));
+    public static final QueryOptions QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.alias","projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
     private final ObjectMapper objectMapper;
 
     public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
@@ -107,12 +104,24 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
             }
 
-            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, new QueryOptions("include",
-                    Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name")), sessionId);
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, new QueryOptions(), sessionId);
             for (Cohort cohort : cohorts.getResult()) {
                 studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
                 studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
+                if (cohort.getStatus() == Cohort.Status.READY) {
+                    studyConfiguration.getCalculatedStats().add(cohort.getId());
+                } else if (cohort.getStatus() == Cohort.Status.INVALID) {
+                    studyConfiguration.getInvalidStats().add(cohort.getId());
+                }
             }
+            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
+            if (o instanceof Map) {
+                Object attributes = ((Map) o).get("attributes");
+                if (attributes != null && attributes instanceof Map) {
+                    studyConfiguration.getAttributes().putAll((Map) attributes);
+                }
+            }
+
 
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -123,7 +132,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         if (studyConfiguration == null) {
             list = Collections.emptyList();
         } else {
-            list = Collections.singletonList(studyConfiguration.clone());
+            list = Collections.singletonList(studyConfiguration);
         }
 
         return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", list);

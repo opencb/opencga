@@ -68,14 +68,17 @@ public class Job {
     }
 
     public enum Type {
-        ANALYSIS, //= "analysis";
-        INDEX    //= "index";
+        ANALYSIS,
+        INDEX,
+        COHORT_STATS,
     }
 
-    /* ResourceManagerAttributes known keys */
+    /* Attributes known keys */
     public static final String TYPE = "type";
-    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
     public static final String INDEXED_FILE_ID = "indexedFileId";
+
+    /* ResourceManagerAttributes known keys */
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
 
     /* Errors */
     public static final Map<String, String> errorDescriptions;
