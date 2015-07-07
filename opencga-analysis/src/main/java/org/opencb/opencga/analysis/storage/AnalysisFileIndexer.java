@@ -149,7 +149,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = getDataStore(catalogManager, originalFile, sessionId);
+        final DataStore dataStore = getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -280,17 +280,16 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, File file, String sessionId) throws CatalogException {
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+    public static DataStore getDataStore(CatalogManager catalogManager, int studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(file.getBioformat())) {
-            dataStore = study.getDataStores().get(file.getBioformat());
+        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
+            dataStore = study.getDataStores().get(bioformat);
         } else {
             int projectId = catalogManager.getProjectIdByStudyId(study.getId());
             Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("alias", "dataStores")), sessionId).first();
-            if (project.getDataStores() != null && project.getDataStores().containsKey(file.getBioformat())) {
-                dataStore = project.getDataStores().get(file.getBioformat());
+            if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
+                dataStore = project.getDataStores().get(bioformat);
             } else { //get default datastore
                 String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
                 String alias = project.getAlias();
