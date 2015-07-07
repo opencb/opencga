@@ -274,6 +274,13 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             queryError = true;
             queryResponse = null;
         }
+
+        if(queryResponse != null && queryResponse.getResponse().size() != genomicVariantList.size()) {
+            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != genomicVariantList size (" + genomicVariantList.size() + ").");
+            //throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
+            queryError = true;
+        }
+
         if(queryError) {
 //            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
 
@@ -295,9 +302,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
 
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
-        if(response.size() != genomicVariantList.size()) {
-            throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
-        }
+
         QueryResult<VariantAnnotation>[] queryResults = response.toArray(new QueryResult[1]);
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
         for (QueryResult<VariantAnnotation> queryResult : queryResults) {

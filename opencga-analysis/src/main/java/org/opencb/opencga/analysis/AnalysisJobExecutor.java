@@ -22,6 +22,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
@@ -36,6 +38,7 @@ import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -265,7 +268,7 @@ public class AnalysisJobExecutor {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, 0, 0, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 jobQueryResult = executeLocal(catalogManager, job, sessionId);
@@ -295,6 +298,22 @@ public class AnalysisJobExecutor {
         logger.info("Finished job {}({})", job.getName(), job.getId());
         logger.info("==========================================");
 
+        /** Write output to file **/
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+        try {
+            URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
+            ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
+            com.setOutput(null);
+        } catch (CatalogIOException e) {
+            e.printStackTrace();
+        }
+        try {
+            URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.log");
+            ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
+            com.setError(null);
+        } catch (CatalogIOException e) {
+            e.printStackTrace();
+        }
 
         /** Change status to DONE  - Add the execution information to the job entry **/
 //                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
