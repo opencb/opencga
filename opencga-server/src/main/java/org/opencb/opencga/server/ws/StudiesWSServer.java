@@ -17,14 +17,20 @@
 package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -180,8 +186,66 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/variants")
     @ApiOperation(value = "Study samples information", position = 6)
-    public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
-        return createOkResponse("PENDING");
+    public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                                @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
+        Query query = new Query();
+        QueryResult result;
+
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+
+//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+//            List<String> values = entry.getValue();
+//            String csv = values.get(0);
+//            for (int i = 1; i < values.size(); i++) {
+//                csv += "," + values.get(i);
+//            }
+//            queryOptions.add(entry.getKey(), csv);
+//        }
+
+//        if(params.containsKey("fileId")) {
+//            if(params.get("fileId").get(0).isEmpty()) {
+//                queryOptions.put("fileId", fileId);
+//            } else {
+//                List<String> files = params.get("fileId");
+//                queryOptions.put("fileId", files.get(0));
+//            }
+//        }
+
+//        ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
+        DataStore dataStore = null;
+        try {
+            dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e);
+        }
+        String storageEngine = dataStore.getStorageEngine();
+        System.out.println("storageEngine = " + storageEngine);
+        String dbName = dataStore.getDbName();
+        System.out.println("dbName = " + dbName);
+
+        VariantDBAdaptor dbAdaptor;
+        try {
+            dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+            return createErrorResponse(e);
+        }
+        QueryResult variantsByRegion;
+        if (histogram) {
+//            queryOptions.put("interval", interval);
+            variantsByRegion = dbAdaptor.getFrequency(query, Region.parseRegion(region), interval);
+        } else {
+            //With merge = true, will return only one result.
+//            queryOptions.put("merge", true);
+            System.out.println("queryOptions = " + queryOptions.toJson());
+            variantsByRegion = dbAdaptor.get(query, queryOptions);
+        }
+        result = variantsByRegion;
+        return createOkResponse(Arrays.asList(result));
     }
 
     @GET

@@ -98,7 +98,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         studyConfigurations.forEach(this::addStudyConfiguration);
     }
 
-//    @Override
+    //    @Override
     public Map<String, Map<String, String>> convertToDataModelType(DBObject object, int studyId) {
 //        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
 //        Integer studyId = Integer.parseInt(studyIdStr);
@@ -107,8 +107,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);
 
-                QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
-                        object.get(FILEID_FIELD).toString(), null);
+                QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), null);
                 if(samplesBySource.getResult().isEmpty()) {
                     logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
                 } else {
@@ -180,7 +179,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         return samplesData;
     }
 
-//    @Override
+    //    @Override
     public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
 

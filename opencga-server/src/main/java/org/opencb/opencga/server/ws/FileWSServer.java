@@ -164,6 +164,23 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{fileId}/uri")
+    @ApiOperation(value = "File uri", position = 3)
+    public Response getUri(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds) {
+        try {
+            List<QueryResult> results = new LinkedList<>();
+            for (String fileId : fileIds.split(",")) {
+                QueryResult<File> result = catalogManager.getFile(catalogManager.getFileId(fileId), this.queryOptions, sessionId);
+                URI fileUri = catalogManager.getFileUri(result.first());
+                results.add(new QueryResult<>(fileId, 0, 1, 1, "", "", Collections.singletonList(fileUri)));
+            }
+            return createOkResponse(results);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

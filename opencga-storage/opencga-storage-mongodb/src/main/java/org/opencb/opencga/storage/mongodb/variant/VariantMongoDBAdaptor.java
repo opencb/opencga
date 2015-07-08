@@ -350,7 +350,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
         QueryOptions options = new QueryOptions();
         options.put("limit", numResults);
-        options.put("order", (asc) ? 1 : -1);
+        options.put("count", true);
+        options.put("order", (asc) ? 1 : -1); // MongoDB: 1 = ascending, -1 = descending
 
         return groupBy(query, field, options);
     }
@@ -358,17 +359,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         String documentPath;
+        String unwindPath;
         switch (field) {
             case "gene":
             default:
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
             case "ensemblGene":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
         }
 
@@ -377,16 +382,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         parseQuery(query, qb);
 
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
-        DBObject unwind = new BasicDBObject("$unwind", "$field");
-        DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
-                .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
-        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count",
-                options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
+
         DBObject limit = new BasicDBObject("$limit",
                 options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
 
-        return variantsCollection.aggregate(Arrays.asList(match, project, unwind, group, sort, limit), options);
+        if (options.containsKey("count") && options.getBoolean("count")) {
+            DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
+            DBObject unwind = new BasicDBObject("$unwind", "$field");
+            DBObject groupAndCount = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
+                    .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
+            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count",
+                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
+            return variantsCollection.aggregate(Arrays.asList(match, project, unwind, groupAndCount, sort, limit), options);
+        } else {
+            DBObject unwind = new BasicDBObject("$unwind", "$"+unwindPath);
+            DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$"+documentPath)
+                    .append("values", new BasicDBObject("$push", "$$ROOT"))); // sum, count, avg, ...?
+//            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("$field",
+//                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
+            return variantsCollection.aggregate(Arrays.asList(match, unwind, group, limit), options);
+        }
     }
 
     @Override
@@ -1022,7 +1037,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             for (Integer studyId : studyIds) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
                 if(queryResult.getResult().isEmpty()) {
-                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId {} " + studyId);
+                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
                     studyConfigurations.add(queryResult.first());
                 }

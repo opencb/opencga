@@ -109,6 +109,7 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
      *  - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
      *  - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
+    @Deprecated
     public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;

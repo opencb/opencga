@@ -30,6 +30,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -149,6 +150,7 @@ public class OpenCGAWSServer {
 
         try {
             StorageConfiguration storageConfiguration = StorageConfiguration.load();
+            storageConfiguration.setStudyMetadataManager(CatalogStudyConfigurationManager.class.getName());
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
@@ -240,6 +242,7 @@ public class OpenCGAWSServer {
                     logger.debug("Adding '{}' to queryOptions object", entry);
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
+        queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
 
         try {
             System.out.println("queryOptions = \n" + jsonObjectWriter.writeValueAsString(queryOptions));

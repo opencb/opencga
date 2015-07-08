@@ -28,7 +28,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
-        String cypherPassword = cipherPassword(password);
+        String cypherPassword = (password.length() != 40) ? cipherPassword(password) : password;
         String storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
         if (storedPassword.equals(cypherPassword)) {
             return true;
@@ -43,14 +43,14 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        String oldCryptPass = cipherPassword(oldPassword);
-        String newCryptPass = cipherPassword(newPassword);
+        String oldCryptPass = (oldPassword.length() != 40) ? cipherPassword(oldPassword) : oldPassword;
+        String newCryptPass = (newPassword.length() != 40) ? cipherPassword(newPassword) : newPassword;
         userDBAdaptor.changePassword(userId, oldCryptPass, newCryptPass);
     }
 
     @Override
     public void newPassword(String userId, String newPassword) throws CatalogException {
-        String newCryptPass = cipherPassword(newPassword);
+        String newCryptPass = (newPassword.length() != 40) ? cipherPassword(newPassword) : newPassword;
         userDBAdaptor.changePassword(userId, "", newCryptPass);
     }
 

@@ -1,6 +1,8 @@
 ---
 defaultStorageEngineId: "mongodb"
 logLevel: info
+# For OpenCGA installation: org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager
+studyMetadataManager: ""
 cellbase:
   hosts:
   - ${OPENCGA.CELLBASE.HOST}
@@ -30,7 +32,7 @@ storageEngines:
       include.stats: false
       annotator: cellbase_rest
       species: "hsapiens"
-      assembly: "GRc37"
+      assembly: "GRCh37"
       transform.batch_size: 200
       transform.threads: 4
       load.batch_size: 100

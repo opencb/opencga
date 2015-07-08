@@ -84,6 +84,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
     @Override
+    @Deprecated
     public VariantMongoDBWriter getDBWriter(String dbName) throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
@@ -131,7 +132,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             }
         }
 
-        if(dbName == null || dbName.isEmpty()) {    //If no database name is provided, read from the configuration file
+        // If no database name is provided, read from the configuration file
+        if(dbName == null || dbName.isEmpty()) {
             dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
         }
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
