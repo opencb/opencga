@@ -198,7 +198,7 @@ public class OpenCGAStorageMain {
                     options.add("files", Arrays.asList(c.fileId.split(",")));
                 }
                 if (c.effect != null && !c.effect.isEmpty()) {
-                    options.add("effect", Arrays.asList(c.effect.split(",")));
+                    options.add("annot", Arrays.asList(c.effect.split(",")));
                 }
 
                 if (c.stats != null && !c.stats.isEmpty()) {
