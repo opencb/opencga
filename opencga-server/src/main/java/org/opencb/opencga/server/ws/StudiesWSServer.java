@@ -24,12 +24,16 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Index;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -187,72 +191,165 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/variants")
     @ApiOperation(value = "Study samples information", position = 6)
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                                @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                                @ApiParam(value = "region", required = false) @DefaultValue("") @QueryParam("region") String region,
+                                @ApiParam(value = "gene", required = false) @DefaultValue("") @QueryParam("gene") String gene,
+                                @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                                @ApiParam(value = "merge", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge,
                                 @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
+
         Query query = new Query();
-        QueryResult result;
-
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+//        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
         query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), gene);
 
-//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//            List<String> values = entry.getValue();
-//            String csv = values.get(0);
-//            for (int i = 1; i < values.size(); i++) {
-//                csv += "," + values.get(i);
-//            }
-//            queryOptions.add(entry.getKey(), csv);
-//        }
-
-//        if(params.containsKey("fileId")) {
-//            if(params.get("fileId").get(0).isEmpty()) {
-//                queryOptions.put("fileId", fileId);
-//            } else {
-//                List<String> files = params.get("fileId");
-//                queryOptions.put("fileId", files.get(0));
-//            }
-//        }
-
-//        ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
-        DataStore dataStore = null;
+        DataStore dataStore;
         try {
-            dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+            dataStore = AnalysisFileIndexer.getDataStore(catalogManager, (studyIdStr.contains(","))
+                    ? Integer.parseInt(studyIdStr.split(",")[0])
+                    : Integer.parseInt(studyIdStr),
+                    File.Bioformat.VARIANT, sessionId);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);
         }
         String storageEngine = dataStore.getStorageEngine();
-        System.out.println("storageEngine = " + storageEngine);
         String dbName = dataStore.getDbName();
-        System.out.println("dbName = " + dbName);
 
         VariantDBAdaptor dbAdaptor;
         try {
             dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
-//                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
             return createErrorResponse(e);
         }
-        QueryResult variantsByRegion;
+
         if (histogram) {
-//            queryOptions.put("interval", interval);
-            variantsByRegion = dbAdaptor.getFrequency(query, Region.parseRegion(region), interval);
+            QueryResult result = dbAdaptor.getFrequency(query, Region.parseRegion(region), interval);
+            return createOkResponse(Arrays.asList(result));
         } else {
-            //With merge = true, will return only one result.
-//            queryOptions.put("merge", true);
-            System.out.println("queryOptions = " + queryOptions.toJson());
-            variantsByRegion = dbAdaptor.get(query, queryOptions);
+            if(merge) {
+                query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+                QueryResult result = dbAdaptor.get(query, queryOptions);
+                return createOkResponse(Arrays.asList(result));
+            } else {
+                String[] studies = studyIdStr.split(",");
+                List<QueryResult> results = new ArrayList<>(studies.length);
+                for (String study : studies) {
+                    query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+                    QueryResult result = dbAdaptor.get(query, queryOptions);
+                    results.add(result);
+                }
+                return createOkResponse(results);
+            }
         }
-        result = variantsByRegion;
-        return createOkResponse(Arrays.asList(result));
     }
 
     @GET
     @Path("/{studyId}/alignments")
     @ApiOperation(value = "Study samples information", position = 7)
-    public Response getAlignments(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
-        return createOkResponse("PENDING");
+    public Response getAlignments(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "sampleId", required = true) @DefaultValue("") @QueryParam("sampleId") String sampleIds,
+                                  @ApiParam(value = "fileId", required = true) @DefaultValue("") @QueryParam("fileId") String fileIds,
+                                  @ApiParam(value = "region", required = true) @DefaultValue("") @QueryParam("region") String region,
+                                  @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
+                                  @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
+                                  @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
+                                  @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                  @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
+
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+        List<Region> regions = Region.parseRegions(region);
+
+        List<QueryResult> results = new ArrayList<>();
+        QueryResult alignmentsByRegion;
+
+        // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
+
+        try {
+            int studyId = 4;
+            int sampleId = 33;
+            File file = catalogManager.getAllFiles(studyId, new QueryOptions()
+                    .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.ALIGNMENT)
+                    .append(CatalogFileDBAdaptor.FileFilterOption.sampleIds.toString(), sampleId)
+                    .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY), sessionId).first();
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
+
+        for (String fileId : fileIds.split(",")) {
+            int fileIdNum;
+            File file;
+            URI fileUri;
+            try {
+                fileIdNum = catalogManager.getFileId(fileId);
+                QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
+                file = queryResult.getResult().get(0);
+                fileUri = catalogManager.getFileUri(file);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e);
+            }
+
+//            if (!file.getType().equals(File.Type.INDEX)) {
+            if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
+                return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
+                        " is not an indexed file.");
+            }
+            ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
+            DataStore dataStore;
+            try {
+                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse(e);
+            }
+            String storageEngine = dataStore.getStorageEngine();
+            String dbName = dataStore.getDbName();
+
+            int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Integer.toString(fileIdNum));
+            queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
+            queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
+            queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
+            queryOptions.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
+            queryOptions.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
+            queryOptions.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
+            queryOptions.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);
+
+            if (indexAttributes.containsKey("baiFileId")) {
+                File baiFile = null;
+                try {
+                    baiFile = catalogManager.getFile(indexAttributes.getInt("baiFileId"), sessionId).getResult().get(0);
+                    URI baiUri = catalogManager.getFileUri(baiFile);
+                    queryOptions.put(AlignmentDBAdaptor.QO_BAI_PATH, baiUri.getPath());  //TODO: Make uri-compatible
+                } catch (CatalogException e) {
+                    e.printStackTrace();
+                    logger.error("Can't obtain bai file for file " + fileIdNum, e);
+                }
+            }
+
+            AlignmentDBAdaptor dbAdaptor;
+            try {
+                AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+                return createErrorResponse(e);
+            }
+
+            if (histogram) {
+                if (regions.size() != 1) {
+                    return createErrorResponse("", "Histogram fetch only accepts one region.");
+                }
+                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
+            } else {
+                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
+            }
+            results.add(alignmentsByRegion);
+        }
+
+        return createOkResponse(results);
     }
 
     @GET
