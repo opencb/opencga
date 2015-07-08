@@ -53,14 +53,14 @@ public class StudyConfiguration implements Cloneable {
     public StudyConfiguration(StudyConfiguration other) {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
-        this.fileIds = new HashMap<>(other.fileIds);
-        this.sampleIds = new HashMap<>(other.sampleIds);
-        this.cohortIds = new HashMap<>(other.cohortIds);
-        this.cohorts = new HashMap<>(other.cohorts);
-        this.indexedFiles = new HashSet<>(other.indexedFiles);
-        this.samplesInFiles = new HashMap<>(other.samplesInFiles);
-        this.calculatedStats = new HashSet<>(other.calculatedStats);
-        this.invalidStats = new HashSet<>(other.invalidStats);
+        this.fileIds = new LinkedHashMap<>(other.fileIds);
+        this.sampleIds = new LinkedHashMap<>(other.sampleIds);
+        this.cohortIds = new LinkedHashMap<>(other.cohortIds);
+        this.cohorts = new LinkedHashMap<>(other.cohorts);
+        this.indexedFiles = new LinkedHashSet<>(other.indexedFiles);
+        this.samplesInFiles = new LinkedHashMap<>(other.samplesInFiles);
+        this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
+        this.invalidStats = new LinkedHashSet<>(other.invalidStats);
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -72,14 +72,14 @@ public class StudyConfiguration implements Cloneable {
     public StudyConfiguration(int studyId, String studyName) {
         this.studyId = studyId;
         this.studyName = studyName;
-        setFileIds(new HashMap<>(1));
-        setSampleIds(new HashMap<>());
-        setCohortIds(new HashMap<>());
-        this.cohorts = new HashMap<>();
-        this.indexedFiles = new HashSet<>();
-        this.samplesInFiles = new HashMap<>();
-        this.calculatedStats = new HashSet<>();
-        this.invalidStats = new HashSet<>();
+        setFileIds(new LinkedHashMap<>(1));
+        setSampleIds(new LinkedHashMap<>());
+        setCohortIds(new LinkedHashMap<>());
+        this.cohorts = new LinkedHashMap<>();
+        this.indexedFiles = new LinkedHashSet<>();
+        this.samplesInFiles = new LinkedHashMap<>();
+        this.calculatedStats = new LinkedHashSet<>();
+        this.invalidStats = new LinkedHashSet<>();
         this.attributes = new ObjectMap();
     }
 
@@ -97,10 +97,10 @@ public class StudyConfiguration implements Cloneable {
         this.sampleIds = sampleIds;
         this.cohortIds = cohortIds;
         this.cohorts = cohorts;
-        this.indexedFiles = new HashSet<>();
-        this.samplesInFiles = new HashMap<>();
-        this.calculatedStats = new HashSet<>();
-        this.invalidStats = new HashSet<>();
+        this.indexedFiles = new LinkedHashSet<>();
+        this.samplesInFiles = new LinkedHashMap<>();
+        this.calculatedStats = new LinkedHashSet<>();
+        this.invalidStats = new LinkedHashSet<>();
         this.attributes = new ObjectMap();
     }
 
@@ -274,10 +274,24 @@ public class StudyConfiguration implements Cloneable {
     }
 
     public static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
-        Map<R,T> inverseMap = new HashMap<>(map.size());
+        Map<R,T> inverseMap = new LinkedHashMap<>(map.size());
         for (Map.Entry<T, R> entry : map.entrySet()) {
             inverseMap.put(entry.getValue(), entry.getKey());
         }
         return inverseMap;
     }
+
+    public static Map<String, Integer> getIndexedSamples(StudyConfiguration studyConfiguration) {
+        Map<Integer, String> idSample = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+        Map<String, Integer> sampleIds = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Set<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (studyConfiguration.getIndexedFiles().contains(entry.getKey())) {
+                for (Integer sampleId : entry.getValue()) {
+                    sampleIds.put(idSample.get(sampleId), sampleId);
+                }
+            }
+        }
+        return sampleIds;
+    }
+
 }

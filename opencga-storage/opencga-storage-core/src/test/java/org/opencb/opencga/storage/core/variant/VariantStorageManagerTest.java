@@ -54,6 +54,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
         checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
     }
@@ -70,10 +71,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
         runDefaultETL(getResourceUri("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(6));
         runDefaultETL(getResourceUri("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 7));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(7));
         runDefaultETL(getResourceUri("1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 8));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(8));
         runDefaultETL(getResourceUri("2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 9));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(6));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(7));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(8));
+        assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
@@ -84,6 +94,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfigurationSingleFile = newStudyConfiguration();
         studyConfigurationSingleFile.setStudyId(singleFileStudyId);
         etlResult = runDefaultETL(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationSingleFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 10));
+        assertTrue(studyConfigurationSingleFile.getIndexedFiles().contains(10));
+
         checkTransformedVariants(etlResult.transformResult, studyConfigurationSingleFile, expectedNumVariants);
 
 
@@ -125,6 +137,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.gz'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.gz"));
 
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
         checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
 
@@ -155,6 +168,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         Assert.assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
 
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
         checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, false, false);
 

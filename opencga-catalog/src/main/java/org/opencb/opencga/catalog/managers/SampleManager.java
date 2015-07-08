@@ -309,15 +309,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         Cohort cohort = readCohort(cohortId, new QueryOptions("include", "projects.studies.cohorts.status"), sessionId).first();
-        switch (cohort.getStatus()) {
-            case CALCULATING:
-                throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.Status.CALCULATING + "\"");
-            case READY:
-                params.put("status", Cohort.Status.INVALID);
-                break;
-            case NONE:
-            case INVALID:
-                break;
+        if (params.containsKey("samples") || params.containsKey("name")/* || params.containsKey("type")*/) {
+            switch (cohort.getStatus()) {
+                case CALCULATING:
+                        throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.Status.CALCULATING + "\"");
+                case READY:
+                    params.put("status", Cohort.Status.INVALID);
+                    break;
+                case NONE:
+                case INVALID:
+                    break;
+            }
         }
         if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             return sampleDBAdaptor.updateCohort(cohortId, params);

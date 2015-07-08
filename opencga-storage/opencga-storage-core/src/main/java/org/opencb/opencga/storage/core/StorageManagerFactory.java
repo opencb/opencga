@@ -38,8 +38,8 @@ public class StorageManagerFactory {
     private static StorageManagerFactory storageManagerFactory;
     private StorageConfiguration storageConfiguration;
 
-    private static Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
-    private static Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
+    private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
+    private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     public StorageManagerFactory(StorageConfiguration storageConfiguration) {

@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -40,6 +41,7 @@ import java.util.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogStudyConfigurationManager extends StudyConfigurationManager {
+    public static final String CATALOG_PROPERTIES_FILE = "catalogPropertiesFile";
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);
 
     private final CatalogManager catalogManager;
@@ -51,8 +53,27 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
         super(objectMap);
-        catalogManager = new CatalogManager(Config.getCatalogProperties());
+        Properties catalogProperties = null;
+        if (objectMap.containsKey(CATALOG_PROPERTIES_FILE)) {
+            try {
+                catalogProperties = new Properties();
+                catalogProperties.load(new FileInputStream(objectMap.getString(CATALOG_PROPERTIES_FILE)));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (catalogProperties == null){
+            catalogProperties = Config.getCatalogProperties();
+        }
+        catalogManager = new CatalogManager(catalogProperties);
         sessionId = objectMap.getString("sessionId");
+        objectMapper = new ObjectMapper();
+    }
+
+    public CatalogStudyConfigurationManager(CatalogManager catalogManager, String sessionId) {
+        super(null);
+        this.catalogManager = catalogManager;
+        this.sessionId = sessionId;
         objectMapper = new ObjectMapper();
     }
 
@@ -89,15 +110,16 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             logger.trace("Read StudyConfiguration studyConfiguration {}", studyConfiguration);
 
             QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
-                    .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds")), sessionId);
+                    .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name")), sessionId);
             for (File file : indexedFiles.getResult()) {
-                studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
+                studyConfiguration.getIndexedFiles().add(file.getId());
             }
 
             QueryResult<File> files = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
                     .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds")), sessionId);
             for (File file : files.getResult()) {
                 studyConfiguration.getFileIds().put(file.getName(), file.getId());
+                studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
             }
 
             QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, new QueryOptions("include",

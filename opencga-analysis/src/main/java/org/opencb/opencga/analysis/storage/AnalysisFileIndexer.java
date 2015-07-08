@@ -68,6 +68,7 @@ public class AnalysisFileIndexer {
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
     public static final String LOG_LEVEL = "logLevel";
+    public static final String INCLUDE_GENOTYPE = "includeGenotype";
 
 
     //Other
@@ -381,6 +382,9 @@ public class AnalysisFileIndexer {
             }
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
+            }
+            if (options.getBoolean(INCLUDE_GENOTYPE, true)) {
+                sb.append(" --include-genotypes ");
             }
             if (options.getBoolean(LOAD, false)) {
                 sb.append(" --load ");

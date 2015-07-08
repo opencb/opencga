@@ -124,6 +124,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
         variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
+        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
         checkCohorts(dbAdaptor, studyConfiguration);
 
         /** Create second cohort **/
@@ -144,6 +145,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
         variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
+        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
+        assertTrue(studyConfiguration.getCalculatedStats().contains(11));
         checkCohorts(dbAdaptor, studyConfiguration);
 
         //Try to recalculate stats for cohort2. Will fail

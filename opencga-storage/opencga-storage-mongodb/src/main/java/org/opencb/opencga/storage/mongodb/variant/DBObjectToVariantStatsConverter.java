@@ -38,8 +38,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
 
     public final static String COHORT_ID = "cid";
     public final static String STUDY_ID = "sid";
-    public final static String FILE_ID = "fid";
-    
+//    public final static String FILE_ID = "fid";
+
     public final static String MAF_FIELD = "maf";
     public final static String MGF_FIELD = "mgf";
     public final static String MAFALLELE_FIELD = "mafAl";
@@ -107,11 +107,11 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setRefAllele(variant.getReference());
                     variantStats.setAltAllele(variant.getAlternate());
                     variantStats.setVariantType(variant.getType());
-                    Integer fid = (Integer) vs.get(FILE_ID);
+//                    Integer fid = (Integer) vs.get(FILE_ID);
                     Integer sid = (Integer) vs.get(STUDY_ID);
                     String cid = (String) vs.get(COHORT_ID);
                     VariantSourceEntry sourceEntry = null;
-                    if (fid != null && sid != null && cid != null) {
+                    if (/*fid != null && */sid != null && cid != null) {
                         for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                             if (entry.getValue().getStudyId().equals(Integer.toString(sid))) {
                                 sourceEntry = entry.getValue();
@@ -123,10 +123,10 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                             Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
                             cohortStats.put(cid, variantStats);
                         } else {
-                            logger.warn("ignoring non present source entry fileId={}, studyId={}", fid, sid);
+                            logger.warn("ignoring non present source entry studyId={}", sid);
                         }
                     } else {
-                        logger.error("invalid mongo document: all studyId={}, fileId={}, cohortId={} should be present.", sid, fid, cid);
+                        logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);
                     }
                 }
             }
@@ -164,7 +164,6 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
             variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
             variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.FILE_ID, fileId);
             cohortsStatsList.add(variantStatsDBObject);
         }
         return cohortsStatsList;
