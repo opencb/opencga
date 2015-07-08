@@ -1047,7 +1047,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             for (Integer studyId : studyIds) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
                 if(queryResult.getResult().isEmpty()) {
-                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId {} " + studyId);
+                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
                     studyConfigurations.add(queryResult.first());
                 }

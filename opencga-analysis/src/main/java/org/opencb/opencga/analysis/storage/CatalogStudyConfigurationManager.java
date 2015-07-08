@@ -67,6 +67,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
+        String sessionId = options.getString("sessionId", this.sessionId);
         StudyConfiguration studyConfiguration = null;
         long start = System.currentTimeMillis();
         try {
@@ -74,7 +75,8 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 studyId = catalogManager.getStudyId(studyName);
             }
             logger.debug("Reading StudyConfiguration from Catalog. studyId: {}", studyId);
-            Study study = catalogManager.getStudy(studyId, options.getString("sessionId", sessionId), QUERY_OPTIONS).first();
+            System.out.println("CatalogStudyConfigurationManager - options = " + options.toJson());
+            Study study = catalogManager.getStudy(studyId, sessionId, QUERY_OPTIONS).first();
             studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
 //            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
 //            if (o == null ) {
