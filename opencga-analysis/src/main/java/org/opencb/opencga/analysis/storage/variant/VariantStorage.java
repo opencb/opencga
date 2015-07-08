@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
@@ -88,6 +89,10 @@ public class VariantStorage {
                 outputFileName.append('_');
             }
             outputFileName.append(cohort.getName());
+
+            /** Modify cohort status to "CALCULATING" **/
+            catalogManager.updateCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);
+
         }
 
         // Check that all cohorts are from the same study

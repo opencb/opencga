@@ -44,7 +44,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public static final String UNKNOWN_GENOTYPE = "?/?";
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
-    private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIdSamplesMap()"
+    private final Map<Integer, Map<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
+    private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -55,6 +56,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      **/
     DBObjectToSamplesConverter() {
         studyConfigurations = new HashMap<>();
+        __studySamplesId = new HashMap<>();
         __studyIdSamples = new HashMap<>();
         this.studyConfigurationManager = null;
     }
@@ -131,7 +133,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        Map<String, Integer> sampleIds = studyConfiguration.getSampleIds();
+        Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
         if (sampleIds == null || sampleIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -163,7 +165,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // in the position specified in the array, such as:
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
-        Map idSamples = getIdSamplesMap(studyId);
+        Map idSamples = getIndexedIdSamplesMap(studyId);
         for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
             if (!dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
                 String genotype = genotypeToDataModelType(dbo.getKey());
@@ -244,6 +246,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
         this.__studyIdSamples.put(studyConfiguration.getStudyId(), null);
+        this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
     }
 
     /**
@@ -251,8 +254,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      *
      * @return  Inverts map "sampleIds". From Map<SampleName, SampleId> to Map<SampleId, SampleName>
      */
-    private Map getIdSamplesMap(int studyId) {
-        Map<String, Integer> sampleIds = studyConfigurations.get(studyId).getSampleIds();
+    private Map getIndexedIdSamplesMap(int studyId) {
+        Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
         if (this.__studyIdSamples.get(studyId) == null) {
             Map<Integer, String> idSamples = StudyConfiguration.inverseMap(sampleIds);
             this.__studyIdSamples.put(studyId, idSamples);
@@ -263,6 +266,22 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             throw new IllegalStateException("Invalid sample ids map. SampleIDs must be unique.");
         }
         return idSamples;
+    }
+
+    /**
+     * Lazy usage of loaded samplesIdMap.
+     **/
+    private Map<String, Integer> getIndexedSamplesIdMap(int studyId) {
+        Map<String, Integer> sampleIds;
+        if (this.__studySamplesId.get(studyId) == null) {
+            StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+            sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
+            this.__studySamplesId.put(studyId, sampleIds);
+        } else {
+            sampleIds = this.__studySamplesId.get(studyId);
+        }
+
+        return sampleIds;
     }
 
     private VariantSourceEntry getLegacyNoncompressedSamples(BasicDBObject object) {

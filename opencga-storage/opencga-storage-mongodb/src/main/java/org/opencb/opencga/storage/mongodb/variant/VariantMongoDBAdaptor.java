@@ -441,7 +441,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
                     cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
+//                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
                     studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
@@ -453,9 +453,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                         .append(
                                                 DBObjectToVariantStatsConverter.STUDY_ID,
                                                 new BasicDBObject("$in", studyIds))
-                                        .append(
-                                                DBObjectToVariantStatsConverter.FILE_ID,
-                                                new BasicDBObject("$in", fileIds))
+//                                        .append(
+//                                                DBObjectToVariantStatsConverter.FILE_ID,
+//                                                new BasicDBObject("$in", fileIds))
                                         .append(
                                                 DBObjectToVariantStatsConverter.COHORT_ID,
                                                 new BasicDBObject("$in", cohortIds))));
@@ -890,18 +890,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         String fileIdStr = Integer.toString(fileId);
         if (true) {
             nonInsertedVariants = new HashSet<>();
-
-            if (loadedSampleIds == null) {
-                HashSet<String> fileSamples = new HashSet<>();
-                data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), fileIdStr).iterator().forEachRemaining(fileSamples::add);
-                loadedSampleIds = new LinkedList<>();
-                Set<String> allSamples = studyConfiguration.getSampleIds().keySet();
-                for (String sample : allSamples) {
-                    if (!fileSamples.contains(sample)) {
-                        loadedSampleIds.add(studyConfiguration.getSampleIds().get(sample));
-                    }
-                }
-            }
             Map missingSamples = Collections.emptyMap();
             String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
             if (defaultGenotype.equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
@@ -972,6 +960,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     for (String genotype : genotypes.keySet()) {
                         push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
                     }
+                } else {
+                    push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
                 }
                 push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, studyObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD));
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
@@ -1931,7 +1921,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
                 includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
-        return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
+        return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, getLoadedSamples(fileId, studyConfiguration));
+    }
+
+    public static List<Integer> getLoadedSamples(int fileId, StudyConfiguration studyConfiguration) {
+        List<Integer> loadedSampleIds = new LinkedList<>();
+        for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
+            if (indexedFile.equals(fileId)) {
+                continue;
+            } else {
+                loadedSampleIds.addAll(studyConfiguration.getSamplesInFiles().get(indexedFile));
+            }
+        }
+        return loadedSampleIds;
     }
 
     @Override
@@ -1974,7 +1976,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
                     cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
+//                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
                     studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
@@ -1986,9 +1988,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                         .append(
                                                 DBObjectToVariantStatsConverter.STUDY_ID,
                                                 new BasicDBObject("$in", studyIds))
-                                        .append(
-                                                DBObjectToVariantStatsConverter.FILE_ID,
-                                                new BasicDBObject("$in", fileIds))
+//                                        .append(
+//                                                DBObjectToVariantStatsConverter.FILE_ID,
+//                                                new BasicDBObject("$in", fileIds))
                                         .append(
                                                 DBObjectToVariantStatsConverter.COHORT_ID,
                                                 new BasicDBObject("$in", cohortIds))));

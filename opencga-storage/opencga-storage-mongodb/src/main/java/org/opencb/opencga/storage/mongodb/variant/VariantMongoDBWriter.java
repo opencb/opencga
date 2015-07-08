@@ -19,10 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import java.util.*;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
-import com.mongodb.WriteResult;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
@@ -140,7 +137,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     @Override
     public boolean pre() {
-        this.fileSampleIds = null;
+        this.fileSampleIds = new LinkedList<>(studyConfiguration.getSamplesInFiles().get(fileId));
+        loadedSampleIds = VariantMongoDBAdaptor.getLoadedSamples(fileId, studyConfiguration);
         // Mongo collection creation
 //        variantMongoCollection = mongoDataStore.getCollection(variantsCollectionName);
 //        filesMongoCollection = mongoDataStore.getCollection(filesCollectionName);
@@ -169,17 +167,18 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                 logger.info("Num variants written " + staticNumVariantsWritten);
             }
         }
+//
+//        if (fileSampleIds == null) {
+//            fileSampleIds = new LinkedList<>();
+//            loadedSampleIds = new LinkedList<>();
+//            data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), Integer.toString(fileId)).iterator().forEachRemaining(s -> fileSampleIds.add(studyConfiguration.getSampleIds().get(s)));
+//            LinkedHashSet<Integer> fileSampleIdsSet = new LinkedHashSet<>(fileSampleIds);
+//            loadedSampleIds.addAll(studyConfiguration.getSampleIds().keySet().stream()
+//                    .filter(sample -> !fileSampleIdsSet.contains(studyConfiguration.getSampleIds().get(sample)))
+//                    .map(sample -> studyConfiguration.getSampleIds().get(sample))
+//                    .collect(Collectors.toList()));
+//        }
 
-        if (fileSampleIds == null) {
-            fileSampleIds = new LinkedList<>();
-            loadedSampleIds = new LinkedList<>();
-            data.get(0).getSampleNames(Integer.toString(studyConfiguration.getStudyId()), Integer.toString(fileId)).iterator().forEachRemaining(s -> fileSampleIds.add(studyConfiguration.getSampleIds().get(s)));
-            LinkedHashSet<Integer> fileSampleIdsSet = new LinkedHashSet<>(fileSampleIds);
-            loadedSampleIds.addAll(studyConfiguration.getSampleIds().keySet().stream()
-                    .filter(sample -> !fileSampleIdsSet.contains(studyConfiguration.getSampleIds().get(sample)))
-                    .map(sample -> studyConfiguration.getSampleIds().get(sample))
-                    .collect(Collectors.toList()));
-        }
 
         QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
         insertionTime += queryResult.getDbTime();

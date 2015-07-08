@@ -57,6 +57,9 @@ public class FileMetadataReader {
         File.Format format = FormatDetector.detect(fileUri);
         File.Bioformat bioformat = BioformatDetector.detect(fileUri);
 
+        if (path.endsWith("/")) {
+            path += Paths.get(fileUri.getPath()).getFileName().toString();
+        }
 
         QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
                 File.Status.STAGE, 0, -1, null, -1, null, null, parents, options, sessionId);
