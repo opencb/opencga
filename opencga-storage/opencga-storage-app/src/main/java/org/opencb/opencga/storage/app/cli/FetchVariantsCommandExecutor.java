@@ -40,9 +40,7 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -200,7 +198,25 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    System.out.println(variant.toString());
+//                    System.out.println(variant.toString());
+                    StringBuilder vcfRecord = new StringBuilder();
+                    vcfRecord.append(variant.getChromosome()).append("\t")
+                            .append(variant.getStart()).append("\t")
+                            .append(variant.getIds().stream().map(i -> i.toString()).collect(Collectors.joining(","))).append("\t")
+                            .append(variant.getReference()).append("\t")
+                            .append(variant.getAlternate()).append("\t");
+
+                    Iterator<String> vcfIterator = variant.getSourceEntries().keySet().iterator();
+                    while (vcfIterator.hasNext()) {
+                        String file = vcfIterator.next();
+                        vcfRecord.append(variant.getSourceEntries().get(file).getAttribute("QUAL")).append("\t")
+                                .append(variant.getSourceEntries().get(file).getAttribute("FILTER")).append("\t")
+                                .append("File=" + file).append(",")
+                                .append(variant.getSourceEntries().get(file).getAttribute("INFO")).append("\t")
+                                .append(variant.getSourceEntries().get(file).getFormat()).append("\t")
+                                .append(variant.getSourceEntries().get(file).getSamplesData());
+                    }
+                    System.out.println(vcfRecord.toString());
                 }
             }
         }
