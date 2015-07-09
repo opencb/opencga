@@ -145,7 +145,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             numVariants++;
             VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
             assertEquals("6", entry.getFileId());
-            assertEquals(Integer.toString(studyConfiguration.getStudyId()), entry.getStudyId());
+            assertEquals(studyConfiguration.getStudyName(), entry.getStudyId());
             assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSampleNames());
         }
         assertEquals(NUM_VARIANTS, numVariants);

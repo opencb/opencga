@@ -76,7 +76,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
 
         for (Variant variant : queryResult.getResult()) {
             for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(studyId, sourceEntry.getStudyId());
+                assertEquals(studyConfiguration1.getStudyName(), sourceEntry.getStudyId());
             }
         }
     }
@@ -84,7 +84,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_returnedStudies3() {
         String studyId = Integer.toString(studyConfiguration3.getStudyId());
-        query.append(RETURNED_STUDIES.key(), studyId);
+        query.put(RETURNED_STUDIES.key(), studyId);
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(NUM_VARIANTS, queryResult.getNumResults());
@@ -92,15 +92,28 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
 
         for (Variant variant : queryResult.getResult()) {
             for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(studyId, sourceEntry.getStudyId());
+                assertEquals(studyConfiguration3.getStudyName(), sourceEntry.getStudyId());
             }
-        }    }
+        }
+
+        query.put(RETURNED_STUDIES.key(), studyConfiguration3.getStudyName());
+        queryResult = dbAdaptor.get(query, options);
+
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
+
+        for (Variant variant : queryResult.getResult()) {
+            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
+                assertEquals(studyConfiguration3.getStudyName(), sourceEntry.getStudyId());
+            }
+        }
+    }
 
     @Test
     public void testGetAllVariants_returnedStudies2_3() {
         List<String> studyIds = Arrays.asList(
-                Integer.toString(studyConfiguration2.getStudyId()),
-                Integer.toString(studyConfiguration3.getStudyId()));
+                studyConfiguration2.getStudyName(),
+                studyConfiguration3.getStudyName());
         query.append(RETURNED_STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
@@ -117,9 +130,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_returnedStudiesAll() {
         List<String> studyIds = Arrays.asList(
-                Integer.toString(studyConfiguration1.getStudyId()),
-                Integer.toString(studyConfiguration2.getStudyId()),
-                Integer.toString(studyConfiguration3.getStudyId()));
+                studyConfiguration1.getStudyName(),
+                studyConfiguration2.getStudyName(),
+                studyConfiguration3.getStudyName());
         query.append(RETURNED_STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
@@ -157,8 +170,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_filterStudy_returnedStudies2_3() {
         List<String> studyIds = Arrays.asList(
-                Integer.toString(studyConfiguration2.getStudyId()),
-                Integer.toString(studyConfiguration3.getStudyId()));
+                studyConfiguration2.getStudyName(),
+                studyConfiguration3.getStudyName());
         query.append(RETURNED_STUDIES.key(), studyIds)
                 .append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
@@ -176,8 +189,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_filterStudies2_3() {
         List<String> studyIds = Arrays.asList(
-                Integer.toString(studyConfiguration2.getStudyId()),
-                Integer.toString(studyConfiguration3.getStudyId()));
+                studyConfiguration2.getStudyName(),
+                studyConfiguration3.getStudyName());
         query.append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
@@ -186,8 +199,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toList());
-            assertTrue(returnedStudyIds.contains(Integer.toString(studyConfiguration2.getStudyId()))
-                    || returnedStudyIds.contains(Integer.toString(studyConfiguration3.getStudyId())));
+            assertTrue(returnedStudyIds.contains(studyConfiguration2.getStudyName())
+                    || returnedStudyIds.contains(studyConfiguration3.getStudyName()));
         }
     }
 

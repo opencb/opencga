@@ -71,12 +71,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    @Deprecated
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
-            throws UnknownHostException {
-        this(credentials, variantsCollectionName, filesCollectionName, new MongoDBStudyConfigurationManager(credentials, filesCollectionName));
-    }
-
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName, StudyConfigurationManager studyConfigurationManager)
             throws UnknownHostException {
         // MongoDB configuration
@@ -769,8 +763,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder fileBuilder = QueryBuilder.start();
 
             if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), null);
                 addQueryListFilter(
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, query.getAsIntegerList(VariantQueryParams.STUDIES.key()),
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds,
                         fileBuilder, QueryOperation.AND);
             }
 
@@ -874,8 +869,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             );
         }
         if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
-            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
-            if (!studies.isEmpty()) {
+            List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+//            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
+            if (!studiesIds.isEmpty()) {
                 projection.put(
                         DBObjectToVariantConverter.STUDIES_FIELD,
                         new BasicDBObject(
@@ -884,7 +880,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                         DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
                                         new BasicDBObject(
                                                 "$in",
-                                                studies
+                                                studiesIds
                                         )
                                 )
                         )
@@ -894,6 +890,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.debug("Projection: {}", projection);
         return projection;
+    }
+
+    private List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
+        List<Integer> studiesIds;
+        studiesIds = new ArrayList<>(studiesNames.size());
+        for (Object studyObj : studiesNames) {
+            if (studyObj instanceof Integer) {
+                studiesIds.add(((Integer) studyObj));
+            } else {
+                String studyName = studyObj.toString();
+                try {
+                    studiesIds.add(Integer.parseInt(studyName));
+                } catch (NumberFormatException e) {
+                    QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, options);
+                    if (result.getResult().isEmpty()) {
+                        throw new IllegalStateException("Study " + studyName + " not found");
+                    }
+                    studiesIds.add(result.first().getStudyId());
+                }
+            }
+        }
+        return studiesIds;
     }
 
 
@@ -918,7 +936,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> updates = new ArrayList<>(data.size());
         Set<String> nonInsertedVariants;
         String fileIdStr = Integer.toString(fileId);
-        if (true) {
+
+        {
             nonInsertedVariants = new HashSet<>();
             Map missingSamples = Collections.emptyMap();
             String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
@@ -1043,16 +1062,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> studyIds = query.getAsIntegerList(VariantQueryParams.STUDIES.key());
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
 
         DBObjectToSamplesConverter samplesConverter;
-        if(studyIds.isEmpty()) {
+        if (studyIds.isEmpty()) {
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurationManager, null);
         } else {
             List<StudyConfiguration> studyConfigurations = new LinkedList<>();
             for (Integer studyId : studyIds) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
-                if(queryResult.getResult().isEmpty()) {
+                if (queryResult.getResult().isEmpty()) {
                     throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
                     studyConfigurations.add(queryResult.first());
@@ -1061,10 +1080,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
-                query.containsKey(VariantQueryParams.RETURNED_FILES.key())? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
+                false,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
+        sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
         return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
     }
 

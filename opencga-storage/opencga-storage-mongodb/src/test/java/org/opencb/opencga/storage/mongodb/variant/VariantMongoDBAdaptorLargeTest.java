@@ -1,10 +1,9 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTest;
 
 /**
- * Created by hpccoll1 on 09/07/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest {
 
