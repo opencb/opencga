@@ -119,16 +119,23 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Attributes
         if (fileObject != null && fileObject.containsField(ATTRIBUTES_FIELD)) {
-            file.setAttributes(((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap());
-            // Unzip the "src" field, if available
-            if (((DBObject) fileObject.get(ATTRIBUTES_FIELD)).containsField("src")) {
-                byte[] o = (byte[]) ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).get("src");
-                try {
-                    file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
-                } catch (IOException ex) {
-                    Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+            Map<String, Object> attrs = ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap();
+            for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+                // Unzip the "src" field, if available
+                if (entry.getKey().equals("src")) {
+                    if (includeSrc) {
+                        byte[] o = (byte[]) entry.getValue();
+                        try {
+                            file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
+                        } catch (IOException ex) {
+                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                } else {
+                    file.addAttribute(entry.getKey(), entry.getValue().toString());
                 }
             }
+
         }
         if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
             file.setFormat((String) fileObject.get(FORMAT_FIELD));
@@ -164,17 +171,22 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         if (object.getAttributes().size() > 0) {
             BasicDBObject attrs = null;
             for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
-                Object value = entry.getValue();
+                String stringValue = entry.getValue();
+                Object value = stringValue;
                 if (entry.getKey().equals("src")) {
                     if (includeSrc) {
                         try {
-                            value = org.opencb.commons.utils.StringUtils.gzip(entry.getValue());
+                            value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
                         } catch (IOException ex) {
                             Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         continue;
                     }
+                } else {
+                    try {
+                        value = Double.parseDouble(stringValue);
+                    } catch (NumberFormatException ignore) {}
                 }
 
                 if (attrs == null) {
