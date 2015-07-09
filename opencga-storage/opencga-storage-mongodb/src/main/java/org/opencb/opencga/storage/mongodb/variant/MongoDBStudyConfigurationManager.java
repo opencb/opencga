@@ -88,11 +88,9 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         if (studyName != null) {
             query.append("studyName", studyName);
         }
-//        if (options != null) {
-//            if (options.containsKey("fileId")) {
-//                query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
-//            }
-//        }
+        if (timeStamp != null) {
+            query.append("timeStamp", new BasicDBObject("$ne", timeStamp));
+        }
 
         QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, null);
         if (queryResult.getResult().isEmpty()) {
@@ -101,15 +99,11 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
             studyConfiguration = queryResult.first();
         }
 
-
-        List<StudyConfiguration> list;
         if (studyConfiguration == null) {
-            list = Collections.emptyList();
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 0, 0, "", "", Collections.emptyList());
         } else {
-            list = Collections.singletonList(studyConfiguration);
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
         }
-
-        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", list);
     }
 
     @Override
