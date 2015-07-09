@@ -84,7 +84,9 @@ public class DBObjectToVariantSourceEntryConverterTest {
         sampleIds.put("NA002", 25);
         sampleIds.put("NA003", 35);
         studyConfiguration.setSampleIds(sampleIds);
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0/0");
+        studyConfiguration.getIndexedFiles().add(fileId);
+        studyConfiguration.getSamplesInFiles().put(fileId, new HashSet<>(sampleIds.values()));
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton("0/0"));
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 

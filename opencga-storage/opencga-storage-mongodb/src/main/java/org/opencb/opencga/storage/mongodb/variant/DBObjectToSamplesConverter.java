@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -46,6 +47,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, Map<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
+    private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -58,6 +60,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         studyConfigurations = new HashMap<>();
         __studySamplesId = new HashMap<>();
         __studyIdSamples = new HashMap<>();
+        studyDefaultGenotypeSet = new HashMap<>();
         this.studyConfigurationManager = null;
     }
 
@@ -71,7 +74,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public DBObjectToSamplesConverter(int studyId, List<String> samples, String defaultGenotype) {
         this();
         setSamples(studyId, samples);
-        studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, defaultGenotype);
+        studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
+        studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
     /**
@@ -151,12 +155,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         // An array of genotypes is initialized with the most common one
 //        String mostCommonGtString = mongoGenotypes.getString("def");
-        if (studyConfiguration.getAttributes().containsKey(MongoDBVariantStorageManager.DEFAULT_GENOTYPE)) {
-            String mostCommonGtString = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE);
-            if (mostCommonGtString != null) {
-                for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
-                    entry.getValue().put("GT", mostCommonGtString);
-                }
+        Set<String> defaultGenotypes = studyDefaultGenotypeSet.get(studyId);
+        String mostCommonGtString = defaultGenotypes.isEmpty() ? null : defaultGenotypes.iterator().next();
+        if (mostCommonGtString != null) {
+            for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
+                entry.getValue().put("GT", mostCommonGtString);
             }
         }
 
@@ -202,10 +205,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
 
-        Genotype defaultGenotype = null;
-        if (studyConfiguration.getAttributes().containsKey(MongoDBVariantStorageManager.DEFAULT_GENOTYPE)) {
-            defaultGenotype = new Genotype(studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE));
-        }
+        Set<Genotype> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().map(Genotype::new).collect(Collectors.toSet());
 
         // In Mongo, samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
@@ -216,7 +216,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
             String genotypeStr = genotypeToStorageType(entry.getKey().toString());
-            if (defaultGenotype == null || !entry.getKey().equals(defaultGenotype)) {
+            if (!defaultGenotype.contains(entry.getKey())) {
                 mongoSamples.append(genotypeStr, entry.getValue());
             }
         }
@@ -246,6 +246,19 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
         this.__studyIdSamples.put(studyConfiguration.getStudyId(), null);
         this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
+
+        Set defGenotypeSet = studyConfiguration.getAttributes().get(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Set.class);
+        if (defGenotypeSet == null) {
+            List<String> defGenotype = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE);
+            if (defGenotype.size() == 0) {
+                defGenotypeSet = Collections.<String>emptySet();
+            } else if (defGenotype.size() == 1) {
+                defGenotypeSet = Collections.singleton(defGenotype.get(0));
+            } else {
+                defGenotypeSet = new LinkedHashSet<>(defGenotype);
+            }
+        }
+        this.studyDefaultGenotypeSet.put(studyConfiguration.getStudyId(), defGenotypeSet);
     }
 
     /**

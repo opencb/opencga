@@ -1004,8 +1004,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
         // } }
 
-        if (studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "").equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
-            logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).");
+        if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "").
+                equals(Collections.singletonList(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE))) {
+            logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
             return new QueryResult<>();
         }
         DBObject query = getRegionFilter(regions, new QueryBuilder()).get();

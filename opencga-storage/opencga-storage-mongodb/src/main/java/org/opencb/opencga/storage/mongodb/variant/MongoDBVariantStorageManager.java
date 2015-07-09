@@ -169,13 +169,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
 
-        String defaultGenotype;
+        Set<String> defaultGenotype;
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE)) {
-            defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE);
+            defaultGenotype = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE));
             logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
         } else {
             if (options.containsKey(DEFAULT_GENOTYPE)) {
-                defaultGenotype = options.getString(DEFAULT_GENOTYPE);
+                defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE));
             } else {
                 VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
                 switch (studyType) {
@@ -183,11 +183,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     case TRIO:
                     case PAIRED:
                     case PAIRED_TUMOR:
-                        defaultGenotype = DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
+                        defaultGenotype = Collections.singleton(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
                     default:
-                        defaultGenotype = "0|0";
+                        defaultGenotype = new HashSet<>(Arrays.asList("0/0", "0|0"));
                         logger.debug("No default genotype found. Using default genotype: {}", defaultGenotype);
                         break;
                 }
@@ -196,7 +196,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
-        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
+//        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
@@ -232,8 +232,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantDBWriter.includeSrc(includeSrc);
             variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
-            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
-            variantDBWriter.setDefaultGenotype(defaultGenotype);
+//            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
+//            variantDBWriter.setDefaultGenotype(defaultGenotype);
 //            variantDBWriter.setVariantSource(source);
 //            variantDBWriter.setSamplesIds(samplesIds);
             variantDBWriter.setThreadSyncronizationBoolean(atomicBoolean);

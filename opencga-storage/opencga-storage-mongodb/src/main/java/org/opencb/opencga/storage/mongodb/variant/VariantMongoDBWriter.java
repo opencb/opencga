@@ -60,8 +60,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private boolean includeStats;
     private boolean includeSrc = true;
     private boolean includeSamples;
-    private boolean compressDefaultGenotype = true;
-    private String defaultGenotype = null;
+//    private boolean compressDefaultGenotype = true;
+//    private String defaultGenotype = null;
 
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;
@@ -403,14 +403,14 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     @Override @Deprecated
     public final void includeEffect(boolean b) {
     }
-
-    public void setCompressDefaultGenotype(boolean compressDefaultGenotype) {
-        this.compressDefaultGenotype = compressDefaultGenotype;
-    }
-
-    public void setDefaultGenotype(String defaultGenotype) {
-        this.defaultGenotype = defaultGenotype;
-    }
+//
+//    public void setCompressDefaultGenotype(boolean compressDefaultGenotype) {
+//        this.compressDefaultGenotype = compressDefaultGenotype;
+//    }
+//
+//    public void setDefaultGenotype(String defaultGenotype) {
+//        this.defaultGenotype = defaultGenotype;
+//    }
 
     public void setThreadSyncronizationBoolean(AtomicBoolean atomicBoolean) {
         this.variantSourceWritten = atomicBoolean;
