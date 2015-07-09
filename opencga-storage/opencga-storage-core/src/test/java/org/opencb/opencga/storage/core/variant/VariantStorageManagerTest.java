@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
 public abstract class VariantStorageManagerTest extends VariantStorageManagerTestUtils {

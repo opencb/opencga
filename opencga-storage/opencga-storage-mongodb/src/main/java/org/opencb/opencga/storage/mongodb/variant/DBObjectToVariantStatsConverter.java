@@ -123,7 +123,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                             Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
                             cohortStats.put(cid, variantStats);
                         } else {
-                            logger.warn("ignoring non present source entry studyId={}", sid);
+                            //This could happen if the study has been excluded
+                            logger.trace("ignoring non present source entry studyId={}", sid);
                         }
                     } else {
                         logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);

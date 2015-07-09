@@ -176,7 +176,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
-        DBObject projection = createProjection(options);
+        DBObject projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", qb.get().toString());
 
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
@@ -213,7 +213,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        parseQueryOptions(options, qb);
         qb = parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
-        DBObject projection = createProjection(options);
+        DBObject projection = createProjection(query, options);
         DBCursor dbCursor = variantsCollection.nativeQuery().find(qb.get(), projection, options);
         dbCursor.batchSize(options.getInt("batchSize", 100));
         return new VariantMongoDBIterator(dbCursor, getDbObjectToVariantConverter(query, options));
@@ -824,13 +824,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    private DBObject createProjection(QueryOptions options) {
+    private DBObject createProjection(Query query, QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
         if(options == null) {
-            return projection;
+            options = new QueryOptions();
         }
-
         List<String> includeList = options.getAsStringList("include");
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
@@ -858,23 +857,39 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (options.containsKey(VariantQueryParams.FILE_ID.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
-//            List<String> files = options.getListAs(FILES, String.class);
-            int file = options.getInt(VariantQueryParams.FILE_ID.key());
+        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
             projection.put(
                     DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(
                             "$elemMatch",
                             new BasicDBObject(
                                     DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                                    file
-//                                    new BasicDBObject(
-//                                            "$in",
-//                                            files
-//                                    )
+                                    new BasicDBObject(
+                                            "$in",
+                                            files
+                                    )
                             )
                     )
             );
+        }
+        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
+            if (!studies.isEmpty()) {
+                projection.put(
+                        DBObjectToVariantConverter.STUDIES_FIELD,
+                        new BasicDBObject(
+                                "$elemMatch",
+                                new BasicDBObject(
+                                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                                        new BasicDBObject(
+                                                "$in",
+                                                studies
+                                        )
+                                )
+                        )
+                );
+            }
         }
 
         logger.debug("Projection: {}", projection);
@@ -1047,12 +1062,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 true,
-                query.containsKey(VariantQueryParams.FILE_ID.key())? query.getInt(VariantQueryParams.FILE_ID.key()) : null,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key())? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
         return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
     }
 
+    @Deprecated
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
         if (options != null) {
 
@@ -1309,6 +1325,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
+    @Deprecated
     private DBObject parseProjectionQueryOptions(QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
@@ -1343,9 +1360,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (options.containsKey(VariantQueryParams.FILE_ID.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+        if (options.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
 //            List<String> files = options.getListAs(FILES, String.class);
-            int file = options.getInt(VariantQueryParams.FILE_ID.key());
+            int file = options.getInt(VariantQueryParams.RETURNED_FILES.key());
             projection.put(
                     DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(

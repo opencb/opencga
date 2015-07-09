@@ -32,7 +32,7 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
@@ -139,7 +139,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testIterator() {
         int numVariants = 0;
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.FILE_ID.key(), 6);
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 6);
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions()); iterator.hasNext(); ) {
             Variant variant = iterator.next();
             numVariants++;
