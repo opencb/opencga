@@ -45,8 +45,6 @@ public interface CatalogFileDBAdaptor {
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
-        sessionId(Type.TEXT, "SessionId filter"),
-
         @Deprecated maxSize(Type.NUMERICAL, ""),
         @Deprecated minSize(Type.NUMERICAL, ""),
         @Deprecated startDate(Type.TEXT, ""),
