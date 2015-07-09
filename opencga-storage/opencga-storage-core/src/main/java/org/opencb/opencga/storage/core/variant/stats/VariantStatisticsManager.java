@@ -93,11 +93,11 @@ public class VariantStatisticsManager {
         List<Variant> variantBatch = new ArrayList<>(batchSize);
         int retrievedVariants = 0;
         String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());   //TODO: Change to int defaultValue
-        String studyId = studyConfiguration.getStudyId() + "";                //TODO: Change to int defaultValue
+        String studyName = studyConfiguration.getStudyName();
 //        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
-        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyId);
+        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyName);
 
-        options.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyId));
+        options.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyName));
         options.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId)); // query just the asked file
 
 
@@ -115,7 +115,7 @@ public class VariantStatisticsManager {
 //            variantBatch.add(filterSample(variant, samples));
 
             if (variantBatch.size() == batchSize) {
-                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyId, fileId, cohorts);
+                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyName, fileId, cohorts);
 
                 for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                     outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
@@ -135,7 +135,7 @@ public class VariantStatisticsManager {
         }
 
         if (variantBatch.size() != 0) {
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyId, fileId, cohorts);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyName, fileId, cohorts);
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
                     if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
@@ -275,7 +275,7 @@ public class VariantStatisticsManager {
             boolean defaultCohortAbsent = false;
 
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyId()+"", null/*fileId*/, samples);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyName(), null/*fileId*/, samples);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {

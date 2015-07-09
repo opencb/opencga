@@ -380,7 +380,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject limit = new BasicDBObject("$limit",
                 options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
 
-        if (options.containsKey("count") && options.getBoolean("count")) {
+        if (options != null && options.getBoolean("count", false)) {
             DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
             DBObject unwind = new BasicDBObject("$unwind", "$field");
             DBObject groupAndCount = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
@@ -1085,7 +1085,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 samplesConverter
         );
         sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
-        return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
+        return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter(studyConfigurationManager));
     }
 
     @Deprecated

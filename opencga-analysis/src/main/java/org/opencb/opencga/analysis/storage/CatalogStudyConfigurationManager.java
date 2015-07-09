@@ -102,7 +102,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 studyId = catalogManager.getStudyId(studyName);
             }
             logger.debug("Reading StudyConfiguration from Catalog. studyId: {}", studyId);
-            System.out.println("CatalogStudyConfigurationManager - options = " + options == null? null : options.toJson());
+            logger.debug("CatalogStudyConfigurationManager - options = " + (options == null? null : options.toJson()));
             Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
             studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
 

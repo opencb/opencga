@@ -97,11 +97,12 @@ public class VariantStorageTest {
         coh5 = catalogManager.createCohort(studyId, "coh5", Cohort.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        runStorageJob(analysisFileIndexer.index(file1.getId(), outputId, sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile).append(VariantStorageManager.Options.ANNOTATE.key(), false)).first(), sessionId);
-        runStorageJob(analysisFileIndexer.index(file2.getId(), outputId, sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        runStorageJob(analysisFileIndexer.index(file3.getId(), outputId, sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        runStorageJob(analysisFileIndexer.index(file4.getId(), outputId, sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        runStorageJob(analysisFileIndexer.index(file5.getId(), outputId, sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
+        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile).append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        runStorageJob(analysisFileIndexer.index(file1.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+        runStorageJob(analysisFileIndexer.index(file2.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+        runStorageJob(analysisFileIndexer.index(file3.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+        runStorageJob(analysisFileIndexer.index(file4.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+        runStorageJob(analysisFileIndexer.index(file5.getId(), outputId, sessionId, queryOptions).first(), sessionId);
     }
 
     private void clearDB(String dbName) {
