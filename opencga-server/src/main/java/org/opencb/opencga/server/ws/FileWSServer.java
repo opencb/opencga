@@ -617,7 +617,6 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
 
                 case VARIANT: {
-                    QueryOptions queryOptions = new QueryOptions();
                     for (Map.Entry<String, List<String>> entry : params.entrySet()) {
                         List<String> values = entry.getValue();
                         String csv = values.get(0);
