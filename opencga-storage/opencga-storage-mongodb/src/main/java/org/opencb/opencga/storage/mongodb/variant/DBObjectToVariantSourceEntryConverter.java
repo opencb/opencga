@@ -41,7 +41,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String STUDYID_FIELD = "sid";
     public final static String ALTERNATES_FIELD = "alts";
     public final static String ATTRIBUTES_FIELD = "attrs";
-    public final static String FORMAT_FIELD = "fm";
+//    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
 
@@ -151,11 +151,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             }
 
         }
-        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
-            file.setFormat((String) fileObject.get(FORMAT_FIELD));
-        } else {
+//        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
+//            file.setFormat((String) fileObject.get(FORMAT_FIELD));
+//        } else {
             file.setFormat("GT");
-        }
+//        }
 
         // Samples
         if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
@@ -238,7 +238,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
-            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
+//            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
             mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
         }
 

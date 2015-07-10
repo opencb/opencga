@@ -393,8 +393,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     .append("count", new BasicDBObject("$size", "$values")));
         } else {
             project = new BasicDBObject("$project", new BasicDBObject()
-                    .append("field", "$"+documentPath)
-                    .append("_id._id", "$_id")
+                    .append("field", "$" + documentPath)
+                            //.append("_id._id", "$_id")
                     .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
                     .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
                     .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
