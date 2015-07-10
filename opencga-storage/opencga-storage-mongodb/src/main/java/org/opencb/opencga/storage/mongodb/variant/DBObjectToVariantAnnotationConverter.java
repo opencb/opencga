@@ -38,6 +38,8 @@ import java.util.*;
  */
 public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, DBObject> {
 
+    public final static String ANNOT_ID_FIELD = "_aid";
+
     public final static String CONSEQUENCE_TYPE_FIELD = "ct";
     public static final String GENE_NAME_FIELD = "gn";
     public static final String ENSEMBL_GENE_ID_FIELD = "ensg";
@@ -221,7 +223,10 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         Set<DBObject> xrefs = new HashSet<>();
         List<DBObject> cts = new LinkedList<>();
 
-        //ID
+        //Annotation ID
+        dbObject.put(ANNOT_ID_FIELD, "?");
+
+        //Variant ID
         if (object.getId() != null && !object.getId().isEmpty()) {
             xrefs.add(convertXrefToStorage(object.getId(), "dbSNP"));
         }

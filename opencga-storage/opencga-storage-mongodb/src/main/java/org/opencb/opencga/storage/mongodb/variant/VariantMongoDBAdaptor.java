@@ -357,7 +357,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         String documentPath;
         String unwindPath;
-        boolean secondUnwind = false;
+        int numUnwinds = 2;
         switch (field) {
             case "gene":
             default:
@@ -373,7 +373,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "consequence_type":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
                 unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
-                secondUnwind = true;
+                numUnwinds = 3;
                 break;
         }
 
@@ -424,8 +424,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> operations = new LinkedList<>();
         operations.add(match);
         operations.add(project);
-        operations.add(unwindField);
-        if (secondUnwind) {
+        for (int i = 0; i < numUnwinds; i++) {
             operations.add(unwindField);
         }
         operations.add(notNull);
@@ -578,7 +577,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
             DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
-            DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD,
+            DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD + ".0",
                     convertedVariantAnnotation));
             builder.find(find).updateOne(update);
         }
@@ -679,7 +678,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             /** ANNOTATION **/
 
             if (query.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
-                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
+                if (query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).not().is(Collections.emptyList());
+                } else {
+                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).is(Collections.emptyList());
+                }
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
@@ -1729,7 +1732,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
-        
+
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(new Query(options), options), options);
         queryResult.setId(region.toString());
         return queryResult;
@@ -1742,12 +1745,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
-        
+
         // If the users asks to sort the results, do it by chromosome and start
         if (options.getBoolean("sort", false)) {
             options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
         }
-        
+
         // If the user asks to merge the results, run only one query,
         // otherwise delegate in the method to query regions one by one
         if (options.getBoolean("merge", false)) {
@@ -1774,7 +1777,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         DBObject match = new BasicDBObject("$match", qb.get());
         DBObject unwind = new BasicDBObject("$unwind", "$" + DBObjectToVariantConverter.STUDIES_FIELD);
-        DBObject match2 = new BasicDBObject("$match", 
+        DBObject match2 = new BasicDBObject("$match",
                 new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
                         new BasicDBObject("$in", studyId)));
 
@@ -2009,13 +2012,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public VariantDBIterator iterator(QueryOptions options) {
-
-        QueryBuilder qb = QueryBuilder.start();
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-        DBCursor dbCursor = variantsCollection.nativeQuery().find(qb.get(), projection, options);
-        dbCursor.batchSize(options.getInt("batchSize", 100));
-        return new VariantMongoDBIterator(dbCursor, getDbObjectToVariantConverter(new Query(options), options));
+        return iterator(new Query(options), options);
     }
 
     @Deprecated
