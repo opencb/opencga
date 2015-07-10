@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -27,7 +29,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -189,6 +192,56 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertEquals("1|1", vse.getSampleData("NA19600", "GT"));
             assertTrue(Arrays.asList("0|0", "1|0").contains(vse.getSampleData("NA19685", "GT")));
         }));
+    }
+
+    @Test
+    public void groupBy_gene() throws Exception {
+        int limit = 10;
+        QueryResult<Map<String, Object>> queryResult_count = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", limit).append("count", true));
+        Map<String, Long> counts = queryResult_count.getResult().stream().collect(Collectors.toMap(o -> ((Map<String, Object>) o).get("id").toString(), o -> Long.parseLong(((Map<String, Object>) o).get("count").toString())));
+        QueryResult<Map<String, Object>> queryResult_group = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", limit));
+
+//        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_group));
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_count));
+
+        assertEquals(limit, queryResult_count.getNumResults());
+        assertEquals(limit, queryResult_group.getNumResults());
+        for (Map<String, Object> resultMap : queryResult_group.getResult()) {
+            System.out.println("resultMap = " + resultMap);
+            String id = resultMap.get("id").toString();
+            assertTrue("Should contain key " + id, counts.containsKey(id));
+            assertEquals("Size and count for id (" + id + ")are different", ((List) resultMap.get("values")).size(), counts.get(id).intValue());
+
+            QueryResult<Variant> queryResult3 = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), id), new QueryOptions("limit", 1));
+            assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumTotalResults());
+            assertEquals(1, queryResult3.getNumResults());
+        }
+    }
+
+    @Test
+    public void rank_gene() throws Exception {
+        int limit = 40;
+        QueryResult<Map<String, Object>> queryResult_rank = dbAdaptor.rank(new Query(), "gene", limit, false);
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_rank));
+
+        assertEquals(limit, queryResult_rank.getNumResults());
+        for (Map<String, Object> map : queryResult_rank.getResult()) {
+            QueryResult<Variant> variantQueryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), map.get("id")), new QueryOptions("limit", 1));
+            assertEquals(((Number) variantQueryResult.getNumTotalResults()).intValue(), ((Number) map.get("count")).intValue());
+        }
+    }
+
+    @Test
+    public void rank_ct() throws Exception {
+        int limit = 20;
+        QueryResult<Map<String, Object>> queryResult_rank = dbAdaptor.rank(new Query(), "ct", limit, false);
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(queryResult_rank));
+
+        assertEquals(limit, queryResult_rank.getNumResults());
+        for (Map<String, Object> map : queryResult_rank.getResult()) {
+            QueryResult<Variant> variantQueryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")), new QueryOptions("limit", 1));
+            assertEquals(((Number) variantQueryResult.getNumTotalResults()).intValue(), ((Number) map.get("count")).intValue());
+        }
     }
 
 /*

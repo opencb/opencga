@@ -22,6 +22,8 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -29,6 +31,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -354,6 +357,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         String documentPath;
         String unwindPath;
+        boolean secondUnwind = false;
         switch (field) {
             case "gene":
             default:
@@ -363,39 +367,83 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "ensemblGene":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
                 unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
                 unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                secondUnwind = true;
                 break;
         }
 
         QueryBuilder qb = QueryBuilder.start();
-//        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 
-        DBObject match = new BasicDBObject("$match", qb.get());
+        boolean count = options != null && options.getBoolean("count", false);
+        int order = options != null ? options.getInt("order", -1) : -1;
 
+        DBObject project;
+        DBObject projectAndCount;
+        if (count) {
+            project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("count", new BasicDBObject("$size", "$values")));
+        } else {
+            project = new BasicDBObject("$project", new BasicDBObject()
+                    .append("field", "$"+documentPath)
+                    .append("_id._id", "$_id")
+                    .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
+                    .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
+                    .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
+                    .append("_id.alternative", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
+                    .append("_id.reference", "$" + DBObjectToVariantConverter.REFERENCE_FIELD)
+                    .append("_id.ids", "$" + DBObjectToVariantConverter.IDS_FIELD));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("values", "$values")
+                    .append("count", new BasicDBObject("$size", "$values")));
+        }
+
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject unwindField = new BasicDBObject("$unwind", "$field");
+        DBObject notNull = new BasicDBObject("$match", new BasicDBObject("field", new BasicDBObject("$ne", null)));
+        DBObject groupAndAddToSet = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
+                .append("values", new BasicDBObject("$addToSet", "$_id"))); // sum, count, avg, ...?
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
+        DBObject skip = null;
+        if (options != null && options.getInt("skip", -1) > 0) {
+            skip = new BasicDBObject("$skip", options.getInt("skip", -1));
+        }
         DBObject limit = new BasicDBObject("$limit",
                 options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
 
-        if (options != null && options.getBoolean("count", false)) {
-            DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
-            DBObject unwind = new BasicDBObject("$unwind", "$field");
-            DBObject groupAndCount = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
-                    .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
-            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count",
-                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
-            return variantsCollection.aggregate(Arrays.asList(match, project, unwind, groupAndCount, sort, limit), options);
-        } else {
-            DBObject unwind = new BasicDBObject("$unwind", "$"+unwindPath);
-            DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$"+documentPath)
-                    .append("values", new BasicDBObject("$push", "$$ROOT"))); // sum, count, avg, ...?
-//            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("$field",
-//                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
-            return variantsCollection.aggregate(Arrays.asList(match, unwind, group, limit), options);
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match);
+        operations.add(project);
+        operations.add(unwindField);
+        if (secondUnwind) {
+            operations.add(unwindField);
         }
+        operations.add(notNull);
+        operations.add(groupAndAddToSet);
+        operations.add(projectAndCount);
+        operations.add(sort);
+        if (skip != null) {
+            operations.add(skip);
+        }
+        operations.add(limit);
+        logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
+        QueryResult<DBObject> queryResult = variantsCollection.aggregate(operations, options);
+
+//            List<Map<String, Object>> results = new ArrayList<>(queryResult.getResult().size());
+//            results.addAll(queryResult.getResult().stream().map(dbObject -> new ObjectMap("id", dbObject.get("_id")).append("count", dbObject.get("count"))).collect(Collectors.toList()));
+        List<Map> results = queryResult.getResult().stream().map(DBObject::toMap).collect(Collectors.toList());
+
+        return new QueryResult<>(queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(), queryResult.getWarningMsg(), queryResult.getErrorMsg(), results);
     }
 
     @Override
@@ -602,6 +650,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
                         , xrefs, builder, QueryOperation.OR);
+//                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+//                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+//                        DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD
+//                        , xrefs, builder, QueryOperation.OR);
             }
 
             if (query.containsKey(VariantQueryParams.CHROMOSOME.key())) {
