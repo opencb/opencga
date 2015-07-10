@@ -196,6 +196,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                                 @ApiParam(value = "merge", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge,
                                 @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
 
         Query query = new Query();
@@ -225,22 +226,23 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
         if (histogram) {
             QueryResult result = dbAdaptor.getFrequency(query, Region.parseRegion(region), interval);
-            return createOkResponse(Arrays.asList(result));
+            return createOkResponse(Collections.singletonList(result));
+        } else if (!groupBy.isEmpty()) {
+            QueryResult result = dbAdaptor.groupBy(query, groupBy, queryOptions);
+            return createOkResponse(Collections.singletonList(result));
+        } else if(merge) {
+            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+            QueryResult result = dbAdaptor.get(query, queryOptions);
+            return createOkResponse(Collections.singletonList(result));
         } else {
-            if(merge) {
-                query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
+            String[] studies = studyIdStr.split(",");
+            List<QueryResult> results = new ArrayList<>(studies.length);
+            for (String study : studies) {
+                query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
                 QueryResult result = dbAdaptor.get(query, queryOptions);
-                return createOkResponse(Arrays.asList(result));
-            } else {
-                String[] studies = studyIdStr.split(",");
-                List<QueryResult> results = new ArrayList<>(studies.length);
-                for (String study : studies) {
-                    query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
-                    QueryResult result = dbAdaptor.get(query, queryOptions);
-                    results.add(result);
-                }
-                return createOkResponse(results);
+                results.add(result);
             }
+            return createOkResponse(results);
         }
     }
 

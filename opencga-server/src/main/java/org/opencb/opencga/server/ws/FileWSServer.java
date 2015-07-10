@@ -521,6 +521,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
                           @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                          @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                           @ApiParam(value = "variantSource", required = false) @DefaultValue("false") @QueryParam("variantSource") boolean variantSource,
                           @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
         List<Region> regions = new LinkedList<>();
@@ -650,20 +651,22 @@ public class FileWSServer extends OpenCGAWSServer {
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
                     }
-                    QueryResult variantsByRegion;
+                    QueryResult queryResult;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        variantsByRegion = dbAdaptor.get(query, queryOptions);
+                        queryResult = dbAdaptor.get(query, queryOptions);
 //                    } else if (variantSource) {
 //                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-//                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+//                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+                    } else if (!groupBy.isEmpty()) {
+                        queryResult = dbAdaptor.groupBy(query, groupBy, queryOptions);
                     } else {
                         //With merge = true, will return only one result.
 //                        queryOptions.put("merge", true);
-//                        variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
-                        variantsByRegion = dbAdaptor.get(query, queryOptions);
+//                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
+                        queryResult = dbAdaptor.get(query, queryOptions);
                     }
-                    result = variantsByRegion;
+                    result = queryResult;
                     break;
 
                 }
