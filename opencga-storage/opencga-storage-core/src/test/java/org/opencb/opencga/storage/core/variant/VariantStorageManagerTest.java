@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -63,7 +64,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     public void multiIndex() throws Exception {
         clearDB(DB_NAME);
         int expectedNumVariants = NUM_VARIANTS - 37; //37 variants have been removed from this dataset because had the genotype 0|0 for each sample
-        StudyConfiguration studyConfigurationMultiFile = newStudyConfiguration();
+        StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
 
         ETLResult etlResult;
         ObjectMap options = new ObjectMap()
@@ -90,9 +91,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
 
         //Load, in a new study, the same dataset in one single file
-        int singleFileStudyId = 2;
-        StudyConfiguration studyConfigurationSingleFile = newStudyConfiguration();
-        studyConfigurationSingleFile.setStudyId(singleFileStudyId);
+        StudyConfiguration studyConfigurationSingleFile = new StudyConfiguration(2, "single");
         etlResult = runDefaultETL(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationSingleFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 10));
         assertTrue(studyConfigurationSingleFile.getIndexedFiles().contains(10));
 
@@ -100,15 +99,17 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
 
         //Check that both studies contains the same information
-        VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_ID + "," + singleFileStudyId));
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfigurationMultiFile.getStudyId() + "," + studyConfigurationSingleFile.getStudyId()), new QueryOptions());
         int numVariants = 0;
         for (; iterator.hasNext();) {
             Variant variant = iterator.next();
             numVariants++;
-            Map<Integer, VariantSourceEntry> map = variant.getSourceEntries().values().stream().collect(Collectors.toMap(e -> Integer.parseInt(e.getStudyId()), Function.<VariantSourceEntry>identity()));
-            assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyId()));
-            assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyId()));
-            assertEquals(map.get(singleFileStudyId).getSamplesData(), map.get(STUDY_ID).getSamplesData());
+//            Map<String, VariantSourceEntry> map = variant.getSourceEntries().values().stream().collect(Collectors.toMap(VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
+            Map<String, VariantSourceEntry> map = variant.getSourceEntries();
+
+            assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyName()));
+            assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyName()));
+            assertEquals(map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData(), map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData());
         }
         assertEquals(expectedNumVariants, numVariants);
 
@@ -222,14 +223,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, boolean includeSamples, boolean includeSrc, int expectedNumVariants) {
         long start = System.currentTimeMillis();
         int numVariants = 0;
-        String expectedStudyId = Integer.toString(studyConfiguration.getStudyId());
-        QueryOptions queryOptions = new QueryOptions("limit", 1);
-        queryOptions.put("defaultGenotype", "0|0");
-        QueryResult allVariants = dbAdaptor.getAllVariants(queryOptions);
+        String expectedStudyId = studyConfiguration.getStudyName();
+        QueryResult allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
         assertEquals(1, allVariants.getNumResults());
         assertEquals(expectedNumVariants, allVariants.getNumTotalResults());
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new QueryOptions("defaultGenotype", "0|0")); iterator.hasNext(); ) {
-            Variant variant = iterator.next();
+        for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {

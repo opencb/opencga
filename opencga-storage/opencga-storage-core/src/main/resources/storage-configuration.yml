@@ -2,7 +2,7 @@
 defaultStorageEngineId: "mongodb"
 logLevel: info
 # For OpenCGA installation: org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager
-studyMetadataManager: "org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager"
+studyMetadataManager:
 cellbase:
   hosts:
   - "${OPENCGA.CELLBASE.HOST}"
