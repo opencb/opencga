@@ -22,10 +22,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.*;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -50,6 +47,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -617,6 +615,9 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
 
                 case VARIANT: {
+                    Query query = new Query();
+                    query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+
                     for (Map.Entry<String, List<String>> entry : params.entrySet()) {
                         List<String> values = entry.getValue();
                         String csv = values.get(0);
@@ -625,14 +626,17 @@ public class FileWSServer extends OpenCGAWSServer {
                         }
                         queryOptions.add(entry.getKey(), csv);
                     }
-                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+//                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+                    query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(Integer.toString(fileIdNum)));
 
                     if(params.containsKey("fileId")) {
                         if(params.get("fileId").get(0).isEmpty()) {
-                            queryOptions.put("fileId", fileId);
+//                            queryOptions.put("fileId", fileId);
+                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
                         } else {
                             List<String> files = params.get("fileId");
-                            queryOptions.put("fileId", files.get(0));
+//                            queryOptions.put("fileId", files.get(0));
+                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
                         }
                     }
 //                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
@@ -649,14 +653,15 @@ public class FileWSServer extends OpenCGAWSServer {
                     QueryResult variantsByRegion;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        variantsByRegion = dbAdaptor.getAllVariants(queryOptions);
+                        variantsByRegion = dbAdaptor.get(query, queryOptions);
 //                    } else if (variantSource) {
 //                        queryOptions.put("fileId", Integer.toString(fileIdNum));
 //                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else {
                         //With merge = true, will return only one result.
-                        queryOptions.put("merge", true);
-                        variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
+//                        queryOptions.put("merge", true);
+//                        variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
+                        variantsByRegion = dbAdaptor.get(query, queryOptions);
                     }
                     result = variantsByRegion;
                     break;
