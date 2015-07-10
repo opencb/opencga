@@ -1080,6 +1080,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
         }
+        if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
+            samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
+        }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 false,
                 query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,

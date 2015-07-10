@@ -48,6 +48,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private final Map<Integer, Map<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
+    private Set<String> returnedSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -61,6 +62,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         __studySamplesId = new HashMap<>();
         __studyIdSamples = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
+        returnedSamples = new HashSet<>();
         this.studyConfigurationManager = null;
     }
 
@@ -244,6 +246,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         addStudyConfiguration(studyConfiguration);
     }
 
+    public void setReturnedSamples(Set<String> returnedSamples) {
+        this.returnedSamples = returnedSamples;
+        __studyIdSamples.clear();
+        __studySamplesId.clear();
+    }
+
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
         this.__studyIdSamples.put(studyConfiguration.getStudyId(), null);
@@ -290,6 +298,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
+            if (!returnedSamples.isEmpty()) {
+                sampleIds = sampleIds.entrySet().stream()
+                        //ReturnedSamples could be sampleNames or sampleIds as a string
+                        .filter(e -> returnedSamples.contains(e.getKey()) || returnedSamples.contains(e.getValue().toString()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            }
             this.__studySamplesId.put(studyId, sampleIds);
         } else {
             sampleIds = this.__studySamplesId.get(studyId);

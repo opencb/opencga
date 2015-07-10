@@ -49,7 +49,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         //EFFECT ("TEXT_ARRAY", null, ""),
         STUDIES ("studies", TEXT_ARRAY, ""),
         RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, "Specify a list of studies to be returned"),
-//        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
+        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
         FILES ("files", TEXT_ARRAY, ""),
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
         MAF ("maf", TEXT_ARRAY, ""),
