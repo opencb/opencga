@@ -111,11 +111,13 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);
 
-                QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), null);
-                if(samplesBySource.getResult().isEmpty()) {
-                    logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
-                } else {
-                    setSamples(studyId, (List<String>) samplesBySource.getResult().get(0));
+                if (sourceDbAdaptor != null) {
+                    QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), null);
+                    if(samplesBySource.getResult().isEmpty()) {
+                        logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
+                    } else {
+                        setSamples(studyId, (List<String>) samplesBySource.getResult().get(0));
+                    }
                 }
             } else {
                 addStudyConfiguration(queryResult.first());
