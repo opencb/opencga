@@ -1062,6 +1062,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
+        studyConfigurationManager.setDefaultQueryOptions(options);
         List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
 
         DBObjectToSamplesConverter samplesConverter;

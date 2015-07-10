@@ -42,6 +42,9 @@ public abstract class StudyConfigurationManager {
     protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options);
     protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
+    //FIXME This is a temporary method
+    public void setDefaultQueryOptions(QueryOptions options) {}
+
     protected abstract QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {

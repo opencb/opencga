@@ -107,7 +107,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 //        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
 //        Integer studyId = Integer.parseInt(studyIdStr);
         if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument, need to query
-            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions());
+            QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
             if(queryResult.first() == null) {
                 logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);
 

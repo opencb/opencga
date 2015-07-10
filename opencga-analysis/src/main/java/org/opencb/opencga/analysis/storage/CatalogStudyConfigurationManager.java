@@ -57,6 +57,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.alias","projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
     private final ObjectMapper objectMapper;
+    private QueryOptions options;
 
     public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
         super(objectMap);
@@ -85,6 +86,12 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
+    public void setDefaultQueryOptions(QueryOptions options) {
+        super.setDefaultQueryOptions(options);
+        this.options = options;
+    }
+
+    @Override
     protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         return _getStudyConfiguration(null, studyName, timeStamp, options);
     }
@@ -95,6 +102,9 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
+        if (options == null) {
+            options = this.options;
+        }
         String sessionId = (options == null) ? this.sessionId : options.getString("sessionId", this.sessionId);
         StudyConfiguration studyConfiguration = null;
         long start = System.currentTimeMillis();
@@ -170,6 +180,9 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     @Override
     public QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+        if (options == null) {
+            options = this.options;
+        }
         try {
             logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
             return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
