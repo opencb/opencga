@@ -69,6 +69,38 @@ You can build OpenCGA by executing the following command from the root of the cl
   
     $ mvn clean install -DskipTests
 
+For changing particular settings during buildings you can create a profile in _~/.m2/settings.xml_ using this template:
+
+        <profile>
+            <id>default-config</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
+                <OPENCGA.CATALOG.DB.PORT>27017</OPENCGA.CATALOG.DB.PORT>
+                <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
+                <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
+                <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
+
+                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
+                <OPENCGA.CATALOG.ROOTDIR>file:///opt/opencga/sessions/</OPENCGA.CATALOG.ROOTDIR>
+
+                <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
+                <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
+                <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
+
+                <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+
+                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
+                <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>
+            </properties>
+        </profile>
+        
+
 Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_ and _cellbase_ repositories. After this you should have this file structure in **_opencga-app/build_**:
 
     opencga-app/build/
