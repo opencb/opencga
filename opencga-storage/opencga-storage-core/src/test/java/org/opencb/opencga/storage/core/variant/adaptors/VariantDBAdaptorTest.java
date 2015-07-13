@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
 import org.opencb.biodata.models.feature.Region;
@@ -27,8 +26,11 @@ import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,7 +61,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY));
+            ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+                    .append(VariantStorageManager.Options.ANNOTATE.key(), true);
+            runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);

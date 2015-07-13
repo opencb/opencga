@@ -24,6 +24,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryParam;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.*;
@@ -263,6 +264,10 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     @Deprecated
     VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+
+    StudyConfigurationManager getStudyConfigurationManager();
+
+    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
     VariantDBIterator iterator(QueryOptions options);

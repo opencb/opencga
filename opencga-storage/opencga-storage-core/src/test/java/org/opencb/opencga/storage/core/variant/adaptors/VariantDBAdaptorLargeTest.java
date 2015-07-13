@@ -27,7 +27,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 @Ignore
 public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTestUtils {
 
-
     public static final Integer file1 = 1;
     public static final Integer file2 = 2;
     public static final Integer file3 = 3;

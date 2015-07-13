@@ -330,7 +330,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //        return true;
 //    }
     private boolean writeStudyConfiguration() {
-        dbAdaptor.getStudyConfigurationDBAdaptor().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
         return true;
     }
 

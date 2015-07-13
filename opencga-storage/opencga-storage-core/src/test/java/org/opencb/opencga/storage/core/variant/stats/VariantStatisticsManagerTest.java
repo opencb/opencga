@@ -5,6 +5,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -49,7 +50,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
-        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false));
+        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
     }
 
@@ -80,12 +81,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort2", 11);
 
         //Calculate stats
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
         checkCohorts(dbAdaptor, studyConfiguration);
     }
@@ -118,11 +116,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort1", 10);
 
         //Calculate stats for cohort1
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.stats"), cohorts, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
         assertTrue(studyConfiguration.getCalculatedStats().contains(10));
         checkCohorts(dbAdaptor, studyConfiguration);
@@ -139,11 +134,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort2", 11);
 
         //Calculate stats for cohort2
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, studyConfiguration, options);
+        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
         assertTrue(studyConfiguration.getCalculatedStats().contains(10));
         assertTrue(studyConfiguration.getCalculatedStats().contains(11));
@@ -152,11 +144,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         //Try to recalculate stats for cohort2. Will fail
         studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
         thrown.expect(IOException.class);
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, studyConfiguration, options);
+        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
     }
 

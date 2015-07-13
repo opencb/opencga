@@ -349,22 +349,22 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             String collectionName = options == null? null : options.getString(COLLECTION_FILES, "files");
             try {
                 return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
-//                return getDBAdaptor(dbName).getStudyConfigurationDBAdaptor();
+//                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {
                 throw new StorageManagerException("Unable to build MongoStorageConfigurationManager", e);
             }
         }
     }
 
-    @Override
-    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
-        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);
+//    @Override
+//    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
+//        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);
 //        if (dbAdaptor == null) {
 //            logger.debug("Do not check StudyConfiguration against the loaded in MongoDB");
 //        } else {
 //            if (dbAdaptor instanceof VariantMongoDBAdaptor) {
 //                VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
-//                StudyConfigurationManager studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationDBAdaptor();
+//                StudyConfigurationManager studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationManager();
 //                StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 //
 //                //Check that the provided StudyConfiguration has the same or more information that the stored in MongoDB.
@@ -397,5 +397,5 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                throw new StorageManagerException("Unknown VariantDBAdaptor '" + dbAdaptor.getClass().toString() + "'. Expected '" + VariantMongoDBAdaptor.class + "'");
 //            }
 //        }
-    }
+//    }
 }

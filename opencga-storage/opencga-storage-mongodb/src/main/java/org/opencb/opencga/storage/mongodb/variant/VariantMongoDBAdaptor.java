@@ -542,14 +542,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                 new BasicDBObject("$elemMatch",
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, studyConfiguration.getCohortIds().get(cohortName))));
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)));
 
         // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
         BasicDBObject update = new BasicDBObject(
                 "$pull",
                 new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, studyConfiguration.getCohortIds().get(cohortName))
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)
                 )
         );
         logger.debug("deleteStats: query = {}", query);
@@ -1997,11 +1997,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantSourceMongoDBAdaptor;
     }
 
-    public StudyConfigurationManager getStudyConfigurationDBAdaptor() {
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() {
         return studyConfigurationManager;
     }
 
-    public void setStudyConfigurationDBAdaptor(StudyConfigurationManager studyConfigurationManager) {
+    @Override
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 

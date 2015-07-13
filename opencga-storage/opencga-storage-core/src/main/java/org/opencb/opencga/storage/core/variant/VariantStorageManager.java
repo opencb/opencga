@@ -50,7 +50,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 13/08/14.
@@ -539,7 +538,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
                 URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, null, studyConfiguration, new QueryOptions(options));
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, Collections.emptyMap(), Collections.emptyMap(), studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);
@@ -696,9 +695,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     /**
      * Check if the StudyConfiguration is correct
      * @param studyConfiguration    StudyConfiguration to check
-     * @param dbAdaptor             VariantDBAdaptor to the DB containing the indexed study
      */
-    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
+    public static void checkStudyConfiguration(StudyConfiguration studyConfiguration) throws StorageManagerException {
         if (studyConfiguration == null) {
             throw new StorageManagerException("StudyConfiguration is null");
         }
