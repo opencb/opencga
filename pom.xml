@@ -339,8 +339,8 @@
                 <version>2.4.0</version>
             </dependency>
         </dependencies>
-
     </dependencyManagement>
+
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
@@ -374,6 +374,34 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>default-config</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
+                <OPENCGA.CATALOG.DB.PORT>27017</OPENCGA.CATALOG.DB.PORT>
+                <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
+                <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
+                <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
+
+                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
+                <OPENCGA.CATALOG.ROOTDIR>file:///opt/opencga/sessions/</OPENCGA.CATALOG.ROOTDIR>
+
+                <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
+                <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
+                <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
+                <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
+
+                <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+
+                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
+                <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>
+            </properties>
+        </profile>
         <profile>
             <id>deploy</id>
             <build>
