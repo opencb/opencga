@@ -2,7 +2,7 @@
 defaultStorageEngineId: "mongodb"
 logLevel: info
 # For OpenCGA installation: org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager
-studyMetadataManager:
+studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
 cellbase:
   hosts:
   - "${OPENCGA.CELLBASE.HOST}"
@@ -20,9 +20,9 @@ storageEngines:
       mean_coverage_size_list: [200, 10000]
     database:
       hosts:
-      - "localhost:27017"
-      user: ""
-      password: ""
+      - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
     options:
@@ -45,7 +45,7 @@ storageEngines:
       collection.files: "files"
     database:
       hosts:
-      - "${OPENCGA.STORAGE.VARIANT.DB.HOST}"
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
       user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
 - id: "hadoop"
