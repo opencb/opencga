@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.storage;
 
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -128,7 +130,8 @@ public class AnalysisFileIndexer {
         /** Get the original file. **/
         if (!transform && load) { //Don't transform. Just load. Select the original file
             if (inputFile.getJobId() <= 0) {
-                throw new CatalogException("Error: can't load this file. JobId unknown");
+                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
+                        "Only transformed files can be loaded.");
             }
             Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
             int indexedFileId;
@@ -208,6 +211,22 @@ public class AnalysisFileIndexer {
         } else {
             sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", originalFile.getSampleIds()), sessionId).getResult();
         }
+        if (!simulate) {
+            Cohort defaultCohort = null;
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+            if (cohorts.getResult().isEmpty()) {
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, VariantSourceEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
+            } else {
+                defaultCohort = cohorts.first();
+            }
+
+            Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
+            samples.addAll(originalFile.getSampleIds());
+            if (samples.size() != defaultCohort.getSamples().size()) {
+                logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
+                catalogManager.updateCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
+            }
+        }
 
 
         /** Create commandLine **/
@@ -246,6 +265,7 @@ public class AnalysisFileIndexer {
         ObjectMap jobAttributes = new ObjectMap();
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
+        jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
 
         String jobName = "index";
         String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
@@ -376,6 +396,9 @@ public class AnalysisFileIndexer {
                     ;
             if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), true)) {
                 sb.append(" --annotate ");
+            }
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {
+                sb.append(" --calculate-stats ");
             }
             if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
                 sb.append(" --include-src ");

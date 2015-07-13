@@ -22,6 +22,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -49,6 +50,9 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name"));
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
+    public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
+            .append(CatalogSampleDBAdaptor.CohortFilterOption.status.toString(), Cohort.Status.INVALID)
+            .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);
 
     private final CatalogManager catalogManager;
@@ -191,6 +195,17 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             smallStudyConfiguration.setInvalidStats(studyConfiguration.getInvalidStats());
             smallStudyConfiguration.setAttributes(studyConfiguration.getAttributes());
             smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
+
+            //Check if any cohort stat has been updated
+//            if (!studyConfiguration.getCalculatedStats().isEmpty()) {
+//                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(), new QueryOptions("id", new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
+//                    if (!cohort.getStatus().equals(Cohort.Status.READY)) {
+//                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
+//                        catalogManager.updateCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+//                    }
+//                }
+//            }
+
             return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, smallStudyConfiguration)), options.getString("sessionId", sessionId));
         } catch (CatalogException e) {
             logger.error("Unable to update StudyConfiguration in Catalog", e);

@@ -21,16 +21,11 @@ import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.storage.app.StorageMain;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +37,6 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.logger;
 
 /**
  * Created by hpccoll1 on 08/07/15.
@@ -97,7 +91,8 @@ public class VariantStorageTest {
         coh5 = catalogManager.createCohort(studyId, "coh5", Cohort.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile).append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runStorageJob(analysisFileIndexer.index(file1.getId(), outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index(file2.getId(), outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index(file3.getId(), outputId, sessionId, queryOptions).first(), sessionId);
@@ -132,7 +127,7 @@ public class VariantStorageTest {
 
         runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
-        cohorts.put("all", null);
+//        cohorts.put("all", null);
         checkCalculatedStats(cohorts);
 
         runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
@@ -158,7 +153,7 @@ public class VariantStorageTest {
         Map<String, Cohort> cohorts = new HashMap<>();
 
         runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(coh1, coh2), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        cohorts.put("all", null);
+//        cohorts.put("all", null);
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         checkCalculatedStats(cohorts);
@@ -173,22 +168,30 @@ public class VariantStorageTest {
     @Test
     public void testCalculateStats() throws Exception {
         VariantStorage variantStorage = new VariantStorage(catalogManager);
+
         assertEquals(Cohort.Status.NONE, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
+
         Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first();
         assertEquals(Cohort.Status.CALCULATING, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
+
         runStorageJob(job, sessionId);
         assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
-        catalogManager.updateCohort(coh1, new ObjectMap("description", "NewDescription"), sessionId);
-        assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
-        Cohort unmodifiedCohort = catalogManager.getCohort(coh1, null, sessionId).first();
-        catalogManager.updateCohort(coh1, new ObjectMap("samples", unmodifiedCohort.getSamples().subList(0, 100)), sessionId);
-        assertEquals(Cohort.Status.INVALID, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
 
         Map<String, Cohort> cohorts = new HashMap<>();
-        cohorts.put("coh1", unmodifiedCohort);
-        cohorts.put("all", null);
+        cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
+        catalogManager.updateCohort(coh1, new ObjectMap("description", "NewDescription"), sessionId);
+        assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
+
+        catalogManager.updateCohort(coh1, new ObjectMap("samples", catalogManager.getCohort(coh1, null, sessionId).first().getSamples().subList(0, 100)), sessionId);
+        assertEquals(Cohort.Status.INVALID, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
+
+        job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first();
+        runStorageJob(job, sessionId);
+        assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
+        cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
+        checkCalculatedStats(cohorts);
     }
 
 
@@ -223,6 +226,10 @@ public class VariantStorageTest {
      * Call directly to the OpenCGAStorageMain
      */
     private Job runStorageJob(Job storageJob, String sessionId) throws AnalysisExecutionException, IOException, CatalogException {
+        return runStorageJob(catalogManager, storageJob, logger, sessionId);
+    }
+
+    public static Job runStorageJob(CatalogManager catalogManager, Job storageJob, Logger logger, String sessionId) throws AnalysisExecutionException, IOException, CatalogException {
         logger.info("==========================================");
         logger.info("Executing opencga-storage");
         logger.info("==========================================");
