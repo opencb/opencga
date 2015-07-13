@@ -39,49 +39,16 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-analysis</artifactId>
+            <artifactId>opencga-catalog</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-codec</artifactId>
-                    <groupId>commons-codec</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.core</groupId>
-                    <artifactId>jersey-client</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.media</groupId>
-                    <artifactId>jersey-media-multipart</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>opencga-analysis</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-        </dependency>
-
-        <!--<dependency>-->
-        <!--<groupId>org.opencb.variant</groupId>-->
-        <!--<artifactId>variant-lib</artifactId>-->
-        <!--</dependency>-->
-
-        <!--<dependency>-->
-        <!--<groupId>org.opencb.opencga</groupId>-->
-        <!--<artifactId>opencga-storage-mongodb</artifactId>-->
-        <!--<version>0.4.0</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.opencb.biodata</groupId>-->
-        <!--<artifactId>biodata-formats</artifactId>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -112,11 +79,6 @@
             <artifactId>tomcat-embed-logging-juli</artifactId>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
         </dependency>
@@ -129,7 +91,10 @@
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>2.13</version>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
