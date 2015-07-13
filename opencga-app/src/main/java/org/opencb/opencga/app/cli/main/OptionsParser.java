@@ -173,6 +173,9 @@ public class OptionsParser {
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = false)
         String password;
 
+        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
+        String hiddenPassword;
+
         @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false)
         String sessionId;
     }
@@ -325,7 +328,7 @@ public class OptionsParser {
 //            @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
 //            String user;
 
-            @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = true, arity = 1)
+            @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = false, arity = 1)
             public String sessionId;
         }
     }
@@ -363,7 +366,7 @@ public class OptionsParser {
             @Parameter(names = {"-a", "--alias"}, description = "Alias", required = true, arity = 1)
             String alias;
 
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = true, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
             String description;
 
             @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
