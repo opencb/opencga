@@ -24,6 +24,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryParam;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
@@ -205,6 +206,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 

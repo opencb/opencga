@@ -185,7 +185,13 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         }
         try {
             logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
-            return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
+            StudyConfiguration smallStudyConfiguration = new StudyConfiguration(studyConfiguration.getStudyId(), studyConfiguration.getStudyName(), null, null, null, null);
+            smallStudyConfiguration.setIndexedFiles(studyConfiguration.getIndexedFiles());
+            smallStudyConfiguration.setCalculatedStats(studyConfiguration.getCalculatedStats());
+            smallStudyConfiguration.setInvalidStats(studyConfiguration.getInvalidStats());
+            smallStudyConfiguration.setAttributes(studyConfiguration.getAttributes());
+            smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
+            return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, smallStudyConfiguration)), options.getString("sessionId", sessionId));
         } catch (CatalogException e) {
             logger.error("Unable to update StudyConfiguration in Catalog", e);
             return new QueryResult(Integer.toString(studyConfiguration.getStudyId()), -1, 0, 0, "", e.getMessage(), Collections.emptyList());

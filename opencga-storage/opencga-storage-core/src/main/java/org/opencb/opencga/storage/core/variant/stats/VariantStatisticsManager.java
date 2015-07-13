@@ -218,6 +218,15 @@ public class VariantStatisticsManager {
         }
 
         checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
+        if (!overwrite) {
+            for (String cohortName : cohorts.keySet()) {
+                Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
+                if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+                    logger.debug("Cohort \"{}\":{} is invalid. Need to overwrite stats. Using overwrite = true", cohortName, cohortId);
+                    overwrite = true;
+                }
+            }
+        }
         VariantStorageManager.checkStudyConfiguration(studyConfiguration);
 
 
@@ -356,7 +365,7 @@ public class VariantStatisticsManager {
                 statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
 
                 if (statsBatch.size() == batchSize) {
-                    QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration.getStudyName(), options);
+                    QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
                     writes += writeResult.getNumResults();
                     logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(), statsBatch.get(statsBatch.size() - 1).getPosition());
                     statsBatch.clear();
@@ -365,7 +374,7 @@ public class VariantStatisticsManager {
         }
 
         if (!statsBatch.isEmpty()) {
-            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration.getStudyName(), options);
+            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
             writes += writeResult.getNumResults();
             logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
             statsBatch.clear();
@@ -404,8 +413,11 @@ public class VariantStatisticsManager {
      *
      * If some cohort does not have samples, reads the content from StudyConfiguration.
      * If there is no cohortId for come cohort, reads the content from StudyConfiguration or auto-generate a cohortId
+     * If some cohort has a different number of samples, check if this cohort is invalid.
      *
      * Do not update the "calculatedStats" array. Just check that the provided cohorts are not calculated or invalid.
+     *
+     * @return CohortIdList
      */
     List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                         Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds)
@@ -452,8 +464,9 @@ public class VariantStatisticsManager {
 
             Set<Integer> sampleIds;
             if (samples == null || samples.isEmpty()) {
+                //There are not provided samples for this cohort. Take samples from StudyConfiguration
                 sampleIds = studyConfiguration.getCohorts().get(cohortId);
-                if (sampleIds == null || sampleIds.isEmpty()) {
+                if (sampleIds == null || sampleIds.isEmpty()) { //ERROR: StudyConfiguration does not have samples for this cohort.
                     throw new IOException("Cohort \"" + cohortName + "\" is empty");
                 }
                 samples = new HashSet<>();
@@ -475,11 +488,19 @@ public class VariantStatisticsManager {
                 if (sampleIds.size() != samples.size()) {
                     throw new IOException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
+                if (studyConfiguration.getCohorts().get(cohortId) != null && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
+                    if (!studyConfiguration.getInvalidStats().contains(cohortId)) {
+                        //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
+                        throw new IOException("Different samples in cohort " + cohortName + ":" + cohortId + ". " +
+                                "Samples in the StudyConfiguratin: " + studyConfiguration.getCohorts().get(cohortId).size() + ". " +
+                                "Samples provided " + samples.size() + ". Invalidate stats to continue.");
+                    }
+                }
             }
 
-            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
-            }
+//            if (studyConfiguration.getInvalidStats().contains(cohortId)) {
+//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+//            }
             if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
                 throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
             }
@@ -517,12 +538,14 @@ public class VariantStatisticsManager {
      */
     void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts) throws IOException {
         for (String cohortName : cohorts) {
-            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
-                continue;
-            }
+//            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
+//                continue;
+//            }
             Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
             if (studyConfiguration.getInvalidStats().contains(cohortId)) {
-                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+//                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
+                logger.debug("Cohort \"" + cohortName + "\" stats calculated and INVALID. Set as calculated");
+                studyConfiguration.getInvalidStats().remove(cohortId);
             }
             if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
                 throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");

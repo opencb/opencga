@@ -538,7 +538,22 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
                 URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, Collections.emptyMap(), Collections.emptyMap(), studyConfiguration, new QueryOptions(options));
+
+                String defaultCohortName = VariantSourceEntry.DEFAULT_COHORT;
+                Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+                Map<String, Set<String>> defaultCohort = Collections.singletonMap(defaultCohortName, indexedSamples.keySet());
+                if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
+                    Integer defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
+                    if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
+                        if (!indexedSamples.values().equals(studyConfiguration.getCohorts().get(defaultCohortId))) { //Check if the samples number are different
+                            logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
+                            studyConfiguration.getCalculatedStats().remove(defaultCohortId);
+                            studyConfiguration.getInvalidStats().add(defaultCohortId);
+                        }
+                    }
+                }
+
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, Collections.emptyMap(), studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);

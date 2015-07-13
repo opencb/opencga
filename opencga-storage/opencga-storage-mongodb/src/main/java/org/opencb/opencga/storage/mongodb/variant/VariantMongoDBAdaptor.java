@@ -22,7 +22,6 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Region;
@@ -31,7 +30,6 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -460,7 +458,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions options) {
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        return updateStats(variantStatsWrappers, studyConfigurationManager.getStudyConfiguration(studyName, options).first(), options);
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options) {
         DBCollection coll = db.getDb().getCollection(collectionName);
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
