@@ -216,10 +216,15 @@
                 <version>1.47</version>
             </dependency>
             <dependency>
-                <groupId>org.utgenome.thirdparty</groupId>
+                <groupId>com.github.broadinstitute</groupId>
                 <artifactId>picard</artifactId>
-                <version>1.102.0</version>
+                <version>1.136</version>
             </dependency>
+            <!--<dependency>-->
+            <!--<groupId>org.utgenome.thirdparty</groupId>-->
+            <!--<artifactId>picard</artifactId>-->
+            <!--<version>1.136.0</version>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>

@@ -55,7 +55,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.utgenome.thirdparty</groupId>
+            <groupId>com.github.broadinstitute</groupId>
             <artifactId>picard</artifactId>
         </dependency>
         <dependency>
