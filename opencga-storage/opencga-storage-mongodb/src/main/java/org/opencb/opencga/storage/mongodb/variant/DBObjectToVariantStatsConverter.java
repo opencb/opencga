@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -39,6 +40,9 @@ import org.slf4j.LoggerFactory;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
 public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
+
+    public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
+            .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
 
     public DBObjectToVariantStatsConverter() {
     }
@@ -63,6 +67,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
 
     private StudyConfigurationManager studyConfigurationManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
+    private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
 
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
@@ -127,7 +132,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
                     String sid = getStudyName((Integer) vs.get(STUDY_ID));
-                    String cid = (String) vs.get(COHORT_ID);
+                    String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
                     VariantSourceEntry sourceEntry = null;
                     if (/*fid != null && */sid != null && cid != null) {
                         for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
@@ -181,14 +186,15 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
             variantStats = variantStatsEntry.getValue();
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
+            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, getCohortId(studyId, variantStatsEntry.getKey()));
             variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
             cohortsStatsList.add(variantStatsDBObject);
         }
         return cohortsStatsList;
     }
 
-    public String getStudyName(int studyId) {
+
+    private String getStudyName(int studyId) {
         if (!studyIds.containsKey(studyId)) {
             if (studyConfigurationManager == null) {
                 studyIds.put(studyId, Integer.toString(studyId));
@@ -203,6 +209,26 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         }
         return studyIds.get(studyId);
     }
+
+
+    private String getCohortName(int studyId, int cohortId) {
+        if (studyCohortNames.containsKey(studyId)) {
+            return studyCohortNames.get(studyId).get(cohortId);
+        } else {
+            Map<Integer, String> cohortNames = StudyConfiguration.inverseMap(getStudyConfiguration(studyId).getCohortIds());
+            studyCohortNames.put(studyId, cohortNames);
+            return cohortNames.get(cohortId);
+        }
+    }
+
+    private int getCohortId(int studyId, String cohortName) {
+        return getStudyConfiguration(studyId).getCohortIds().get(cohortName);
+    }
+
+    private StudyConfiguration getStudyConfiguration(int studyId) {
+        return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+    }
+
 
 }
 

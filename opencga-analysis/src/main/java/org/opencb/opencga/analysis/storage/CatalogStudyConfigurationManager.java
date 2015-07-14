@@ -108,6 +108,10 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
         if (options == null) {
             options = this.options;
+        } else if (this.options != null) {
+            for (Map.Entry<String, Object> entry : this.options.entrySet()) {
+                options.add(entry.getKey(), entry.getValue());
+            }
         }
         String sessionId = (options == null) ? this.sessionId : options.getString("sessionId", this.sessionId);
         StudyConfiguration studyConfiguration = null;
