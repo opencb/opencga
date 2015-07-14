@@ -137,7 +137,17 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
         // Annotations
-        DBObject mongoAnnotation = (DBObject) object.get(ANNOTATION_FIELD);
+        DBObject mongoAnnotation;
+        Object o = object.get(ANNOTATION_FIELD);
+        if (o instanceof List) {
+            if(!((List) o).isEmpty()) {
+                mongoAnnotation = (DBObject) ((List) o).get(0);
+            } else {
+                mongoAnnotation = null;
+            }
+        } else {
+            mongoAnnotation = (DBObject) object.get(ANNOTATION_FIELD);
+        }
         if (mongoAnnotation != null) {
             VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
             annotation.setChromosome(variant.getChromosome());
@@ -197,6 +207,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
         
 //        // Annotations
+        mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
 //        if (variantAnnotationConverter != null) {
 //            if (object.getAnnotation() != null) {
 //                DBObject annotation = variantAnnotationConverter.convertToStorageType(object.getAnnotation());
