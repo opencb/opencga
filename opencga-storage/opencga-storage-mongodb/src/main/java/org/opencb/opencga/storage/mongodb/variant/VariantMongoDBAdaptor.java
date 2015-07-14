@@ -816,20 +816,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //            }
 
 
-            /** FILES **/
-            QueryBuilder fileBuilder = QueryBuilder.start();
+            /** STUDIES **/
+            QueryBuilder studyBuilder = QueryBuilder.start();
 
             if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
                 List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), null);
                 addQueryListFilter(
                         DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds,
-                        fileBuilder, QueryOperation.AND);
+                        studyBuilder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
                 addQueryListFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." +
                                 DBObjectToVariantSourceEntryConverter.FILEID_FIELD, query.getAsIntegerList(VariantQueryParams.FILES.key()),
-                        fileBuilder, QueryOperation.AND);
+                        studyBuilder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
@@ -862,11 +862,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
                         genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
                     }
-                    fileBuilder.and(genotypesBuilder.get());
+                    studyBuilder.and(genotypesBuilder.get());
                 }
             }
 
-            DBObject fileQuery = fileBuilder.get();
+            DBObject fileQuery = studyBuilder.get();
             if (fileQuery.keySet().size() != 0) {
                 builder.and(DBObjectToVariantConverter.STUDIES_FIELD).elemMatch(fileQuery);
             }

@@ -344,14 +344,24 @@ public class CliOptionsParser {
         @Parameter(names = {"--id"}, description = " [CSV]", required = false)
         public String id;
 
-        @Parameter(names = {"--rank"}, description = " [CSV]", required = false)
-        public String rank;
-
         @Parameter(names = {"--group-by"}, description = " [CSV]", required = false)
         public String groupBy;
 
-        @Parameter(names = {"--study"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--rank"}, description = " [CSV]", required = false)
+        public String rank;
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
+
+        @Parameter(names = {"--not-in-study"}, description = "A comma separated list of studies where tha variant can not be present", required = false)
+        public String notInStudy;
+
+        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, ie. NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
+        public String sampleGenotype;
+
+        @Deprecated
+        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false, arity = 1)
+        public String file;
 
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
@@ -359,20 +369,17 @@ public class CliOptionsParser {
         @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
         public String annot;
 
-        @Parameter(names = {"-f", "--file"}, description = "File unique ID. [CSV]", required = false, arity = 1)
-        public String file;
-
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
         public String type;
 
-//        @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
-//        public String reference;
+        @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
+        public String returnStudy;
 
-//        @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
-//        public List<String> annot = new LinkedList<>();
+        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
+        public String returnSample;
 
-        @Parameter(names = {"--output-format"}, description = "Output format: vcf, vcf.gz, json, json.gz", required = false, arity = 1)
-        public String outputFormat = "json";
+        @Parameter(names = {"--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
+        public String outputFormat = "vcf";
 
     }
 

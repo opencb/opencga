@@ -138,10 +138,10 @@ for input_file in ${input_files[@]}; do
 
 		#Load file
 		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId $FILE_NAME".variants.json")
-		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false -- --include-genotypes --calculate-stats
+		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false -- --calculate-stats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue -- --calculate-stats
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue -Dannotate=false -- --calculate-stats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done

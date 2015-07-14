@@ -394,7 +394,7 @@ public class AnalysisFileIndexer {
 //                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
-            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), true)) {
+            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), VariantStorageManager.Options.ANNOTATE.defaultValue())) {
                 sb.append(" --annotate ");
             }
             if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {

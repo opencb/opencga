@@ -106,7 +106,7 @@ public class OpenCGAMain {
 
         // Interactive mode
         interactive = optionsParser.getGeneralOptions().interactive;
-        if(interactive){
+        if (interactive) {
             BufferedReader reader;//create BufferedReader object
 
             reader = new BufferedReader(new InputStreamReader(System.in));
@@ -219,6 +219,9 @@ public class OpenCGAMain {
                         logoutAtExit = false;
                         if (shellSessionId != null) {
                             shellUserId = c.up.user;
+                        }
+                        if (userConfigFile == null) {
+                            userConfigFile = new UserConfigFile();
                         }
                         userConfigFile.sessionId = sessionId;
                         userConfigFile.userId = catalogManager.getUserIdBySessionId(sessionId);
@@ -1083,7 +1086,7 @@ public class OpenCGAMain {
             sessionId = shellSessionId;
             logoutAtExit = false;
         } else {
-            if (userConfigFile != null) {
+            if (userConfigFile != null && userConfigFile.sessionId != null && !userConfigFile.sessionId.isEmpty()) {
                 shellSessionId = userConfigFile.sessionId;
                 shellUserId = userConfigFile.userId;
                 sessionId = userConfigFile.sessionId;
@@ -1117,7 +1120,7 @@ public class OpenCGAMain {
         if (file.exists()) {
             return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
         } else {
-            return null;
+            return new UserConfigFile();
         }
     }
 

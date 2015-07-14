@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.storage.app.cli;
 
+import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -29,7 +31,9 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -37,11 +41,15 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMix
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by imedina on 25/05/15.
@@ -84,10 +92,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.params);
 //        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
 
-
-//        ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
-//        ObjectMap params = new ObjectMap();
-
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
 
         Query query = new Query();
@@ -120,8 +124,13 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 
         if (queryVariantsCommandOptions.study != null && !queryVariantsCommandOptions.study.isEmpty()) {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.study.split(",")));
-//            options.add("studies", Arrays.asList(queryVariantsCommandOptions.study.split(",")));
         }
+
+        // If the studies to be returned is empty then we return the studies being queried
+        if (queryVariantsCommandOptions.returnStudy == null || queryVariantsCommandOptions.returnStudy.isEmpty()) {
+
+        }
+
         if (queryVariantsCommandOptions.file != null && !queryVariantsCommandOptions.file.isEmpty()) {
             options.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
         }
@@ -157,9 +166,51 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
             query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryVariantsCommandOptions.type);
         }
-//        if (queryVariantsCommandOptions.reference != null && !queryVariantsCommandOptions.reference.isEmpty()) {   //csv
-//            options.add("reference", queryVariantsCommandOptions.reference);
-//        }
+
+        /*
+         * Output parameters
+         */
+        String outputFormat = "vcf";
+        boolean gzip = true;
+        if(queryVariantsCommandOptions.outputFormat != null && !queryVariantsCommandOptions.outputFormat.isEmpty()) {
+            switch (queryVariantsCommandOptions.outputFormat) {
+                case "vcf":
+                    gzip = false;
+                case "vcf.gz":
+                    outputFormat = "vcf";
+                    break;
+                case "json":
+                    gzip = false;
+                case "json.gz":
+                    outputFormat = "json";
+                    break;
+                default:
+                    logger.error("Format '{}' not supported", queryVariantsCommandOptions.outputFormat);
+                    throw new ParameterException("Format '"+queryVariantsCommandOptions.outputFormat+"' not supported");
+            }
+        }
+
+        if (outputFormat.equalsIgnoreCase("vcf")) {
+            if (queryVariantsCommandOptions.returnStudy == null || queryVariantsCommandOptions.returnStudy.split(",").length > 1) {
+                logger.error("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study");
+                System.exit(1);
+            }
+        }
+
+        final PrintWriter printWriter;
+        if(queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
+            if (gzip) {
+                printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(System.out))));
+            } else {
+                printWriter = new PrintWriter(System.out);
+            }
+        } else {
+            if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
+                queryVariantsCommandOptions.output += ".gz";
+            }
+            Path outputPath = Paths.get(queryVariantsCommandOptions.output);
+            printWriter = new PrintWriter(FileUtils.newBufferedWriter(outputPath));
+        }
 
 
         /*
@@ -196,31 +247,16 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
             } else {
                 VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
-                while (iterator.hasNext()) {
-                    Variant variant = iterator.next();
-//                    System.out.println(variant.toString());
-                    StringBuilder vcfRecord = new StringBuilder();
-                    vcfRecord.append(variant.getChromosome()).append("\t")
-                            .append(variant.getStart()).append("\t")
-                            .append(variant.getIds().stream().map(i -> i.toString()).collect(Collectors.joining(","))).append("\t")
-                            .append(variant.getReference()).append("\t")
-                            .append(variant.getAlternate()).append("\t");
-
-                    Iterator<String> vcfIterator = variant.getSourceEntries().keySet().iterator();
-                    while (vcfIterator.hasNext()) {
-                        String file = vcfIterator.next();
-                        vcfRecord.append(variant.getSourceEntries().get(file).getAttribute("QUAL")).append("\t")
-                                .append(variant.getSourceEntries().get(file).getAttribute("FILTER")).append("\t")
-                                .append("File=" + file).append(",")
-                                .append(variant.getSourceEntries().get(file).getAttribute("INFO")).append("\t")
-                                .append(variant.getSourceEntries().get(file).getFormat()).append("\t")
-                                .append(variant.getSourceEntries().get(file).getSamplesData());
-                    }
-                    System.out.println(vcfRecord.toString());
+                if (outputFormat.equalsIgnoreCase("vcf")) {
+                    StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
+                    printVcfResult(iterator, studyConfigurationManager, printWriter);
+                } else {
+                    // we know that it is JSON, otherwise we have not reached this point
+                    printJsonResult(iterator, printWriter);
                 }
             }
         }
-
+        printWriter.close();
 
         /**
          * Run query
@@ -282,6 +318,62 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
         QueryResult rank = variantDBAdaptor.rank(query, field, limit, asc);
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
+    }
+
+    private void printJsonResult(VariantDBIterator variantDBIterator, PrintWriter printWriter) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectWriter objectWriter = objectMapper.writer();
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            printWriter.println(objectWriter.writeValueAsString(variant));
+        }
+    }
+
+    private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter printWriter) {
+
+        Map<String, StudyConfiguration> studyConfigurationMap = null;
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+
+//            if(studyConfigurationMap == null) {
+//                studyConfigurationMap = new HashMap<>();
+//                Iterator<String> vcfIterator = variant.getSourceEntries().keySet().iterator();
+//                while (vcfIterator.hasNext()) {
+//                    String studyName = vcfIterator.next();
+//                    logger.debug(studyName);
+//                    studyConfigurationMap.put(studyName, studyConfigurationManager
+//                            .getStudyConfiguration(studyName, new QueryOptions("sessionId", queryVariantsCommandOptions.params.get("sessionId")))
+//                            .getResult().get(0));
+//                }
+//            }
+
+            StringBuilder vcfRecord = new StringBuilder();
+            vcfRecord.append(variant.getChromosome()).append("\t")
+                    .append(variant.getStart()).append("\t")
+                    .append(variant.getIds().stream().map(i -> i.toString()).collect(Collectors.joining(","))).append("\t")
+                    .append(variant.getReference()).append("\t")
+                    .append(variant.getAlternate()).append("\t");
+
+
+            // If there is only one study returned
+            if(variant.getSourceEntries().keySet().size() == 1) {
+
+            } else {
+
+            }
+
+            Iterator<String> vcfIterator = variant.getSourceEntries().keySet().iterator();
+            while (vcfIterator.hasNext()) {
+                String file = vcfIterator.next();
+                vcfRecord.append(variant.getSourceEntries().get(file).getAttribute("QUAL")).append("\t")
+                        .append(variant.getSourceEntries().get(file).getAttribute("FILTER")).append("\t")
+                        .append("File=" + file).append(",")
+                        .append(variant.getSourceEntries().get(file).getAttribute("INFO")).append("\t")
+                        .append(variant.getSourceEntries().get(file).getFormat()).append("\t")
+                        .append(variant.getSourceEntries().get(file).getSamplesData());
+            }
+            printWriter.println(vcfRecord.toString());
+        }
     }
 
     public StringBuilder printQueryResult(QueryResult queryResult, StringBuilder sb) throws JsonProcessingException {
