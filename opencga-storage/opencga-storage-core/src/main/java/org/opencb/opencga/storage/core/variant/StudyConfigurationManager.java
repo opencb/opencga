@@ -32,6 +32,8 @@ import java.util.Map;
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public abstract class StudyConfigurationManager {
+    public static final String CACHED = "cached";
+    public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
@@ -49,11 +51,23 @@ public abstract class StudyConfigurationManager {
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
+        final boolean cached = options != null && options.getBoolean(CACHED, false);
+        final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
         if (stringStudyConfigurationMap.containsKey(studyName)) {
+            if (cached) {
+                StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
+                if (!readOnly) {
+                    studyConfiguration = studyConfiguration.clone();
+                }
+                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+            }
             result = _getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
-                StudyConfiguration clone = stringStudyConfigurationMap.get(studyName).clone();
-                return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(clone));
+                StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
+                if (!readOnly) {
+                    studyConfiguration = studyConfiguration.clone();
+                }
+                return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
             result = _getStudyConfiguration(studyName, null, options);
@@ -63,8 +77,12 @@ public abstract class StudyConfigurationManager {
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            StudyConfiguration clone = studyConfiguration.clone();
-            result.setResult(Collections.singletonList(clone));
+            if (!studyName.equals(studyConfiguration.getStudyName()) ) {
+                stringStudyConfigurationMap.put(studyName, studyConfiguration);
+            }
+            if (!readOnly) {
+                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+            }
         }
         return result;
 
@@ -72,11 +90,23 @@ public abstract class StudyConfigurationManager {
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
+        final boolean cached = options != null && options.getBoolean(CACHED, false);
+        final boolean readOnly = options != null && options.getBoolean(READ_ONLY, false);
         if (intStudyConfigurationMap.containsKey(studyId)) {
+            if (cached) {
+                StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
+                if (!readOnly) {
+                    studyConfiguration = studyConfiguration.clone();
+                }
+                return  new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+            }
             result = _getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
-                StudyConfiguration clone = intStudyConfigurationMap.get(studyId).clone();
-                return new QueryResult<>(clone.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(clone));
+                StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
+                if (!readOnly) {
+                    studyConfiguration = studyConfiguration.clone();
+                }
+                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
             result = _getStudyConfiguration(studyId, null, options);
@@ -86,15 +116,18 @@ public abstract class StudyConfigurationManager {
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            StudyConfiguration clone = studyConfiguration.clone();
-            result.setResult(Collections.singletonList(clone));
+            if (!readOnly) {
+                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+            }
         }
         return result;
+
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         studyConfiguration.setTimeStamp(System.currentTimeMillis());
         stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
+        intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
         return _updateStudyConfiguration(studyConfiguration, options);
     }
 

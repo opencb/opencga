@@ -252,6 +252,10 @@ public class FileMetadataReader {
 //                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
             }
 
+            if (sampleNames.isEmpty()) {
+                return new LinkedList<>();
+            }
+
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
             sampleQueryOptions.add("name", sampleNames);

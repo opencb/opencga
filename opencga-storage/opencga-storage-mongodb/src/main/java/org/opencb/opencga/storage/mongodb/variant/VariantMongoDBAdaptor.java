@@ -102,7 +102,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
 //        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
 
-        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
+        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter(studyConfigurationManager) : null);
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
                 includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
@@ -467,7 +467,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
-        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
+        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
@@ -495,11 +495,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
-                List<String> cohortIds = new ArrayList<>(cohorts.size());
+                List<Integer> cohortIds = new ArrayList<>(cohorts.size());
                 List<Integer> fileIds = new ArrayList<>(cohorts.size());
                 List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
-                    cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
+                    cohortIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
 //                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
                     studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
@@ -2031,7 +2031,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
 //        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
 
-        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter() : null);
+        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter(studyConfigurationManager) : null);
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
                 includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, getLoadedSamples(fileId, studyConfiguration));
@@ -2056,7 +2056,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
-        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
+        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
         int fileId = queryOptions.getInt(VariantStorageManager.Options.FILE_ID.key());
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(queryOptions), queryOptions);

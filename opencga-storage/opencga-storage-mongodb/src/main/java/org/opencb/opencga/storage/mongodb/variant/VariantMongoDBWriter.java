@@ -419,7 +419,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private void setConverters() {
 
         sourceConverter = new DBObjectToVariantSourceConverter();
-        statsConverter = includeStats ? new DBObjectToVariantStatsConverter() : null;
+        statsConverter = includeStats ? new DBObjectToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
         sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
