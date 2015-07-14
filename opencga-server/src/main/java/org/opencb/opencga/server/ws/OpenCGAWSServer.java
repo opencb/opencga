@@ -242,7 +242,10 @@ public class OpenCGAWSServer {
                     logger.debug("Adding '{}' to queryOptions object", entry);
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
-        queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
+
+        if (multivaluedMap.get("sid") != null) {
+            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
+        }
 
         try {
             System.out.println("queryOptions = \n" + jsonObjectWriter.writeValueAsString(queryOptions));

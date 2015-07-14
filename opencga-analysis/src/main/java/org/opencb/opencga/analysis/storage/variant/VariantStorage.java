@@ -75,10 +75,11 @@ public class VariantStorage {
             studyIdSet.add(studyId);
             switch (cohort.getStatus()) {
                 case NONE:
+                case INVALID:
                     break;
                 case CALCULATING:
                 case READY:
-                case INVALID:
+//                case INVALID:
                     throw new CatalogException("Unable to calculate stats for cohort " +
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
                             " with status \"" + cohort.getStatus() + "\"");

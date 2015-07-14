@@ -22,6 +22,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -70,12 +71,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
-
-    @Deprecated
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
-            throws UnknownHostException {
-        this(credentials, variantsCollectionName, filesCollectionName, new MongoDBStudyConfigurationManager(credentials, filesCollectionName));
-    }
 
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName, StudyConfigurationManager studyConfigurationManager)
             throws UnknownHostException {
@@ -176,7 +171,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
-        DBObject projection = createProjection(options);
+        DBObject projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", qb.get().toString());
 
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
@@ -213,7 +208,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        parseQueryOptions(options, qb);
         qb = parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
-        DBObject projection = createProjection(options);
+        DBObject projection = createProjection(query, options);
         DBCursor dbCursor = variantsCollection.nativeQuery().find(qb.get(), projection, options);
         dbCursor.batchSize(options.getInt("batchSize", 100));
         return new VariantMongoDBIterator(dbCursor, getDbObjectToVariantConverter(query, options));
@@ -360,6 +355,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         String documentPath;
         String unwindPath;
+        boolean secondUnwind = false;
         switch (field) {
             case "gene":
             default:
@@ -369,39 +365,83 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "ensemblGene":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
                 unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
                 unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                secondUnwind = true;
                 break;
         }
 
         QueryBuilder qb = QueryBuilder.start();
-//        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 
-        DBObject match = new BasicDBObject("$match", qb.get());
+        boolean count = options != null && options.getBoolean("count", false);
+        int order = options != null ? options.getInt("order", -1) : -1;
 
+        DBObject project;
+        DBObject projectAndCount;
+        if (count) {
+            project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("count", new BasicDBObject("$size", "$values")));
+        } else {
+            project = new BasicDBObject("$project", new BasicDBObject()
+                    .append("field", "$" + documentPath)
+                            //.append("_id._id", "$_id")
+                    .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
+                    .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
+                    .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
+                    .append("_id.alternative", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
+                    .append("_id.reference", "$" + DBObjectToVariantConverter.REFERENCE_FIELD)
+                    .append("_id.ids", "$" + DBObjectToVariantConverter.IDS_FIELD));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("values", "$values")
+                    .append("count", new BasicDBObject("$size", "$values")));
+        }
+
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject unwindField = new BasicDBObject("$unwind", "$field");
+        DBObject notNull = new BasicDBObject("$match", new BasicDBObject("field", new BasicDBObject("$ne", null)));
+        DBObject groupAndAddToSet = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
+                .append("values", new BasicDBObject("$addToSet", "$_id"))); // sum, count, avg, ...?
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
+        DBObject skip = null;
+        if (options != null && options.getInt("skip", -1) > 0) {
+            skip = new BasicDBObject("$skip", options.getInt("skip", -1));
+        }
         DBObject limit = new BasicDBObject("$limit",
                 options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
 
-        if (options.containsKey("count") && options.getBoolean("count")) {
-            DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
-            DBObject unwind = new BasicDBObject("$unwind", "$field");
-            DBObject groupAndCount = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
-                    .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
-            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count",
-                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
-            return variantsCollection.aggregate(Arrays.asList(match, project, unwind, groupAndCount, sort, limit), options);
-        } else {
-            DBObject unwind = new BasicDBObject("$unwind", "$"+unwindPath);
-            DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$"+documentPath)
-                    .append("values", new BasicDBObject("$push", "$$ROOT"))); // sum, count, avg, ...?
-//            DBObject sort = new BasicDBObject("$sort", new BasicDBObject("$field",
-//                    options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
-            return variantsCollection.aggregate(Arrays.asList(match, unwind, group, limit), options);
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match);
+        operations.add(project);
+        operations.add(unwindField);
+        if (secondUnwind) {
+            operations.add(unwindField);
         }
+        operations.add(notNull);
+        operations.add(groupAndAddToSet);
+        operations.add(projectAndCount);
+        operations.add(sort);
+        if (skip != null) {
+            operations.add(skip);
+        }
+        operations.add(limit);
+        logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
+        QueryResult<DBObject> queryResult = variantsCollection.aggregate(operations, options);
+
+//            List<Map<String, Object>> results = new ArrayList<>(queryResult.getResult().size());
+//            results.addAll(queryResult.getResult().stream().map(dbObject -> new ObjectMap("id", dbObject.get("_id")).append("count", dbObject.get("count"))).collect(Collectors.toList()));
+        List<Map> results = queryResult.getResult().stream().map(DBObject::toMap).collect(Collectors.toList());
+
+        return new QueryResult<>(queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(), queryResult.getWarningMsg(), queryResult.getErrorMsg(), results);
     }
 
     @Override
@@ -418,7 +458,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions options) {
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        return updateStats(variantStatsWrappers, studyConfigurationManager.getStudyConfiguration(studyName, options).first(), options);
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options) {
         DBCollection coll = db.getDb().getCollection(collectionName);
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
@@ -500,14 +544,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                 new BasicDBObject("$elemMatch",
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, studyConfiguration.getCohortIds().get(cohortName))));
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)));
 
         // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
         BasicDBObject update = new BasicDBObject(
                 "$pull",
                 new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, studyConfiguration.getCohortIds().get(cohortName))
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)
                 )
         );
         logger.debug("deleteStats: query = {}", query);
@@ -608,6 +652,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
                         , xrefs, builder, QueryOperation.OR);
+//                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+//                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+//                        DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD
+//                        , xrefs, builder, QueryOperation.OR);
             }
 
             if (query.containsKey(VariantQueryParams.CHROMOSOME.key())) {
@@ -769,8 +817,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder fileBuilder = QueryBuilder.start();
 
             if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), null);
                 addQueryListFilter(
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, query.getAsIntegerList(VariantQueryParams.STUDIES.key()),
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds,
                         fileBuilder, QueryOperation.AND);
             }
 
@@ -824,13 +873,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    private DBObject createProjection(QueryOptions options) {
+    private DBObject createProjection(Query query, QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
         if(options == null) {
-            return projection;
+            options = new QueryOptions();
         }
-
         List<String> includeList = options.getAsStringList("include");
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
@@ -858,27 +906,66 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (options.containsKey(VariantQueryParams.FILE_ID.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
-//            List<String> files = options.getListAs(FILES, String.class);
-            int file = options.getInt(VariantQueryParams.FILE_ID.key());
+        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
             projection.put(
                     DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(
                             "$elemMatch",
                             new BasicDBObject(
                                     DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                                    file
-//                                    new BasicDBObject(
-//                                            "$in",
-//                                            files
-//                                    )
+                                    new BasicDBObject(
+                                            "$in",
+                                            files
+                                    )
                             )
                     )
             );
         }
+        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+//            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
+            if (!studiesIds.isEmpty()) {
+                projection.put(
+                        DBObjectToVariantConverter.STUDIES_FIELD,
+                        new BasicDBObject(
+                                "$elemMatch",
+                                new BasicDBObject(
+                                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                                        new BasicDBObject(
+                                                "$in",
+                                                studiesIds
+                                        )
+                                )
+                        )
+                );
+            }
+        }
 
         logger.debug("Projection: {}", projection);
         return projection;
+    }
+
+    private List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
+        List<Integer> studiesIds;
+        studiesIds = new ArrayList<>(studiesNames.size());
+        for (Object studyObj : studiesNames) {
+            if (studyObj instanceof Integer) {
+                studiesIds.add(((Integer) studyObj));
+            } else {
+                String studyName = studyObj.toString();
+                try {
+                    studiesIds.add(Integer.parseInt(studyName));
+                } catch (NumberFormatException e) {
+                    QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, options);
+                    if (result.getResult().isEmpty()) {
+                        throw new IllegalStateException("Study " + studyName + " not found");
+                    }
+                    studiesIds.add(result.first().getStudyId());
+                }
+            }
+        }
+        return studiesIds;
     }
 
 
@@ -903,7 +990,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> updates = new ArrayList<>(data.size());
         Set<String> nonInsertedVariants;
         String fileIdStr = Integer.toString(fileId);
-        if (true) {
+
+        {
             nonInsertedVariants = new HashSet<>();
             Map missingSamples = Collections.emptyMap();
             String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
@@ -1028,16 +1116,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> studyIds = query.getAsIntegerList(VariantQueryParams.STUDIES.key());
+        studyConfigurationManager.setDefaultQueryOptions(options);
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
 
         DBObjectToSamplesConverter samplesConverter;
-        if(studyIds.isEmpty()) {
+        if (studyIds.isEmpty()) {
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurationManager, null);
         } else {
             List<StudyConfiguration> studyConfigurations = new LinkedList<>();
             for (Integer studyId : studyIds) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
-                if(queryResult.getResult().isEmpty()) {
+                if (queryResult.getResult().isEmpty()) {
                     throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
                     studyConfigurations.add(queryResult.first());
@@ -1045,14 +1134,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
         }
+        if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
+            samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
+        }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
-                query.containsKey(VariantQueryParams.FILE_ID.key())? query.getInt(VariantQueryParams.FILE_ID.key()) : null,
+                false,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
-        return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter());
+        sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
+        return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter(studyConfigurationManager));
     }
 
+    @Deprecated
     private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
         if (options != null) {
 
@@ -1309,6 +1403,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
+    @Deprecated
     private DBObject parseProjectionQueryOptions(QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
@@ -1343,9 +1438,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (options.containsKey(VariantQueryParams.FILE_ID.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+        if (options.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
 //            List<String> files = options.getListAs(FILES, String.class);
-            int file = options.getInt(VariantQueryParams.FILE_ID.key());
+            int file = options.getInt(VariantQueryParams.RETURNED_FILES.key());
             projection.put(
                     DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(
@@ -1904,11 +1999,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantSourceMongoDBAdaptor;
     }
 
-    public StudyConfigurationManager getStudyConfigurationDBAdaptor() {
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() {
         return studyConfigurationManager;
     }
 
-    public void setStudyConfigurationDBAdaptor(StudyConfigurationManager studyConfigurationManager) {
+    @Override
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 

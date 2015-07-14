@@ -24,6 +24,8 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryParam;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.*;
@@ -48,8 +50,10 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         ALTERNATE ("alternate", TEXT_ARRAY, ""),
         //EFFECT ("TEXT_ARRAY", null, ""),
         STUDIES ("studies", TEXT_ARRAY, ""),
+        RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, "Specify a list of studies to be returned"),
+        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
         FILES ("files", TEXT_ARRAY, ""),
-        FILE_ID ("fileId", TEXT_ARRAY, ""),
+        RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
         MAF ("maf", TEXT_ARRAY, ""),
         MGF ("mgf", TEXT_ARRAY, ""),
         MISSING_ALLELES ("missingAlleles", TEXT_ARRAY, ""),
@@ -203,6 +207,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
 
@@ -261,6 +267,10 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     @Deprecated
     VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+
+    StudyConfigurationManager getStudyConfigurationManager();
+
+    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
     VariantDBIterator iterator(QueryOptions options);

@@ -100,12 +100,12 @@ public class VariantStatisticsCalculator {
                     }
                 }
             }
-            if (overwrite || file.getStats() == null) {
-                VariantStats allVariantStats = new VariantStats(variant);
-                file.setCohortStats(VariantSourceEntry.DEFAULT_COHORT
-                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
-
-            }
+//            if (overwrite || file.getStats() == null) {
+//                VariantStats allVariantStats = new VariantStats(variant);
+//                file.setCohortStats(VariantSourceEntry.DEFAULT_COHORT
+//                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
+//
+//            }
                 variantStatsWrappers.add(
                         new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }

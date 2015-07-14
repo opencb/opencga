@@ -803,20 +803,16 @@ public class OpenCGAStorageMain {
         try {
 
             Map<String, Integer> cohortNameIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
-            /** Check and update StudyConfiguration **/
-            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortNameIds);
 
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortNameIds, studyConfiguration, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
-                variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-                variantStorageManager.getStudyConfigurationManager(queryOptions).updateStudyConfiguration(studyConfiguration, queryOptions);
             }
         } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             e.printStackTrace();

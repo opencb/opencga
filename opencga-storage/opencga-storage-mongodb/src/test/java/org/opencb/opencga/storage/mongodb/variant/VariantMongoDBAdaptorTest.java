@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -50,37 +51,32 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
 
     @Test
     public void deleteStudyTest() throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-        dbAdaptor.deleteStudy(studyConfiguration.getStudyId(), new QueryOptions("purge", false));
+        dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
         assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
         fileIndexed = false;
     }
 
     @Test
     public void deleteAndPurgeStudyTest() throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-        dbAdaptor.deleteStudy(studyConfiguration.getStudyId(), new QueryOptions("purge", true));
+        dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
         assertEquals(0, allVariants.getNumTotalResults());
         fileIndexed = false;
     }
 
     @Test
     public void deleteStatsTest() throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-
-
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = new VariantStatisticsManager();
 
@@ -107,47 +103,40 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         cohortIds.put("cohort2", 11);
 
         //Calculate stats
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        dbAdaptor.getStudyConfigurationDBAdaptor().updateStudyConfiguration(studyConfiguration, options);
-
         String deletedCohort = "cohort2";
-        dbAdaptor.deleteStats(studyConfiguration.getStudyId(), deletedCohort);
+        dbAdaptor.deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
-                assertFalse(entry.getValue().getCohortStats().keySet().contains(deletedCohort));
+                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue().getCohortStats().keySet().contains(deletedCohort));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.getAllVariants(new QueryOptions("limit", 1));
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
         assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
         fileIndexed = false;
     }
 
     @Test
     public void deleteAnnotationTest() throws Exception {
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        QueryOptions queryOptions = new QueryOptions("limit", 1);
 
-        QueryOptions queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), true);
-        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        queryOptions.add("limit", 1);
-        long numAnnotatedVariants = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), true);
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        long numAnnotatedVariants = dbAdaptor.get(query, queryOptions).getNumTotalResults();
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
-        queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
-        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        queryOptions.add("limit", 1);
-        long numVariantsChr1 = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
-        dbAdaptor.deleteAnnotation(0, studyConfiguration.getStudyId(), new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"));
+        query = new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        long numVariantsChr1 = dbAdaptor.get(query, queryOptions).getNumTotalResults();
+        dbAdaptor.deleteAnnotation("", new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"));
 
-        queryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
-        queryOptions.add(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        queryOptions.add("limit", 1);
-        long numVariantsNoAnnotation = dbAdaptor.getAllVariants(queryOptions).getNumTotalResults();
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        long numVariantsNoAnnotation = dbAdaptor.get(query, queryOptions).getNumTotalResults();
 
         assertEquals(numVariantsChr1, numVariantsNoAnnotation);
         fileIndexed = false;

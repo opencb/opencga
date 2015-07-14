@@ -16,15 +16,19 @@
 
 package org.opencb.opencga.analysis;
 
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Index;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,6 +150,14 @@ public class AnalysisOutputRecorder {
                             "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
                 }
                 catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
+                if (index.getStatus().equals(Index.Status.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
+                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+                    if (queryResult.getNumResults() != 0) {
+                        logger.debug("Default cohort status set to READY");
+                        Cohort defaultCohort = queryResult.first();
+                        catalogManager.updateCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                    }
+                }
                 break;
             case COHORT_STATS:
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");

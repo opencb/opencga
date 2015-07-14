@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +39,13 @@ import org.slf4j.LoggerFactory;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
 public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
+
+    public DBObjectToVariantStatsConverter() {
+    }
+
+    public DBObjectToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
 
     public final static String COHORT_ID = "cid";
     public final static String STUDY_ID = "sid";
@@ -49,6 +60,13 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     public final static String NUMGT_FIELD = "numGt";
 
     protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantStatsConverter.class);
+
+    private StudyConfigurationManager studyConfigurationManager = null;
+    private Map<Integer, String> studyIds = new HashMap<>();
+
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
 
     @Override
     public VariantStats convertToDataModelType(DBObject object) {
@@ -108,12 +126,12 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setAltAllele(variant.getAlternate());
                     variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
-                    Integer sid = (Integer) vs.get(STUDY_ID);
+                    String sid = getStudyName((Integer) vs.get(STUDY_ID));
                     String cid = (String) vs.get(COHORT_ID);
                     VariantSourceEntry sourceEntry = null;
                     if (/*fid != null && */sid != null && cid != null) {
                         for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
-                            if (entry.getValue().getStudyId().equals(Integer.toString(sid))) {
+                            if (entry.getValue().getStudyId().equals(sid)) {
                                 sourceEntry = entry.getValue();
                                 break;
                             }
@@ -123,7 +141,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                             Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
                             cohortStats.put(cid, variantStats);
                         } else {
-                            logger.warn("ignoring non present source entry studyId={}", sid);
+                            //This could happen if the study has been excluded
+                            logger.trace("ignoring non present source entry studyId={}", sid);
                         }
                     } else {
                         logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);
@@ -168,5 +187,22 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         }
         return cohortsStatsList;
     }
+
+    public String getStudyName(int studyId) {
+        if (!studyIds.containsKey(studyId)) {
+            if (studyConfigurationManager == null) {
+                studyIds.put(studyId, Integer.toString(studyId));
+            } else {
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
+                if (queryResult.getResult().isEmpty()) {
+                    studyIds.put(studyId, Integer.toString(studyId));
+                } else {
+                    studyIds.put(studyId, queryResult.first().getStudyName());
+                }
+            }
+        }
+        return studyIds.get(studyId);
+    }
+
 }
 

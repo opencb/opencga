@@ -20,7 +20,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -30,7 +29,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -124,21 +122,17 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
         try {
 
             Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
-            /** Check and update StudyConfiguration **/
-            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
 
             QueryOptions queryOptions = new QueryOptions(options);
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, studyConfiguration, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
-                variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-                variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, queryOptions);
             }
         } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             e.printStackTrace();
