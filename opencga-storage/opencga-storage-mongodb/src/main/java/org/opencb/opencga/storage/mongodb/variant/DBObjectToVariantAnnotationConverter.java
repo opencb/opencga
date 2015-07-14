@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, DBObject> {
 
-    public final static String ANNOT_ID_FIELD = "_aid";
+    public final static String ANNOT_ID_FIELD = "id";
 
     public final static String CONSEQUENCE_TYPE_FIELD = "ct";
     public static final String GENE_NAME_FIELD = "gn";
