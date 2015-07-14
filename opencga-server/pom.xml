@@ -23,7 +23,7 @@
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
         <version>0.6-SNAPSHOT</version>
-        <relativePath>..</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-server</artifactId>
@@ -33,26 +33,13 @@
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-core</artifactId>
+            <artifactId>opencga-catalog</artifactId>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-catalog</artifactId>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.opencb.opencga</groupId>-->
-        <!--<artifactId>opencga-storage-mongodb</artifactId>-->
-        <!--<version>${opencga.version}</version>-->
-        <!--</dependency>-->
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -69,11 +56,6 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.glassfish.jersey.core</groupId>-->
-        <!--<artifactId>jersey-client</artifactId>-->
-        <!--<version>2.17</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet</artifactId>
@@ -84,11 +66,11 @@
             <artifactId>jersey-media-multipart</artifactId>
             <version>2.17</version>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.glassfish.jersey.media</groupId>-->
-        <!--<artifactId>jersey-media-json-jackson</artifactId>-->
-        <!--<version>2.17</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>2.17</version>
+        </dependency>
         <dependency>
             <groupId>com.wordnik</groupId>
             <artifactId>swagger-jersey2-jaxrs_2.11</artifactId>
@@ -100,10 +82,6 @@
             <version>3.1.0</version>
             <scope>provided</scope>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>javax.mail</groupId>-->
-        <!--<artifactId>mail</artifactId>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>asm</groupId>
             <artifactId>asm</artifactId>

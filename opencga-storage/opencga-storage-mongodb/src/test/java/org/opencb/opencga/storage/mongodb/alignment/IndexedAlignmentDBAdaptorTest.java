@@ -21,21 +21,27 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,40 +51,46 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     private IndexedAlignmentDBAdaptor dbAdaptor;
     //private AlignmentQueryBuilder dbAdaptor;
     private MongoDBAlignmentStorageManager manager;
-    private AlignmentMetaDataDBAdaptor metadata;
+    private Path bamFile;
 
     @Before
-    public void before() {
-        try {
-            StorageConfiguration storageConfiguration = StorageConfiguration
-                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("configuration.yaml"));
+    public void before() throws IOException, FileFormatException {
+        StorageConfiguration storageConfiguration = StorageConfiguration
+                .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        manager = new MongoDBAlignmentStorageManager(storageConfiguration);
 
-//            manager = new MongoDBAlignmentStorageManager(Paths.get("/media/jacobo/Nusado/opencga", "opencga.properties"));
-//            metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
-            manager = new MongoDBAlignmentStorageManager(storageConfiguration);
-//            metadata = new AlignmentMetaDataDBAdaptor(manager.getProperties().getProperty("files-index", "/tmp/files-index.properties"));
-
-            Path adaptorPath = null;
-            adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
-//            manager.getProperties().setProperty(MongoDBAlignmentStorageManager.OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, adaptorPath.toString());
-            dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(MongoDBAlignmentStorageManager.Options.DB_NAME.key());
-        } catch (IOException e) {
-            e.printStackTrace();
+        Path rootDir = Paths.get("/tmp/AlignmentDBAdaptorTest/");
+        if (rootDir.toFile().exists()) {
+            IOUtils.deleteDirectory(rootDir);
         }
+        Files.createDirectories(rootDir);
+        String bamFileName = "HG00096.chrom20.small.bam";
+        bamFile = rootDir.resolve(bamFileName);
+        Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption.REPLACE_EXISTING);
+        manager.createBai(bamFile, rootDir);
 
+        ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment().getOptions();
+        options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");
+        options.put(AlignmentStorageManager.Options.DB_NAME.key(), "opencga-alignment-test");
+        manager.preTransform(bamFile.toUri());
+        manager.transform(bamFile.toUri(), null, rootDir.toUri());
+        manager.postTransform(bamFile.toUri());
+        manager.preLoad(bamFile.toUri(), rootDir.toUri());
+        manager.load(bamFile.toUri());
+        manager.postLoad(bamFile.toUri(), rootDir.toUri());
+
+//            Path adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
+        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor("opencga-alignment-test");
     }
 
     @Test
     public void testGetAllAlignmentsByRegion() throws IOException {
 
-
         QueryOptions qo = new QueryOptions();
-//        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, metadata.getBamFromIndex("1").toString());
-//        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, metadata.getBaiFromIndex("1").toString());  //NOT NECESSARY
         //qo.put("view_as_pairs", true);
 
-        qo.put("bam_path", "/media/jacobo/Nusado/opencga/alignment/HG04239.chrom20.ILLUMINA.bwa.ITU.low_coverage.20130415.bam");
-        qo.put("bai_path", "/media/jacobo/Nusado/opencga/alignment/HG04239.chrom20.ILLUMINA.bwa.ITU.low_coverage.20130415.bam.bai");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile.toString());
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, bamFile.toString()+".bai");
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, false);
 
         //Region region = new Region("20", 20000000, 20000100);
@@ -103,16 +115,16 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     public void testGetHistogramCoverageByRegion() throws IOException {
 //29337216, 29473005
         QueryOptions qo = new QueryOptions();
-        qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG01551");
+        qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
         qo.put(IndexedAlignmentDBAdaptor.QO_INTERVAL_SIZE, 10000);
-        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, "/media/jacobo/Nusado/opencga_bam_files/HG01551.bam");
-        jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29829001, 29830000), qo));
-        jsonQueryResult("HG01551.coverage",dbAdaptor.getCoverageByRegion(new Region("20", 29830001, 29833000), qo));
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile);
+        dbAdaptor.getCoverageByRegion(new Region("20", 29829001, 29830000), qo);
+        dbAdaptor.getCoverageByRegion(new Region("20", 29830001, 29833000), qo);
         //qo.put(IndexedAlignmentDBAdaptor.QO_HISTOGRAM, false);
-        jsonQueryResult("HG01551.mean-coverage.10k",dbAdaptor.getAllIntervalFrequencies(new Region("20", 29800000, 29900000), qo));
+        dbAdaptor.getAllIntervalFrequencies(new Region("20", 29800000, 29900000), qo);
         qo.put(IndexedAlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
-        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829001, 29830000)), qo));
-        jsonQueryResult("HG01551",dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29828951, 29830000)), qo));
+        dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829001, 29830000)), qo);
+        dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29828951, 29830000)), qo);
 
     }
 
@@ -120,6 +132,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     @Test
     public void getAllIntervalFrequenciesAggregateTest() throws IOException {
         QueryOptions qo = new QueryOptions();
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile.toString());
         qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
 
         jsonQueryResult("aggregate", dbAdaptor.getAllIntervalFrequencies(new Region("20", 50000, 100000), qo));
@@ -132,8 +145,8 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     public void testGetCoverageByRegion() throws IOException {
 
         QueryOptions qo = new QueryOptions();
-        qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG04239");
-        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, "/media/jacobo/Nusado/opencga_bam_files/HG00096.bam");
+        qo.put(IndexedAlignmentDBAdaptor.QO_FILE_ID, "HG00096");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile.toString());
 
         //Region region = new Region("20", 20000000, 20000100);
 

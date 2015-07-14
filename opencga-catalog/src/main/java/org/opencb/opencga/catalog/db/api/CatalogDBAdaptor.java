@@ -26,12 +26,37 @@ import java.util.List;
 
 public abstract class CatalogDBAdaptor {
 
-    public static interface FilterOption {
-        String getKey();
-
+    public interface FilterOption {
         enum Type {
-            NUMERICAL, TEXT, BOOLEAN
+            /**
+             * Accepts a list of comma separated numerical conditions, where the value must match in, at least, one of this.
+             * The accepted operators are: [<, <=, >, >=, =, , !=]
+             *
+             * Example:
+             *      getAllFiles( {diskUsage : "<200000" } )
+             *      getAllFiles( {jobId : "32,33,34" } )
+             */
+            NUMERICAL,
+            /**
+             * Accepts a list of comma separated text conditions, where the value must match in, at least, one of this.
+             * The accepted operators are: [<, <=, >, >=, =, , !=, ~, =~, !=~],
+             * where [~,=~] implements a "LIKE" with regular expression and [!=~, !~] implements a "NOT LIKE"
+             * and [<, <=, >, >=] are lexicographical operations
+             *
+             * Example:
+             *      getAllFiles ( { bioformat : "VARIANT," } )
+             *      getAllSamples ( { name : "~SAMP_00[0-9]*"} )
+             */
+            TEXT,
+            /**
+             * Accepts a boolean condition
+             *
+             * Example:
+             *      getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
+             */
+            BOOLEAN
         }
+        String getKey();
         Type getType();
         String getDescription();
     }
@@ -76,27 +101,15 @@ public abstract class CatalogDBAdaptor {
         return queryResult;
     }
 
+    protected void checkParameter(Object param, String name) throws CatalogDBException {
+        if (param == null) {
+            throw new CatalogDBException("Error: parameter '" + name + "' is null");
+        }
+        if(param instanceof String) {
+            if(param.equals("") || param.equals("null")) {
+                throw new CatalogDBException("Error: parameter '" + name + "' is empty or it values 'null");
+            }
+        }
+    }
 
-    /**
-     * Says if the catalog database is ready to be used. If false, needs to be initialized
-     */
-    public abstract boolean isCatalogDBReady();
-
-    /**
-     * Initializes de Database with the initial structure.
-     * @throws CatalogDBException   if there was any problem, or it was already initialized.
-     */
-    public abstract void initializeCatalogDB() throws CatalogDBException;
-
-    public abstract void disconnect();
-
-    public abstract CatalogUserDBAdaptor getCatalogUserDBAdaptor();
-
-    public abstract CatalogStudyDBAdaptor getCatalogStudyDBAdaptor();
-
-    public abstract CatalogFileDBAdaptor getCatalogFileDBAdaptor();
-
-    public abstract CatalogSampleDBAdaptor getCatalogSampleDBAdaptor();
-
-    public abstract CatalogJobDBAdaptor getCatalogJobDBAdaptor();
 }

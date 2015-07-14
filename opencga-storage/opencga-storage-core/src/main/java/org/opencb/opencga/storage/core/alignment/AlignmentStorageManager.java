@@ -186,31 +186,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         //2 Index (bai)
         if(createBai) {
-//            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
-            Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
-            if (!Files.exists(bamIndexPath)) {
-
-                Path samtoolsPath = Paths.get(storageEtlConfiguration.getOptions().getString(Options.TOOLS_SAMTOOLS.key, Options.TOOLS_SAMTOOLS.defaultValue()));
-                String samtoolsBin;
-                if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
-                    samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
-                    logger.debug("samtools binary set to '{}' file", samtoolsBin);
-                } else {
-                    samtoolsBin = "samtools";
-                    logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", Options.TOOLS_SAMTOOLS.key, samtoolsPath);
-                }
-
-                long start = System.currentTimeMillis();
-                String indexBai = samtoolsBin + " index " + input.toString(); //  + " " + bamIndexFile.toString();
-                logger.info("Creating BAM index: '{}'", indexBai);
-                try {
-                    Runtime.getRuntime().exec(indexBai).waitFor();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                long end = System.currentTimeMillis();
-                logger.info("end - start = " + (end - start) / 1000.0 + "s");
-            }
+            Path bamIndexPath = createBai(input, output);
         }
 
         //3 Calculate Coverage and transform
@@ -406,6 +382,34 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         return new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
+    }
+
+    public Path createBai(Path input, Path output) throws IOException {
+        //            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
+        Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
+        if (!Files.exists(bamIndexPath)) {
+            Path samtoolsPath = Paths.get(configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getString(Options.TOOLS_SAMTOOLS.key, Options.TOOLS_SAMTOOLS.defaultValue()));
+            String samtoolsBin;
+            if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
+                samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
+                logger.debug("samtools binary set to '{}' file", samtoolsBin);
+            } else {
+                samtoolsBin = "samtools";
+                logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", Options.TOOLS_SAMTOOLS.key, samtoolsPath);
+            }
+
+            long start = System.currentTimeMillis();
+            String indexBai = samtoolsBin + " index " + input.toString(); //  + " " + bamIndexFile.toString();
+            logger.info("Creating BAM index: '{}'", indexBai);
+            try {
+                Runtime.getRuntime().exec(indexBai).waitFor();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            long end = System.currentTimeMillis();
+            logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        }
+        return bamIndexPath;
     }
 
     /**

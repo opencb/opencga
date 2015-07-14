@@ -54,6 +54,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         try {
+            queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -65,7 +66,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/info")
     @ApiOperation(value = "Retrieves all user info", position = 2)
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                            @ApiParam(value = "lastActivity", required = false) @QueryParam("lastActivity") String lastActivity) {
+                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult", required = false) @QueryParam("lastActivity") String lastActivity) {
         try {
             QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
             return createOkResponse(result);
@@ -82,6 +83,7 @@ public class UserWSServer extends OpenCGAWSServer {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult queryResult;
         try {
+            queryOptions.remove("password"); //Remove password from query options
             if (userId.equalsIgnoreCase("anonymous")) {
                 queryResult = catalogManager.loginAsAnonymous(sessionIp);
             } else {
@@ -114,9 +116,11 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/change-password")
     @ApiOperation(value = "User password change", position = 5)
     public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                   @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-                                   @ApiParam(value = "npassword", required = true) @QueryParam("npassword") String nPassword1) {
+                                   @ApiParam(value = "Old password", required = true) @QueryParam("password") String password,
+                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword1) {
         try {
+            queryOptions.remove("password"); //Remove password from query options
+            queryOptions.remove("npassword");
             QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -128,7 +132,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/change-email")
     @ApiOperation(value = "User email change", position = 6)
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                @ApiParam(value = "nemail", required = true) @QueryParam("nemail") String nEmail) {
+                                @ApiParam(value = "New email", required = true) @QueryParam("nemail") String nEmail) {
         try {
             QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
             return createOkResponse(result);
@@ -202,7 +206,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 9)
     public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+                                 @ApiParam(name = "params", value = "Parameters to modify", required = true) Map<String, Object> params) {
         try {
             ObjectMap objectMap = new ObjectMap(params);
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);

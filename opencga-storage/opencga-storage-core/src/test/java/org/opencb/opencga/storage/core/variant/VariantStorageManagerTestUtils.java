@@ -144,8 +144,9 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         loadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ObjectMap postLoadParams = new ObjectMap();
+        postLoadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        postLoadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
 
         postLoadParams.put(VariantStorageManager.Options.ANNOTATE.key(), true);
         postLoadParams.put(VariantAnnotationManager.SPECIES, "hsapiens");

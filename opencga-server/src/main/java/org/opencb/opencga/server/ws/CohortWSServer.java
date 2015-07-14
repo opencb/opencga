@@ -33,7 +33,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -52,16 +51,19 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort", position = 1)
+    @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
+            "or providing a categorical variable (both variableSetId and variable). " +
+            "If none of this is given, an empty cohort will be created.")
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
-                                 @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
+                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
                                  @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
         try {
             //QueryOptions queryOptions = getAllQueryOptions();
-            List<Cohort> cohorts = new LinkedList<>();
+            List<QueryResult<Cohort>> cohorts = new LinkedList<>();
             if (variableName != null && !variableName.isEmpty() && sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
@@ -70,8 +72,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                 samplesQuery.add("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, cohortDescription, samplesQuery).first());
-            } else {
+                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery));
+            } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
@@ -90,8 +92,11 @@ public class CohortWSServer extends OpenCGAWSServer {
                     QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
                     samplesQuery.add("annotation", variableName + ":" + s);
                     samplesQuery.add("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, cohortDescription, samplesQuery).first());
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery));
                 }
+            } else {
+                //Create empty cohort
+                cohorts.add(catalogManager.createCohort(studyId, cohortName, type, cohortDescription, Collections.<Integer>emptyList(), null, sessionId));
             }
             return createOkResponse(cohorts);
         } catch (Exception e) {
@@ -128,11 +133,11 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(int studyId, String cohortName, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
+    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
         List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
-        return catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
+        return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 
 //
@@ -168,24 +173,38 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId) {
-        return createErrorResponse("update - GET", "PENDING");
-    }
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
+                           @ApiParam(value = "", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
+        try {
+            return createOkResponse(catalogManager.updateCohort(cohortId, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }    }
 
     @POST
     @Path("/{cohortId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
-    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortId,
+    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
-        return createErrorResponse("update - POST", "PENDING");
+        try {
+            return createOkResponse(catalogManager.updateCohort(cohortId, new QueryOptions(params), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/{cohortId}/delete")
-    @ApiOperation(value = "Delete cohort. PENDING", position = 5)
+    @ApiOperation(value = "Delete cohort.", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
-        return createErrorResponse("delete", "PENDING");
-    }
+        try {
+            return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }    }
 
 }

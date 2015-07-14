@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 
@@ -172,6 +173,9 @@ public class OptionsParser {
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = false)
         String password;
 
+        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
+        String hiddenPassword;
+
         @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false)
         String sessionId;
     }
@@ -324,7 +328,7 @@ public class OptionsParser {
 //            @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
 //            String user;
 
-            @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = true, arity = 1)
+            @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = false, arity = 1)
             public String sessionId;
         }
     }
@@ -362,7 +366,7 @@ public class OptionsParser {
             @Parameter(names = {"-a", "--alias"}, description = "Alias", required = true, arity = 1)
             String alias;
 
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = true, arity = 1)
+            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
             String description;
 
             @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
@@ -626,7 +630,7 @@ public class OptionsParser {
             boolean calculateChecksum = false;
         }
 
-        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be on STAGE of be an external file")
+        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
         class RelinkCommand extends BaseFileCommand {
             @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
             String inputFile;
@@ -782,6 +786,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts", required = false, arity = 1)
             String variable;
+
+            @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
+            Cohort.Type type;
         }
 
         @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
