@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -1122,14 +1123,10 @@ public class OpenCGAMain {
 
     private static void saveUserFile(UserConfigFile userConfigFile) throws IOException {
         Path opencgaDirectoryPath = Paths.get(System.getProperty("user.home"), ".opencga");
-        java.io.File opencgaDirectory = opencgaDirectoryPath.toFile();
-        if (!opencgaDirectory.exists()) {
+        if (!opencgaDirectoryPath.toFile().exists()) {
             Files.createDirectory(opencgaDirectoryPath);
         }
-        if (!opencgaDirectory.isDirectory()) {
-            throw new IOException("Path " + opencgaDirectoryPath + " must be a directory");
-        }
-
+        FileUtils.checkDirectory(opencgaDirectoryPath, true);
         java.io.File file = opencgaDirectoryPath.resolve("opencga.yml").toFile();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.writeValue(file, userConfigFile);

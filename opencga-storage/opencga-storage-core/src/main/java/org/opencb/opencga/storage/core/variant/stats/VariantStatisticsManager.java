@@ -29,7 +29,6 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.VariantStatisticsManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
