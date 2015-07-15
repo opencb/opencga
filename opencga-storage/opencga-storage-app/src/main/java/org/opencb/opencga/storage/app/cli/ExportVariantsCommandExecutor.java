@@ -97,13 +97,11 @@ public class ExportVariantsCommandExecutor extends CommandExecutor {
             logger.debug("Configuration options: {}", variantOptions.toJson());
 
 
-            /** Execute ETL steps **/
-            VariantExporter variantExporter = new VariantExporter();
-
             QueryOptions queryOptions = new QueryOptions();
             List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
             queryOptions.add("include", include);
-            variantExporter.VcfHtsExport(dbAdaptor, studyConfiguration, outputUri, queryOptions);
+
+            VariantExporter.VcfHtsExport(dbAdaptor, studyConfiguration, outputUri, queryOptions);
         } catch (Exception e) {
             e.printStackTrace();
         }

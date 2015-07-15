@@ -18,10 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jmmut on 2015-06-25.
@@ -39,7 +36,7 @@ public class VariantExporter {
      * @param outputUri
      * @param options
      */
-    public void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
+    public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
 
         // Default objects
         VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, options);
@@ -70,13 +67,14 @@ public class VariantExporter {
         writer.close();
     }
 
-    public void VcfHtsExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
+    public static void VcfHtsExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
         // Default objects
         VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, options);
 //        VariantVcfDataWriter writer = new VariantVcfDataWriter(reader, outputUri.getPath());
         VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
 
-        final VCFHeader header = new VCFHeader(new VCFFileReader(new File("/home/jmmut/Documents/biofiles/small.vcf"), false).getFileHeader());
+        final VCFHeader header = new VCFHeader(new VCFFileReader(new File("../opencga-storage-core/src/test/resources/variant-test-file.vcf.gz")
+                , false).getFileHeader()); // BIG TODO jmmut: how to get header? catalog?
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
         VariantContextWriter writer = builder
@@ -114,7 +112,7 @@ public class VariantExporter {
         }
 
         if (failedVariants > 0) {
-            Logger logger = LoggerFactory.getLogger(this.getClass().toString());
+            Logger logger = LoggerFactory.getLogger(VariantExporter.class);
             logger.warn(failedVariants + " variants were not written due to errors");
         }
 
@@ -123,16 +121,21 @@ public class VariantExporter {
         writer.close();
     }
 
-    public VariantContext convertBiodataVariantToVariantContext(Variant variant) {//, StudyConfiguration studyConfiguration) {
+    public static VariantContext convertBiodataVariantToVariantContext(Variant variant) {//, StudyConfiguration studyConfiguration) {
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
 //        Allele refAllele = new Allele(variant.getReference(), true);  // protected constructor...
 //        Allele altAllele = new Allele(variant.getAlternate(), false);  // TODO jmmut: multiallelic
 
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
+        String filter = "PASS";
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
         for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+            String sourceFilter = variantSourceEntry.getAttribute("FILTER");
+            if (!filter.equals(sourceFilter)) {
+                filter = ".";   // write PASS iff all sources agree that the filter is "PASS", otherwise write "."
+            }
             Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesData();
             for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
                 String gt = samplesEntry.getValue().get("GT");
@@ -148,13 +151,22 @@ public class VariantExporter {
         }
         List<String> alleles = Arrays.asList(variant.getReference(), variant.getAlternate());
 
-        VariantContext variantContext = variantContextBuilder.start(variant.getStart())
+        Optional<String> reduce = variant.getIds().stream().reduce((left, right) -> left + "," + right);
+
+        variantContextBuilder.start(variant.getStart())
                 .stop(variant.getEnd())
                 .chr(variant.getChromosome())
                 .alleles(alleles)
-                .genotypes(genotypes)
+                .filter(filter)
+                .genotypes(genotypes);
 //                .attributes(variant.)// TODO jmmut: join attributes from different source entries? what to do on a collision?
-                .make();
+
+
+        if (reduce.isPresent()) {
+            variantContextBuilder.id(reduce.get());
+        }
+
+        VariantContext variantContext = variantContextBuilder.make();
 
         return variantContext;
     }
