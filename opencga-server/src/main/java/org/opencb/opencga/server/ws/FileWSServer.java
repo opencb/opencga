@@ -793,7 +793,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             if (ioManager.isDirectory(uri)) {
                 uri = UriUtils.createDirectoryUri(uriStr);
-                file = catalogFileUtils.linkFolder(studyId, path, parents, calculateChecksum, uri, false, false, sessionId);
+                file = catalogFileUtils.linkFolder(studyId, path, parents, description, calculateChecksum, uri, false, false, sessionId);
                 new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
             } else {
                 final String filePath;

@@ -486,7 +486,7 @@ public class OpenCGAMain {
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.calculateChecksum, inputUri, false, false, sessionId);
+                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
                             file = catalogManager.createFile(studyId, null, null,

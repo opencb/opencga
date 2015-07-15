@@ -266,6 +266,7 @@ public class CatalogFileUtils {
      * @param studyId           StudyId where to place the folder
      * @param filePath          Path to create the folder
      * @param parents           Make parent directories as needed
+     * @param description       Folder description
      * @param calculateChecksum Calculate checksum from the new linked file
      * @param externalUri       External file to link
      * @param createFoundFiles  Create a simple catalog file entry for found files.
@@ -274,11 +275,11 @@ public class CatalogFileUtils {
      * @return                  Created folder
      * @throws CatalogException
      */
-    public File linkFolder(int studyId, String filePath, boolean parents, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
+    public File linkFolder(int studyId, String filePath, boolean parents, String description, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.Status.STAGE, parents, null, sessionId).first();
+        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.Status.STAGE, parents, description, null, sessionId).first();
 
         checkCanLinkFile(folder, relink);
 
