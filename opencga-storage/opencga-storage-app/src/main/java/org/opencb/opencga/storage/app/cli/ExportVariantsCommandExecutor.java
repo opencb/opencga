@@ -103,7 +103,7 @@ public class ExportVariantsCommandExecutor extends CommandExecutor {
             QueryOptions queryOptions = new QueryOptions();
             List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
             queryOptions.add("include", include);
-            variantExporter.vcfExport(dbAdaptor, studyConfiguration, outputUri, queryOptions);
+            variantExporter.VcfHtsExport(dbAdaptor, studyConfiguration, outputUri, queryOptions);
         } catch (Exception e) {
             e.printStackTrace();
         }

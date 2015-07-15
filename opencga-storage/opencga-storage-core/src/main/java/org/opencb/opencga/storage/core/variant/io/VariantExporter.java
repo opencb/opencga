@@ -1,22 +1,27 @@
 package org.opencb.opencga.storage.core.variant.io;
 
-import org.broadinstitute.variant.variantcontext.*;
-import org.broadinstitute.variant.variantcontext.Genotype;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
-import org.opencb.biodata.models.feature.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import sun.font.TrueTypeFont;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jmmut on 2015-06-25.
@@ -69,7 +74,17 @@ public class VariantExporter {
         // Default objects
         VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, options);
 //        VariantVcfDataWriter writer = new VariantVcfDataWriter(reader, outputUri.getPath());
-        VariantContextWriterFactory
+        VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
+
+        final VCFHeader header = new VCFHeader(new VCFFileReader(new File("/home/jmmut/Documents/biofiles/small.vcf"), false).getFileHeader());
+        final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
+
+        VariantContextWriter writer = builder
+                .setOutputFile(outputUri.getPath())
+                .setReferenceDictionary(sequenceDictionary)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build();
+
         int batchSize = 100;
 
         // user tuning
@@ -80,16 +95,32 @@ public class VariantExporter {
         // setup
         reader.open();
         reader.pre();
+        writer.writeHeader(header);
 //        writer.open();
 //        writer.pre();
 
         // actual loop
         List<Variant> variants;
+        int failedVariants = 0;
         while (!(variants = reader.read(batchSize)).isEmpty()) {
             for (Variant variant : variants) {
-                VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
+                try {
+                    VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
+                    writer.add(variantContext);
+                } catch (Exception e) {
+                    failedVariants++;
+                }
             }
         }
+
+        if (failedVariants > 0) {
+            Logger logger = LoggerFactory.getLogger(this.getClass().toString());
+            logger.warn(failedVariants + " variants were not written due to errors");
+        }
+
+        reader.post();
+        reader.pre();
+        writer.close();
     }
 
     public VariantContext convertBiodataVariantToVariantContext(Variant variant) {//, StudyConfiguration studyConfiguration) {
@@ -109,7 +140,7 @@ public class VariantExporter {
                     org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
                     for (int gtIdx : genotype.getAllelesIdx()) {
-                        alleles.add(Allele.create(allelesArray.get(gtIdx)));
+                        alleles.add(Allele.create(allelesArray.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
                     }
                     genotypes.add(GenotypeBuilder.create(samplesEntry.getKey(), alleles));
                 }
@@ -118,6 +149,7 @@ public class VariantExporter {
         List<String> alleles = Arrays.asList(variant.getReference(), variant.getAlternate());
 
         VariantContext variantContext = variantContextBuilder.start(variant.getStart())
+                .stop(variant.getEnd())
                 .chr(variant.getChromosome())
                 .alleles(alleles)
                 .genotypes(genotypes)
