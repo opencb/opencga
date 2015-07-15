@@ -596,7 +596,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        queryOptions.put(VariantQueryParams.STUDIES.key(), studyId);
         DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
 
-        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
+//        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
+        DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD + ".0", null));
 
         logger.debug("deleteAnnotation: query = {}", query);
         logger.debug("deleteAnnotation: update = {}", update);
@@ -680,11 +681,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             /** ANNOTATION **/
 
             if (query.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
-                if (query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key())) {
-                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).not().is(Collections.emptyList());
-                } else {
-                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).is(Collections.emptyList());
-                }
+                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.ANNOT_ID_FIELD);
+                builder.exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
+//                if (query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+//                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).not().is(Collections.emptyList());
+//                } else {
+//                    builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).is(Collections.emptyList());
+//                }
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {

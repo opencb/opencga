@@ -78,7 +78,8 @@ public class DBObjectToVariantConverterTest {
                 .append(DBObjectToVariantConverter.END_FIELD, variant.getStart())
                 .append(DBObjectToVariantConverter.LENGTH_FIELD, variant.getLength())
                 .append(DBObjectToVariantConverter.REFERENCE_FIELD, variant.getReference())
-                .append(DBObjectToVariantConverter.ALTERNATE_FIELD, variant.getAlternate());
+                .append(DBObjectToVariantConverter.ALTERNATE_FIELD, variant.getAlternate())
+                .append(DBObjectToVariantConverter.ANNOTATION_FIELD, Collections.emptyList());
 
         BasicDBList chunkIds = new BasicDBList();
         chunkIds.add("1_1_1k");

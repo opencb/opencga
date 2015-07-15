@@ -247,6 +247,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
             ParallelTaskRunner.Task<GenomicVariant,VariantAnnotation> annotationTask = genomicVariantList -> {
                 List<VariantAnnotation> variantAnnotationList;
+                long start = System.currentTimeMillis();
+                logger.debug("Annotating batch of {} genomic variants.", genomicVariantList.size());
                 try {
                     if(cellBaseClient != null) {
                         variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
@@ -257,6 +259,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     e.printStackTrace();
                     throw new RuntimeException(e);
                 }
+                logger.debug("Annotated batch of {} genomic variants. Time: {}s", genomicVariantList.size(), (System.currentTimeMillis()-start)/1000.0);
                 return variantAnnotationList;
             };
 
