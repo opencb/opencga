@@ -69,6 +69,7 @@ public class OpenCGAMain {
 
     private static Logger logger;
     private static UserConfigFile userConfigFile;
+    private static String logLevel;
 
     public static void main(String[] args) throws IOException {
 
@@ -77,7 +78,7 @@ public class OpenCGAMain {
         OptionsParser optionsParser = new OptionsParser(false);
         try {
             optionsParser.parse(args);
-            String logLevel = "info";
+            logLevel = "info";
             if (optionsParser.getCommonOptions().verbose) {
                 logLevel = "debug";
             }
@@ -610,8 +611,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
-                        System.out.println("c.cOpt.logLevel = " + c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        logger.debug("logLevel: {}", logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -633,7 +634,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
@@ -653,7 +654,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
 
                         break;
@@ -1012,7 +1013,7 @@ public class OpenCGAMain {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
                 sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
-                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
+                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext() ? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
@@ -1032,7 +1033,7 @@ public class OpenCGAMain {
                 File file = iterator.next();
 //                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
                 sb.append(String.format("%s (%d) - %s   [%s, %s]%s\n",
-                        indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                         file.getId(),
                         file.getName(),
                         file.getStatus(),
