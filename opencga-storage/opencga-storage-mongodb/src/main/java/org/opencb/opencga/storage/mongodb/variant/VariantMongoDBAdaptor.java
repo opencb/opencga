@@ -1140,6 +1140,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
         }
+        if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
+            samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
+        }
         if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
         }

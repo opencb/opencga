@@ -69,6 +69,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         CONSERVED_REGION ("conserved_region", TEXT_ARRAY, ""),
         ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
         REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
+        UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes."),
         ;
 
         VariantQueryParams(String key, Type type, String description) {
