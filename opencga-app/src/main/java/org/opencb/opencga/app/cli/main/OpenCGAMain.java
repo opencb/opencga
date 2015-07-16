@@ -407,6 +407,26 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "annotate-variants": {
+                        OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
+
+                        break;
+                    }
                     case "share": {
                         OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
 
@@ -621,47 +641,6 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "stats-variants": {
-                        OptionsParser.FileCommands.StatsCommand c = optionsParser.getFileCommands().statsCommand;
-
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        int fileId = catalogManager.getFileId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
-
-                        break;
-                    }
-                    case "annotate-variants": {
-                        OptionsParser.FileCommands.AnnotationCommand c = optionsParser.getFileCommands().annotationCommand;
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        int fileId = catalogManager.getFileId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
-
-                        break;
-                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -714,7 +693,7 @@ public class OpenCGAMain {
             }
             case "cohorts" : {
                 switch (optionsParser.getSubCommand()) {
-                    case "info": {
+                    case OptionsParser.CohortCommands.InfoCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.InfoCommand c = optionsParser.cohortCommands.infoCommand;
 
                         QueryResult<Cohort> cohortQueryResult = catalogManager.getCohort(c.id, c.cOpt.getQueryOptions(), sessionId);
@@ -722,7 +701,7 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "samples": {
+                    case OptionsParser.CohortCommands.SamplesCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.SamplesCommand c = optionsParser.cohortCommands.samplesCommand;
 
                         Cohort cohort = catalogManager.getCohort(c.id, null, sessionId).first();
@@ -735,7 +714,7 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "create": {
+                    case OptionsParser.CohortCommands.CreateCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.CreateCommand c = optionsParser.cohortCommands.createCommand;
 
                         Map<String, List<Sample>> cohorts = new HashMap<>();
@@ -796,6 +775,25 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case OptionsParser.CohortCommands.StatsCommand.COMMAND_NAME: {
+                        OptionsParser.CohortCommands.StatsCommand c = optionsParser.cohortCommands.statsCommand;
+
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
+
+                        break;
+                    }
+
                     default: {
                         optionsParser.printUsage();
                         break;
