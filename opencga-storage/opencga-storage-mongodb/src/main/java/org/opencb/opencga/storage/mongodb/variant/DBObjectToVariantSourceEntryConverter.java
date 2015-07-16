@@ -19,10 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,11 +38,12 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String STUDYID_FIELD = "sid";
     public final static String ALTERNATES_FIELD = "alts";
     public final static String ATTRIBUTES_FIELD = "attrs";
-//    public final static String FORMAT_FIELD = "fm";
+    //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
 
     private boolean includeSrc;
+    private Set<Integer> returnedFiles;
 
 //    private Integer fileId;
     private DBObjectToSamplesConverter samplesConverter;
@@ -61,7 +59,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
-//        this.fileId = null;
+        this.returnedFiles = null;
     }
 
 
@@ -85,14 +83,20 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * should be processed during the conversion.
      *
      * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
-     * @param fileId           If present, reads the information of this file from FILES_FIELD
+     * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer fileId,
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
-//        this.fileId = fileId;
+        this.returnedFiles = (returnedFiles != null)? new HashSet<>(returnedFiles) : null;
         this.samplesConverter = samplesConverter;
+    }
+
+
+    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer returnedFile,
+                                                 DBObjectToSamplesConverter samplesConverter) {
+        this(includeSrc, Collections.singletonList(returnedFile), samplesConverter);
     }
 
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
@@ -114,10 +118,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         DBObject fileObject = null;
         if (object.containsField(FILES_FIELD)) {
             for (DBObject dbObject : (List<DBObject>) object.get(FILES_FIELD)) {
-                String fileId_ = dbObject.get(FILEID_FIELD).toString() + "_";
+                Integer fid = ((Integer) dbObject.get(FILEID_FIELD));
+                String fileId_ = fid.toString() + "_";
+
+                if (returnedFiles != null && !returnedFiles.contains(fid)) {
+                    continue;
+                }
 
                 fileObject = dbObject;
-
                 // Attributes
                 if (fileObject.containsField(ATTRIBUTES_FIELD)) {
                     Map<String, Object> attrs = ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap();

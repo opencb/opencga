@@ -1145,7 +1145,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 false,
-                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
         sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
