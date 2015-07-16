@@ -33,6 +33,7 @@ import java.util.Properties;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.runStorageJob;
+import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
@@ -53,7 +54,7 @@ public class AnalysisFileIndexerTest {
     Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
     private String catalogPropertiesFile;
     private final String userId = "user";
-    private final String dbName = "opencga_variants_test";
+    private final String dbName = DB_NAME;
     private List<File> files = new ArrayList<>();
 
     @Before

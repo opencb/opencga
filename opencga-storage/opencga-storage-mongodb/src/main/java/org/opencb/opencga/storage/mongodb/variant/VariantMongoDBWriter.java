@@ -412,7 +412,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //        this.defaultGenotype = defaultGenotype;
 //    }
 
-    public void setThreadSyncronizationBoolean(AtomicBoolean atomicBoolean) {
+    public void setThreadSynchronizationBoolean(AtomicBoolean atomicBoolean) {
         this.variantSourceWritten = atomicBoolean;
     }
 

@@ -234,6 +234,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         QueryResult allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
         assertEquals(1, allVariants.getNumResults());
         assertEquals(expectedNumVariants, allVariants.getNumTotalResults());
+        for (Integer fileId : studyConfiguration.getIndexedFiles()) {
+            assertTrue(studyConfiguration.getHeaders().containsKey(fileId));
+        }
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());

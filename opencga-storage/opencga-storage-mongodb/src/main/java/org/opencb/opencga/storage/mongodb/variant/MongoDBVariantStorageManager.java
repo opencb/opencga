@@ -44,7 +44,6 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -236,7 +235,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //            variantDBWriter.setDefaultGenotype(defaultGenotype);
 //            variantDBWriter.setVariantSource(source);
 //            variantDBWriter.setSamplesIds(samplesIds);
-            variantDBWriter.setThreadSyncronizationBoolean(atomicBoolean);
+            variantDBWriter.setThreadSynchronizationBoolean(atomicBoolean);
             writerList.add(variantDBWriter);
             writers.add(variantDBWriter);
         }
