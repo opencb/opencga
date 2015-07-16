@@ -38,7 +38,7 @@ public class StudyConfiguration implements Cloneable {
     private Map<Integer, Set<Integer>> cohorts;
 
     private Set<Integer> indexedFiles;
-//    private Set<Integer> sampesInFiles;
+    private Map<Integer, String> headers;
     private Map<Integer, Set<Integer>> samplesInFiles;
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
@@ -47,7 +47,7 @@ public class StudyConfiguration implements Cloneable {
 
     private ObjectMap attributes;
 
-    public StudyConfiguration() {
+    StudyConfiguration() {
     }
 
     public StudyConfiguration(StudyConfiguration other) {
@@ -58,6 +58,7 @@ public class StudyConfiguration implements Cloneable {
         this.cohortIds = new LinkedHashMap<>(other.cohortIds);
         this.cohorts = new LinkedHashMap<>(other.cohorts);
         this.indexedFiles = new LinkedHashSet<>(other.indexedFiles);
+        this.headers = new LinkedHashMap<>(other.headers);
         this.samplesInFiles = new LinkedHashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
@@ -77,6 +78,7 @@ public class StudyConfiguration implements Cloneable {
         setCohortIds(new LinkedHashMap<>());
         this.cohorts = new LinkedHashMap<>();
         this.indexedFiles = new LinkedHashSet<>();
+        this.headers = new LinkedHashMap<>();
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
@@ -98,6 +100,7 @@ public class StudyConfiguration implements Cloneable {
         this.cohortIds = cohortIds;
         this.cohorts = cohorts;
         this.indexedFiles = new LinkedHashSet<>();
+        this.headers = new LinkedHashMap<>();
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
@@ -125,6 +128,7 @@ public class StudyConfiguration implements Cloneable {
                 ", cohortIds=" + cohortIds +
                 ", cohorts=" + cohorts +
                 ", indexedFiles=" + indexedFiles +
+                ", headers=" + headers +
                 ", samplesInFiles=" + samplesInFiles +
                 ", calculatedStats=" + calculatedStats +
                 ", invalidStats=" + invalidStats +
@@ -190,6 +194,14 @@ public class StudyConfiguration implements Cloneable {
 
     public void setIndexedFiles(Set<Integer> indexedFiles) {
         this.indexedFiles = indexedFiles;
+    }
+
+    public Map<Integer, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<Integer, String> headers) {
+        this.headers = headers;
     }
 
     public Map<Integer, Set<Integer>> getSamplesInFiles() {

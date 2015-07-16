@@ -221,10 +221,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
+    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, String description, QueryOptions options, String sessionId)
             throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, null, null, status, 0, -1, null, -1, null, null,
+                path, null, null, description, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 

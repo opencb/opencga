@@ -366,7 +366,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         checkNewFile(studyConfiguration, fileId, fileName);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
-
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
         /*
          * Before load file, the StudyConfiguration has to be updated with the new sample names.

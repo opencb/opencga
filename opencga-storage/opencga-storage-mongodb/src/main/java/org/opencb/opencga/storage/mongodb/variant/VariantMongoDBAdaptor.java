@@ -1070,7 +1070,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 } else {
                     push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
                 }
-                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, studyObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD));
+                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, ((List) studyObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD)).get(0));
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
 
 
@@ -1138,12 +1138,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
             samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
         }
+        if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
+            samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
+        }
         if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 false,
-                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getInt(VariantQueryParams.RETURNED_FILES.key()) : null,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
         sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
