@@ -47,7 +47,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
     private boolean includeSrc;
 
-    private Integer fileId;
+//    private Integer fileId;
     private DBObjectToSamplesConverter samplesConverter;
     private StudyConfigurationManager studyConfigurationManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
@@ -61,7 +61,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
-        this.fileId = null;
+//        this.fileId = null;
     }
 
 
@@ -91,7 +91,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer fileId,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
-        this.fileId = fileId;
+//        this.fileId = fileId;
         this.samplesConverter = samplesConverter;
     }
 
@@ -106,19 +106,40 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     @Override
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         int studyId = ((Number) object.get(STUDYID_FIELD)).intValue();
-        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
+//        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
+        String fileId = null;
         VariantSourceEntry file = new VariantSourceEntry(fileId, getStudyName(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
         DBObject fileObject = null;
-        if (this.fileId != null && object.containsField(FILES_FIELD)) {
+        if (object.containsField(FILES_FIELD)) {
             for (DBObject dbObject : (List<DBObject>) object.get(FILES_FIELD)) {
-                if (this.fileId.equals(dbObject.get(FILEID_FIELD))) {
-                    fileObject = dbObject;
-                    break;
+                String fileId_ = dbObject.get(FILEID_FIELD).toString() + "_";
+
+                fileObject = dbObject;
+
+                // Attributes
+                if (fileObject.containsField(ATTRIBUTES_FIELD)) {
+                    Map<String, Object> attrs = ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap();
+                    for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+                        // Unzip the "src" field, if available
+                        if (entry.getKey().equals("src")) {
+                            if (includeSrc) {
+                                byte[] o = (byte[]) entry.getValue();
+                                try {
+                                    file.addAttribute(fileId_ + entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
+                                } catch (IOException ex) {
+                                    Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                        } else {
+                            file.addAttribute(fileId_ + entry.getKey(), entry.getValue().toString());
+                        }
+                    }
                 }
             }
         }
+
         // Alternate alleles
         if (fileObject != null && fileObject.containsField(ALTERNATES_FIELD)) {
             List list = (List) fileObject.get(ALTERNATES_FIELD);
@@ -131,26 +152,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             file.setSecondaryAlternates(alternatives);
         }
 
-        // Attributes
-        if (fileObject != null && fileObject.containsField(ATTRIBUTES_FIELD)) {
-            Map<String, Object> attrs = ((DBObject) fileObject.get(ATTRIBUTES_FIELD)).toMap();
-            for (Map.Entry<String, Object> entry : attrs.entrySet()) {
-                // Unzip the "src" field, if available
-                if (entry.getKey().equals("src")) {
-                    if (includeSrc) {
-                        byte[] o = (byte[]) entry.getValue();
-                        try {
-                            file.addAttribute("src", org.opencb.commons.utils.StringUtils.gunzip(o));
-                        } catch (IOException ex) {
-                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-                } else {
-                    file.addAttribute(entry.getKey(), entry.getValue().toString());
-                }
-            }
 
-        }
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
 //            file.setFormat((String) fileObject.get(FORMAT_FIELD));
 //        } else {
