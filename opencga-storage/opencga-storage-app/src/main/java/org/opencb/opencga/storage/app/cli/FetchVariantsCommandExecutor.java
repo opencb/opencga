@@ -196,18 +196,18 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
 
-        final OutputStream outputStream;
+        // output format has priority over output name  
+        OutputStream outputStream;
         if(queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
-            if (gzip) {
-                outputStream = new GZIPOutputStream(System.out);
-            } else {
-                outputStream = System.out;
-            }
+            outputStream = System.out;
         } else {
             if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
                 queryVariantsCommandOptions.output += ".gz";
             }
             outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
+        }
+        if (gzip) {
+            outputStream = new GZIPOutputStream(outputStream);
         }
 
 
@@ -247,9 +247,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
                 if (outputFormat.equalsIgnoreCase("vcf")) {
                     StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-                    QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(queryVariantsCommandOptions.returnStudy, null);
-                    if (studyConfigurationResult.getResult().size() == 1) {
+                    QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
+                            queryVariantsCommandOptions.returnStudy, null);
+                    if (studyConfigurationResult.getResult().size() >= 1) {
                         VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, null);
+                    } else {
+                        logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
                     }
 //                    printVcfResult(iterator, studyConfigurationManager, printWriter);
                 } else {
