@@ -44,7 +44,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
-            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds"));
+            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name"));
@@ -154,6 +154,21 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             for (File file : files.getResult()) {
                 studyConfiguration.getFileIds().put(file.getName(), file.getId());
                 studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
+                if (file.getAttributes().containsKey("variantSource")) {
+                    //attributes.variantSource.metadata.variantFileHeader
+                    Object object = file.getAttributes().get("variantSource");
+                    if (object instanceof Map) {
+                        Map variantSource = ((Map) object);
+                        object = variantSource.get("metadata");
+                        if (object instanceof Map) {
+                            Map metadata = (Map) object;
+                            if (metadata.containsKey("variantFileHeader")) {
+                                String variantFileHeader = metadata.get("variantFileHeader").toString();
+                                studyConfiguration.getHeaders().put(file.getId(), variantFileHeader);
+                            }
+                        }
+                    }
+                }
             }
 
             QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
