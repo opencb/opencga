@@ -37,13 +37,12 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -197,19 +196,18 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
 
-        final PrintWriter printWriter;
+        final OutputStream outputStream;
         if(queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
             if (gzip) {
-                printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(System.out))));
+                outputStream = new GZIPOutputStream(System.out);
             } else {
-                printWriter = new PrintWriter(System.out);
+                outputStream = System.out;
             }
         } else {
             if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
                 queryVariantsCommandOptions.output += ".gz";
             }
-            Path outputPath = Paths.get(queryVariantsCommandOptions.output);
-            printWriter = new PrintWriter(FileUtils.newBufferedWriter(outputPath));
+            outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
         }
 
 
@@ -249,14 +247,18 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
                 if (outputFormat.equalsIgnoreCase("vcf")) {
                     StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-                    printVcfResult(iterator, studyConfigurationManager, printWriter);
+                    QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(queryVariantsCommandOptions.returnStudy, null);
+                    if (studyConfigurationResult.getResult().size() == 1) {
+                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, null);
+                    }
+//                    printVcfResult(iterator, studyConfigurationManager, printWriter);
                 } else {
                     // we know that it is JSON, otherwise we have not reached this point
-                    printJsonResult(iterator, printWriter);
+                    printJsonResult(iterator, outputStream);
                 }
             }
         }
-        printWriter.close();
+        outputStream.close();
 
         /**
          * Run query
@@ -320,12 +322,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
     }
 
-    private void printJsonResult(VariantDBIterator variantDBIterator, PrintWriter printWriter) throws JsonProcessingException {
+    private void printJsonResult(VariantDBIterator variantDBIterator, OutputStream outputStream) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectWriter objectWriter = objectMapper.writer();
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
-            printWriter.println(objectWriter.writeValueAsString(variant));
+            outputStream.write(objectWriter.writeValueAsBytes(variant));
         }
     }
 

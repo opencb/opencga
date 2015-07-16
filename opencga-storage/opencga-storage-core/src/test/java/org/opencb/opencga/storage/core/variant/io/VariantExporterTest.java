@@ -26,7 +26,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,11 +81,12 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
     @Test
     public void testVcfHtsExport() throws Exception {
-        QueryOptions queryOptions = new QueryOptions();
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
-        queryOptions.add("include", include);
+//        QueryOptions queryOptions = new QueryOptions();
+//        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
+//        queryOptions.add("include", include);
 
-        VariantExporter.VcfHtsExport(dbAdaptor, studyConfiguration, new URI("hts" + EXPORTED_FILE_NAME), queryOptions);
+        VariantExporter.VcfHtsExport(dbAdaptor.iterator(), studyConfiguration, new FileOutputStream("hts" + EXPORTED_FILE_NAME) {
+        }, null);
 
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }

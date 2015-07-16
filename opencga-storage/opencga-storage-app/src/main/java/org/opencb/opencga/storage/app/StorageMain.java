@@ -84,9 +84,6 @@ public class StorageMain {
                     case "stats-variants":
                         commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
                         break;
-                    case "export-variants":
-                        commandExecutor = new ExportVariantsCommandExecutor(cliOptionsParser.getExportVariantsCommandOptions());
-                        break;
                     default:
                         System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                         break;

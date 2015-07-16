@@ -13,10 +13,12 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
@@ -67,18 +69,20 @@ public class VariantExporter {
         writer.close();
     }
 
-    public static void VcfHtsExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
-        // Default objects
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, options);
-//        VariantVcfDataWriter writer = new VariantVcfDataWriter(reader, outputUri.getPath());
+//    public static void VcfHtsExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
+    public static void VcfHtsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, 
+                                    OutputStream outputStream, QueryOptions options) {
         VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
 
+        
+//        get header from studyConfiguration
+        
         final VCFHeader header = new VCFHeader(new VCFFileReader(new File("../opencga-storage-core/src/test/resources/variant-test-file.vcf.gz")
                 , false).getFileHeader()); // BIG TODO jmmut: how to get header? catalog?
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
         VariantContextWriter writer = builder
-                .setOutputFile(outputUri.getPath())
+                .setOutputStream(outputStream)
                 .setReferenceDictionary(sequenceDictionary)
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build();
@@ -91,8 +95,6 @@ public class VariantExporter {
 //        }
 
         // setup
-        reader.open();
-        reader.pre();
         writer.writeHeader(header);
 //        writer.open();
 //        writer.pre();
@@ -100,14 +102,13 @@ public class VariantExporter {
         // actual loop
         List<Variant> variants;
         int failedVariants = 0;
-        while (!(variants = reader.read(batchSize)).isEmpty()) {
-            for (Variant variant : variants) {
-                try {
-                    VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
-                    writer.add(variantContext);
-                } catch (Exception e) {
-                    failedVariants++;
-                }
+        while (iterator.hasNext()) {
+            try {
+                Variant variant = iterator.next();
+                VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
+                writer.add(variantContext);
+            } catch (Exception e) {
+                failedVariants++;
             }
         }
 
@@ -116,8 +117,6 @@ public class VariantExporter {
             logger.warn(failedVariants + " variants were not written due to errors");
         }
 
-        reader.post();
-        reader.pre();
         writer.close();
     }
 
