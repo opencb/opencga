@@ -59,6 +59,7 @@ public class VariantAnnotationManager {
     public static final String ANNOTATOR_QUERY_OPTIONS = "annotatorQueryOptions";   // TODO use or remove
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
+    public static final String NUM_THREADS = "numThreads";
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;

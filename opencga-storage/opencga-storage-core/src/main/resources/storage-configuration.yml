@@ -1,10 +1,12 @@
 ---
 defaultStorageEngineId: "mongodb"
 logLevel: info
+# For OpenCGA installation: org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager
+studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
 cellbase:
   hosts:
-  - ${OPENCGA.CELLBASE.HOST}
-  version: ${OPENCGA.CELLBASE.VERSION}
+  - "${OPENCGA.CELLBASE.HOST}"
+  version: "${OPENCGA.CELLBASE.VERSION}"
 storageEngines:
 - id: "mongodb"
   options: {}
@@ -18,9 +20,9 @@ storageEngines:
       mean_coverage_size_list: [200, 10000]
     database:
       hosts:
-      - "localhost:27017"
-      user: ""
-      password: ""
+      - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
     options:
@@ -30,7 +32,7 @@ storageEngines:
       include.stats: false
       annotator: cellbase_rest
       species: "hsapiens"
-      assembly: "GRc37"
+      assembly: "GRCh37"
       transform.batch_size: 200
       transform.threads: 4
       load.batch_size: 100
@@ -43,9 +45,9 @@ storageEngines:
       collection.files: "files"
     database:
       hosts:
-      - ${OPENCGA.STORAGE.VARIANT.DB.HOST}
-      user: ${OPENCGA.STORAGE.VARIANT.DB.USER}
-      password: ${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
 - id: "hadoop"
   options: {}
   alignment:

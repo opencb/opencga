@@ -4,7 +4,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -309,6 +308,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
+        Cohort cohort = readCohort(cohortId, new QueryOptions("include", "projects.studies.cohorts.status"), sessionId).first();
+        if (params.containsKey("samples") || params.containsKey("name")/* || params.containsKey("type")*/) {
+            switch (cohort.getStatus()) {
+                case CALCULATING:
+                        throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.Status.CALCULATING + "\"");
+                case READY:
+                    params.put("status", Cohort.Status.INVALID);
+                    break;
+                case NONE:
+                case INVALID:
+                    break;
+            }
+        }
         if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
             return sampleDBAdaptor.updateCohort(cohortId, params);
         } else {

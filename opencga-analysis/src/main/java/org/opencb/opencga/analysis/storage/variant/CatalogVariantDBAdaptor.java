@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -40,8 +39,7 @@ import java.util.*;
 /**
 * Created by hpccoll1 on 13/02/15.
 */
-//public class CatalogVariantDBAdaptor {}
-public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
+public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private final CatalogManager catalogManager;
     private final VariantDBAdaptor dbAdaptor;
@@ -67,11 +65,6 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setDataWriter(DataWriter dataWriter) {
         dbAdaptor.setDataWriter(dataWriter);
-    }
-
-    @Override
-    public void setConstantSamples(String sourceEntry) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -141,67 +134,67 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         }
         return dbAdaptor.getVariantFrequencyByRegion(region, options);
     }
-
-    @Override
-    public QueryResult groupBy(String field, QueryOptions options) {
-        return null;
-    }
-
-    @Override
-    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
-        return null;
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
-        return null;
-    }
-
-
-    @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator(QueryOptions options) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public boolean close() {
-        return false;
-    }
+//
+//    @Override
+//    public QueryResult groupBy(String field, QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Deprecated
+//    @Override
+//    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
+//        return null;
+//    }
+//
+//
+//    @Override
+//    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+//        return null;
+//    }
+//
+//    @Override
+//    public VariantDBIterator iterator() {
+//        return null;
+//    }
+//
+//    @Override
+//    public VariantDBIterator iterator(QueryOptions options) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+//        return null;
+//    }
+//
+//    @Override
+//    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+//        return null;
+//    }
+//
+//    @Override
+//    public boolean close() {
+//        return false;
+//    }
 
 
     //AuxMethods
 
     private Map<Integer, File> getFilesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantDBAdaptor.FILES);
+        Object files = options.get(VariantQueryParams.FILES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getFilesMap(fileIds, sessionId);
     }
 
     private Map<Integer, Study> getStudiesMap(QueryOptions options) throws CatalogException {
         String sessionId = options.getString("sessionId");
-        Object files = options.get(VariantDBAdaptor.STUDIES);
+        Object files = options.get(VariantQueryParams.STUDIES.key());
         List<Integer> fileIds = getIntegerList(files);
         return getStudiesMap(fileIds, sessionId);
     }
@@ -262,30 +255,6 @@ public class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 //        return new QueryResult(id, 0, 0, 0, "", e.getMessage(), Collections.emptyList());
 //    }
 
-
-    // DEPRECATED METHODS
-    @Deprecated
-    @Override
-    public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-    @Deprecated
-    @Override
-    public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        throw new UnsupportedOperationException("Deprecated method");
-    }
 
 
 }

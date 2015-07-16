@@ -9,7 +9,6 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Properties;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -32,13 +28,15 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
 
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
+    public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     public static final int NUM_VARIANTS = 9792;
-    public static final int STUDY_ID = 5;
+    public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
     public static final String DB_NAME = "opencga_variants_test";
 
     protected static URI inputUri;
+    protected static URI smallInputUri;
     protected static URI corruptedInputUri;
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
@@ -56,13 +54,25 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
             Files.createDirectories(rootDir);
         }
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
+        Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath, StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath , StandardCopyOption.REPLACE_EXISTING);
+
         inputUri = inputPath.toUri();
+        smallInputUri = smallInputPath.toUri();
         corruptedInputUri = corruptedInputPath .toUri();
         outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
+
+    }
+
+    public static URI getResourceUri(String resourceName) throws IOException {
+        Path rootDir = getTmpRootDir();
+        Path resourcePath = rootDir.resolve(resourceName);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath , StandardCopyOption.REPLACE_EXISTING);
+        return resourcePath.toUri();
     }
 
     protected static Path getTmpRootDir() throws IOException {
@@ -123,36 +133,42 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
 
     public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+        return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap());
+    }
 
-        ObjectMap extractParams = new ObjectMap();
+    public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
-        ObjectMap preTransformParams = new ObjectMap();
+        ObjectMap extractParams = new ObjectMap(params);
+
+        ObjectMap preTransformParams = new ObjectMap(params);
         preTransformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        preTransformParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        preTransformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
 
-        ObjectMap transformParams = new ObjectMap();
+        ObjectMap transformParams = new ObjectMap(params);
         transformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        transformParams.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
-        transformParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
-        ObjectMap postTransformParams = new ObjectMap();
+        transformParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        transformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
 
-        ObjectMap preLoadParams = new ObjectMap();
+        ObjectMap postTransformParams = new ObjectMap(params);
+
+        ObjectMap preLoadParams = new ObjectMap(params);
         preLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        ObjectMap loadParams = new ObjectMap();
-        loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        loadParams.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
-        loadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
-        loadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        ObjectMap postLoadParams = new ObjectMap();
-        postLoadParams.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        postLoadParams.put(VariantStorageManager.Options.FILE_ID.key(), 6);
 
-        postLoadParams.put(VariantStorageManager.Options.ANNOTATE.key(), true);
-        postLoadParams.put(VariantAnnotationManager.SPECIES, "hsapiens");
-        postLoadParams.put(VariantAnnotationManager.ASSEMBLY, "GRc37");
-        postLoadParams.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+        ObjectMap loadParams = new ObjectMap(params);
+        loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        loadParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+        loadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
+        loadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+
+        ObjectMap postLoadParams = new ObjectMap(params);
         postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
+        postLoadParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
+        postLoadParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+        postLoadParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);
     }

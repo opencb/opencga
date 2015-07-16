@@ -36,6 +36,7 @@ public interface CatalogFileDBAdaptor {
         jobId(Type.NUMERICAL, ""),
         acl(Type.TEXT, ""),
         bacl("acl", Type.BOOLEAN, ""),
+        index("index", Type.TEXT, ""),
 
         stats(Type.TEXT, ""),
         nstats("stats", Type.NUMERICAL, ""),

@@ -18,21 +18,16 @@ package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -68,18 +63,20 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
          */
         GffReader gffReader = null;
         List<Region> regions = null;
-        if (queryAlignmentsCommandOptions.regions != null && !queryAlignmentsCommandOptions.regions.isEmpty()) {
-            regions = new LinkedList<>();
-            for (String csvRegion : queryAlignmentsCommandOptions.regions) {
-                for (String strRegion : csvRegion.split(",")) {
-                    Region region = new Region(strRegion);
-                    regions.add(region);
-                    logger.info("Parsed region: {}", region);
-                }
-            }
-        } else if (queryAlignmentsCommandOptions.gffFile != null && !queryAlignmentsCommandOptions.gffFile.isEmpty()) {
+        if (queryAlignmentsCommandOptions.region != null && !queryAlignmentsCommandOptions.region.isEmpty()) {
+            regions = Region.parseRegions(queryAlignmentsCommandOptions.region);
+            logger.debug("Processed regions: '{}'", regions);
+//            regions = new LinkedList<>();
+//            for (String csvRegion : queryAlignmentsCommandOptions.regions) {
+//                for (String strRegion : csvRegion.split(",")) {
+//                    Region region = new Region(strRegion);
+//                    regions.add(region);
+//                    logger.info("Parsed region: {}", region);
+//                }
+//            }
+        } else if (queryAlignmentsCommandOptions.regionFile != null && !queryAlignmentsCommandOptions.regionFile.isEmpty()) {
             try {
-                gffReader = new GffReader(queryAlignmentsCommandOptions.gffFile);
+                gffReader = new GffReader(queryAlignmentsCommandOptions.regionFile);
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
             } catch (IOException e) {

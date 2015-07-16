@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.storage;
 
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -68,6 +70,7 @@ public class AnalysisFileIndexer {
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
     public static final String LOG_LEVEL = "logLevel";
+    public static final String INCLUDE_GENOTYPE = "includeGenotype";
 
 
     //Other
@@ -127,7 +130,8 @@ public class AnalysisFileIndexer {
         /** Get the original file. **/
         if (!transform && load) { //Don't transform. Just load. Select the original file
             if (inputFile.getJobId() <= 0) {
-                throw new CatalogException("Error: can't load this file. JobId unknown");
+                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
+                        "Only transformed files can be loaded.");
             }
             Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
             int indexedFileId;
@@ -149,7 +153,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = getDataStore(catalogManager, originalFile, sessionId);
+        final DataStore dataStore = getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -207,6 +211,22 @@ public class AnalysisFileIndexer {
         } else {
             sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", originalFile.getSampleIds()), sessionId).getResult();
         }
+        if (!simulate) {
+            Cohort defaultCohort = null;
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+            if (cohorts.getResult().isEmpty()) {
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, VariantSourceEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
+            } else {
+                defaultCohort = cohorts.first();
+            }
+
+            Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
+            samples.addAll(originalFile.getSampleIds());
+            if (samples.size() != defaultCohort.getSamples().size()) {
+                logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
+                catalogManager.updateCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
+            }
+        }
 
 
         /** Create commandLine **/
@@ -245,6 +265,7 @@ public class AnalysisFileIndexer {
         ObjectMap jobAttributes = new ObjectMap();
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
+        jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
 
         String jobName = "index";
         String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
@@ -280,17 +301,16 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, File file, String sessionId) throws CatalogException {
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+    public static DataStore getDataStore(CatalogManager catalogManager, int studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(file.getBioformat())) {
-            dataStore = study.getDataStores().get(file.getBioformat());
+        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
+            dataStore = study.getDataStores().get(bioformat);
         } else {
             int projectId = catalogManager.getProjectIdByStudyId(study.getId());
             Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("alias", "dataStores")), sessionId).first();
-            if (project.getDataStores() != null && project.getDataStores().containsKey(file.getBioformat())) {
-                dataStore = project.getDataStores().get(file.getBioformat());
+            if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
+                dataStore = project.getDataStores().get(bioformat);
             } else { //get default datastore
                 String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
                 String alias = project.getAlias();
@@ -349,16 +369,21 @@ public class AnalysisFileIndexer {
             throw new UnsupportedOperationException();
         } else if (originalFile.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
 
-            StringBuilder sampleIdsString = new StringBuilder();
-            for (Sample sample : sampleList) {
-                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
-            }
+//            StringBuilder sampleIdsString = new StringBuilder();
+//            for (Sample sample : sampleList) {
+//                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
+//            }
+
+            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
+            String userId = catalogManager.getUserIdByProjectId(projectId);
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
                     .append(" index-variants ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
-                    .append(" --study-name \'").append(study.getName()).append("\'")
+//                    .append(" --study-name \'").append(study.getName()).append("\'")
+                    .append(" --study-name \'").append(userId).append("@").append(projectAlias).append(":").append(study.getAlias()).append("\'")
                     .append(" --study-id ").append(study.getId())
 //                    .append(" --study-type ").append(study.getType())
                     .append(" --database ").append(dataStore.getDbName())
@@ -366,17 +391,23 @@ public class AnalysisFileIndexer {
                     .append(" --outdir ").append(outDirUri)
                     .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                     .append(" -D").append("sessionId").append("=").append(sessionId)
-                    .append(" --sample-ids ").append(sampleIdsString)
+//                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;
-            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), true)) {
+            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), VariantStorageManager.Options.ANNOTATE.defaultValue())) {
                 sb.append(" --annotate ");
+            }
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {
+                sb.append(" --calculate-stats ");
             }
             if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
                 sb.append(" --include-src ");
             }
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
+            }
+            if (options.getBoolean(INCLUDE_GENOTYPE, true)) {
+                sb.append(" --include-genotypes ");
             }
             if (options.getBoolean(LOAD, false)) {
                 sb.append(" --load ");

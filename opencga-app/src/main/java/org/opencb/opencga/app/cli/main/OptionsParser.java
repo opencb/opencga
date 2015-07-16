@@ -396,6 +396,7 @@ public class OptionsParser {
         final ListCommand listCommand;
         final CheckCommand checkCommand;
         final StatusCommand statusCommand;
+        final AnnotationCommand annotationCommand;
 
         public StudyCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -406,6 +407,7 @@ public class OptionsParser {
             studies.addCommand(listCommand = new ListCommand());
             studies.addCommand(checkCommand = new CheckCommand());
             studies.addCommand(statusCommand = new StatusCommand());
+            studies.addCommand(this.annotationCommand = new AnnotationCommand());
             studies.addCommand(commandShareResource);
         }
 
@@ -481,6 +483,19 @@ public class OptionsParser {
 
         @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
         class StatusCommand extends BaseStudyCommand {}
+
+        @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
+        class AnnotationCommand extends BaseStudyCommand {
+
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            String outdir = "";
+
+            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+            boolean enqueue;
+
+            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+            public List<String> dashDashParameters;
+        }
     }
 
 
@@ -498,8 +513,6 @@ public class OptionsParser {
         final SearchCommand searchCommand;
         final ListCommand listCommand;
         final IndexCommand indexCommand;
-        final StatsCommand statsCommand;
-        final AnnotationCommand annotationCommand;
 
         public FileCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -514,8 +527,6 @@ public class OptionsParser {
             files.addCommand(this.refreshCommand = new RefreshCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
             files.addCommand(this.indexCommand = new IndexCommand());
-            files.addCommand(this.statsCommand = new StatsCommand());
-            files.addCommand(this.annotationCommand = new AnnotationCommand());
 //        files.addCommand(commandShareResource);
         }
 
@@ -706,33 +717,6 @@ public class OptionsParser {
             public List<String> dashDashParameters;
         }
 
-        @Parameters(commandNames = {"stats-variants"}, commandDescription = "Calculate variant stats for a set of cohorts.")
-        class StatsCommand extends BaseFileCommand {
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-            String outdir = "";
-
-            @Parameter(names = {"--cohort-id"}, description = "CSV for all cohort-id to calculate stats", required = true, arity = 1)
-            List<Integer> cohortIds;
-
-            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-            boolean enqueue;
-
-            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-            public List<String> dashDashParameters;
-        }
-
-        @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
-        class AnnotationCommand extends BaseFileCommand {
-
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-            String outdir = "";
-
-            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-            boolean enqueue;
-
-            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-            public List<String> dashDashParameters;
-        }
     }
 
     @Parameters(commandNames = {"cohorts"}, commandDescription = "Cohorts methods")
@@ -740,6 +724,7 @@ public class OptionsParser {
         final InfoCommand infoCommand;
         final CreateCommand createCommand;
         final SamplesCommand samplesCommand;
+        final StatsCommand statsCommand;
 
         public CohortCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -747,10 +732,14 @@ public class OptionsParser {
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.createCommand = new CreateCommand());
             files.addCommand(this.samplesCommand = new SamplesCommand());
+            files.addCommand(this.statsCommand = new StatsCommand());
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
+        @Parameters(commandNames = {InfoCommand.COMMAND_NAME}, commandDescription = "Get cohort information")
         class InfoCommand {
+
+            public static final String COMMAND_NAME = "info";
+
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
@@ -761,8 +750,11 @@ public class OptionsParser {
             int id;
         }
 
-        @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
+        @Parameters(commandNames = {CreateCommand.COMMAND_NAME}, commandDescription = "Create a cohort")
         class CreateCommand {
+
+            public static final String COMMAND_NAME = "create";
+
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
@@ -791,8 +783,11 @@ public class OptionsParser {
             Cohort.Type type;
         }
 
-        @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
+        @Parameters(commandNames = {SamplesCommand.COMMAND_NAME}, commandDescription = "List samples belonging to a cohort")
         class SamplesCommand {
+
+            public static final String COMMAND_NAME = "samples";
+
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
@@ -802,7 +797,32 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
             int id;
         }
+
+        @Parameters(commandNames = {StatsCommand.COMMAND_NAME}, commandDescription = "Calculate variant stats for a set of cohorts.")
+        class StatsCommand {
+
+            public static final String COMMAND_NAME = "calculate-stats";
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = true)
+            List<Integer> cohortIds;
+
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            String outdir = "";
+
+            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+            boolean enqueue;
+
+            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+            public List<String> dashDashParameters;
+        }
     }
+
     public static class SemiColonParameterSplitter implements IParameterSplitter {
 
         public List<String> split(String value) {

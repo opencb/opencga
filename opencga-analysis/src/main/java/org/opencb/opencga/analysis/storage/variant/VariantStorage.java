@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -50,7 +52,7 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(int indexedFileId, Integer outDirId, List<Integer> cohortIds, String sessionId, QueryOptions options)
+    public QueryResult<Job> calculateStats(Integer outDirId, List<Integer> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException {
         if (options == null) {
             options = new QueryOptions();
@@ -59,28 +61,53 @@ public class VariantStorage {
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         final long start = System.currentTimeMillis();
 
-        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
-        int studyId = catalogManager.getStudyIdByFileId(indexedFile.getId());
-        if (indexedFile.getType() != File.Type.FILE || indexedFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
-                    "Got {type: " + indexedFile.getType() + ", bioformat: " + indexedFile.getBioformat() + "}");
+        if (cohortIds.isEmpty()) {
+            throw new CatalogException("Cohort list empty");
         }
 
         StringBuilder outputFileName = new StringBuilder();
         Map<Cohort, List<Sample>> cohorts = new HashMap<>(cohortIds.size());
+        Set<Integer> studyIdSet = new HashSet<>();
+
         for (Integer cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
+            int studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            studyIdSet.add(studyId);
+            switch (cohort.getStatus()) {
+                case NONE:
+                case INVALID:
+                    break;
+                case CALCULATING:
+                case READY:
+//                case INVALID:
+                    throw new CatalogException("Unable to calculate stats for cohort " +
+                            "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
+                            " with status \"" + cohort.getStatus() + "\"");
+            }
             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("id", cohort.getSamples()), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());
             if (outputFileName.length() > 0) {
                 outputFileName.append('_');
             }
             outputFileName.append(cohort.getName());
+
+            /** Modify cohort status to "CALCULATING" **/
+            catalogManager.updateCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);
+
+        }
+
+        // Check that all cohorts are from the same study
+        int studyId;
+        if (studyIdSet.size() == 1) {
+            studyId = studyIdSet.iterator().next();
+        } else {
+            throw new CatalogException("Error: CohortIds are from multiple studies: " + studyIdSet.toString());
         }
 
         File outDir;
         if (outDirId == null || outDirId <= 0) {
-            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
+//            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
+            outDir = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), ""), sessionId).first();
         } else {
             outDir = catalogManager.getFile(outDirId, null, sessionId).first();
         }
@@ -97,16 +124,15 @@ public class VariantStorage {
         /** create command line **/
         String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
 
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, indexedFile, sessionId);
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         StringBuilder sb = new StringBuilder()
 
                 .append(opencgaStorageBinPath)
                 .append(" stats-variants ")
                 .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
-                .append(" --file-id ").append(indexedFile.getId())
+//                .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
-//                .append(" --study-id ").append(studyId)
                 .append(" --database ").append(dataStore.getDbName())
                 .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
                 .append(" -D").append("sessionId").append("=").append(sessionId)
@@ -117,11 +143,12 @@ public class VariantStorage {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
         }
         for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
-            sb.append(" --cohort-sample-ids ").append(entry.getKey().getName()).append(":");
-            for (Sample sample : entry.getValue()) {
-                sb.append(sample.getName()).append(",");
-            }
-            sb.append(" --cohort-ids ").append(entry.getKey().getName()).append(":").append(entry.getKey().getId());
+            sb.append(" --cohort-sample-ids ").append(entry.getKey().getName());
+            sb.append(":");
+//            for (Sample sample : entry.getValue()) {
+//                sb.append(sample.getName()).append(",");
+//            }
+//            sb.append(" --cohort-ids ").append(entry.getKey().getName()).append(":").append(entry.getKey().getId());
         }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
@@ -136,10 +163,13 @@ public class VariantStorage {
         /** create job **/
         String jobName = "calculate-stats";
         String jobDescription = "Stats calculation for cohort " + cohortIds;
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put(Job.TYPE, Job.Type.COHORT_STATS);
+        attributes.put("cohortIds", cohortIds);
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+                attributes, new HashMap<>());
     }
 
     public QueryResult<Job> annotateVariants(int indexedFileId, Integer outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
@@ -175,7 +205,7 @@ public class VariantStorage {
 
         /** create command line **/
         String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, indexedFile, sessionId);
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(indexedFile.getId()), indexedFile.getBioformat(), sessionId);
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)

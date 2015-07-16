@@ -58,6 +58,7 @@ public class DBObjectToStudyConfigurationConverter implements ComplexTypeConvert
         try {
             DBObject studyMongo = (DBObject) JSON.parse(objectMapper.writeValueAsString(studyConfiguration).replace(".", TO_REPLACE_DOTS));
             studyMongo.put(FIELD_FILE_IDS, studyConfiguration.getFileIds().values());
+            studyMongo.put("_id", studyConfiguration.getStudyId());
             return studyMongo;
         } catch (JsonProcessingException e) {
             e.printStackTrace();

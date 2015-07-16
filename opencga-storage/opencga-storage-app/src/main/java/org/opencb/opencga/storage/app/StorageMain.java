@@ -29,6 +29,10 @@ public class StorageMain {
     public static final String VERSION = "0.6.0-SNAPSHOT";
 
     public static void main(String[] args) {
+        System.exit(Main(args));
+    }
+
+    public static int Main(String[] args) {
 
         CliOptionsParser cliOptionsParser = new CliOptionsParser();
         try {
@@ -36,27 +40,27 @@ public class StorageMain {
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
             cliOptionsParser.printUsage();
-            System.exit(1);
+            return 1;
         }
 
         String parsedCommand = cliOptionsParser.getCommand();
         if(parsedCommand == null || parsedCommand.isEmpty()) {
             if(cliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + VERSION);
-                System.exit(0);
+                return 0;
             } else if(cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
-                System.exit(0);
+                return 0;
             } else {
                 cliOptionsParser.printUsage();
-                System.exit(1);
+                return 1;
             }
         } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
             if(cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
-                System.exit(0);
+                return 0;
             } else {
                 switch (parsedCommand) {
                     case "create-accessions":
@@ -93,20 +97,21 @@ public class StorageMain {
                         commandExecutor.loadStorageConfiguration();
                     } catch (IOException ex) {
                         commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
-                        System.exit(1);
+                        return 1;
                     }
                     try {
                         commandExecutor.execute();
                     } catch (Exception e) {
                         e.printStackTrace();
-                        System.exit(1);
+                        return 1;
                     }
                 } else {
                     cliOptionsParser.printUsage();
-                    System.exit(1);
+                    return 1;
                 }
             }
         }
+        return 0;
     }
 
 

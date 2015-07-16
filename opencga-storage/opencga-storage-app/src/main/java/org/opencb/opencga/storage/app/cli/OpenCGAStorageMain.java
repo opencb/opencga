@@ -198,7 +198,7 @@ public class OpenCGAStorageMain {
                     options.add("files", Arrays.asList(c.fileId.split(",")));
                 }
                 if (c.effect != null && !c.effect.isEmpty()) {
-                    options.add("effect", Arrays.asList(c.effect.split(",")));
+                    options.add("annot", Arrays.asList(c.effect.split(",")));
                 }
 
                 if (c.stats != null && !c.stats.isEmpty()) {
@@ -545,7 +545,7 @@ public class OpenCGAStorageMain {
         params.put(VariantStorageManager.Options.INCLUDE_STATS.key(), c.includeStats);
         params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), c.includeGenotype);   // TODO rename samples to genotypes
         params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), c.includeSrc);
-        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
+//        params.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), c.compressGenotypes);
         params.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated);
         params.put(VariantStorageManager.Options.DB_NAME.key(), c.dbName);
         params.put(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
@@ -690,19 +690,19 @@ public class OpenCGAStorageMain {
          */
         QueryOptions queryOptions = new QueryOptions();
         if (c.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.REGION, c.filterRegion);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.REGION.key(), c.filterRegion);
         }
         if (c.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.CHROMOSOME, c.filterChromosome);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), c.filterChromosome);
         }
         if (c.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.GENE, c.filterGene);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.GENE.key(), c.filterGene);
         }
         if (c.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, c.filterAnnotConsequenceType);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), c.filterAnnotConsequenceType);
         }
         if (!c.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = new URI(null , c.outdir, null);
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
@@ -802,21 +802,17 @@ public class OpenCGAStorageMain {
 
         try {
 
-            Map<String, Integer> cohortIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
-            /** Check and update StudyConfiguration **/
-            variantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
+            Map<String, Integer> cohortNameIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
 
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortNameIds, studyConfiguration, queryOptions);
             }
 
             if (doLoad) {
                 outputUri = outputUri.resolve(filename);
                 variantStatisticsManager.loadStats(dbAdaptor, outputUri, studyConfiguration, queryOptions);
-                variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-                variantStorageManager.getStudyConfigurationManager(queryOptions).updateStudyConfiguration(studyConfiguration, queryOptions);
             }
         } catch (Exception e) {   // file not found? wrong file id or study id? bad parameters to ParallelTaskRunner?
             e.printStackTrace();

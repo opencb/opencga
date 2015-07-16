@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +41,20 @@ import org.slf4j.LoggerFactory;
  */
 public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
 
+    public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
+            .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
+
+    public DBObjectToVariantStatsConverter() {
+    }
+
+    public DBObjectToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
+
     public final static String COHORT_ID = "cid";
     public final static String STUDY_ID = "sid";
-    public final static String FILE_ID = "fid";
-    
+//    public final static String FILE_ID = "fid";
+
     public final static String MAF_FIELD = "maf";
     public final static String MGF_FIELD = "mgf";
     public final static String MAFALLELE_FIELD = "mafAl";
@@ -49,6 +64,14 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     public final static String NUMGT_FIELD = "numGt";
 
     protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantStatsConverter.class);
+
+    private StudyConfigurationManager studyConfigurationManager = null;
+    private Map<Integer, String> studyIds = new HashMap<>();
+    private Map<Integer, Map<Integer, String>> studyCohortNames = new HashMap<>();
+
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
 
     @Override
     public VariantStats convertToDataModelType(DBObject object) {
@@ -107,20 +130,27 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                     variantStats.setRefAllele(variant.getReference());
                     variantStats.setAltAllele(variant.getAlternate());
                     variantStats.setVariantType(variant.getType());
-                    String fid = (String) vs.get(FILE_ID);
-                    String sid = (String) vs.get(STUDY_ID);
-                    String cid = (String) vs.get(COHORT_ID);
-                    VariantSourceEntry sourceEntry;
-                    if (fid != null && sid != null && cid != null) {
-                       sourceEntry = variant.getSourceEntry(fid, sid);
+//                    Integer fid = (Integer) vs.get(FILE_ID);
+                    String sid = getStudyName((Integer) vs.get(STUDY_ID));
+                    String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
+                    VariantSourceEntry sourceEntry = null;
+                    if (/*fid != null && */sid != null && cid != null) {
+                        for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+                            if (entry.getValue().getStudyId().equals(sid)) {
+                                sourceEntry = entry.getValue();
+                                break;
+                            }
+                        }
+//                        sourceEntry = variant.getSourceEntry(Integer.toString(fid), Integer.toString(sid));
                         if (sourceEntry != null) {
                             Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
                             cohortStats.put(cid, variantStats);
                         } else {
-                            logger.warn("ignoring non present source entry fileId={}, studyId={}", fid, sid);
+                            //This could happen if the study has been excluded
+                            logger.trace("ignoring non present source entry studyId={}", sid);
                         }
                     } else {
-                        logger.error("invalid mongo document: all studyId={}, fileId={}, cohortId={} should be present.", sid, fid, cid);
+                        logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);
                     }
                 }
             }
@@ -136,7 +166,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         List<DBObject> cohortsStatsList = new LinkedList<>();
         for (String studyIdFileId : sourceEntries.keySet()) {
             VariantSourceEntry sourceEntry = sourceEntries.get(studyIdFileId);
-            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getCohortStats(), sourceEntry.getStudyId(), sourceEntry.getFileId());
+            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getCohortStats(),
+                    Integer.parseInt(sourceEntry.getStudyId()), Integer.parseInt(sourceEntry.getFileId()));
             cohortsStatsList.addAll(list);
         }
         return cohortsStatsList;
@@ -149,18 +180,55 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      * @param fileId of the source entry
      * @return list of VariantStats (as DBObjects)
      */
-    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, String studyId, String fileId) {
+    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId, int fileId) {
         List<DBObject> cohortsStatsList = new LinkedList<>();
         VariantStats variantStats;
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
             variantStats = variantStatsEntry.getValue();
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, variantStatsEntry.getKey());
+            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, getCohortId(studyId, variantStatsEntry.getKey()));
             variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.FILE_ID, fileId);
             cohortsStatsList.add(variantStatsDBObject);
         }
         return cohortsStatsList;
     }
+
+
+    private String getStudyName(int studyId) {
+        if (!studyIds.containsKey(studyId)) {
+            if (studyConfigurationManager == null) {
+                studyIds.put(studyId, Integer.toString(studyId));
+            } else {
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
+                if (queryResult.getResult().isEmpty()) {
+                    studyIds.put(studyId, Integer.toString(studyId));
+                } else {
+                    studyIds.put(studyId, queryResult.first().getStudyName());
+                }
+            }
+        }
+        return studyIds.get(studyId);
+    }
+
+
+    private String getCohortName(int studyId, int cohortId) {
+        if (studyCohortNames.containsKey(studyId)) {
+            return studyCohortNames.get(studyId).get(cohortId);
+        } else {
+            Map<Integer, String> cohortNames = StudyConfiguration.inverseMap(getStudyConfiguration(studyId).getCohortIds());
+            studyCohortNames.put(studyId, cohortNames);
+            return cohortNames.get(cohortId);
+        }
+    }
+
+    private int getCohortId(int studyId, String cohortName) {
+        return getStudyConfiguration(studyId).getCohortIds().get(cohortName);
+    }
+
+    private StudyConfiguration getStudyConfiguration(int studyId) {
+        return studyConfigurationManager.getStudyConfiguration(studyId, STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS).first();
+    }
+
+
 }
 

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -106,7 +107,7 @@ public class OpenCGAMain {
 
         // Interactive mode
         interactive = optionsParser.getGeneralOptions().interactive;
-        if(interactive){
+        if (interactive) {
             BufferedReader reader;//create BufferedReader object
 
             reader = new BufferedReader(new InputStreamReader(System.in));
@@ -219,6 +220,9 @@ public class OpenCGAMain {
                         logoutAtExit = false;
                         if (shellSessionId != null) {
                             shellUserId = c.up.user;
+                        }
+                        if (userConfigFile == null) {
+                            userConfigFile = new UserConfigFile();
                         }
                         userConfigFile.sessionId = sessionId;
                         userConfigFile.userId = catalogManager.getUserIdBySessionId(sessionId);
@@ -404,6 +408,26 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "annotate-variants": {
+                        OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int fileId = catalogManager.getFileId(c.id);
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
+
+                        break;
+                    }
                     case "share": {
                         OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
 
@@ -486,7 +510,7 @@ public class OpenCGAMain {
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.calculateChecksum, inputUri, false, false, sessionId);
+                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
                             file = catalogManager.createFile(studyId, null, null,
@@ -618,47 +642,6 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "stats-variants": {
-                        OptionsParser.FileCommands.StatsCommand c = optionsParser.getFileCommands().statsCommand;
-
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        int fileId = catalogManager.getFileId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
-
-                        break;
-                    }
-                    case "annotate-variants": {
-                        OptionsParser.FileCommands.AnnotationCommand c = optionsParser.getFileCommands().annotationCommand;
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        int fileId = catalogManager.getFileId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
-
-                        break;
-                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -711,7 +694,7 @@ public class OpenCGAMain {
             }
             case "cohorts" : {
                 switch (optionsParser.getSubCommand()) {
-                    case "info": {
+                    case OptionsParser.CohortCommands.InfoCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.InfoCommand c = optionsParser.cohortCommands.infoCommand;
 
                         QueryResult<Cohort> cohortQueryResult = catalogManager.getCohort(c.id, c.cOpt.getQueryOptions(), sessionId);
@@ -719,7 +702,7 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "samples": {
+                    case OptionsParser.CohortCommands.SamplesCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.SamplesCommand c = optionsParser.cohortCommands.samplesCommand;
 
                         Cohort cohort = catalogManager.getCohort(c.id, null, sessionId).first();
@@ -732,7 +715,7 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "create": {
+                    case OptionsParser.CohortCommands.CreateCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.CreateCommand c = optionsParser.cohortCommands.createCommand;
 
                         Map<String, List<Sample>> cohorts = new HashMap<>();
@@ -793,6 +776,25 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case OptionsParser.CohortCommands.StatsCommand.COMMAND_NAME: {
+                        OptionsParser.CohortCommands.StatsCommand c = optionsParser.cohortCommands.statsCommand;
+
+                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        QueryOptions queryOptions = c.cOpt.getQueryOptions();
+                        if (c.enqueue) {
+                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                        } else {
+                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                        }
+                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
+
+                        break;
+                    }
+
                     default: {
                         optionsParser.printUsage();
                         break;
@@ -1083,7 +1085,7 @@ public class OpenCGAMain {
             sessionId = shellSessionId;
             logoutAtExit = false;
         } else {
-            if (userConfigFile != null) {
+            if (userConfigFile != null && userConfigFile.sessionId != null && !userConfigFile.sessionId.isEmpty()) {
                 shellSessionId = userConfigFile.sessionId;
                 shellUserId = userConfigFile.userId;
                 sessionId = userConfigFile.sessionId;
@@ -1117,20 +1119,16 @@ public class OpenCGAMain {
         if (file.exists()) {
             return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
         } else {
-            return null;
+            return new UserConfigFile();
         }
     }
 
     private static void saveUserFile(UserConfigFile userConfigFile) throws IOException {
         Path opencgaDirectoryPath = Paths.get(System.getProperty("user.home"), ".opencga");
-        java.io.File opencgaDirectory = opencgaDirectoryPath.toFile();
-        if (!opencgaDirectory.exists()) {
+        if (!opencgaDirectoryPath.toFile().exists()) {
             Files.createDirectory(opencgaDirectoryPath);
         }
-        if (!opencgaDirectory.isDirectory()) {
-            throw new IOException("Path " + opencgaDirectoryPath + " must be a directory");
-        }
-
+        FileUtils.checkDirectory(opencgaDirectoryPath, true);
         java.io.File file = opencgaDirectoryPath.resolve("opencga.yml").toFile();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.writeValue(file, userConfigFile);

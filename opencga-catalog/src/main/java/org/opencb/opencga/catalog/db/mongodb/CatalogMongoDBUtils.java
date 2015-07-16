@@ -47,7 +47,7 @@ class CatalogMongoDBUtils {
     private static Map<Class, ObjectReader> jsonReaderMap;
 
     public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect(Collectors.toSet());
-    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "metadata", "includeProjects", "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
+    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects", "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
@@ -56,6 +56,7 @@ class CatalogMongoDBUtils {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        jsonObjectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonReaderMap = new HashMap<>();
     }
