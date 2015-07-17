@@ -59,6 +59,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = new VariantStatisticsManager();
 
+        checkCohorts(dbAdaptor, studyConfiguration);
+
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
         options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);

@@ -51,6 +51,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private Set<String> returnedSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
+    private String returnedUnknownGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
 
@@ -63,7 +64,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         __studyIdSamples = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
         returnedSamples = new HashSet<>();
-        this.studyConfigurationManager = null;
+        studyConfigurationManager = null;
+        returnedUnknownGenotype = null;
     }
 
     /**
@@ -161,6 +163,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 //        String mostCommonGtString = mongoGenotypes.getString("def");
         Set<String> defaultGenotypes = studyDefaultGenotypeSet.get(studyId);
         String mostCommonGtString = defaultGenotypes.isEmpty() ? null : defaultGenotypes.iterator().next();
+        if (UNKNOWN_GENOTYPE.equals(mostCommonGtString)) {
+            mostCommonGtString = returnedUnknownGenotype;
+        }
         if (mostCommonGtString != null) {
             for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
                 entry.getValue().put("GT", mostCommonGtString);
@@ -173,12 +178,22 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
         Map idSamples = getIndexedIdSamplesMap(studyId);
         for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
-            if (!dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
-                String genotype = genotypeToDataModelType(dbo.getKey());
-                for (Integer sampleId : (List<Integer>) dbo.getValue()) {
-                    if (idSamples.containsKey(sampleId)) {
-                        samplesData.get(idSamples.get(sampleId)).put("GT", genotype);
-                    }
+            final String genotype;
+            if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
+                if (returnedUnknownGenotype == null) {
+                    continue;
+                }
+                if (defaultGenotypes.contains(returnedUnknownGenotype)) {
+                    continue;
+                } else {
+                    genotype = returnedUnknownGenotype;
+                }
+            } else {
+                genotype = genotypeToDataModelType(dbo.getKey());
+            }
+            for (Integer sampleId : (List<Integer>) dbo.getValue()) {
+                if (idSamples.containsKey(sampleId)) {
+                    samplesData.get(idSamples.get(sampleId)).put("GT", genotype);
                 }
             }
         }
@@ -269,6 +284,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
         }
         this.studyDefaultGenotypeSet.put(studyConfiguration.getStudyId(), defGenotypeSet);
+    }
+
+    public String getReturnedUnknownGenotype() {
+        return returnedUnknownGenotype;
+    }
+
+    public void setReturnedUnknownGenotype(String returnedUnknownGenotype) {
+        this.returnedUnknownGenotype = returnedUnknownGenotype;
     }
 
     /**

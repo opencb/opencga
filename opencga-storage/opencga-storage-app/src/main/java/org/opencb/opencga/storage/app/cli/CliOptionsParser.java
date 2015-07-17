@@ -362,14 +362,42 @@ public class CliOptionsParser {
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false, arity = 1)
         public String file;
 
-        @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
-        public String stats;
+        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
+        public String type;
 
+
+        @Deprecated
         @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
         public String annot;
 
-        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
-        public String type;
+        @Parameter(names = {"--consequence-type"}, description = " [CSV]", required = false, arity = 1)
+        public String consequenceType;
+
+        @Parameter(names = {"--biotype"}, description = " [CSV]", required = false, arity = 1)
+        public String biotype;
+
+        @Parameter(names = {"--population-freqs"}, description = " [CSV]", required = false, arity = 1)
+        public String populationFreqs;
+
+        @Parameter(names = {"--conservation"}, description = " [CSV]", required = false, arity = 1)
+        public String conservation;
+
+        @Parameter(names = {"--protein-substitution"}, description = "", required = false, arity = 1)
+        public String proteinSubstitution;
+
+        @Parameter(names = {"--gwas"}, description = "", required = false, arity = 1)
+        public String gwas;
+
+        @Parameter(names = {"--cosmic"}, description = "", required = false, arity = 1)
+        public String cosmic;
+
+        @Parameter(names = {"--clinvar"}, description = "", required = false, arity = 1)
+        public String clinvar;
+
+
+
+        @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
+        public String stats;
 
         @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
         public String returnStudy;
