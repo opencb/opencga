@@ -54,8 +54,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
         FILES ("files", TEXT_ARRAY, ""),
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
-        MAF ("maf", TEXT_ARRAY, ""),
-        MGF ("mgf", TEXT_ARRAY, ""),
+        STATS_MAF("maf", TEXT_ARRAY, ""),
+        STATS_MGF("mgf", TEXT_ARRAY, ""),
         MISSING_ALLELES ("missingAlleles", TEXT_ARRAY, ""),
         MISSING_GENOTYPES ("missingGenotypes", TEXT_ARRAY, ""),
         ANNOTATION_EXISTS ("annotationExists", TEXT_ARRAY, ""),
@@ -65,8 +65,9 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         ANNOT_BIOTYPE ("annot-biotype", TEXT_ARRAY, ""),
         POLYPHEN ("polyphen", TEXT_ARRAY, ""),
         SIFT ("sift", TEXT_ARRAY, ""),
+        @Deprecated
         PROTEIN_SUBSTITUTION ("protein_substitution", TEXT_ARRAY, ""),
-        CONSERVED_REGION ("conserved_region", TEXT_ARRAY, ""),
+        CONSERVATION("conservation", TEXT_ARRAY, ""),
         ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
         REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes."),
@@ -156,7 +157,14 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
      * @return A list of QueryResult with the result of the queries
      */
-    List<QueryResult> get(List<Query> queries, QueryOptions options);
+    List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options);
+
+    /**
+     * Performs a distinct operation of the given field over the returned results.
+     * @param query Query to be executed in the database to filter variants
+     * @return A QueryResult with the all the distinct values
+     */
+    QueryResult<Long> count(Query query);
 
     /**
      * Performs a distinct operation of the given field over the returned results.

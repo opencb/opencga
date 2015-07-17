@@ -97,8 +97,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         Query query = new Query();
         QueryOptions options = new QueryOptions(new HashMap<>(queryVariantsCommandOptions.params));
 
+
         /**
-         * Parse Regions
+         * Parse Variant parameters
          */
         if (queryVariantsCommandOptions.region != null && !queryVariantsCommandOptions.region.isEmpty()) {
             query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryVariantsCommandOptions.region);
@@ -112,14 +113,17 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), regionsFromFile);
         }
 
-        if (queryVariantsCommandOptions.gene != null && !queryVariantsCommandOptions.gene.isEmpty()) {   //csv
-            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryVariantsCommandOptions.gene);
-        }
-
         if (queryVariantsCommandOptions.id != null && !queryVariantsCommandOptions.id.isEmpty()) {   //csv
             query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryVariantsCommandOptions.id);
         }
 
+        if (queryVariantsCommandOptions.gene != null && !queryVariantsCommandOptions.gene.isEmpty()) {   //csv
+            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryVariantsCommandOptions.gene);
+        }
+
+        if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
+            query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryVariantsCommandOptions.type);
+        }
 
 
         if (queryVariantsCommandOptions.study != null && !queryVariantsCommandOptions.study.isEmpty()) {
@@ -135,12 +139,61 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             options.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
         }
 
-//        if (queryVariantsCommandOptions.annot != null && !queryVariantsCommandOptions.annot.isEmpty()) {
-//            options.add(, Arrays.asList(queryVariantsCommandOptions.annot.split(",")));
-//        }
 
+        if (queryVariantsCommandOptions.sampleGenotype != null && !queryVariantsCommandOptions.sampleGenotype.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryVariantsCommandOptions.sampleGenotype);
+        }
+
+
+        /**
+         * Annotation parameters
+         */
+        if (queryVariantsCommandOptions.consequenceType != null && !queryVariantsCommandOptions.consequenceType.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), queryVariantsCommandOptions.consequenceType);
+        }
+
+        if (queryVariantsCommandOptions.biotype != null && !queryVariantsCommandOptions.biotype.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(), queryVariantsCommandOptions.biotype);
+        }
+
+        if (queryVariantsCommandOptions.populationFreqs != null && !queryVariantsCommandOptions.populationFreqs.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(), queryVariantsCommandOptions.populationFreqs);
+        }
+
+        if (queryVariantsCommandOptions.conservation != null && !queryVariantsCommandOptions.conservation.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.CONSERVATION.key(), queryVariantsCommandOptions.conservation);
+        }
+
+        if (queryVariantsCommandOptions.proteinSubstitution != null && !queryVariantsCommandOptions.proteinSubstitution.isEmpty()) {
+            String[] fields = queryVariantsCommandOptions.proteinSubstitution.split(",");
+            for (String field : fields) {
+                String[] arr = field.replaceAll("==", " ").replaceAll(">=", " ").replaceAll("<=", " ").replaceAll("=", " ").replaceAll("<", " ").replaceAll(">", " ").split(" ");
+                if(arr != null && arr.length > 1) {
+                    switch (arr[0]) {
+                        case "sift":
+                            query.put(VariantDBAdaptor.VariantQueryParams.SIFT.key(), field.replaceAll("sift", ""));
+                            break;
+                        case "polyphen":
+                            query.put(VariantDBAdaptor.VariantQueryParams.POLYPHEN.key(), field.replaceAll("polyphen", ""));
+                            break;
+                        default:
+                            query.put(VariantDBAdaptor.VariantQueryParams.PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
+                            break;
+                    }
+                }
+            }
+        }
+
+
+        /**
+         * Stats parameters
+         */
         if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
-            HashSet<String> acceptedStatKeys = new HashSet<>(Arrays.asList("maf", "mgf", "missingAlleles", "missingGenotypes"));
+            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
+                    VariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
+                    VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
+                    VariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key()));
+
             for (String stat : queryVariantsCommandOptions.stats.split(",")) {
                 int index = stat.indexOf("<");
                 index = index >= 0 ? index : stat.indexOf("!");
@@ -163,11 +216,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
 
-        if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
-            query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryVariantsCommandOptions.type);
-        }
 
-        /*
+
+        /**
          * Output parameters
          */
         String outputFormat = "vcf";
@@ -237,6 +288,11 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
 
+        if (queryVariantsCommandOptions.count) {
+            QueryResult<Long> result = variantDBAdaptor.count(query);
+            System.out.println("Num. results\t" + result.getResult().get(0));
+            return;
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         if (queryVariantsCommandOptions.rank != null && !queryVariantsCommandOptions.rank.isEmpty()) {
@@ -257,48 +313,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
         printWriter.close();
-
-        /**
-         * Run query
-         */
-//        int subListSize = 20;
-//        logger.info("options = " + options.toJson());
-//        if (regions != null && !regions.isEmpty()) {
-//            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
-//                List<Region> subRegions = regions.subList(
-//                        i * subListSize,
-//                        Math.min((i + 1) * subListSize, regions.size()));
-//
-//                logger.info("subRegions = " + subRegions);
-////                    List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariants(subRegions, options);
-////                List<QueryResult<Variant>> queryResults = dbAdaptor.getAllVariantsByRegionList(subRegions, options);
-//                QueryResult<Variant> queryResults = variantDBAdaptor.get(query, options);
-//                StringBuilder sb = new StringBuilder();
-////                for (QueryResult<Variant> queryResult : queryResults) {
-////                    printQueryResult(queryResult, sb);
-////                }
-//                printQueryResult(queryResults, sb);
-//                System.out.println(sb);
-//            }
-//        } else if (gffReader != null) {
-//            List<Gff> gffList;
-//            List<Region> subRegions;
-//            while ((gffList = gffReader.read(subListSize)) != null) {
-//                subRegions = new ArrayList<>(subListSize);
-//                for (Gff gff : gffList) {
-//                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
-//                }
-//                logger.info("subRegions = " + subRegions);
-//                List<QueryResult<Variant>> queryResults = variantDBAdaptor.getAllVariantsByRegionList(subRegions, options);
-//                StringBuilder sb = new StringBuilder();
-//                for (QueryResult<Variant> queryResult : queryResults) {
-//                    printQueryResult(queryResult, sb);
-//                }
-//                System.out.println(sb);
-//            }
-//        } else {
-//            System.out.println(printQueryResult(variantDBAdaptor.getAllVariants(options), null));
-//        }
     }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor) throws JsonProcessingException {
