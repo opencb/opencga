@@ -136,7 +136,8 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap());
     }
 
-    public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration, ObjectMap params)
+    public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+                                          StudyConfiguration studyConfiguration, ObjectMap params)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap extractParams = new ObjectMap(params);

@@ -19,9 +19,11 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -69,7 +71,8 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
+            etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
+                    new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
