@@ -607,7 +607,7 @@ public class OptionsParser {
             @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
             String path  = "";
 
-            @Parameter(names = {"-s", "--studyId"}, description = "studyId", required = true, arity = 1)
+            @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
             String studyId;
 
             @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
@@ -661,7 +661,7 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+            @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
             String studyId;
 //            @Parameter(names = {"--name"}, description = "Exact file name", required = false, arity = 1)
 //            String name;
