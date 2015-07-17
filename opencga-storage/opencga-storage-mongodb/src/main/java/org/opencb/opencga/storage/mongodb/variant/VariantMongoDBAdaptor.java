@@ -406,7 +406,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
                     .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
                     .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
-                    .append("_id.alternative", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
+                    .append("_id.alternate", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
                     .append("_id.reference", "$" + DBObjectToVariantConverter.REFERENCE_FIELD)
                     .append("_id.ids", "$" + DBObjectToVariantConverter.IDS_FIELD));
             projectAndCount = new BasicDBObject("$project", new BasicDBObject()
@@ -585,7 +585,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
+                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternateAllele());
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
             DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
@@ -627,7 +627,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey("sort")) {
                 if (query.getBoolean("sort")) {
-                    query.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append("start", 1));
                 } else {
                     query.remove("sort");
                 }
@@ -843,16 +843,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
                     for (String genotype : genotypes) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
-                            System.out.println("genotype 0/0");
                             QueryBuilder andBuilder = QueryBuilder.start();
                             if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject("0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             } else {
-                                andBuilder.and(new BasicDBObject("0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {
@@ -1280,7 +1279,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
                     objects[i] = regionObject;
                 } else {
-                    DBObject regionObject = new BasicDBObject("chr", region.getChromosome())
+                    DBObject regionObject = new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome())
                             .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()))
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
                     objects[i] = regionObject;
@@ -1390,7 +1389,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey("sort")) {
                 if (options.getBoolean("sort")) {
-                    options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                    options.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
                 } else {
                     options.remove("sort");
                 }

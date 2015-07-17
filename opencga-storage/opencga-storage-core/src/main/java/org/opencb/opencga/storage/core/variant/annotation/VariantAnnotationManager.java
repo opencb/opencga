@@ -136,7 +136,7 @@ public class VariantAnnotationManager {
         AnnotatorDBReader(VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
             this.variantDBAdaptor = variantDBAdaptor;
             QueryOptions iteratorQueryOptions = new QueryOptions(options);
-            iteratorQueryOptions.add("include", Arrays.asList("chromosome", "start", "end", "alternative", "reference"));
+            iteratorQueryOptions.add("include", Arrays.asList("chromosome", "start", "end", "alternate", "reference"));
             this.iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
         }
         @Override public boolean open() {return true;}

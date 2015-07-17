@@ -75,7 +75,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public final static String SCORE_SOURCE_FIELD = "src";
     public final static String SCORE_DESCRIPTION_FIELD = "desc";
 
-    public static final String CLINICAL_DATA_FIELD = "clinicalData";
+    public static final String CLINICAL_DATA_FIELD = "clinical";
 
     private final ObjectWriter writer;
 
@@ -128,13 +128,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     if (ct.containsField(POLYPHEN_FIELD)) {
                         DBObject dbObject = (DBObject) ct.get(POLYPHEN_FIELD);
                         proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                                "Polyphen",
+                                "polyphen",
                                 getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
                     }
                     if (ct.containsField(SIFT_FIELD)) {
                         DBObject dbObject = (DBObject) ct.get(SIFT_FIELD);
                         proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                                "Sift",
+                                "sift",
                                 getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
                     }
 
@@ -170,7 +170,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 ));
             }
         }
-        va.setConservedRegionScores(conservedRegionScores);
+        va.setConservationScores(conservedRegionScores);
 
         //Population frequencies
         List<PopulationFrequency> populationFrequencies = new LinkedList<>();
@@ -211,7 +211,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         //Clinical Data
         if (object.containsField(CLINICAL_DATA_FIELD)) {
             DBObject clinicalData = ((DBObject) object.get(CLINICAL_DATA_FIELD));
-            va.setClinicalData(clinicalData.toMap());
+            va.setClinical(clinicalData.toMap());
         }
 
         return va;
@@ -262,9 +262,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     List<DBObject> proteinSubstitutionScores = new LinkedList<>();
                     for (Score score : consequenceType.getProteinSubstitutionScores()) {
                         if (score != null) {
-                            if (score.getSource().equals("Polyphen")) {
+                            if (score.getSource().equals("polyphen")) {
                                 putNotNull(ct, POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
-                            } else if (score.getSource().equals("Sift")) {
+                            } else if (score.getSource().equals("sift")) {
                                 putNotNull(ct, SIFT_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
                             } else {
                                 proteinSubstitutionScores.add(convertScoreToStorage(score));
@@ -292,9 +292,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
 
         //Conserved region score
-        if (object.getConservedRegionScores() != null) {
+        if (object.getConservationScores() != null) {
             List<DBObject> conservedRegionScores = new LinkedList<>();
-            for (Score score : object.getConservedRegionScores()) {
+            for (Score score : object.getConservationScores()) {
                 if (score != null) {
                     conservedRegionScores.add(convertScoreToStorage(score));
                 }
@@ -322,9 +322,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         putNotNull(dbObject, XREFS_FIELD, xrefs);
 
         //Clinical Data
-        if (object.getClinicalData() != null) {
+        if (object.getClinical() != null) {
             List<DBObject> clinicalData = new LinkedList<>();
-            for (Map.Entry<String, Object> entry : object.getClinicalData().entrySet()) {
+            for (Map.Entry<String, Object> entry : object.getClinical().entrySet()) {
                 if (entry.getValue() != null) {
                     try {
                         clinicalData.add(new BasicDBObject(entry.getKey(), JSON.parse(writer.writeValueAsString(entry.getValue()))));
