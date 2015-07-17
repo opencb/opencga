@@ -478,7 +478,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
         //TODO: Use the StudyConfiguration to change names to ids
 
@@ -487,7 +486,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId(), fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId());   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
@@ -505,11 +504,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
                 List<Integer> cohortIds = new ArrayList<>(cohorts.size());
-                List<Integer> fileIds = new ArrayList<>(cohorts.size());
                 List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
                     cohortIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-//                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
                     studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
@@ -542,6 +539,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // TODO check the substitution is done right if the stats are already present
         BulkWriteResult writeResult = builder.execute();
         int writes = writeResult.getModifiedCount();
+
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
@@ -627,7 +625,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey("sort")) {
                 if (query.getBoolean("sort")) {
-                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append("start", 1));
+                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
                 } else {
                     query.remove("sort");
                 }
@@ -872,7 +870,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Find = " + builder.get());
+        logger.info("Find = " + builder.get());
         return builder;
     }
 
@@ -945,7 +943,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.info("Projection: {}", projection);
         return projection;
     }
 
@@ -2078,7 +2076,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId, fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId);   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add

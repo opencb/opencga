@@ -68,7 +68,7 @@ public class VariantDBReader implements VariantReader {
         }
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference", "sourceEntries");
         iteratorQueryOptions.add("include", include);
 
         iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
