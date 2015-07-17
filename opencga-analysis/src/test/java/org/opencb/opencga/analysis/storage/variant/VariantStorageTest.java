@@ -18,6 +18,7 @@ import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -51,6 +52,7 @@ public class VariantStorageTest {
     private CatalogFileUtils catalogFileUtils;
     private int outputId;
     Logger logger = LoggerFactory.getLogger(VariantStorageTest.class);
+    private int all;
     private int coh1;
     private int coh2;
     private int coh3;
@@ -98,6 +100,9 @@ public class VariantStorageTest {
         runStorageJob(analysisFileIndexer.index(file3.getId(), outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index(file4.getId(), outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index(file5.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+
+        all = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), "all"), sessionId).first().getId();
+
     }
 
     private void clearDB(String dbName) {
@@ -152,14 +157,14 @@ public class VariantStorageTest {
         VariantStorage variantStorage = new VariantStorage(catalogManager);
         Map<String, Cohort> cohorts = new HashMap<>();
 
-        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(coh1, coh2), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-//        cohorts.put("all", null);
+        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(coh1, coh2, coh3), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
+        cohorts.put("coh3", catalogManager.getCohort(coh3, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(coh3, coh4, coh5), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        cohorts.put("coh3", catalogManager.getCohort(coh3, null, sessionId).first());
+        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, coh5), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
+        cohorts.put("all", catalogManager.getCohort(all, null, sessionId).first());
         cohorts.put("coh4", catalogManager.getCohort(coh4, null, sessionId).first());
         cohorts.put("coh5", catalogManager.getCohort(coh5, null, sessionId).first());
         checkCalculatedStats(cohorts);
@@ -201,6 +206,10 @@ public class VariantStorageTest {
 //    }
 
     public void checkCalculatedStats(Map<String, Cohort> cohorts) throws Exception {
+        checkCalculatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
+    }
+
+    public static void checkCalculatedStats(Map<String, Cohort> cohorts, String dbName, String catalogPropertiesFile, String sessionId) throws Exception {
         StorageConfiguration storageConfiguration = StorageConfiguration.load();
         storageConfiguration.getStorageEngine().getVariant().getOptions()
                 .append(CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE, catalogPropertiesFile)

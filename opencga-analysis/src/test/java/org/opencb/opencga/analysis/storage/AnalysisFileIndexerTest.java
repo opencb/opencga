@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
 import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.runStorageJob;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
@@ -116,6 +118,7 @@ public class AnalysisFileIndexerTest {
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(2).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(1500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
+        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(3).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
@@ -126,6 +129,8 @@ public class AnalysisFileIndexerTest {
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(4).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(2504, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
+
+        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
 
     private Cohort getDefaultCohort() throws CatalogException {
@@ -170,5 +175,6 @@ public class AnalysisFileIndexerTest {
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
         assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
+        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
 }

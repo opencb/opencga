@@ -75,6 +75,9 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             }
         }
         if (catalogProperties == null){
+            if (Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
+                Config.setOpenCGAHome();
+            }
             catalogProperties = Config.getCatalogProperties();
         }
         catalogManager = new CatalogManager(catalogProperties);
@@ -216,14 +219,27 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
 
             //Check if any cohort stat has been updated
-//            if (!studyConfiguration.getCalculatedStats().isEmpty()) {
-//                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(), new QueryOptions("id", new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
-//                    if (!cohort.getStatus().equals(Cohort.Status.READY)) {
-//                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
-//                        catalogManager.updateCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
-//                    }
-//                }
-//            }
+            if (!studyConfiguration.getCalculatedStats().isEmpty()) {
+                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(), new QueryOptions("id", new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
+                    if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
+                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
+                        catalogManager.updateCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                    }
+                }
+            }
+
+            if (!studyConfiguration.getIndexedFiles().isEmpty()) {
+                for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
+                        new QueryOptions("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), sessionId).getResult()) {
+                    if (file.getIndex() == null || !file.getIndex().getStatus().equals(Index.Status.READY)) {
+                        final Index index;
+                        index = file.getIndex() == null ? new Index() : file.getIndex();
+                        index.setStatus(Index.Status.READY);
+                        logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(), file.getIndex().getStatus(), Index.Status.READY);
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
+                    }
+                }
+            }
 
             return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, smallStudyConfiguration)), options.getString("sessionId", sessionId));
         } catch (CatalogException e) {
