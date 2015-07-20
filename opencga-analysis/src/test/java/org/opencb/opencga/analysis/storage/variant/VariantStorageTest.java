@@ -37,6 +37,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
@@ -162,6 +163,16 @@ public class VariantStorageTest {
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         cohorts.put("coh3", catalogManager.getCohort(coh3, null, sessionId).first());
         checkCalculatedStats(cohorts);
+
+        try {
+            runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, -coh5), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
+            fail();
+        } catch (CatalogException e) {
+            logger.info("received expected exception. this is OK, there is no cohort " + (-coh5) + "\n");
+        }
+        assertEquals(Cohort.Status.NONE, catalogManager.getCohort(all, null, sessionId).first().getStatus());
+        assertEquals(Cohort.Status.NONE, catalogManager.getCohort(coh4, null, sessionId).first().getStatus());
+        assertEquals(Cohort.Status.NONE, catalogManager.getCohort(coh5, null, sessionId).first().getStatus());
 
         runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, coh5), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
         cohorts.put("all", catalogManager.getCohort(all, null, sessionId).first());
