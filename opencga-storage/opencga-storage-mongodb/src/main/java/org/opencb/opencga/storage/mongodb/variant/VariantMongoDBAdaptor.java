@@ -406,7 +406,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
                     .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
                     .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
-                    .append("_id.alternative", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
+                    .append("_id.alternate", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
                     .append("_id.reference", "$" + DBObjectToVariantConverter.REFERENCE_FIELD)
                     .append("_id.ids", "$" + DBObjectToVariantConverter.IDS_FIELD));
             projectAndCount = new BasicDBObject("$project", new BasicDBObject()
@@ -478,7 +478,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
         //TODO: Use the StudyConfiguration to change names to ids
 
@@ -487,7 +486,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId(), fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId());   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
@@ -505,11 +504,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
                 List<Integer> cohortIds = new ArrayList<>(cohorts.size());
-                List<Integer> fileIds = new ArrayList<>(cohorts.size());
                 List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
                     cohortIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-//                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
                     studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
@@ -542,6 +539,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // TODO check the substitution is done right if the stats are already present
         BulkWriteResult writeResult = builder.execute();
         int writes = writeResult.getModifiedCount();
+
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
@@ -585,7 +583,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
+                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternateAllele());
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
             DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
@@ -627,7 +625,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey("sort")) {
                 if (query.getBoolean("sort")) {
-                    query.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
                 } else {
                     query.remove("sort");
                 }
@@ -843,16 +841,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
                     for (String genotype : genotypes) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
-                            System.out.println("genotype 0/0");
                             QueryBuilder andBuilder = QueryBuilder.start();
                             if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject("0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             } else {
-                                andBuilder.and(new BasicDBObject("0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject("-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {
@@ -873,7 +870,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Find = " + builder.get());
+        logger.info("Find = " + builder.get());
         return builder;
     }
 
@@ -946,7 +943,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.info("Projection: {}", projection);
         return projection;
     }
 
@@ -1280,7 +1277,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
                     objects[i] = regionObject;
                 } else {
-                    DBObject regionObject = new BasicDBObject("chr", region.getChromosome())
+                    DBObject regionObject = new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome())
                             .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()))
                             .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
                     objects[i] = regionObject;
@@ -1294,30 +1291,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     void createIndexes(QueryOptions options) {
         logger.debug("Start creating indexes");
+
         DBObject onBackground = new BasicDBObject("background", true);
+        DBObject sparse = new BasicDBObject("background", true).append("sparse", true);
         variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                .append(DBObjectToVariantConverter.START_FIELD, 1)
+                .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREFS_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
-        variantsCollection.createIndex(
-                new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-//                        .append(DBObjectToVariantConverter.STUDIES_FIELD +
-//                                "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD +
-//                                "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1)
-                , onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD
-                + "." + DBObjectToVariantStatsConverter.MAF_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD
-                + "." + DBObjectToVariantStatsConverter.MGF_FIELD, 1), onBackground);
-        variantsCollection.createIndex(
-                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
-                        .append(DBObjectToVariantConverter.START_FIELD, 1)
-                        .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
+                .append(DBObjectToVariantConverter.ANNOTATION_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD, 1), onBackground);
+
         logger.debug("sent order to create indices");
     }
 
@@ -1390,7 +1389,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (options.containsKey("sort")) {
                 if (options.getBoolean("sort")) {
-                    options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+                    options.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
                 } else {
                     options.remove("sort");
                 }
@@ -2079,7 +2078,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId, fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId);   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add

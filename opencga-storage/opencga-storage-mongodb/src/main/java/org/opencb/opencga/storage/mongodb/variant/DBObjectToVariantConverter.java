@@ -34,27 +34,28 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  */
 public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant, DBObject> {
 
-    public final static String CHROMOSOME_FIELD = "chr";
+    public final static String CHROMOSOME_FIELD = "chromosome";
     public final static String START_FIELD = "start";
     public final static String END_FIELD = "end";
-    public final static String LENGTH_FIELD = "len";
-    public final static String REFERENCE_FIELD = "ref";
-    public final static String ALTERNATE_FIELD = "alt";
-//    public final static String ID_FIELD = "id";
+    public final static String LENGTH_FIELD = "length";
+    public final static String REFERENCE_FIELD = "reference";
+    public final static String ALTERNATE_FIELD = "alternate";
     public final static String IDS_FIELD = "ids";
-    
-    public final static String HGVS_FIELD = "hgvs";
     public final static String TYPE_FIELD = "type";
-    public final static String NAME_FIELD = "name";
-    
-    public final static String STUDIES_FIELD = "studies";
-//    public final static String FILES_FIELD = "files";
 
-    public final static String EFFECTS_FIELD = "effs";
-    public final static String SOTERM_FIELD = "so";
-    public final static String GENE_FIELD = "gene";
-    public final static String ANNOTATION_FIELD = "annot";
-    public final static String STATS_FIELD = "st";
+    public final static String HGVS_FIELD = "hgvs";
+    public final static String HGVS_NAME_FIELD = "name";
+    public final static String HGVS_TYPE_FIELD = "type";
+
+    public final static String STUDIES_FIELD = "studies";
+    public final static String ANNOTATION_FIELD = "annotation";
+    public final static String STATS_FIELD = "stats";
+
+//    public final static String ID_FIELD = "id";
+//    public final static String FILES_FIELD = "files";
+//    public final static String EFFECTS_FIELD = "effs";
+//    public final static String SOTERM_FIELD = "so";
+//    public final static String GENE_FIELD = "gene";
 
     public final static Map<String, String> fieldsMap;
 
@@ -65,15 +66,15 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("end", END_FIELD);
         fieldsMap.put("length", LENGTH_FIELD);
         fieldsMap.put("reference", REFERENCE_FIELD);
-        fieldsMap.put("alternative", ALTERNATE_FIELD);
-//        fieldsMap.put("id", ID_FIELD);
+        fieldsMap.put("alternate", ALTERNATE_FIELD);
         fieldsMap.put("ids", IDS_FIELD);
-        fieldsMap.put("hgvs", HGVS_FIELD);
         fieldsMap.put("type", TYPE_FIELD);
-//        fields.put("name", NAME_FIELD);
+        fieldsMap.put("hgvs", HGVS_FIELD);
+//        fieldsMap.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
+//        fieldsMap.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
         fieldsMap.put("sourceEntries", STUDIES_FIELD);
-        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
         fieldsMap.put("annotation", ANNOTATION_FIELD);
+        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
     }
 
     private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
@@ -101,8 +102,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
     }
-    
-    
+
+
     @Override
     public Variant convertToDataModelType(DBObject object) {
         String chromosome = (String) object.get(CHROMOSOME_FIELD);
@@ -121,10 +122,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         if (mongoHgvs != null) {
             for (Object o : mongoHgvs) {
                 DBObject dbo = (DBObject) o;
-                variant.addHgvs((String) dbo.get(TYPE_FIELD), (String) dbo.get(NAME_FIELD));
+                variant.addHgvs((String) dbo.get(HGVS_TYPE_FIELD), (String) dbo.get(HGVS_NAME_FIELD));
             }
         }
-        
+
         // Files
         if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = (BasicDBList) object.get(STUDIES_FIELD);
@@ -151,12 +152,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         if (mongoAnnotation != null) {
             VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
             annotation.setChromosome(variant.getChromosome());
-            annotation.setAlternativeAllele(variant.getAlternate());
+            annotation.setAlternateAllele(variant.getAlternate());
             annotation.setReferenceAllele(variant.getReference());
             annotation.setStart(variant.getStart());
             variant.setAnnotation(annotation);
         }
-        
+
         // Statistics
         if (statsConverter != null && object.containsField(STATS_FIELD)) {
             DBObject stats = (DBObject) object.get(STATS_FIELD);
@@ -166,46 +167,48 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     }
 
     @Override
-    public DBObject convertToStorageType(Variant object) {
+    public DBObject convertToStorageType(Variant variant) {
         // Attributes easily calculated
-        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(object))
+        BasicDBObject mongoVariant = new BasicDBObject("_id", buildStorageId(variant))
 //                .append(IDS_FIELD, object.getIds())    //Do not include IDs.
-                .append(TYPE_FIELD, object.getType().name())
-                .append(CHROMOSOME_FIELD, object.getChromosome())
-                .append(START_FIELD, object.getStart())
-                .append(END_FIELD, object.getEnd())
-                .append(LENGTH_FIELD, object.getLength())
-                .append(REFERENCE_FIELD, object.getReference())
-                .append(ALTERNATE_FIELD, object.getAlternate());
+                .append(CHROMOSOME_FIELD, variant.getChromosome())
+                .append(START_FIELD, variant.getStart())
+                .append(END_FIELD, variant.getEnd())
+                .append(LENGTH_FIELD, variant.getLength())
+                .append(REFERENCE_FIELD, variant.getReference())
+                .append(ALTERNATE_FIELD, variant.getAlternate())
+                .append(TYPE_FIELD, variant.getType().name());
 
         // Internal fields used for query optimization (dictionary named "_at")
         BasicDBObject _at = new BasicDBObject();
         mongoVariant.append("_at", _at);
-        
-        // ChunkID (1k and 10k)
-        String chunkSmall = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoDBWriter.CHUNK_SIZE_SMALL / 1000 + "k";
-        String chunkBig = object.getChromosome() + "_" + object.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_" + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
-        BasicDBList chunkIds = new BasicDBList(); chunkIds.add(chunkSmall); chunkIds.add(chunkBig);
+
+        // Two different chunk sizes are calculated for different resolution levels: 1k and 10k
+        BasicDBList chunkIds = new BasicDBList();
+        String chunkSmall = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBWriter.CHUNK_SIZE_SMALL + "_" + VariantMongoDBWriter.CHUNK_SIZE_SMALL / 1000 + "k";
+        String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_" + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
+        chunkIds.add(chunkSmall);
+        chunkIds.add(chunkBig);
         _at.append("chunkIds", chunkIds);
-        
+
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
-        for (Map.Entry<String, Set<String>> entry : object.getHgvs().entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : variant.getHgvs().entrySet()) {
             for (String value : entry.getValue()) {
-                hgvs.add(new BasicDBObject(TYPE_FIELD, entry.getKey()).append(NAME_FIELD, value));
+                hgvs.add(new BasicDBObject(HGVS_TYPE_FIELD, entry.getKey()).append(HGVS_NAME_FIELD, value));
             }
         }
         mongoVariant.append(HGVS_FIELD, hgvs);
-        
+
         // Files
         if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
-            for (VariantSourceEntry archiveFile : object.getSourceEntries().values()) {
+            for (VariantSourceEntry archiveFile : variant.getSourceEntries().values()) {
                 mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
         }
-        
+
 //        // Annotations
         mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
 //        if (variantAnnotationConverter != null) {
@@ -217,9 +220,10 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Statistics
         if (statsConverter != null) {
-            List mongoStats = statsConverter.convertCohortsToStorageType(object.getSourceEntries());
+            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getSourceEntries());
             mongoVariant.put(STATS_FIELD, mongoStats);
         }
+
         return mongoVariant;
     }
 
@@ -239,7 +243,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         } else {
             builder.append(new String(CryptoUtils.encryptSha1(reference)));
         }
-        
+
         builder.append("_");
 
         if (alternate.equals("-")) {
@@ -249,7 +253,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         } else {
             builder.append(new String(CryptoUtils.encryptSha1(alternate)));
         }
-            
+
         return builder.toString();
     }
 

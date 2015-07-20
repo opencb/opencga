@@ -200,7 +200,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         } else {
             iteratorQueryOptions = new QueryOptions(options);
         }
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference");
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
         iteratorQueryOptions.add("include", include);
 
         int batchSize = 200;
