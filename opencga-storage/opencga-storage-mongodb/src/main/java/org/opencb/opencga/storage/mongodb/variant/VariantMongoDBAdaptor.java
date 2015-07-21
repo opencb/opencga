@@ -1291,30 +1291,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     void createIndexes(QueryOptions options) {
         logger.debug("Start creating indexes");
+
         DBObject onBackground = new BasicDBObject("background", true);
+        DBObject sparse = new BasicDBObject("background", true).append("sparse", true);
         variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                .append(DBObjectToVariantConverter.START_FIELD, 1)
+                .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREFS_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1), onBackground);
-        variantsCollection.createIndex(
-                new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1)
-//                        .append(DBObjectToVariantConverter.STUDIES_FIELD +
-//                                "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD +
-//                                "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1)
-                , onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD
-                + "." + DBObjectToVariantStatsConverter.MAF_FIELD, 1), onBackground);
-        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD
-                + "." + DBObjectToVariantStatsConverter.MGF_FIELD, 1), onBackground);
-        variantsCollection.createIndex(
-                new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
-                        .append(DBObjectToVariantConverter.START_FIELD, 1)
-                        .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
+                .append(DBObjectToVariantConverter.ANNOTATION_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD, 1), onBackground);
+
         logger.debug("sent order to create indices");
     }
 
