@@ -54,12 +54,7 @@ public class AnalysisJobExecutorTest {
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
         output = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first();
 
-        temporalOutDirUri = URI.create("file:///tmp/job_temporal_folder/");
-        Path path = Paths.get(temporalOutDirUri);
-        if (path.toFile().exists()) {
-            IOUtils.deleteDirectory(path);
-        }
-        Files.createDirectory(path);
+        temporalOutDirUri = catalogManager.createJobOutDir(studyId, "JOB_TMP", sessionId);
     }
 
     @Test
@@ -77,6 +72,7 @@ public class AnalysisJobExecutorTest {
                 assertEquals(helloWorld, contentFile);
             }
         }
+        assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
     @Test
@@ -85,6 +81,7 @@ public class AnalysisJobExecutorTest {
                 StringUtils.randomString(5), temporalOutDirUri, "unexisting_tool ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.Status.ERROR, job.getStatus());
+        assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
 
@@ -94,6 +91,7 @@ public class AnalysisJobExecutorTest {
                 StringUtils.randomString(5), temporalOutDirUri, "false ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.Status.ERROR, job.getStatus());
+        assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
     @Test
@@ -114,6 +112,7 @@ public class AnalysisJobExecutorTest {
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
         assertEquals(Job.Status.ERROR, job.getStatus());
+        assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
 }

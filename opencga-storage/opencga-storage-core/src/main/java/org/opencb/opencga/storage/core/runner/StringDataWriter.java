@@ -121,9 +121,8 @@ public class StringDataWriter implements DataWriter<String> {
             }
             logger.debug("another batch of {} elements written. time: {}ms", batch.size(), System.currentTimeMillis() - start);
         } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException(e);
         }
-        return false;
+        return true;
     }
 }

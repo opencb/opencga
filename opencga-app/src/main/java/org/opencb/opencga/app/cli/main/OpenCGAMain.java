@@ -28,6 +28,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -795,6 +796,45 @@ public class OpenCGAMain {
                         break;
                     }
 
+                    default: {
+                        optionsParser.printUsage();
+                        break;
+                    }
+                }
+                break;
+            }
+            case "jobs" : {
+                switch (optionsParser.getSubCommand()) {
+                    case "info": {
+                        OptionsParser.JobsCommands.InfoCommand c = optionsParser.getJobsCommands().infoCommand;
+
+                        QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+
+                        break;
+                    }
+                    case "aborted": {
+                        OptionsParser.JobsCommands.AbortedJobCommand c = optionsParser.getJobsCommands().abortedCommand;
+
+                        QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        Job job = jobQueryResult.first();
+                        if (!job.getStatus().equals(Job.Status.RUNNING)) {
+                            throw new Exception("Only RUNNING jobs could have aborted");
+                        }
+
+                        /** Record output **/
+                        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+                        outputRecorder.recordJobOutput(job, true);
+
+                        /** Change status to ERROR **/
+                        ObjectMap parameters = new ObjectMap();
+                        parameters.put("status", Job.Status.ERROR);
+                        parameters.put("error", Job.ERRNO_ABORTED);
+                        parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_ABORTED));
+                        catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;

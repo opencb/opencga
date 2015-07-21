@@ -41,6 +41,7 @@ public class OptionsParser {
     private final ProjectCommands projectCommands;
     private final StudyCommands studyCommands;
     private final FileCommands fileCommands;
+    private final JobsCommands jobsCommands;
     private final ToolCommands toolCommands;
     final CohortCommands cohortCommands;
     final SampleCommands sampleCommands;
@@ -63,6 +64,7 @@ public class OptionsParser {
         fileCommands = new FileCommands(jcommander);
         cohortCommands = new CohortCommands(jcommander);
         sampleCommands = new SampleCommands(jcommander);
+        jobsCommands = new JobsCommands(jcommander);
         toolCommands = new ToolCommands(jcommander);
 
 
@@ -150,6 +152,9 @@ public class OptionsParser {
         return fileCommands;
     }
 
+    public JobsCommands getJobsCommands() {
+        return jobsCommands;
+    }
     public ToolCommands getToolCommands() {
         return toolCommands;
     }
@@ -905,6 +910,43 @@ public class OptionsParser {
         }
     }
 
+    @Parameters(commandNames = {"jobs"}, commandDescription = "Jobs commands")
+    class JobsCommands {
+
+        final InfoCommand infoCommand;
+        final AbortedJobCommand abortedCommand;
+
+        public JobsCommands(JCommander jcommander) {
+            jcommander.addCommand(this);
+            JCommander tools = jcommander.getCommands().get("jobs");
+            tools.addCommand(this.infoCommand = new InfoCommand());
+            tools.addCommand(this.abortedCommand = new AbortedJobCommand());
+        }
+
+        @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
+        class InfoCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
+            int id;
+        }
+
+        @Parameters(commandNames = {"aborted"}, commandDescription = "Notify catalog that a job have aborted with ERROR result")
+        class AbortedJobCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
+            int id;
+        }
+    }
 
     @Parameters(commandNames = {"tools"}, commandDescription = "Tools commands")
     class ToolCommands {
@@ -944,7 +986,7 @@ public class OptionsParser {
             boolean openTool = false;
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
+        @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
         class InfoCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;

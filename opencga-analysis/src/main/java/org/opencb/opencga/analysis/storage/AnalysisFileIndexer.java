@@ -268,7 +268,19 @@ public class AnalysisFileIndexer {
         jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
 
         String jobName = "index";
-        String jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
+        String jobDescription;
+        switch (indexInformation.getStatus()) {
+            default:
+            case INDEXING:
+                jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
+                break;
+            case LOADING:
+                jobDescription = "Loading file " + originalFile.getName() + " (" + originalFile.getId() + ")";
+                break;
+            case TRANSFORMING:
+                jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
+                break;
+        }
         final Job job = AnalysisJobExecutor.createJob(catalogManager, studyIdByOutDirId, jobName,
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();

@@ -86,12 +86,14 @@ public class Job {
     public static final String ERRNO_NONE = null;
     public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
     public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
+    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
 
     static {
         errorDescriptions = new HashMap<>();
         errorDescriptions.put(ERRNO_NONE, null);
         errorDescriptions.put(ERRNO_NO_QUEUE, "Unable to queue job");
         errorDescriptions.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        errorDescriptions.put(ERRNO_ABORTED, "Job aborted");
 
     }
 
