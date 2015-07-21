@@ -135,12 +135,16 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         if (queryVariantsCommandOptions.file != null && !queryVariantsCommandOptions.file.isEmpty()) {
-            options.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
+            query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
         }
 
 
         if (queryVariantsCommandOptions.sampleGenotype != null && !queryVariantsCommandOptions.sampleGenotype.isEmpty()) {
             query.put(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryVariantsCommandOptions.sampleGenotype);
+        }
+
+        if (queryVariantsCommandOptions.returnSample != null && !queryVariantsCommandOptions.returnSample.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryVariantsCommandOptions.returnSample);
         }
 
 
@@ -255,12 +259,14 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
                 queryVariantsCommandOptions.output += ".gz";
             }
+            logger.debug("writing to %s", queryVariantsCommandOptions.output);
             outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
         }
         if (gzip) {
+
             outputStream = new GZIPOutputStream(outputStream);
         }
-
+        logger.debug("using %s output stream", gzip? "gzipped": "plain");
 
         /*
          * Setting QueryOptions parameters
