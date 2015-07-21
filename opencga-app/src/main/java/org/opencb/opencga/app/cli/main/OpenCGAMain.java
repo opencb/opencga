@@ -813,25 +813,37 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "aborted": {
-                        OptionsParser.JobsCommands.AbortedJobCommand c = optionsParser.getJobsCommands().abortedCommand;
+                    case "finished": {
+                        OptionsParser.JobsCommands.DoneJobCommand c = optionsParser.getJobsCommands().doneJobCommand;
 
                         QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
                         Job job = jobQueryResult.first();
-                        if (!job.getStatus().equals(Job.Status.RUNNING)) {
-                            throw new Exception("Only RUNNING jobs could have aborted");
+                        if (c.force) {
+                            if (job.getStatus().equals(Job.Status.ERROR) || job.getStatus().equals(Job.Status.READY)) {
+                                logger.info("Job status is '{}' . Nothing to do.", job.getStatus());
+                                System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+                            }
+                        } else if (!job.getStatus().equals(Job.Status.DONE)) {
+                            throw new Exception("Job status != DONE. Need --force to continue");
                         }
 
                         /** Record output **/
                         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
                         outputRecorder.recordJobOutput(job, true);
 
-                        /** Change status to ERROR **/
+                        /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
-                        parameters.put("status", Job.Status.ERROR);
-                        parameters.put("error", Job.ERRNO_ABORTED);
-                        parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_ABORTED));
+                        if (c.error) {
+                            parameters.put("status", Job.Status.ERROR);
+                            parameters.put("error", Job.ERRNO_ABORTED);
+                            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_ABORTED));
+                        } else {
+                            parameters.put("status", Job.Status.READY);
+                        }
                         catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+                        jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
 
                         break;
                     }

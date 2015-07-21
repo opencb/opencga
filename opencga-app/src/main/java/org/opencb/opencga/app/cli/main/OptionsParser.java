@@ -914,13 +914,13 @@ public class OptionsParser {
     class JobsCommands {
 
         final InfoCommand infoCommand;
-        final AbortedJobCommand abortedCommand;
+        final DoneJobCommand doneJobCommand;
 
         public JobsCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander tools = jcommander.getCommands().get("jobs");
             tools.addCommand(this.infoCommand = new InfoCommand());
-            tools.addCommand(this.abortedCommand = new AbortedJobCommand());
+            tools.addCommand(this.doneJobCommand = new DoneJobCommand());
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
@@ -935,8 +935,8 @@ public class OptionsParser {
             int id;
         }
 
-        @Parameters(commandNames = {"aborted"}, commandDescription = "Notify catalog that a job have aborted with ERROR result")
-        class AbortedJobCommand {
+        @Parameters(commandNames = {"finished"}, commandDescription = "Notify catalog that a job have finished.")
+        class DoneJobCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
@@ -945,6 +945,12 @@ public class OptionsParser {
 
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
             int id;
+
+            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 1)
+            boolean error;
+
+            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 1)
+            boolean force;
         }
     }
 
