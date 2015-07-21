@@ -49,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnalysisJobExecutor {
 
@@ -325,15 +326,19 @@ public class AnalysisJobExecutor {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
         try {
             URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
-            ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
-            com.setOutput(null);
+            if (com.getOutput() != null) {
+                ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
+                com.setOutput(null);
+            }
         } catch (CatalogIOException e) {
             e.printStackTrace();
         }
         try {
             URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
-            ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
-            com.setError(null);
+            if (com.getError() != null) {
+                ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
+                com.setError(null);
+            }
         } catch (CatalogIOException e) {
             e.printStackTrace();
         }

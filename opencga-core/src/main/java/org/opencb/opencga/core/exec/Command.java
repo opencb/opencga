@@ -102,6 +102,7 @@ public class Command extends RunnableProcess {
         } catch (Exception e) {
             exception = e.toString();
             status = Status.ERROR;
+            exitValue = -1;
             logger.error("Exception occurred while executing Command {}", exception);
         }
     }
