@@ -68,7 +68,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
     @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
     @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
-//  @Deprecated   public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
+    //  @Deprecated   public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
     @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
     @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
@@ -118,7 +118,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         return variantMongoDBAdaptor;
     }
 
-    /* package */ MongoCredentials getMongoCredentials(String dbName) {
+    MongoCredentials getMongoCredentials(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
@@ -164,9 +164,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
-        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
+        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), Options.INCLUDE_STATS.defaultValue());
+        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
 
         Set<String> defaultGenotype;
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE)) {
