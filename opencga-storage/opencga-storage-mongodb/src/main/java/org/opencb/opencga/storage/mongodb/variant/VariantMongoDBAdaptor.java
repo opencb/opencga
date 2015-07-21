@@ -1112,6 +1112,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds)));
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
+        logger.debug("FillGaps find : {}", query);
+        logger.debug("FillGaps update : {}", update);
         return variantsCollection.update(query, update, queryOptions);
     }
 

@@ -18,7 +18,9 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import java.util.*;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -87,6 +89,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    private VariantSource source;
 
     private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+    private HashSet<String> coveredChromosomes = new HashSet<>();
     private List<Integer> fileSampleIds;
     private List<Integer> loadedSampleIds;
 
@@ -124,6 +127,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     public boolean open() {
         staticNumVariantsWritten = 0;
         insertionTime = 0;
+        coveredChromosomes.clear();
 //        numVariantsWritten = 0;
 
         return true;
@@ -179,7 +183,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                    .collect(Collectors.toList()));
 //        }
 
-
+        if (!data.isEmpty()) {
+            coveredChromosomes.add(data.get(0).getChromosome());
+        }
         QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
         insertionTime += queryResult.getDbTime();
         return true;
@@ -348,7 +354,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                writeSourceSummary(source);
 //            }
 
-            dbAdaptor.fillFileGaps(fileId, Collections.<Region>emptyList(), fileSampleIds, studyConfiguration);
+            List<Region> regions = coveredChromosomes.stream().map(Region::new).collect(Collectors.toList());
+            dbAdaptor.fillFileGaps(fileId, regions, fileSampleIds, studyConfiguration);
             dbAdaptor.createIndexes(new QueryOptions());
 //            DBObject onBackground = new BasicDBObject("background", true);
 //            variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
