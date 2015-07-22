@@ -127,7 +127,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
 //        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
         boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
-        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+        IncludeSrc includeSrc = params.get(INCLUDE_SRC, IncludeSrc.class, IncludeSrc.parse(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "NO")));
 
         String defaultGenotype = params.getString(DEFAULT_GENOTYPE, properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE, ""));
         boolean compressSamples = params.getBoolean(COMPRESS_GENOTYPES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES, "false")));

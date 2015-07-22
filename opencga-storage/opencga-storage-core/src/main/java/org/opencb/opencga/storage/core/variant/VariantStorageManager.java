@@ -36,11 +36,26 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+
+
 /**
  * Created by imedina on 13/08/14.
  */
 public abstract class VariantStorageManager implements StorageManager<VariantWriter, VariantDBAdaptor> {
 
+    public enum IncludeSrc {
+        NO, FIRST_8_COLUMNS, FULL;
+
+        public static IncludeSrc parse(String value) {
+            if ("NO".equalsIgnoreCase(value)) {
+                return NO;
+            } else if ("FIRST_8_COLUMNS".equalsIgnoreCase(value)) {
+                return FIRST_8_COLUMNS;
+            } else {    // if ill-formed, use full line, just in case
+                return FULL;
+            }
+        }
+    };
 
     public static final String INCLUDE_STATS = "includeStats";              //Include existing stats on the original file.
     public static final String INCLUDE_SAMPLES = "includeSamples";          //Include sample information (genotypes)
@@ -119,8 +134,9 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         boolean includeSamples = params.getBoolean(INCLUDE_SAMPLES, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SAMPLES, "false")));
 //        boolean includeEffect = params.getBoolean(INCLUDE_EFFECT, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_EFFECT, "false")));
         boolean includeStats = params.getBoolean(INCLUDE_STATS, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_STATS, "false")));
-        boolean includeSrc = params.getBoolean(INCLUDE_SRC, Boolean.parseBoolean(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "false")));
+        IncludeSrc includeSrc = params.get(INCLUDE_SRC, IncludeSrc.class, IncludeSrc.parse(properties.getProperty(OPENCGA_STORAGE_VARIANT_INCLUDE_SRC, "NO")));
 
+        logger.debug("including {} source vcf line", includeSrc.toString());
         VariantSource source = params.get(VARIANT_SOURCE, VariantSource.class);
         //VariantSource source = new VariantSource(input.getFileName().toString(), params.get("fileId").toString(), params.get("studyId").toString(), params.get("study").toString());
 
