@@ -118,7 +118,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, "active", "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<Acl>emptyList(),
-                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 1234, "", Arrays.asList(new Acl("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
+                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", Arrays.asList(new Acl("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
                                                 Arrays.asList(
                                                         new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, null, "", File.Status.READY, 1000),
                                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, null, "", File.Status.READY, 1000)
@@ -495,13 +495,43 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void getStudyTest() throws CatalogDBException, JsonProcessingException {
         int projectId = user3.getProjects().get(0).getId();
         int studyId = catalogDBAdaptor.getStudyId(projectId, "ph1");
-        System.out.println(catalogDBAdaptor.getStudy(studyId, null));
-        try {
-            catalogDBAdaptor.getStudy(-100, null);
-            fail("Expected \"StudyId not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println(e);
-        }
+
+        Study study = catalogDBAdaptor.getStudy(studyId, null).first();
+        assertNotNull(study);
+        assertEquals(studyId, study.getId());
+        assertTrue(study.getDiskUsage() != 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage").append("exclude", null)).first();
+        assertTrue(study.getDiskUsage() != 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage")).first();
+        assertTrue(study.getDiskUsage() != 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name")).first();
+        assertTrue(study.getDiskUsage() != 0);
+        assertNull(study.getName());
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name").append("include", null)).first();
+        assertTrue(study.getDiskUsage() != 0);
+        assertNull(study.getName());
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage")).first();
+        assertTrue(study.getDiskUsage() == 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage").append("include", null)).first();
+        assertTrue(study.getDiskUsage() == 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id")).first();
+        assertEquals(studyId, study.getId());
+        assertTrue(study.getDiskUsage() == 0);
+
+        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id").append("exclude", null)).first();
+        assertEquals(studyId, study.getId());
+        assertTrue(study.getDiskUsage() == 0);
+
+
+        thrown.expect(CatalogDBException.class);
+        catalogDBAdaptor.getStudy(-100, null);
     }
 
     @Test

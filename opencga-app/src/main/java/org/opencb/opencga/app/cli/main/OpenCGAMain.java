@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -63,8 +65,11 @@ public class OpenCGAMain {
 //    private String userId;
 //    private String sessionId;
     private boolean logoutAtExit = false;
+    private static boolean sessionIdFromFile = false;
 
     private static Logger logger;
+    private static UserConfigFile userConfigFile;
+    private static String logLevel;
 
     public static void main(String[] args) throws IOException {
 
@@ -73,7 +78,7 @@ public class OpenCGAMain {
         OptionsParser optionsParser = new OptionsParser(false);
         try {
             optionsParser.parse(args);
-            String logLevel = "info";
+            logLevel = "info";
             if (optionsParser.getCommonOptions().verbose) {
                 logLevel = "debug";
             }
@@ -92,6 +97,13 @@ public class OpenCGAMain {
             System.exit(1);
         }
 
+        if(optionsParser.getCommonOptions().help) {
+            optionsParser.printUsage();
+            System.exit(1);
+        }
+
+        userConfigFile = loadUserFile();
+
         // Interactive mode
         interactive = optionsParser.getGeneralOptions().interactive;
         if(interactive){
@@ -99,6 +111,11 @@ public class OpenCGAMain {
 
             reader = new BufferedReader(new InputStreamReader(System.in));
 
+            if (userConfigFile != null) {
+                shellUserId = userConfigFile.userId;
+                shellSessionId = userConfigFile.sessionId;
+                sessionIdFromFile = true;
+            }
             do {
                 if(shellUserId != null && !shellUserId.isEmpty()){
                     System.out.print("(" + shellUserId + "," + shellSessionId + ")> ");
@@ -124,7 +141,7 @@ public class OpenCGAMain {
             System.out.println("bye");
         } else {
             try {
-                System.exit(opencgaMain.runCommand(args));
+                System.exit(opencgaMain.runCommand(optionsParser));
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
@@ -135,7 +152,6 @@ public class OpenCGAMain {
 
     private int runCommand(String[] args) throws Exception {
         OptionsParser optionsParser = new OptionsParser(interactive);
-        int returnValue = 0;
         try {
             optionsParser.parse(args);
         } catch (ParameterException e){
@@ -152,6 +168,11 @@ public class OpenCGAMain {
             return 1;
         }
 
+        return runCommand(optionsParser);
+    }
+
+    private int runCommand(OptionsParser optionsParser) throws Exception {
+        int returnValue = 0;
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
         }
@@ -191,14 +212,20 @@ public class OpenCGAMain {
                     case "login": {
                         OptionsParser.UserCommands.LoginCommand c = optionsParser.getUserCommands().loginCommand;
 
-                        if (shellSessionId == null || shellUserId == null || !shellUserId.equals(c.up.user)) {
-                            shellSessionId = sessionId;
-                            logoutAtExit = false;
-                            if (shellSessionId != null) {
-                                shellUserId = c.up.user;
-                            }
-                            System.out.println(shellSessionId);
+//                        if (c.up.user == null || c.up.user.isEmpty()) {
+//                            throw new CatalogException("Required userId");
+//                        }
+                        shellSessionId = sessionId;
+                        logoutAtExit = false;
+                        if (shellSessionId != null) {
+                            shellUserId = c.up.user;
                         }
+                        userConfigFile.sessionId = sessionId;
+                        userConfigFile.userId = catalogManager.getUserIdBySessionId(sessionId);
+                        saveUserFile(userConfigFile);
+
+                        System.out.println(shellSessionId);
+
                         break;
                     }
                     case "logout": {
@@ -209,10 +236,16 @@ public class OpenCGAMain {
                             logout = catalogManager.logout(shellUserId, shellSessionId);
                             shellUserId = null;
                             shellSessionId = null;
+                            if (sessionIdFromFile) {
+                                userConfigFile.sessionId = null;
+                                userConfigFile.userId = null;
+                                saveUserFile(userConfigFile);
+                            }
                         } else {
                             String userId = catalogManager.getUserIdBySessionId(c.sessionId);
                             logout = catalogManager.logout(userId, c.sessionId);
                         }
+                        logoutAtExit = false;
                         System.out.println(logout);
 
                         break;
@@ -453,7 +486,7 @@ public class OpenCGAMain {
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.calculateChecksum, inputUri, false, false, sessionId);
+                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
                             file = catalogManager.createFile(studyId, null, null,
@@ -578,8 +611,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
-                        System.out.println("c.cOpt.logLevel = " + c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        logger.debug("logLevel: {}", logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
 
@@ -601,7 +634,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(fileId, outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
@@ -621,7 +654,7 @@ public class OpenCGAMain {
 //                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, c.cOpt.logLevel);
+                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
 
                         break;
@@ -980,7 +1013,7 @@ public class OpenCGAMain {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
                 sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
-                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
+                listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext() ? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
@@ -1000,7 +1033,7 @@ public class OpenCGAMain {
                 File file = iterator.next();
 //                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
                 sb.append(String.format("%s (%d) - %s   [%s, %s]%s\n",
-                        indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                         file.getId(),
                         file.getName(),
                         file.getStatus(),
@@ -1034,6 +1067,9 @@ public class OpenCGAMain {
 
     private String login(OptionsParser.UserAndPasswordOptions up) throws CatalogException, IOException {
         String sessionId;
+        if (up.hiddenPassword != null && !up.hiddenPassword.isEmpty()) {
+            up.password = up.hiddenPassword;
+        }
         if(up.user != null && up.password != null) {
             QueryResult<ObjectMap> login = catalogManager.login(up.user, up.password, "localhost");
             sessionId = login.getResult().get(0).getString("sessionId");
@@ -1043,9 +1079,20 @@ public class OpenCGAMain {
             sessionId = up.sessionId;
 //            userId = up.user;
             logoutAtExit = false;
-        } else {
+        } else if (shellSessionId != null && !shellSessionId.isEmpty()){
             sessionId = shellSessionId;
             logoutAtExit = false;
+        } else {
+            if (userConfigFile != null) {
+                shellSessionId = userConfigFile.sessionId;
+                shellUserId = userConfigFile.userId;
+                sessionId = userConfigFile.sessionId;
+                logoutAtExit = false;
+                sessionIdFromFile = true;
+            }
+            else {
+                sessionId = null;
+            }
         }
         return sessionId;
 
@@ -1065,5 +1112,28 @@ public class OpenCGAMain {
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 
+    private static UserConfigFile loadUserFile() throws IOException {
+        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
+        if (file.exists()) {
+            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+        } else {
+            return null;
+        }
+    }
+
+    private static void saveUserFile(UserConfigFile userConfigFile) throws IOException {
+        Path opencgaDirectoryPath = Paths.get(System.getProperty("user.home"), ".opencga");
+        java.io.File opencgaDirectory = opencgaDirectoryPath.toFile();
+        if (!opencgaDirectory.exists()) {
+            Files.createDirectory(opencgaDirectoryPath);
+        }
+        if (!opencgaDirectory.isDirectory()) {
+            throw new IOException("Path " + opencgaDirectoryPath + " must be a directory");
+        }
+
+        java.io.File file = opencgaDirectoryPath.resolve("opencga.yml").toFile();
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        objectMapper.writeValue(file, userConfigFile);
+    }
 
 }
