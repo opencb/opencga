@@ -829,7 +829,7 @@ public class OpenCGAMain {
 
                         /** Record output **/
                         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                        outputRecorder.recordJobOutput(job, true);
+                        outputRecorder.recordJobOutput(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();

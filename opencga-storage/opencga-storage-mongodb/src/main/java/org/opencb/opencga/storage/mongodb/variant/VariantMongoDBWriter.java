@@ -355,7 +355,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            }
 
             List<Region> regions = coveredChromosomes.stream().map(Region::new).collect(Collectors.toList());
-            dbAdaptor.fillFileGaps(fileId, regions, fileSampleIds, studyConfiguration);
+            dbAdaptor.fillFileGaps(fileId, new LinkedList<>(coveredChromosomes), fileSampleIds, studyConfiguration);
             dbAdaptor.createIndexes(new QueryOptions());
 //            DBObject onBackground = new BasicDBObject("background", true);
 //            variantMongoCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);

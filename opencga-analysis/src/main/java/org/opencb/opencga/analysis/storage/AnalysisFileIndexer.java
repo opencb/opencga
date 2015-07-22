@@ -267,17 +267,21 @@ public class AnalysisFileIndexer {
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
         jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
 
-        String jobName = "index";
+        String jobName;
         String jobDescription;
         switch (indexInformation.getStatus()) {
             default:
+//                throw new IllegalStateException("Unexpected state");
             case INDEXING:
+                jobName = "index";
                 jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
             case LOADING:
+                jobName = "load";
                 jobDescription = "Loading file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
             case TRANSFORMING:
+                jobName = "transform";
                 jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
         }
