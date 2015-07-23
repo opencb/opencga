@@ -47,13 +47,18 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
         NO, FIRST_8_COLUMNS, FULL;
 
         public static IncludeSrc parse(String value) {
-            if ("NO".equalsIgnoreCase(value)) {
-                return NO;
-            } else if ("FIRST_8_COLUMNS".equalsIgnoreCase(value)) {
-                return FIRST_8_COLUMNS;
-            } else {    // if ill-formed, use full line, just in case
-                return FULL;
+            for (IncludeSrc element : IncludeSrc.values()) {
+                if (element.toString().equalsIgnoreCase(value)) {
+                    return element;
+                }
             }
+            // no match found
+            StringBuilder stringBuilder = new StringBuilder("\"").append(value)
+                    .append("\" is an invalid IncludeSrc option, it must be one of: ");
+            for (IncludeSrc element : IncludeSrc.values()) {
+                stringBuilder.append(element).append(", ");
+            }
+            throw new IllegalArgumentException(stringBuilder.toString());
         }
     };
 
