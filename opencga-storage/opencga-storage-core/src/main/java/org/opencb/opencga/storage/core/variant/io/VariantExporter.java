@@ -30,11 +30,14 @@ import java.util.*;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
 public class VariantExporter {
+
+    private static final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
+
     /**
      * uses a reader and a writer to dump a vcf.
      * TODO jmmut: variantDBReader cannot get the header
      * TODO jmmut: use studyConfiguration to know the order of 
-     * 
+     *
      * @param adaptor
      * @param studyConfiguration
      * @param outputUri
@@ -57,7 +60,7 @@ public class VariantExporter {
         reader.pre();
         writer.open();
         writer.pre();
-        
+
         // actual loop
         List<Variant> variants;
         while (!(variants = reader.read(batchSize)).isEmpty()) {
@@ -72,35 +75,18 @@ public class VariantExporter {
     }
 
     /**
-     * 
-     * @param iterator 
+     *
+     * @param iterator
      * @param studyConfiguration necessary for the header
      * @param outputStream
      * @param options TODO fill
+     * @return num variants not written due to errors
      * @throws Exception
      */
-    public static void VcfHtsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, 
-                                    OutputStream outputStream, QueryOptions options) throws Exception {
-        Logger logger = LoggerFactory.getLogger(VariantExporter.class);
-        
-//        get header from studyConfiguration
-        Collection<String> headers = studyConfiguration.getHeaders().values();
-        if (headers.size() < 1) {
-            throw new Exception("file headers not available for study " + studyConfiguration.getStudyName() 
-                    + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
-        }
-        if (headers.size() > 1) {
-            // TODO build our own header 
-            logger.warn("exporting a vcf from several files is unsupported, will use just one header");
-        }
-        
-        String fileHeader = headers.iterator().next();
-        FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
-        fileWriter.write(fileHeader);
-        fileWriter.close();
-        
-        // BIG TODO jmmut: build header line by line with VCFHeaderLine and key, value pairs
-        final VCFHeader header = new VCFHeader(new VCFFileReader(new File("/tmp/header.vcf"), false).getFileHeader()); 
+    public static int VcfHtsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration,
+                                   OutputStream outputStream, QueryOptions options) throws Exception {
+        final VCFHeader header = getVcfHeader(studyConfiguration);
+
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
         // setup writer
@@ -112,7 +98,7 @@ public class VariantExporter {
                 .build();
 
         writer.writeHeader(header);
-        
+
         // actual loop
         int failedVariants = 0;
         while (iterator.hasNext()) {
@@ -130,6 +116,41 @@ public class VariantExporter {
         }
 
         writer.close();
+        return failedVariants;
+    }
+
+    private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration) throws Exception {
+        //        get header from studyConfiguration
+        Collection<String> headers = studyConfiguration.getHeaders().values();
+        if (headers.size() < 1) {
+            throw new Exception("file headers not available for study " + studyConfiguration.getStudyName()
+                    + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+        }
+        String fileHeader = headers.iterator().next();
+
+        if (headers.size() > 1) {
+//            logger.warn("exporting a vcf from several files is unsupported, we're still not merging headers, will use just one header");
+
+
+            String[] lines = fileHeader.split("\n");
+            StringBuilder columnDescriptionLine = new StringBuilder("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t");
+            String samples = String.join("\t", studyConfiguration.getSampleIds().keySet());
+            lines[lines.length-1] = columnDescriptionLine.append(samples).toString();
+
+            FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
+            for (String line : lines) {
+                fileWriter.write(line);
+                fileWriter.write("\n");
+            }
+            fileWriter.close();
+        } else {
+            FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
+            fileWriter.write(fileHeader);
+            fileWriter.close();
+        }
+
+        // BIG TODO jmmut: build header line by line with VCFHeaderLine and key, value pairs
+        return new VCFHeader(new VCFFileReader(new File("/tmp/header.vcf"), false).getFileHeader());
     }
 
     public static VariantContext convertBiodataVariantToVariantContext(Variant variant) {//, StudyConfiguration studyConfiguration) {

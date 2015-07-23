@@ -46,10 +46,13 @@ import java.util.List;
 @Ignore
 public abstract class VariantExporterTest extends VariantStorageManagerTestUtils {
 
-    public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
+    public static final String[] VCF_TEST_FILE_NAMES = {
+    "1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+    "1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
+
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
-    private static URI inputUri;
-    private static VariantStorageManagerTestUtils.ETLResult etlResult = null;
+    private static URI[] inputUri;
+    private static VariantStorageManagerTestUtils.ETLResult[] etlResult;
     private VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -57,22 +60,34 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        etlResult = null;
-        Path rootDir = getTmpRootDir();
-        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
-        inputUri = inputPath.toUri();
+        inputUri = new URI[2];
+        etlResult = new VariantStorageManagerTestUtils.ETLResult[2];
+        for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
+            etlResult[i] = null;
+            Path rootDir = getTmpRootDir();
+            Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAMES[i]);
+            Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), 
+                    inputPath, StandardCopyOption.REPLACE_EXISTING);
+            inputUri[i] = inputPath.toUri();
+        }
     }
 
     @Override
     @Before
     public void before() throws Exception {
-        if (etlResult == null) {
+        clearDB(DB_NAME);
+
+        if (studyConfiguration == null) {
             studyConfiguration = newStudyConfiguration();
-//            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
-            clearDB(DB_NAME);
-            etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
-                    new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
+        }
+        for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
+            if (etlResult[i] == null) {
+    //            variantSource = new VariantSource(inputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
+                
+                etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageManager(), studyConfiguration,
+                        new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantStorageManager.Options.FILE_ID.key(), i + 6));
+            }
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
@@ -88,12 +103,16 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 //        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
 //        queryOptions.add("include", include);
 
-        VariantExporter.VcfHtsExport(dbAdaptor.iterator(), studyConfiguration, new FileOutputStream("hts" + EXPORTED_FILE_NAME) {
-        }, null);
+        int indelsFails = 31;   // there are 31 indels in the VCF_TEST_FILE_NAME
+        
+        int failedVariants = VariantExporter.VcfHtsExport(dbAdaptor.iterator(), studyConfiguration
+                , new FileOutputStream("hts" + EXPORTED_FILE_NAME), null);
 
+        assert (failedVariants <= indelsFails);   // allow indels failing due to the reference base issue: "TA,T" is stored as "A,"
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }
 
+    @Ignore
     @Test
     public void testVcfExport() throws Exception {
 
