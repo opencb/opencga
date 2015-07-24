@@ -55,7 +55,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Converters from DBObject to Java classes
         // TODO Allow to configure depending on the type of study?
         variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
+                VariantStorageManager.IncludeSrc.FULL,
                 new DBObjectToSamplesConverter(credentials, filesCollectionName)
         );
         variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
@@ -78,7 +78,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         
         variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
+                VariantStorageManager.IncludeSrc.FULL,
                 new DBObjectToSamplesConverter(samples)
         );
         
