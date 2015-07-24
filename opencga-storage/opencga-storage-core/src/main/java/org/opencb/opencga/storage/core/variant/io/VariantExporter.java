@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.variant.io;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -32,6 +31,7 @@ import java.util.*;
 public class VariantExporter {
 
     private static final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
+    private static final String ORI = "ori";    // attribute present in the variant to retrieve the reference base in indels. Reference base as T in TA	T
 
     /**
      * uses a reader and a writer to dump a vcf.
@@ -122,7 +122,10 @@ public class VariantExporter {
     private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
-        String returnedSamplesString =  options.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), null);
+        String returnedSamplesString = null;
+        if (options != null) {
+            returnedSamplesString = options.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), null);
+        }
         String[] returnedSamples = null;
         if (returnedSamplesString != null) {
             returnedSamples = returnedSamplesString.split(",");
@@ -158,6 +161,14 @@ public class VariantExporter {
         return new VCFHeader(new VCFFileReader(new File("/tmp/header.vcf"), false).getFileHeader());
     }
 
+    /**
+     * converts org.opencb.biodata.models.variant.Variant into a htsjdk.variant.variantcontext.VariantContext
+     * some assumptions:
+     * * splitted multiallelic variants will go to different variantContexts, no merging is done
+     * * if the variant is an INDEL, the source entries in it may have an attribute ORI with the REF and ALT alleles with reference bases
+     * @param variant
+     * @return
+     */
     public static VariantContext convertBiodataVariantToVariantContext(Variant variant) {//, StudyConfiguration studyConfiguration) {
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
 
@@ -171,7 +182,11 @@ public class VariantExporter {
             if (sourceFilter != null && !filter.equals(sourceFilter)) {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
-            // TODO add genotypes if multiallelic, and remove them later
+
+            List<String> originalAlleles = getOriginalAlleles(variantSourceEntry);
+            if (originalAlleles == null) {
+                originalAlleles = allelesArray;
+            }
             Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesData();
             for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
                 String gt = samplesEntry.getValue().get("GT");
@@ -179,14 +194,18 @@ public class VariantExporter {
                     org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
                     for (int gtIdx : genotype.getAllelesIdx()) {
-                        alleles.add(Allele.create(allelesArray.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+                        if (gtIdx < originalAlleles.size()) {
+                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+                        } else {
+                            alleles.add(Allele.create(".", false)); // genotype of a secondary alternate,
+                        }
                     }
-                    genotypes.add(GenotypeBuilder.create(samplesEntry.getKey(), alleles));
+                    genotypes.add(new GenotypeBuilder().name(samplesEntry.getKey()).alleles(alleles).phased(genotype.isPhased()).make());
                 }
             }
         }
 
-        Optional<String> reduce = variant.getIds().stream().reduce((left, right) -> left + "," + right);
+        Set<String> ids = variant.getIds();
 
         variantContextBuilder.start(variant.getStart())
                 .stop(variant.getEnd())
@@ -197,11 +216,33 @@ public class VariantExporter {
 //                .attributes(variant.)// TODO jmmut: join attributes from different source entries? what to do on a collision?
 
 
-        if (reduce.isPresent()) {
-            variantContextBuilder.id(reduce.get());
+        if (ids != null) {
+            Optional<String> reduce = variant.getIds().stream().reduce((left, right) -> left + "," + right);
+            if (reduce.isPresent()) {
+                variantContextBuilder.id(reduce.get());
+            }
         }
 
         return variantContextBuilder.make();
+    }
+
+    /**
+     * assumes that ori is in the form "REF	ALT_N"
+     * ALT_N is the n-th allele if this is the n-th variant resultant of a multiallelic vcf row
+     * @param variantSourceEntry
+     * @return
+     */
+    private static List<String> getOriginalAlleles(VariantSourceEntry variantSourceEntry) {
+
+        if (variantSourceEntry.hasAttribute(ORI)) {
+            String[] refAlt = variantSourceEntry.getAttribute(ORI).split("\t");
+
+            if (refAlt.length == 2) {
+                return Arrays.asList(refAlt[0], refAlt[1]);
+            }
+        }
+
+        return null;
     }
 }
 
