@@ -27,6 +27,7 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.opencb.biodata.models.variant.annotation.*;
 import org.opencb.biodata.models.variation.PopulationFrequency;
+import org.opencb.cellbase.core.common.drug.Drug;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
 
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
+    public static final String DRUG_FIELD = "drug";
     public final static String SCORE_SCORE_FIELD = "sc";
     public final static String SCORE_SOURCE_FIELD = "src";
     public final static String SCORE_DESCRIPTION_FIELD = "desc";
@@ -190,6 +192,18 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
         va.setPopulationFrequencies(populationFrequencies);
 
+        // Drug-Gene Interactions
+        Map<String, List<Object>> drugGeneInteractionMap = new HashMap<>();
+        List<Object> drugs = new LinkedList<>();
+        if(object.containsField(DRUG_FIELD)) {
+            List<DBObject> list = (List) object.get(DRUG_FIELD);
+            for (DBObject dbObject : list) {
+                drugs.add(dbObject.toMap());
+            }
+            drugGeneInteractionMap.put("dgidb", drugs);
+        }
+        va.setGeneDrugInteraction(drugGeneInteractionMap);
+
         //XREfs
         List<Xref> xrefs = new LinkedList<>();
         Object xrs = object.get(XREFS_FIELD);
@@ -199,8 +213,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     DBObject xref = (DBObject) o;
 
                     xrefs.add(new Xref(
-                            (String) xref.get(XREF_ID_FIELD),
-                            (String) xref.get(XREF_SOURCE_FIELD))
+                                    (String) xref.get(XREF_ID_FIELD),
+                                    (String) xref.get(XREF_SOURCE_FIELD))
                     );
                 }
             }
@@ -218,7 +232,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     }
 
     @Override
-    public DBObject convertToStorageType(VariantAnnotation object) {
+    public DBObject convertToStorageType(VariantAnnotation variantAnnotation) {
         DBObject dbObject = new BasicDBObject();
         Set<DBObject> xrefs = new HashSet<>();
         List<DBObject> cts = new LinkedList<>();
@@ -227,13 +241,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         dbObject.put(ANNOT_ID_FIELD, "?");
 
         //Variant ID
-        if (object.getId() != null && !object.getId().isEmpty()) {
-            xrefs.add(convertXrefToStorage(object.getId(), "dbSNP"));
+        if (variantAnnotation.getId() != null && !variantAnnotation.getId().isEmpty()) {
+            xrefs.add(convertXrefToStorage(variantAnnotation.getId(), "dbSNP"));
         }
 
         //ConsequenceType
-        if (object.getConsequenceTypes() != null) {
-            List<ConsequenceType> consequenceTypes = object.getConsequenceTypes();
+        if (variantAnnotation.getConsequenceTypes() != null) {
+            List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             for (ConsequenceType consequenceType : consequenceTypes) {
                 DBObject ct = new BasicDBObject();
 
@@ -292,9 +306,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
 
         //Conserved region score
-        if (object.getConservationScores() != null) {
+        if (variantAnnotation.getConservationScores() != null) {
             List<DBObject> conservedRegionScores = new LinkedList<>();
-            for (Score score : object.getConservationScores()) {
+            for (Score score : variantAnnotation.getConservationScores()) {
                 if (score != null) {
                     conservedRegionScores.add(convertScoreToStorage(score));
                 }
@@ -303,9 +317,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
 
         //Population frequencies
-        if (object.getPopulationFrequencies() != null) {
+        if (variantAnnotation.getPopulationFrequencies() != null) {
             List<DBObject> populationFrequencies = new LinkedList<>();
-            for (PopulationFrequency populationFrequency : object.getPopulationFrequencies()) {
+            for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
                 if (populationFrequency != null) {
                     populationFrequencies.add(convertPopulationFrequencyToStorage(populationFrequency));
                 }
@@ -313,18 +327,34 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
             putNotNull(dbObject, POPULATION_FREQUENCIES_FIELD, populationFrequencies);
         }
 
+        // Drug-Gene Interactions
+        if (variantAnnotation.getGeneDrugInteraction() != null) {
+            List<DBObject> drugGeneInteractions = new LinkedList<>();
+            List<Object> objectList = variantAnnotation.getGeneDrugInteraction().get("dgidb");
+            if (objectList != null) {
+                for (Object obj : objectList) {
+                    Map geneDrugInteraction = (Map)obj;
+                    DBObject drugDbObject = new BasicDBObject("gn", geneDrugInteraction.get("geneName"));
+                    putNotNull(drugDbObject, "dn", geneDrugInteraction.get("drugName"));
+                    putNotNull(drugDbObject, "src", geneDrugInteraction.get("studyType"));
+                    drugGeneInteractions.add(drugDbObject);
+                }
+            }
+            putNotNull(dbObject, DRUG_FIELD, drugGeneInteractions);
+        }
+
         //XREFs
-        if(object.getXrefs() != null) {
-            for (Xref xref : object.getXrefs()) {
+        if(variantAnnotation.getXrefs() != null) {
+            for (Xref xref : variantAnnotation.getXrefs()) {
                 xrefs.add(convertXrefToStorage(xref.getId(), xref.getSrc()));
             }
         }
         putNotNull(dbObject, XREFS_FIELD, xrefs);
 
         //Clinical Data
-        if (object.getClinical() != null) {
+        if (variantAnnotation.getClinical() != null) {
             List<DBObject> clinicalData = new LinkedList<>();
-            for (Map.Entry<String, Object> entry : object.getClinical().entrySet()) {
+            for (Map.Entry<String, Object> entry : variantAnnotation.getClinical().entrySet()) {
                 if (entry.getValue() != null) {
                     try {
                         clinicalData.add(new BasicDBObject(entry.getKey(), JSON.parse(writer.writeValueAsString(entry.getValue()))));
