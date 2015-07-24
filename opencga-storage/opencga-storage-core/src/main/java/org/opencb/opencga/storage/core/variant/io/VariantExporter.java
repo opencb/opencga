@@ -85,7 +85,7 @@ public class VariantExporter {
      */
     public static int VcfHtsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration,
                                    OutputStream outputStream, QueryOptions options) throws Exception {
-        final VCFHeader header = getVcfHeader(studyConfiguration);
+        final VCFHeader header = getVcfHeader(studyConfiguration, options);
 
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
@@ -119,23 +119,28 @@ public class VariantExporter {
         return failedVariants;
     }
 
-    private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration) throws Exception {
+    private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
+        String returnedSamplesString =  options.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), null);
+        String[] returnedSamples = null;
+        if (returnedSamplesString != null) {
+            returnedSamples = returnedSamplesString.split(",");
+        }
         if (headers.size() < 1) {
             throw new Exception("file headers not available for study " + studyConfiguration.getStudyName()
                     + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
         }
         String fileHeader = headers.iterator().next();
 
-        if (headers.size() > 1) {
-//            logger.warn("exporting a vcf from several files is unsupported, we're still not merging headers, will use just one header");
-
-
+        if (headers.size() > 1 || returnedSamples != null) {
             String[] lines = fileHeader.split("\n");
-            StringBuilder columnDescriptionLine = new StringBuilder("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t");
-            String samples = String.join("\t", studyConfiguration.getSampleIds().keySet());
-            lines[lines.length-1] = columnDescriptionLine.append(samples).toString();
+            Set<String> sampleSet = returnedSamples != null?
+                    new HashSet<>(Arrays.asList(returnedSamples))
+                    : studyConfiguration.getSampleIds().keySet();
+            String samples = String.join("\t", sampleSet);
+            lines[lines.length-1] = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+            logger.debug("export will be done on samples: [{}]", samples);
 
             FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
             for (String line : lines) {

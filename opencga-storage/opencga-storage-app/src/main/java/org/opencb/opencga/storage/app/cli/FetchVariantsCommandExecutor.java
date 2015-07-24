@@ -144,7 +144,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         if (queryVariantsCommandOptions.returnSample != null && !queryVariantsCommandOptions.returnSample.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryVariantsCommandOptions.returnSample);
+            options.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryVariantsCommandOptions.returnSample);
         }
 
 
@@ -263,9 +263,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
         }
         if (gzip) {
-
             outputStream = new GZIPOutputStream(outputStream);
         }
+
         logger.debug("using %s output stream", gzip? "gzipped": "plain");
 
         /*
@@ -312,7 +312,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                     QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
                             queryVariantsCommandOptions.returnStudy, null);
                     if (studyConfigurationResult.getResult().size() >= 1) {
-                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, null);
+                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
                     } else {
                         logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
                     }
