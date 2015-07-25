@@ -194,10 +194,10 @@ public class VariantExporter {
                     org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
                     for (int gtIdx : genotype.getAllelesIdx()) {
-                        if (gtIdx < originalAlleles.size()) {
+                        if (gtIdx < originalAlleles.size() && gtIdx >= 0) {
                             alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
                         } else {
-                            alleles.add(Allele.create(".", false)); // genotype of a secondary alternate,
+                            alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
                     }
                     genotypes.add(new GenotypeBuilder().name(samplesEntry.getKey()).alleles(alleles).phased(genotype.isPhased()).make());
