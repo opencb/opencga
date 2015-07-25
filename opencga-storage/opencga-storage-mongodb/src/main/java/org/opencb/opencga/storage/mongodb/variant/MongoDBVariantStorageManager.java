@@ -342,7 +342,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         MongoCredentials credentials = getMongoCredentials(dbName);
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        return db.testConnection();
+//        return db.testConnection();
+        return true;
     }
 
     /* --------------------------------------- */
