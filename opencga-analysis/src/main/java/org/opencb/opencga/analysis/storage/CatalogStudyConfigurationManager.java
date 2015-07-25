@@ -18,6 +18,7 @@
 package org.opencb.opencga.analysis.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -26,14 +27,16 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -116,7 +119,14 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 options.add(entry.getKey(), entry.getValue());
             }
         }
+
+        // We need a valid sessionId. This can be passed in the constructor or in the options.
+        // If it is not valid then ~/.opencga/opencga.yml is examined
         String sessionId = (options == null) ? this.sessionId : options.getString("sessionId", this.sessionId);
+        if (sessionId == null || sessionId.isEmpty()) {
+            sessionId = getLocalSessionId();
+        }
+
         StudyConfiguration studyConfiguration = null;
         long start = System.currentTimeMillis();
         try {
@@ -247,4 +257,22 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             return new QueryResult(Integer.toString(studyConfiguration.getStudyId()), -1, 0, 0, "", e.getMessage(), Collections.emptyList());
         }
     }
+
+    private String getLocalSessionId() {
+        String sessionId = "";
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml"));
+            for (String line : lines) {
+                if (line.trim().startsWith("sessionId")) {
+                    sessionId = line.split(":")[1];
+                }
+            }
+            sessionId = sessionId.trim().replace("\"", "");
+            logger.debug("Session id read from local file 'opencga.yml is: '{}'", sessionId);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return sessionId;
+    }
+
 }
