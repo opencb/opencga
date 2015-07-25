@@ -565,6 +565,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         return input;
     }
 
+    @Override
+    public boolean testConnection(String dbName) {
+        return true;
+    }
+
     public static String buildFilename(int studyId, int fileId) {
         return studyId + "_" + fileId;
     }

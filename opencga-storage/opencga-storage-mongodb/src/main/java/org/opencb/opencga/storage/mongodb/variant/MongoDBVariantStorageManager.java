@@ -37,6 +37,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -333,6 +335,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         return super.postLoad(input, output);
+    }
+
+    @Override
+    public boolean testConnection(String dbName) {
+        MongoCredentials credentials = getMongoCredentials(dbName);
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        return db.testConnection();
     }
 
     /* --------------------------------------- */

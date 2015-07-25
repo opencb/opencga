@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.app.cli;
 
+import com.beust.jcommander.ParameterException;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
@@ -111,7 +112,9 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
         variantOptions.put(VariantStorageManager.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
         variantOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
-        if (indexVariantsCommandOptions.dbName != null) variantOptions.put(VariantStorageManager.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
+        if (indexVariantsCommandOptions.dbName != null) {
+            variantOptions.put(VariantStorageManager.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
+        }
         variantOptions.put(VariantStorageManager.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
             variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
@@ -150,6 +153,14 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
             extract = indexVariantsCommandOptions.transform;
             transform = indexVariantsCommandOptions.transform;
             load = indexVariantsCommandOptions.load;
+        }
+
+        // Check the database connection before we start
+        if (load) {
+                if (!variantStorageManager.testConnection(variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()))) {
+                    logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
+                    throw new ParameterException("Database connection test failed");
+                }
         }
 
         if (extract) {

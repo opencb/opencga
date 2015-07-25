@@ -114,4 +114,6 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
+    public abstract boolean testConnection(String dbName);
+
 }
