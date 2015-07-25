@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.alignment;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileReader;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
@@ -253,6 +252,11 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
         return input;
+    }
+
+    @Override
+    public boolean testConnection(String dbName) {
+        return true;
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {

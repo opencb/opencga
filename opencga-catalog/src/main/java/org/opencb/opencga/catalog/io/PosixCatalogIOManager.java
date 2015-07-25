@@ -57,6 +57,18 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         if (!rootDir.getScheme().equals("file")) {
             throw new CatalogIOException("wrong posix file system in catalog.properties: " + rootDir);
         }
+        if (!properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
+            jobsDir = rootDir.resolve(DEFAULT_OPENCGA_JOBS_FOLDER);
+        } else {
+            try {
+                jobsDir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR));
+            } catch (URISyntaxException e) {
+                throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+            }
+        }
+        if (!jobsDir.getScheme().equals("file")) {
+            throw new CatalogIOException("wrong posix file system in catalog.properties: " + jobsDir);
+        }
     }
 
     /**********************

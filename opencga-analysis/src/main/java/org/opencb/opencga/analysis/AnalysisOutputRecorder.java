@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Index;
@@ -71,6 +72,13 @@ public class AnalysisOutputRecorder {
             FileScanner fileScanner = new FileScanner(catalogManager);
             List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
             List<Integer> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
+            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+            List<URI> uriList = ioManager.listFiles(tmpOutDirUri);
+            if (uriList.isEmpty()) {
+                ioManager.deleteDirectory(tmpOutDirUri);
+            } else {
+                logger.error("Error processing job output. Temporal job out dir is not empty. " + uriList);
+            }
 
 
             ObjectMap parameters = new ObjectMap();

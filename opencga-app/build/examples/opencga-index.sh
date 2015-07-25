@@ -31,20 +31,21 @@ function getFileId() {
 }
 
 function main() {
-while getopts "htu:i:p:l:U:q" opt; do
+while getopts "htu:s:i:p:l:U:q" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
 	    echo "Usage: "
-	    echo "       -h            :   "
-	    echo "       -i vcf_file   : VCF input file  "
-	    echo "       -p ped_file   : Pedigree input file  "
-	    echo "       -u user_name  : User name.  "
-	    echo "       -l log_level  : error, warn, info, debug  "
-	    echo "       -t            : Transform and Load in 2 steps  "
-	    echo "       -U uri        : Study URI location "
-	    echo "       -q            : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
-	    #echo "       -            :   "
+	    echo "       -h             :   "
+	    echo "       -i vcf_file    : VCF input file  "
+	    echo "       -p ped_file    : Pedigree input file  "
+	    echo "       -u user_name   : User name.  "
+	    echo "       -s study_alias : Study alias.  "
+	    echo "       -l log_level   : error, warn, info, debug  "
+	    echo "       -t             : Transform and Load in 2 steps  "
+	    echo "       -U uri         : Study URI location "
+	    echo "       -q             : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
+	    #echo "       -             :   "
 
 	    #echo "Usage: -h, -i (vcf_input_file), -u (user_name), -l (log_level), -t, -U (study_URI)"
 
@@ -55,6 +56,10 @@ while getopts "htu:i:p:l:U:q" opt; do
 	    password=$OPTARG
 	    echo "Using user "$user
 	    echo "Using password "$password
+	    ;;
+	s)
+	    study_alias=$OPTARG
+	    echo "Using study_alias "$study_alias
 	    ;;
 	i)
 	    echo "Using input file "$OPTARG
@@ -141,7 +146,7 @@ for input_file in ${input_files[@]}; do
 		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load -Dannotate=false -DcalculateStats=true
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue -Dannotate=false -DcalculateStats=true
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue -Dannotate=true -DcalculateStats=true
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done

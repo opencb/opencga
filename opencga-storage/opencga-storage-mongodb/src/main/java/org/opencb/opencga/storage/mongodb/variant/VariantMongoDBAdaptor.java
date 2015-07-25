@@ -980,6 +980,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * *An interesting idea would be to invert this actions depending on the number of already inserted variants.
      *
+     * @param loadedSampleIds Other loaded sampleIds EXCEPT those that are going to be loaded
      * @param data  Variants to insert
      */
     QueryResult insert(List<Variant> data, int fileId, DBObjectToVariantConverter variantConverter,
@@ -1086,7 +1087,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    QueryResult<WriteResult> fillFileGaps(int fileId, List<Region> regions, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
+    QueryResult<WriteResult> fillFileGaps(int fileId, List<String> chromosomes, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
 
         // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
         // { $push : {
@@ -1098,13 +1099,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
             return new QueryResult<>();
         }
-        DBObject query = getRegionFilter(regions, new QueryBuilder()).get();
-        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
-                studyConfiguration.getStudyId());
-        query.put(DBObjectToVariantConverter.STUDIES_FIELD + "." +
-                        DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." +
-                        DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                new BasicDBObject("$ne", fileId));
+
+        DBObject query = new BasicDBObject();
+        if (chromosomes != null && !chromosomes.isEmpty()) {
+            query.put(DBObjectToVariantConverter.CHROMOSOME_FIELD, new BasicDBObject("$in", chromosomes));
+        }
+
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD, new BasicDBObject("$elemMatch",
+                new BasicDBObject(
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                        studyConfiguration.getStudyId())
+                .append(
+                        DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                        new BasicDBObject("$ne", fileId)
+                )
+        ));
 
         BasicDBObject update = new BasicDBObject("$push", new BasicDBObject()
                 .append(DBObjectToVariantConverter.STUDIES_FIELD + ".$." +
@@ -1112,6 +1121,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds)));
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
+        logger.debug("FillGaps find : {}", query);
+        logger.debug("FillGaps update : {}", update);
         return variantsCollection.update(query, update, queryOptions);
     }
 
@@ -1300,6 +1311,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREFS_FIELD
                 + "." + DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, 1), onBackground);
@@ -2057,6 +2069,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 loadedSampleIds.addAll(studyConfiguration.getSamplesInFiles().get(indexedFile));
             }
         }
+        loadedSampleIds.removeAll(studyConfiguration.getSamplesInFiles().get(fileId));
         return loadedSampleIds;
     }
 

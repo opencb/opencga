@@ -53,7 +53,7 @@ public class CatalogFileUtils {
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum)
             throws CatalogException {
-        upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, 10000000);
+        upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, Long.MAX_VALUE);
     }
     /**
      * Upload file to a created entry file in Catalog.

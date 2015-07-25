@@ -1596,6 +1596,12 @@ public class CatalogManagerTest extends GenericTest {
 
         Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
         deleteFolderTree(rootdir.toFile());
+        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
+            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
     }
 
     public static void deleteFolderTree(java.io.File folder) {

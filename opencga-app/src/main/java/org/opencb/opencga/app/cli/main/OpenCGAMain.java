@@ -28,6 +28,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -795,6 +796,57 @@ public class OpenCGAMain {
                         break;
                     }
 
+                    default: {
+                        optionsParser.printUsage();
+                        break;
+                    }
+                }
+                break;
+            }
+            case "jobs" : {
+                switch (optionsParser.getSubCommand()) {
+                    case "info": {
+                        OptionsParser.JobsCommands.InfoCommand c = optionsParser.getJobsCommands().infoCommand;
+
+                        QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+
+                        break;
+                    }
+                    case "finished": {
+                        OptionsParser.JobsCommands.DoneJobCommand c = optionsParser.getJobsCommands().doneJobCommand;
+
+                        QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        Job job = jobQueryResult.first();
+                        if (c.force) {
+                            if (job.getStatus().equals(Job.Status.ERROR) || job.getStatus().equals(Job.Status.READY)) {
+                                logger.info("Job status is '{}' . Nothing to do.", job.getStatus());
+                                System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+                            }
+                        } else if (!job.getStatus().equals(Job.Status.DONE)) {
+                            throw new Exception("Job status != DONE. Need --force to continue");
+                        }
+
+                        /** Record output **/
+                        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+                        outputRecorder.recordJobOutput(job, c.error);
+
+                        /** Change status to ERROR or READY **/
+                        ObjectMap parameters = new ObjectMap();
+                        if (c.error) {
+                            parameters.put("status", Job.Status.ERROR);
+                            parameters.put("error", Job.ERRNO_ABORTED);
+                            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_ABORTED));
+                        } else {
+                            parameters.put("status", Job.Status.READY);
+                        }
+                        catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+                        jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;

@@ -84,6 +84,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
     public enum Options {
         INCLUDE_STATS ("include.stats", true),              //Include existing stats on the original file.
+        @Deprecated
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
@@ -99,7 +100,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         FILE_ID ("fileId", ""),
         SAMPLE_IDS ("sampleIds", ""),
 
-        COMPRESS_METHOD ("compressMethod", "snappy"),
+        COMPRESS_METHOD ("compressMethod", "gzip"),
         AGGREGATION_MAPPING_PROPERTIES ("aggregationMappingFile", null),
         DB_NAME ("database.name", "opencga"),
 
@@ -562,6 +563,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
 
         return input;
+    }
+
+    @Override
+    public boolean testConnection(String dbName) {
+        return true;
     }
 
     public static String buildFilename(int studyId, int fileId) {

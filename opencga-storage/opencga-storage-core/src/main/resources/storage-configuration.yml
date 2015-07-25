@@ -28,7 +28,6 @@ storageEngines:
     options:
       database.name: "opencga"
       collection.variants: "variants"
-      include.genotypes: true
       include.stats: false
       annotator: cellbase_rest
       species: "hsapiens"
@@ -39,8 +38,9 @@ storageEngines:
       load.bulk_size: 100
       load.compress_genotypes: true
       load.threads: 4
-#      authentication.db:
+      authentication.db: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
       ## To delete:
+      include.genotypes: true
       include.src: false
       collection.files: "files"
     database:
