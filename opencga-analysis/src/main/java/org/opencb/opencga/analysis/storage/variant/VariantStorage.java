@@ -68,6 +68,7 @@ public class VariantStorage {
         StringBuilder outputFileName = new StringBuilder();
         Map<Cohort, List<Sample>> cohorts = new HashMap<>(cohortIds.size());
         Set<Integer> studyIdSet = new HashSet<>();
+        Map<Integer, Cohort> cohortMap = new HashMap<>(cohortIds.size());
 
         for (Integer cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
@@ -86,10 +87,13 @@ public class VariantStorage {
             }
             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("id", cohort.getSamples()), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());
+            cohortMap.put(cohortId, cohort);
+        }
+        for (Integer cohortId : cohortIds) {
             if (outputFileName.length() > 0) {
                 outputFileName.append('_');
             }
-            outputFileName.append(cohort.getName());
+            outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
             catalogManager.updateCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);

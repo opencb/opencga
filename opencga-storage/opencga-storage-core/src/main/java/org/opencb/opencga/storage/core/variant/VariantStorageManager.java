@@ -703,7 +703,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
         if (idFiles.containsKey(fileId)) {
             if (!idFiles.get(fileId).equals(fileName)) {
-                throw new StorageManagerException("FileId " + fileId + " have a different fileName in the StudyConfiguration: " +
+                throw new StorageManagerException("FileId " + fileId + " has a different fileName in the StudyConfiguration: " +
                         "(" + idFiles.containsKey(fileId) + ":" + fileId + ")");
             }
         }

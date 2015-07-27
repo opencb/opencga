@@ -45,7 +45,6 @@ public class CliOptionsParser {
     private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
     private final StatsVariantsCommandOptions statsVariantsCommandOptions;
 
-
     public CliOptionsParser() {
 
         generalOptions = new GeneralOptions();
@@ -353,7 +352,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
 
-        @Parameter(names = {"--not-in-study"}, description = "A comma separated list of studies where tha variant can not be present", required = false)
+        @Parameter(names = {"--not-in-study"}, description = "A comma separated list of studies where the variant can not be present", required = false)
         public String notInStudy;
 
         @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, ie. NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)

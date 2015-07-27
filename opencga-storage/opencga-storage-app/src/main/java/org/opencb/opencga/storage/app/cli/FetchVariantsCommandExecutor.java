@@ -37,13 +37,12 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -136,12 +135,16 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         if (queryVariantsCommandOptions.file != null && !queryVariantsCommandOptions.file.isEmpty()) {
-            options.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
+            query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
         }
 
 
         if (queryVariantsCommandOptions.sampleGenotype != null && !queryVariantsCommandOptions.sampleGenotype.isEmpty()) {
             query.put(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryVariantsCommandOptions.sampleGenotype);
+        }
+
+        if (queryVariantsCommandOptions.returnSample != null && !queryVariantsCommandOptions.returnSample.isEmpty()) {
+            options.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryVariantsCommandOptions.returnSample);
         }
 
 
@@ -248,21 +251,22 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
 
-        final PrintWriter printWriter;
+        // output format has priority over output name  
+        OutputStream outputStream;
         if(queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
-            if (gzip) {
-                printWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(System.out))));
-            } else {
-                printWriter = new PrintWriter(System.out);
-            }
+            outputStream = System.out;
         } else {
             if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
                 queryVariantsCommandOptions.output += ".gz";
             }
-            Path outputPath = Paths.get(queryVariantsCommandOptions.output);
-            printWriter = new PrintWriter(FileUtils.newBufferedWriter(outputPath));
+            logger.debug("writing to %s", queryVariantsCommandOptions.output);
+            outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
+        }
+        if (gzip) {
+            outputStream = new GZIPOutputStream(outputStream);
         }
 
+        logger.debug("using %s output stream", gzip? "gzipped": "plain");
 
         /*
          * Setting QueryOptions parameters
@@ -305,14 +309,21 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
                 if (outputFormat.equalsIgnoreCase("vcf")) {
                     StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
-                    printVcfResult(iterator, studyConfigurationManager, printWriter);
+                    QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
+                            queryVariantsCommandOptions.returnStudy, null);
+                    if (studyConfigurationResult.getResult().size() >= 1) {
+                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
+                    } else {
+                        logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
+                    }
+//                    printVcfResult(iterator, studyConfigurationManager, printWriter);
                 } else {
                     // we know that it is JSON, otherwise we have not reached this point
-                    printJsonResult(iterator, printWriter);
+                    printJsonResult(iterator, outputStream);
                 }
             }
         }
-        printWriter.close();
+        outputStream.close();
     }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor) throws JsonProcessingException {
@@ -334,12 +345,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
     }
 
-    private void printJsonResult(VariantDBIterator variantDBIterator, PrintWriter printWriter) throws JsonProcessingException {
+    private void printJsonResult(VariantDBIterator variantDBIterator, OutputStream outputStream) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectWriter objectWriter = objectMapper.writer();
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
-            printWriter.println(objectWriter.writeValueAsString(variant));
+            outputStream.write(objectWriter.writeValueAsBytes(variant));
         }
     }
 
