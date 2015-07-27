@@ -6,6 +6,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -86,6 +87,8 @@ public class VariantExporter {
     public static int VcfHtsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration,
                                    OutputStream outputStream, QueryOptions options) throws Exception {
         final VCFHeader header = getVcfHeader(studyConfiguration, options);
+        header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
+        header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
@@ -107,6 +110,7 @@ public class VariantExporter {
                 VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
                 writer.add(variantContext);
             } catch (Exception e) {
+                e.printStackTrace();
                 failedVariants++;
             }
         }
