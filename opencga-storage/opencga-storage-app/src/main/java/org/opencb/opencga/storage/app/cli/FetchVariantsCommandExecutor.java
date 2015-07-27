@@ -361,6 +361,10 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 //                }
 //            }
 
+            if (variant.getIds() == null) {
+                variant.setIds(new HashSet<>());
+            }
+
             StringBuilder vcfRecord = new StringBuilder();
             vcfRecord.append(variant.getChromosome()).append("\t")
                     .append(variant.getStart()).append("\t")
