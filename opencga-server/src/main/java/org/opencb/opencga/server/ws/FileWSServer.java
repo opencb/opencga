@@ -469,8 +469,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 System.out.println("Name attribute empty, it;s been removed");
             }
 
-            if (!query.containsKey("limit")) {
-                query.put("limit", 1000);
+            if (!this.queryOptions.containsKey("limit")) {
+                this.queryOptions.put("limit", 1000);
                 System.out.println("Adding a limit of 1000");
             }
 
