@@ -464,6 +464,16 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
             }
 
+            if (query.containsKey("name") && (query.get("name") == null || query.getString("name").isEmpty())) {
+                query.remove("name");
+                System.out.println("Name attribute empty, it;s been removed");
+            }
+
+            if (!query.containsKey("limit")) {
+                query.put("limit", 1000);
+                System.out.println("Adding a limit of 1000");
+            }
+
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
