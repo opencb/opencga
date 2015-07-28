@@ -224,6 +224,9 @@ public class VariantExporter {
                 indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
                 reference = indelSequence + reference;
                 alternate = indelSequence;
+                if ((end - start) != reference.length()) {
+                    end = start + reference.length() - 1;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
