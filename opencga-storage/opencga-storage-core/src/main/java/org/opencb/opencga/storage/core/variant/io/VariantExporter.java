@@ -9,9 +9,14 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.cellbase.core.client.CellBaseClient;
+import org.opencb.cellbase.core.common.GenomeSequenceFeature;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResponse;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -20,8 +25,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -33,6 +40,15 @@ public class VariantExporter {
 
     private static final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
     private static final String ORI = "ori";    // attribute present in the variant to retrieve the reference base in indels. Reference base as T in TA	T
+
+    private static CellBaseClient cellbaseClient;
+
+    static {
+        try {
+            cellbaseClient = new CellBaseClient("bioinfo.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }    }
 
     /**
      * uses a reader and a writer to dump a vcf.
@@ -179,6 +195,39 @@ public class VariantExporter {
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
         String filter = "PASS";
+
+        int start = variant.getStart();
+        int end = variant.getEnd();
+        if (reference.isEmpty()) {
+            try {
+                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
+                        CellBaseClient.Category.genomic,
+                        CellBaseClient.SubCategory.region,
+                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
+                        new QueryOptions());
+                String indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+                reference = indelSequence;
+                alternate = indelSequence + alternate;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (alternate.isEmpty()) {
+            try {
+                start--;
+                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
+                        CellBaseClient.Category.genomic,
+                        CellBaseClient.SubCategory.region,
+                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
+                        new QueryOptions());
+                String indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+                reference = indelSequence + reference;
+                alternate = indelSequence;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
         for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
@@ -187,6 +236,7 @@ public class VariantExporter {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
+            // In next version original REF/ALT will be internally stored for INDELS
             List<String> originalAlleles = getOriginalAlleles(variantSourceEntry);
             if (originalAlleles == null) {
                 originalAlleles = allelesArray;
@@ -194,12 +244,23 @@ public class VariantExporter {
             Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesData();
             for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
                 String gt = samplesEntry.getValue().get("GT");
+//                System.out.println("gt = " + gt);
                 if (gt != null) {
                     org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
+//                    System.out.println("\tgenotype = " + genotype.getReference().toString());
+//                    System.out.println("\tgenotype = " + genotype.getAlternate().toString());
                     for (int gtIdx : genotype.getAllelesIdx()) {
+//                        System.out.println("\t\t>>"+originalAlleles);
+//                        System.out.println("\t\t>>"+gtIdx);
+//                        System.out.println("\t\t>>"+originalAlleles.get(gtIdx));
+                        String allele = originalAlleles.get(gtIdx);
+                        if (allele == null || allele.isEmpty()) {
+                            allele = "A";
+                        }
                         if (gtIdx < originalAlleles.size() && gtIdx >= 0) {
-                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+//                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+                            alleles.add(Allele.create(allele, gtIdx == 0));    // allele is reference if the alleleIndex is 0
                         } else {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
@@ -211,8 +272,8 @@ public class VariantExporter {
 
         Set<String> ids = variant.getIds();
 
-        variantContextBuilder.start(variant.getStart())
-                .stop(variant.getEnd())
+        variantContextBuilder.start(start)
+                .stop(end)
                 .chr(variant.getChromosome())
                 .alleles(allelesArray)
                 .filter(filter)

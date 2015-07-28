@@ -123,4 +123,5 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }
+
 }
