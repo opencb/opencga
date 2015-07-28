@@ -215,7 +215,7 @@ public class VariantExporter {
         }
         if (alternate.isEmpty()) {
             try {
-                start--;
+                start -= reference.length();
                 QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
                         CellBaseClient.Category.genomic,
                         CellBaseClient.SubCategory.region,
