@@ -198,6 +198,7 @@ public class VariantExporter {
 
         int start = variant.getStart();
         int end = variant.getEnd();
+        String indelSequence;
         if (reference.isEmpty()) {
             try {
                 QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
@@ -205,7 +206,7 @@ public class VariantExporter {
                         CellBaseClient.SubCategory.region,
                         Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
                         new QueryOptions());
-                String indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
                 reference = indelSequence;
                 alternate = indelSequence + alternate;
             } catch (IOException e) {
@@ -220,7 +221,7 @@ public class VariantExporter {
                         CellBaseClient.SubCategory.region,
                         Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
                         new QueryOptions());
-                String indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
                 reference = indelSequence + reference;
                 alternate = indelSequence;
             } catch (IOException e) {
@@ -254,13 +255,13 @@ public class VariantExporter {
 //                        System.out.println("\t\t>>"+originalAlleles);
 //                        System.out.println("\t\t>>"+gtIdx);
 //                        System.out.println("\t\t>>"+originalAlleles.get(gtIdx));
-                        String allele = originalAlleles.get(gtIdx);
-                        if (allele == null || allele.isEmpty()) {
-                            allele = "A";
-                        }
+//                        String allele = originalAlleles.get(gtIdx);
+//                        if (allele == null || allele.isEmpty()) {
+//                            allele = "A";
+//                        }
                         if (gtIdx < originalAlleles.size() && gtIdx >= 0) {
-//                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
-                            alleles.add(Allele.create(allele, gtIdx == 0));    // allele is reference if the alleleIndex is 0
+                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+//                            alleles.add(Allele.create(allele, gtIdx == 0));    // allele is reference if the alleleIndex is 0
                         } else {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
