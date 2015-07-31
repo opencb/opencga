@@ -302,7 +302,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
-            joinFields(study, options);
+            joinFields(study.getId(), study, options);
         }
         return endQuery("Get all studies", startTime, studies);
     }
@@ -320,7 +320,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             throw CatalogDBException.idNotFound("Study", studyId);
         }
 
-        joinFields(studies.get(0), options);
+        joinFields(studyId, studies.get(0), options);
 
         //queryResult.setResult(studies);
         return endQuery("Get Study", startTime, studies);
@@ -1703,20 +1703,31 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
     }
 
-    private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
-        study.setDiskUsage(getDiskUsageByStudy(study.getId()));
-
-        if (options == null) {
+    private void joinFields(int studyId, Study study, QueryOptions options) throws CatalogDBException {
+        if (studyId <= 0) {
             return;
         }
+
+        if (options == null) {
+            study.setDiskUsage(getDiskUsageByStudy(studyId));
+            return;
+        }
+
+        List<String> include = options.getAsStringList("include");
+        List<String> exclude = options.getAsStringList("exclude");
+        if((!include.isEmpty() && include.contains(FILTER_ROUTE_STUDIES + "diskUsage")) ||
+                (!exclude.isEmpty() && !exclude.contains(FILTER_ROUTE_STUDIES + "diskUsage"))) {
+            study.setDiskUsage(getDiskUsageByStudy(studyId));
+        }
+
         if (options.getBoolean("includeFiles")) {
-            study.setFiles(getAllFiles(study.getId(), options).getResult());
+            study.setFiles(getAllFiles(studyId, options).getResult());
         }
         if (options.getBoolean("includeJobs")) {
-            study.setJobs(getAllJobs(study.getId(), options).getResult());
+            study.setJobs(getAllJobs(studyId, options).getResult());
         }
         if (options.getBoolean("includeSamples")) {
-            study.setSamples(getAllSamples(new QueryOptions(SampleFilterOption.studyId.toString(), study.getId())).getResult());
+            study.setSamples(getAllSamples(new QueryOptions(SampleFilterOption.studyId.toString(), studyId)).getResult());
         }
     }
 
