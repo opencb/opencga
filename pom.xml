@@ -214,6 +214,12 @@
                 <groupId>com.github.broadinstitute</groupId>
                 <artifactId>picard</artifactId>
                 <version>1.136</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.testng</groupId>
+                        <artifactId>testng</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <!--<dependency>-->
             <!--<groupId>org.utgenome.thirdparty</groupId>-->
