@@ -615,7 +615,7 @@ public class CatalogFileUtils {
     private void checkStatus(File file) throws CatalogIOException {
         if (file.getStatus() != File.Status.STAGE) {
             throw new CatalogIOException("File status is already uploaded and ready! " +
-                    "file:{id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
+                    "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
                     "Needs 'ignoreStatus = true' for continue.");
         }
     }
