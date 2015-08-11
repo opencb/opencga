@@ -25,8 +25,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 public abstract class CatalogIOManager {
 
@@ -484,6 +486,10 @@ public abstract class CatalogIOManager {
     public abstract String calculateChecksum(URI file) throws CatalogIOException;
 
     public abstract List<URI> listFiles(URI directory) throws CatalogIOException;
+
+    public Stream<URI> listFilesStream(URI directory) throws CatalogIOException {
+        return listFiles(directory).stream();
+    }
 
     public abstract long getFileSize(URI file) throws CatalogIOException;
 

@@ -31,6 +31,7 @@ import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class PosixCatalogIOManager extends CatalogIOManager {
 
@@ -574,6 +575,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         return checksum.split(" ")[0];
     }
 
+    @Override
     public List<URI> listFiles(URI directory) throws CatalogIOException {
         class ListFiles extends SimpleFileVisitor<Path> {
             private List<String> filePaths = new LinkedList<>();
@@ -604,6 +606,19 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             }
         }
         return fileUris;
+    }
+
+    @Override
+    public Stream<URI> listFilesStream(URI directory) throws CatalogIOException {
+        try {
+            return Files.walk(Paths.get(directory.getPath()))
+                    .map(Path::toUri)
+                    .filter(uri -> !uri.equals(directory))
+//                    .filter(uri -> !uri.getPath().endsWith("/"))
+            ;
+        } catch (IOException e) {
+            throw new CatalogIOException("Unable to list files", e);
+        }
     }
 
     @Override

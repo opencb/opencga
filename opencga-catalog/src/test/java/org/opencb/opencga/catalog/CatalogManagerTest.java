@@ -962,13 +962,17 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     public static java.io.File createDebugFile(String fileTestName) throws IOException {
+        return createDebugFile(fileTestName, 200);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName, int lines) throws IOException {
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 
         os.writeBytes("Debug file name: " + fileTestName + "\n");
         for (int i = 0; i < 100; i++) {
             os.writeBytes(i + ", ");
         }
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < lines; i++) {
             os.writeBytes(StringUtils.randomString(500));
             os.write('\n');
         }
