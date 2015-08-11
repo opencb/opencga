@@ -111,7 +111,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public VariantSourceEntry convertToDataModelType(DBObject object) {
         int studyId = ((Number) object.get(STUDYID_FIELD)).intValue();
 //        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
-        String fileId = null;
+        String fileId = returnedFiles != null && returnedFiles.size() == 1? returnedFiles.iterator().next().toString() : null;
         VariantSourceEntry file = new VariantSourceEntry(fileId, getStudyName(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
@@ -120,7 +120,6 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             for (DBObject dbObject : (List<DBObject>) object.get(FILES_FIELD)) {
                 Integer fid = ((Integer) dbObject.get(FILEID_FIELD));
                 String fileId_ = fid.toString() + "_";
-                file.setFileId(fid.toString());
 
                 if (returnedFiles != null && !returnedFiles.contains(fid)) {
                     continue;
