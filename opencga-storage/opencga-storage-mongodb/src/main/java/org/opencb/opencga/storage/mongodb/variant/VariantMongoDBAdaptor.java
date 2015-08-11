@@ -547,18 +547,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        int cohortId = studyConfiguration.getCohortIds().get(cohortName);
+
         // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
         DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                 new BasicDBObject("$elemMatch",
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)));
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)));
 
         // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
         BasicDBObject update = new BasicDBObject(
                 "$pull",
                 new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                         new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
-                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortName)
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)
                 )
         );
         logger.debug("deleteStats: query = {}", query);

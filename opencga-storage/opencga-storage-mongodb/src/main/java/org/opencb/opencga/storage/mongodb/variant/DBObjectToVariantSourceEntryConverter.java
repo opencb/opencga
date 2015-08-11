@@ -120,6 +120,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             for (DBObject dbObject : (List<DBObject>) object.get(FILES_FIELD)) {
                 Integer fid = ((Integer) dbObject.get(FILEID_FIELD));
                 String fileId_ = fid.toString() + "_";
+                file.setFileId(fid.toString());
 
                 if (returnedFiles != null && !returnedFiles.contains(fid)) {
                     continue;

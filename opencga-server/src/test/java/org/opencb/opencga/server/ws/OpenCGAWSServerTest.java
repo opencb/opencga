@@ -185,8 +185,9 @@ public class OpenCGAWSServerTest {
      */
     private Job runStorageJob(String sessionId, Job storageJob) throws AnalysisExecutionException, IOException, CatalogException {
         String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
-        org.opencb.opencga.storage.app.StorageMain.main(Arrays.copyOfRange(args, 1, args.length));
-        storageJob.setCommandLine("echo 'Executing fake CLI' " + storageJob.getCommandLine());
+        storageJob.setCommandLine("Executing Storage CLI " + storageJob.getCommandLine());
+        org.opencb.opencga.storage.app.StorageMain.Main(Arrays.copyOfRange(args, 1, args.length));
+        storageJob.setCommandLine("echo 'Executing fake job CLI' " + storageJob.getCommandLine());
         AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(storageJob.getId(), null, sessionId).first();
     }

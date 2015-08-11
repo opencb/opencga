@@ -75,7 +75,7 @@ public class FileMetadataReaderTest extends TestCase {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21333, file.getDiskUsage());
+        assertEquals(21473, file.getDiskUsage());
 
         new CatalogFileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
@@ -85,7 +85,7 @@ public class FileMetadataReaderTest extends TestCase {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21333, file.getDiskUsage());
+        assertEquals(21473, file.getDiskUsage());
     }
 
     @Test

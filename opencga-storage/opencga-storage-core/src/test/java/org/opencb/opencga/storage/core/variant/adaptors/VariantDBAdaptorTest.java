@@ -85,11 +85,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_frequency() {
-        Query query = new Query("reference_frequency","1000GENOMES:phase_1_AFR:<=0.05");
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.REFERENCE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(55, queryResult.getNumResults());
 
-        query = new Query("alternate_frequency","ESP_6500:African_American:>0.05");
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"ESP_6500:African_American>0.05");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(673, queryResult.getNumResults());
     }
