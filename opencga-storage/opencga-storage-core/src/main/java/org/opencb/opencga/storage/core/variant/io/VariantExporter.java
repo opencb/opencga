@@ -139,13 +139,9 @@ public class VariantExporter {
     private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
-        String returnedSamplesString = null;
+        List<String> returnedSamples = null;
         if (options != null) {
-            returnedSamplesString = options.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), null);
-        }
-        String[] returnedSamples = null;
-        if (returnedSamplesString != null) {
-            returnedSamples = returnedSamplesString.split(",");
+            returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
         if (headers.size() < 1) {
             throw new Exception("file headers not available for study " + studyConfiguration.getStudyName()
@@ -156,7 +152,7 @@ public class VariantExporter {
         if (headers.size() > 1 || returnedSamples != null) {
             String[] lines = fileHeader.split("\n");
             Set<String> sampleSet = returnedSamples != null?
-                    new HashSet<>(Arrays.asList(returnedSamples))
+                    new HashSet<>(returnedSamples)
                     : studyConfiguration.getSampleIds().keySet();
             String samples = String.join("\t", sampleSet);
             lines[lines.length-1] = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;

@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.*;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -41,7 +42,6 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by jmmut on 2015-07-15.
@@ -53,10 +53,10 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
     public static final String[] VCF_TEST_FILE_NAMES = {
             "1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-//            "501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-//            "1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-//            "1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-//            "2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
     };
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
@@ -80,9 +80,8 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     @Override
     @Before
     public void before() throws Exception {
-        clearDB(DB_NAME);
-
         if (studyConfiguration == null) {
+            clearDB(DB_NAME);
             studyConfiguration = newStudyConfiguration();
         }
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
@@ -102,20 +101,56 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     }
 
     @Test
-    public void testVcfHtsExport() throws Exception {
+    public void testVcfHtsExportSingleFile() throws Exception {
         Query query = new Query();
-//        Set<Integer> samplesInFile = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
-//        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME)
-//                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 0)
-//                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
-//                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samplesInFile);
-        Path outputVcf = getTmpRootDir().resolve("hts_" + EXPORTED_FILE_NAME);
+        Set<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
+        List<String> returnedSamples = new LinkedList<>();
+        Map<Integer, String> sampleIdMap = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+        for (Integer sampleId : returnedSamplesIds) {
+            returnedSamples.add(sampleIdMap.get(sampleId));
+        }
+        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME)
+                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 0)
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
+                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
+        Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
         int failedVariants = VariantExporter.VcfHtsExport(dbAdaptor.iterator(query, null), studyConfiguration
-                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
+                , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples));
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
-        checkExportedVCF(Paths.get(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz")), outputVcf);
+        checkExportedVCF(Paths.get(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz")), outputVcf, new Region("22"));
+    }
+
+    @Test
+    public void testVcfHtsExportMultiFile() throws Exception {
+        Query query = new Query();
+        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
+//                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
+        int failedVariants = VariantExporter.VcfHtsExport(dbAdaptor.iterator(query, null), studyConfiguration,
+                new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
+
+        assertEquals(0, failedVariants);
+        // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
+        Path originalVcf = Paths.get(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+
+        Region region = new Region("22", 16000000, 16140000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16140000, 16240000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16240000, 16340000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16340000, 16440000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16440000, 16500000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16500000, 16550000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16550000, 16600000);
+        checkExportedVCF(originalVcf, outputVcf, region);
+        region = new Region("22", 16600000);
+        checkExportedVCF(originalVcf, outputVcf, region);
     }
 
     @Ignore
@@ -130,12 +165,12 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }
 
-    public void checkExportedVCF(Path originalVcf, Path exportedVcf) throws IOException {
-        Map<Integer, Variant> originalVariants = readVCF(originalVcf);
-        Map<Integer, Variant> exportedVariants = readVCF(exportedVcf);
+    public void checkExportedVCF(Path originalVcf, Path exportedVcf, Region region) throws IOException {
+        Map<String, Variant> originalVariants = readVCF(originalVcf, region);
+        Map<String, Variant> exportedVariants = readVCF(exportedVcf, region);
 
         assertEquals(originalVariants.size(), exportedVariants.size());
-        for (Map.Entry<Integer, Variant> entry : originalVariants.entrySet()) {
+        for (Map.Entry<String, Variant> entry : originalVariants.entrySet()) {
             Variant originalVariant = entry.getValue();
             Variant exportedVariant = exportedVariants.get(entry.getKey());
             assertNotNull("At position " + entry.getValue(), originalVariant);
@@ -151,29 +186,45 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             VariantSourceEntry originalSourceEntry = originalVariant.getSourceEntry("f", "s");
             VariantSourceEntry exportedSourceEntry = exportedVariant.getSourceEntry("f", "s");
             for (String sampleName : originalSourceEntry.getSampleNames()) {
-//                if (exportedVariant.getAlternate().startsWith("<")) {
-//                    System.out.println("Skipped variant " + originalVariant + " " + exportedVariant);
-//                    continue;
-//                }
-                assertEquals("For sample '" + sampleName + "' " + originalVariant + " " + exportedVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
+                assertEquals("For sample '" + sampleName + "' " + originalVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
             }
         }
     }
 
-    public Map<Integer, Variant> readVCF(Path outputVcf) {
-        Map<Integer, Variant> variantMap;
+    public Map<String, Variant> readVCF(Path vcfPath, Region region) {
+        return readVCF(vcfPath, null, region);
+    }
+
+    public Map<String, Variant> readVCF(Path vcfPath, Integer lim, Region region) {
+        if (lim == null) {
+            lim = Integer.MAX_VALUE;
+        }
+        if (region == null) {
+            region = new Region();
+        }
+        Map<String, Variant> variantMap;
         variantMap = new LinkedHashMap<>();
-        VariantVcfReader variantVcfReader = new VariantVcfReader(new VariantSource(outputVcf.getFileName().toString(), "f", "s", ""), outputVcf.toString());
+        VariantVcfReader variantVcfReader = new VariantVcfReader(new VariantSource(vcfPath.getFileName().toString(), "f", "s", ""), vcfPath.toString());
         variantVcfReader.open();
         variantVcfReader.pre();
 
         List<Variant> read;
+        int lines = 0;
+        int batchSize = 100;
         do {
-            read = variantVcfReader.read(100);
+            int variantsToRead = lines + batchSize > lim ? lim - lines : batchSize;
+            System.err.println("Reading " + variantsToRead + " variants from '" + vcfPath.getFileName().toString() + "' line : " + lines + " variants : " + variantMap.size());
+            read = variantVcfReader.read(variantsToRead);
             for (Variant variant : read) {
-                variantMap.put(variant.getStart(), variant);
+                lines++;
+                if (variant.getStart() > region.getStart() && variant.getEnd() < region.getEnd()) {
+                    variantMap.put(variant.getStart() + "_" + variant.getAlternate(), variant);
+                    if (variantMap.size() == lim) {
+                        break;
+                    }
+                }
             }
-        } while (!read.isEmpty());
+        } while (!read.isEmpty() && variantMap.size() < lim);
 
         variantVcfReader.post();
         variantVcfReader.close();
