@@ -9,14 +9,10 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
-import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.common.GenomeSequenceFeature;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -25,7 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -124,7 +119,9 @@ public class VariantExporter {
             Variant variant = iterator.next();
             try {
                 VariantContext variantContext = convertBiodataVariantToVariantContext(variant);
-                writer.add(variantContext);
+                if (variantContext != null) {
+                    writer.add(variantContext);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 failedVariants++;
@@ -199,56 +196,71 @@ public class VariantExporter {
         int start = variant.getStart();
         int end = variant.getEnd();
         String indelSequence;
-        if (reference.isEmpty()) {
-            try {
-                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
-                        CellBaseClient.Category.genomic,
-                        CellBaseClient.SubCategory.region,
-                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
-                        new QueryOptions());
-                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
-                reference = indelSequence;
-                alternate = indelSequence + alternate;
-                end = start + reference.length() - 1;
+//        if (reference.isEmpty()) {
+//            try {
+//                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
+//                        CellBaseClient.Category.genomic,
+//                        CellBaseClient.SubCategory.region,
+//                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
+//                        new QueryOptions());
+//                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+//                reference = indelSequence;
+//                alternate = indelSequence + alternate;
+//                end = start + reference.length() - 1;
+////                if ((end - start) != reference.length()) {
+////                    end = start + reference.length() - 1;
+////                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        if (alternate.isEmpty()) {
+//            try {
+//                start -= reference.length();
+//                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
+//                        CellBaseClient.Category.genomic,
+//                        CellBaseClient.SubCategory.region,
+//                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
+//                        new QueryOptions());
+//                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
+//                reference = indelSequence + reference;
+//                alternate = indelSequence;
 //                if ((end - start) != reference.length()) {
 //                    end = start + reference.length() - 1;
 //                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (alternate.isEmpty()) {
-            try {
-                start -= reference.length();
-                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
-                        CellBaseClient.Category.genomic,
-                        CellBaseClient.SubCategory.region,
-                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
-                        new QueryOptions());
-                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
-                reference = indelSequence + reference;
-                alternate = indelSequence;
-                if ((end - start) != reference.length()) {
-                    end = start + reference.length() - 1;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
+        Integer originalPosition = null;
+        List<String> originalAlleles = null;
         for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+            String[] ori = getOri(variantSourceEntry);
+            Integer auxOriginalPosition = getOriginalPosition(ori);
+            if (originalPosition != null && auxOriginalPosition != null && !originalPosition.equals(auxOriginalPosition)) {
+                throw new IllegalStateException("Two or more VariantSourceEntries have different origin. Unable to merge");
+            }
+            originalPosition = auxOriginalPosition;
+            originalAlleles = getOriginalAlleles(ori);
+            if (originalAlleles == null) {
+                originalAlleles = allelesArray;
+            }
+
+            //Only print those variants in which the alternate is the first alternate from the multiallelic alternatives
+            if (originalAlleles.size() > 2 && !"0".equals(getOriginalAlleleIndex(ori))) {
+                logger.debug("Skip multiallelic variant! " + variant);
+                return null;
+            }
+
+
             String sourceFilter = variantSourceEntry.getAttribute("FILTER");
             if (sourceFilter != null && !filter.equals(sourceFilter)) {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
-            // In next version original REF/ALT will be internally stored for INDELS
-            List<String> originalAlleles = getOriginalAlleles(variantSourceEntry);
-            if (originalAlleles == null) {
-                originalAlleles = allelesArray;
-            }
             Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesData();
             for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
                 String gt = samplesEntry.getValue().get("GT");
@@ -280,10 +292,10 @@ public class VariantExporter {
 
         Set<String> ids = variant.getIds();
 
-        variantContextBuilder.start(start)
-                .stop(end)
+        variantContextBuilder.start(originalPosition == null ? start : originalPosition)
+                .stop((originalPosition == null ? start : originalPosition) + (originalAlleles == null? allelesArray : originalAlleles).get(0).length() - 1)
                 .chr(variant.getChromosome())
-                .alleles(allelesArray)
+                .alleles(originalAlleles == null? allelesArray : originalAlleles)
                 .filter(filter)
                 .genotypes(genotypes);
 //                .attributes(variant.)// TODO jmmut: join attributes from different source entries? what to do on a collision?
@@ -300,22 +312,58 @@ public class VariantExporter {
     }
 
     /**
-     * assumes that ori is in the form "REF	ALT_N"
+     * assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
      * ALT_N is the n-th allele if this is the n-th variant resultant of a multiallelic vcf row
-     * @param variantSourceEntry
      * @return
+     * @param ori
      */
-    private static List<String> getOriginalAlleles(VariantSourceEntry variantSourceEntry) {
-
-        if (variantSourceEntry.hasAttribute(ORI)) {
-            String[] refAlt = variantSourceEntry.getAttribute(ORI).split("\t");
-
-            if (refAlt.length == 2) {
-                return Arrays.asList(refAlt[0], refAlt[1]);
+    private static List<String> getOriginalAlleles(String[] ori) {
+        if (ori != null && ori.length == 4) {
+            String[] multiAllele = ori[2].split(",");
+            if (multiAllele.length != 1) {
+                ArrayList<String> alleles = new ArrayList<>(multiAllele.length + 1);
+                alleles.add(ori[1]);
+                alleles.addAll(Arrays.asList(multiAllele));
+                return alleles;
+            } else {
+                return Arrays.asList(ori[1], ori[2]);
             }
         }
 
         return null;
     }
+
+    private static String getOriginalAlleleIndex(String[] ori) {
+        if (ori != null && ori.length == 4) {
+            return ori[3];
+        }
+        return null;
+    }
+
+    /**
+     * assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
+     * @return
+     * @param ori
+     */
+    private static Integer getOriginalPosition(String[] ori) {
+
+        if (ori != null && ori.length == 4) {
+            return Integer.parseInt(ori[0]);
+        }
+
+        return null;
+    }
+
+    private static String[] getOri(VariantSourceEntry variantSourceEntry) {
+
+        for (Map.Entry<String, String> entry : variantSourceEntry.getAttributes().entrySet()) {
+            if (entry.getKey().endsWith(ORI)) {
+                return entry.getValue().split(":");
+            }
+        }
+        return null;
+    }
+
+
 }
 

@@ -214,6 +214,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
         qb = parseQuery(query, qb);
