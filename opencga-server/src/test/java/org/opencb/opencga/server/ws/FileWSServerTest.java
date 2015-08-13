@@ -61,6 +61,7 @@ public class FileWSServerTest {
 
     @BeforeClass
     static public void initServer() throws Exception {
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         serverTestUtils = new WSServerTestUtils();
         serverTestUtils.initServer();
     }
@@ -163,6 +164,62 @@ public class FileWSServerTest {
         QueryResponse<QueryResult<Object>> response = WSServerTestUtils.parseResult(json, Object.class);
         file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
         assertEquals(updateFile.description, file.getDescription());
+    }
+
+    @Test
+    public void searchFiles() throws Exception {
+        String json = webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("path", "data/").request().get(String.class);
+
+        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        File file = response.getResponse().get(0).first();
+        assertEquals(1, response.getResponse().get(0).getNumResults());
+        assertEquals("data/", file.getPath());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:data:").path("update")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .request().post(Entity.json(
+                                new ObjectMap("attributes",
+                                        new ObjectMap("num", 2)
+                                                .append("exists", true)
+                                                .append("txt", "helloWorld"))),
+                        String.class), File.class);
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .request().post(Entity.json(
+                                new ObjectMap("attributes",
+                                        new ObjectMap("num", 3)
+                                                .append("exists", true)
+                                                .append("txt", "helloMundo"))),
+                        String.class), File.class);
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("attributes.txt", "~hello").request().get(String.class), File.class);
+        assertEquals(2, response.getResponse().get(0).getNumResults());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("battributes.exists", true).request().get(String.class), File.class);
+        assertEquals(2, response.getResponse().get(0).getNumResults());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("nattributes.num", "<3").request().get(String.class), File.class);
+        assertEquals(1, response.getResponse().get(0).getNumResults());
+
     }
 
     public File uploadVcf(int studyId, String sessionId) throws IOException, CatalogException {

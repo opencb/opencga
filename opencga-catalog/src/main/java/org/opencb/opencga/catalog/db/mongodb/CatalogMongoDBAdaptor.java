@@ -842,7 +842,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject("$and", mongoQueryList), filterOptions(options, FILTER_ROUTE_FILES));
+        BasicDBObject andQuery = new BasicDBObject("$and", mongoQueryList);
+        logger.debug("File search query : {}", andQuery);
+        QueryResult<DBObject> queryResult = fileCollection.find(andQuery, filterOptions(options, FILTER_ROUTE_FILES));
 
         List<File> files = parseFiles(queryResult);
 

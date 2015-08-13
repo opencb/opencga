@@ -458,9 +458,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
             // TODO this must be changed: only one queryOptions need to be passed
             QueryOptions query = new QueryOptions();
-            for (CatalogFileDBAdaptor.FileFilterOption option : CatalogFileDBAdaptor.FileFilterOption.values()) {
-                if (params.containsKey(option.name())) {
-                    query.put(option.name(), params.getFirst(option.name()));
+            for (String param : params.keySet()) {
+                try {
+                    CatalogFileDBAdaptor.FileFilterOption.valueOf(param.split("\\.")[0]);
+                    query.put(param, params.getFirst(param));
+                } catch (IllegalArgumentException ignore) {
                 }
             }
 
@@ -473,7 +475,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 this.queryOptions.put("limit", 1000);
                 System.out.println("Adding a limit of 1000");
             }
-
+            System.out.println("query = " + query.toJson());
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
