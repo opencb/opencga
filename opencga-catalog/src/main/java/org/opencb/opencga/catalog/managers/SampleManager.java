@@ -79,6 +79,20 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId) throws CatalogException {
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Sample from Study", studyId, null);
+        }
+
+        sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
+
+        return null;
+    }
+
+    @Override
     public QueryResult<Annotation> load(File file) throws CatalogException {
         throw new UnsupportedOperationException();
     }
@@ -264,7 +278,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
 
-    /**
+    /*
      * Cohort methods
      * ***************************
      */

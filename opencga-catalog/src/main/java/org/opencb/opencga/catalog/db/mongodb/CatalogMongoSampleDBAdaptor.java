@@ -562,6 +562,34 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("", startTime, Arrays.asList(annotationSet));
     }
 
+    @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        Sample sample = getSample(sampleId, new QueryOptions("include", "projects.studies.samples.annotationSets")).first();
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet as : sample.getAnnotationSets()) {
+            if (as.getId().equals(annotationId)) {
+                annotationSet = as;
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        DBObject query = new BasicDBObject(_ID, sampleId);
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
+        QueryResult<WriteResult> resultQueryResult = sampleCollection.update(query, update, null);
+        if (resultQueryResult.first().getN() < 1) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
+    }
+
 
     @Override
     public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {

@@ -115,6 +115,8 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
 
+    QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
+
     /**
      * Cohort methods
      * ***************************
