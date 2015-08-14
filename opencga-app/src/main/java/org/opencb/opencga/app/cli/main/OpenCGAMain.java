@@ -685,6 +685,14 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "delete": {
+                        OptionsParser.SampleCommands.DeleteCommand c = optionsParser.sampleCommands.deleteCommand;
+
+                        QueryResult<Sample> sampleQueryResult = catalogManager.deleteSample(c.id, c.cOpt.getQueryOptions(), sessionId);
+                        System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
+
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;

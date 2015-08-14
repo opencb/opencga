@@ -848,6 +848,7 @@ public class OptionsParser {
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
         final LoadCommand loadCommand;
+        final DeleteCommand deleteCommand;
 
         public SampleCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -855,11 +856,11 @@ public class OptionsParser {
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
             files.addCommand(this.loadCommand = new LoadCommand());
+            files.addCommand(this.deleteCommand = new DeleteCommand());
 //            files.addCommand(this.samplesCommand = new SamplesCommand());
         }
 
-        @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
-        class InfoCommand {
+        class BaseSampleCommand {
             @ParametersDelegate
             UserAndPasswordOptions up = userAndPasswordOptions;
 
@@ -868,6 +869,10 @@ public class OptionsParser {
 
             @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
             int id;
+        }
+
+        @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
+        class InfoCommand extends BaseSampleCommand {
         }
 
         @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
@@ -907,6 +912,10 @@ public class OptionsParser {
 
             @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
             String pedigreeFileId;
+        }
+
+        @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
+        class DeleteCommand extends BaseSampleCommand {
         }
     }
 

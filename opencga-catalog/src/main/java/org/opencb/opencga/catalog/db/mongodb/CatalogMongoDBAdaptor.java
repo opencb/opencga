@@ -411,7 +411,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         if (!result.getResult().isEmpty()) {
             DBObject study = result.getResult().get(0);
-            return Integer.parseInt(study.get(_PROJECT_ID).toString());
+            Object id = study.get(_PROJECT_ID);
+            return id instanceof Number? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
@@ -897,7 +898,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
             Object id = queryResult.getResult().get(0).get("id");
-            return id instanceof Integer ? (Integer) id : Integer.parseInt(id.toString());
+            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         }
     }
 
@@ -1033,10 +1034,11 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public int getStudyIdByJobId(int jobId) throws CatalogDBException {
         DBObject query = new BasicDBObject(_ID, jobId);
         DBObject projection = new BasicDBObject(_STUDY_ID, true);
-        QueryResult<DBObject> id = jobCollection.find(query, projection, null);
+        QueryResult<DBObject> queryResult = jobCollection.find(query, projection, null);
 
-        if (id.getNumResults() != 0) {
-            return Integer.parseInt(id.getResult().get(0).get(_STUDY_ID).toString());
+        if (queryResult.getNumResults() != 0) {
+            Object id = queryResult.getResult().get(0).get(_STUDY_ID);
+            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Job", jobId);
         }
