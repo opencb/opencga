@@ -787,6 +787,10 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
+    public QueryResult<Sample> deleteSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.delete(sampleId, options, sessionId);
+    }
+
     /**
      * VariableSet methods
      * ***************************
@@ -847,8 +851,8 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.updateCohort(cohortId, updateParams, sessionId);
     }
 
-    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
-        return sampleManager.deleteCohort(cohortId, updateParams, sessionId);
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+        return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
     /**

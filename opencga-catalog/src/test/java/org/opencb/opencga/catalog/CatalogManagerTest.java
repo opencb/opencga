@@ -1461,6 +1461,18 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
     }
 
+    @Test
+    public void testDeleteSample() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, new QueryOptions(), sessionIdUser);
+        assertEquals(sampleId, queryResult.first().getId());
+
+        thrown.expect(CatalogDBException.class);
+        catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+    }
+
     /**
      * Cohort methods
      * ***************************

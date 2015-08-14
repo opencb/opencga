@@ -173,7 +173,13 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ParamUtils.checkObj(id, "sampleId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
+        }
+        return sampleDBAdaptor.deleteSample(id);
     }
 
     /*
@@ -249,6 +255,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
+        }
         return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
     }
 
