@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -29,6 +30,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     private final MongoDBCollection individualCollection;
 
     public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection individualCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.individualCollection = individualCollection;
@@ -205,7 +207,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(SampleFilterOption.individualId.toString(), individualId));
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.individualId.toString(), individualId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
             for (Sample sample : samples.getResult()) {

@@ -126,6 +126,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("field", "other");
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
+        attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
         catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
@@ -656,6 +657,13 @@ public class CatalogManagerTest extends GenericTest {
 
         CatalogFileDBAdaptor.FileFilterOption attributes = CatalogFileDBAdaptor.FileFilterOption.attributes;
         CatalogFileDBAdaptor.FileFilterOption nattributes = CatalogFileDBAdaptor.FileFilterOption.nattributes;
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".nested.text" , "~H"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".nested.num1" , ">0"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".nested.num1" , ">0"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field" , "~val"), sessionIdUser);
         assertEquals(3, result.getNumResults());

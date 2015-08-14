@@ -26,6 +26,10 @@ import java.util.List;
 
 public abstract class CatalogDBAdaptor {
 
+    protected CatalogDBAdaptor(Logger logger) {
+        this.logger = logger;
+    }
+
     public interface FilterOption {
         enum Type {
             /**
@@ -61,7 +65,7 @@ public abstract class CatalogDBAdaptor {
         String getDescription();
     }
 
-    protected Logger logger;
+    protected final Logger logger;
 
     protected long startQuery(){
         return System.currentTimeMillis();

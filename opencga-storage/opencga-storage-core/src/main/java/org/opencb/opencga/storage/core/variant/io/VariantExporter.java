@@ -177,8 +177,8 @@ public class VariantExporter {
     /**
      * converts org.opencb.biodata.models.variant.Variant into a htsjdk.variant.variantcontext.VariantContext
      * some assumptions:
-     * * splitted multiallelic variants will go to different variantContexts, no merging is done
-     * * if the variant is an INDEL, the source entries in it may have an attribute ORI with the REF and ALT alleles with reference bases
+     * * splitted multiallelic variants will produce only one variantContexts. Merging is done
+     * * If some normalization have been done to the variant, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
      * @param variant
      * @return
      */

@@ -21,6 +21,12 @@ db.getCollection('user').createIndex({"sessions.id": 1})
 db.getCollection('study').createIndex({"alias": 1})
 db.getCollection('study').createIndex({"_projectId": 1})
 
+db.getCollection('sample').createIndex({"name": 1})
+db.getCollection('sample').createIndex({"annotationSets.variableSetId": 1})
+db.getCollection('sample').createIndex({"annotationSets.annotations.id": 1})
+db.getCollection('sample').createIndex({"annotationSets.annotations.value": 1})
+db.getCollection('sample').createIndex({"_studyId": 1})
+
 db.getCollection('file').createIndex({"name": 1})
 db.getCollection('file').createIndex({"path": 1})
 db.getCollection('file').createIndex({"jobId": 1})

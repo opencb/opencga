@@ -21,6 +21,8 @@ public interface CatalogStudyDBAdaptor {
 
     boolean studyExists(int studyId);
 
+    void checkStudyId(int studyId) throws CatalogDBException;
+
     QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;

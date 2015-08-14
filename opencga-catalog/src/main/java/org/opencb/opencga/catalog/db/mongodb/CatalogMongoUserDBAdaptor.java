@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -28,6 +29,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
     private final CatalogDBAdaptorFactory dbAdaptorFactory;
 
     public CatalogMongoUserDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection userCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.userCollection = userCollection;
