@@ -109,7 +109,7 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
+    QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException;
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 

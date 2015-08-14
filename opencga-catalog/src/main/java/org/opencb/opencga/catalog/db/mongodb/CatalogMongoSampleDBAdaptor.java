@@ -10,6 +10,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -200,17 +201,46 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     }
 
     @Override
-    public QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException {
+    public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
         long startTime = startQuery();
 
+        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
+
+        checkInUse(sampleId);
         WriteResult id = sampleCollection.remove(new BasicDBObject(_ID, sampleId), null).getResult().get(0);
-        List<Integer> deletes = new LinkedList<>();
         if (id.getN() == 0) {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         } else {
-            deletes.add(id.getN());
-            return endQuery("delete sample", startTime, deletes);
+            return endQuery("delete sample", startTime, sampleQueryResult);
         }
+    }
+
+    public void checkInUse(int sampleId) throws CatalogDBException {
+        int studyId = getStudyIdBySampleId(sampleId);
+
+        QueryOptions query = new QueryOptions(FileFilterOption.sampleIds.toString(), sampleId);
+        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path"));
+        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().searchFile(query, queryOptions);
+        if (fileQueryResult.getNumResults() != 0) {
+            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : " +
+                    fileQueryResult.getResult().stream()
+                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
+                            .collect(Collectors.joining(", ", "[", "]"));
+            throw new CatalogDBException(msg);
+        }
+
+
+        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
+                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
+        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+        if (cohortQueryResult.getNumResults() != 0) {
+            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : " +
+                    cohortQueryResult.getResult().stream()
+                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
+                            .collect(Collectors.joining(", ", "[", "]"));
+            throw new CatalogDBException(msg);
+        }
+
     }
 
 

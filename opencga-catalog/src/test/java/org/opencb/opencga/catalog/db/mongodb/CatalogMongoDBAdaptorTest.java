@@ -760,6 +760,62 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(jcoll.isEmpty());
     }
 
+    @Test
+    public void createSampleTest() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> result = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+
+        assertEquals(hg0097.getName(), result.first().getName());
+        assertEquals(hg0097.getDescription(), result.first().getDescription());
+        assertTrue(result.first().getId() > 0);
+    }
+
+    @Test
+    public void deleteSampleTest() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+        assertEquals(createResult.first().getId(), deleteResult.first().getId());
+        assertEquals(1, deleteResult.getNumResults());
+
+        thrown.expect(CatalogDBException.class);
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().getSample(deleteResult.first().getId(), null);
+    }
+
+    @Test
+    public void deleteSampleFail1Test() throws Exception {
+        thrown.expect(CatalogDBException.class);
+        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(55555555);
+    }
+
+    @Test
+    public void deleteSampleFail2Test() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int fileId = catalogDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        catalogDBAdaptor.getCatalogFileDBAdaptor().modifyFile(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
+
+        thrown.expect(CatalogDBException.class);
+        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+    }
+
+    @Test
+    public void deleteSampleFail3Test() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "", Collections.singletonList(createResult.first().getId()), null));
+
+        thrown.expect(CatalogDBException.class);
+        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+    }
 
     /**
      * Job methods
