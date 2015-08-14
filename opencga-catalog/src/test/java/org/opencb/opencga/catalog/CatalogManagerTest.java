@@ -1442,7 +1442,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifySample () throws CatalogException {
+    public void testModifySample() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         int individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Gender.MALE, new QueryOptions(), sessionIdUser).first().getId();
@@ -1453,7 +1453,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifySampleBadIndividual () throws CatalogException {
+    public void testModifySampleBadIndividual() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
@@ -1549,7 +1549,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().contains(sampleId2));
         assertTrue(myCohort.getSamples().contains(sampleId3));
 
-        Cohort myModifiedCohort = catalogManager.updateCohort(myCohort.getId(), new ObjectMap("samples", Arrays.asList(sampleId1, sampleId3, sampleId4, sampleId5)).append("name", "myModifiedCohort"), sessionIdUser).first();
+        Cohort myModifiedCohort = catalogManager.modifyCohort(myCohort.getId(), new ObjectMap("samples", Arrays.asList(sampleId1, sampleId3, sampleId4, sampleId5)).append("name", "myModifiedCohort"), sessionIdUser).first();
 
         assertEquals("myModifiedCohort", myModifiedCohort.getName());
         assertEquals(4, myModifiedCohort.getSamples().size());

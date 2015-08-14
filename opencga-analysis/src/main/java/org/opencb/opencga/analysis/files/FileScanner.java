@@ -81,7 +81,7 @@ public class FileScanner {
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
         int studyId = study.getId();
-//        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+//        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         QueryOptions query = new QueryOptions();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
         query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);

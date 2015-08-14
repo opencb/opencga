@@ -259,12 +259,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         }
         return endQuery("Change Password", startTime, update);
     }
-
-    @Override
-    public QueryResult changeEmail(String userId, String newEmail) throws CatalogDBException {
-        return modifyUser(userId, new ObjectMap("email", newEmail));
-    }
-
+    
     @Override
     public void updateUserLastActivity(String userId) throws CatalogDBException {
         modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));

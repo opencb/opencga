@@ -182,7 +182,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
         try {
-            return createOkResponse(catalogManager.updateCohort(cohortId, queryOptions, sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }    }
@@ -194,7 +194,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
-            return createOkResponse(catalogManager.updateCohort(cohortId, new QueryOptions(params), sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, new QueryOptions(params), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

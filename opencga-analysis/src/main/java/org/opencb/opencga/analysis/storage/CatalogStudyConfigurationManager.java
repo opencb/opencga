@@ -18,7 +18,6 @@
 package org.opencb.opencga.analysis.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -233,7 +232,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(), new QueryOptions("id", new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
                     if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
                         logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
-                        catalogManager.updateCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                        catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
                     }
                 }
             }

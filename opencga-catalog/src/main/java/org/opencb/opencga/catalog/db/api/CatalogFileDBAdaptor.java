@@ -100,13 +100,11 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
-
-    @Deprecated QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
 
     QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 

@@ -10,7 +10,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -220,7 +219,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
         QueryOptions query = new QueryOptions(FileFilterOption.sampleIds.toString(), sampleId);
         QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path"));
-        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().searchFile(query, queryOptions);
+        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().getAllFiles(query, queryOptions);
         if (fileQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : " +
                     fileQueryResult.getResult().stream()
@@ -346,7 +345,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     }
 
     @Override
-    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         Map<String, Object> cohortParams = new HashMap<>();

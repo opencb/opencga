@@ -224,7 +224,7 @@ public class AnalysisFileIndexer {
             samples.addAll(originalFile.getSampleIds());
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
-                catalogManager.updateCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
+                catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
             }
         }
 

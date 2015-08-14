@@ -167,7 +167,7 @@ public class JobManager extends AbstractManager implements IJobManager {
                 }
             }
         }
-        return jobDBAdaptor.searchJob(query, options);
+        return jobDBAdaptor.getAllJobs(query, options);
     }
 
     @Override

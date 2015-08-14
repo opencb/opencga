@@ -25,7 +25,9 @@ public interface CatalogJobDBAdaptor {
 
     QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
     String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
 
@@ -34,8 +36,6 @@ public interface CatalogJobDBAdaptor {
     QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
     int getStudyIdByJobId(int jobId) throws CatalogDBException;
-
-    QueryResult<Job> searchJob(QueryOptions query, QueryOptions options) throws CatalogDBException;
 
 
     /**

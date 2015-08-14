@@ -322,7 +322,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
         if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            return sampleDBAdaptor.updateCohort(cohortId, params);
+            return sampleDBAdaptor.modifyCohort(cohortId, params);
         } else {
             throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
         }

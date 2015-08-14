@@ -197,10 +197,10 @@ public class VariantStorageTest {
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.updateCohort(coh1, new ObjectMap("description", "NewDescription"), sessionId);
+        catalogManager.modifyCohort(coh1, new ObjectMap("description", "NewDescription"), sessionId);
         assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
 
-        catalogManager.updateCohort(coh1, new ObjectMap("samples", catalogManager.getCohort(coh1, null, sessionId).first().getSamples().subList(0, 100)), sessionId);
+        catalogManager.modifyCohort(coh1, new ObjectMap("samples", catalogManager.getCohort(coh1, null, sessionId).first().getSamples().subList(0, 100)), sessionId);
         assertEquals(Cohort.Status.INVALID, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
 
         job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first();

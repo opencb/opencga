@@ -163,7 +163,7 @@ public class AnalysisOutputRecorder {
                     if (queryResult.getNumResults() != 0) {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();
-                        catalogManager.updateCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                        catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
                     }
                 }
                 break;
@@ -171,7 +171,7 @@ public class AnalysisOutputRecorder {
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
                 ObjectMap updateParams = new ObjectMap("status", jobFailed? Cohort.Status.INVALID : Cohort.Status.READY);
                 for (Integer cohortId : cohortIds) {
-                    catalogManager.updateCohort(cohortId, updateParams, sessionId);
+                    catalogManager.modifyCohort(cohortId, updateParams, sessionId);
                 }
                 break;
             case ANALYSIS:

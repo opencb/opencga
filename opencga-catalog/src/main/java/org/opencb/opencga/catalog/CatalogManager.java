@@ -843,7 +843,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
-    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
         return sampleManager.updateCohort(cohortId, updateParams, sessionId);
     }
 

@@ -43,8 +43,6 @@ public interface CatalogUserDBAdaptor {
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    QueryResult changeEmail(String userId, String newEmail) throws CatalogDBException;
-
     void updateUserLastActivity(String userId) throws CatalogDBException;
 
     QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;

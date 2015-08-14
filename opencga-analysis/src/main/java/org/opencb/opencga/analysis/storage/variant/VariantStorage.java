@@ -96,7 +96,7 @@ public class VariantStorage {
             outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
-            catalogManager.updateCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);
+            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);
 
         }
 

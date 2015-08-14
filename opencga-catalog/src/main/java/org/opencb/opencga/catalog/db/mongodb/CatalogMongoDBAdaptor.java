@@ -541,7 +541,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
@@ -583,12 +583,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         } else {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-    }
-
-    @Override
-    public QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException {
-        long startTime = startQuery();
-        return endQuery("Set file status", startTime, modifyFile(fileId, new ObjectMap("status", status.toString())));
     }
 
     @Override
@@ -791,7 +785,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         return endQuery("set file acl", startTime);
     }
 
-    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
@@ -965,7 +959,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Job> getAllJobs(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
         List<Job> jobs = parseJobs(queryResult);
@@ -1049,7 +1043,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Job> searchJob(QueryOptions query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         DBObject mongoQuery = new BasicDBObject();
@@ -1225,10 +1219,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
 
         if (options.getBoolean("includeFiles")) {
-            study.setFiles(getAllFiles(studyId, options).getResult());
+            study.setFiles(getAllFilesInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeJobs")) {
-            study.setJobs(getAllJobs(studyId, options).getResult());
+            study.setJobs(getAllJobsInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeSamples")) {
             study.setSamples(sampleDBAdaptor.getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)).getResult());

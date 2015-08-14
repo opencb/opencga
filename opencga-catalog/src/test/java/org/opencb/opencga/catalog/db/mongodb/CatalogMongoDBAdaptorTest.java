@@ -652,13 +652,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getAllFilesTest() throws CatalogDBException {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        QueryResult<File> allFiles = catalogDBAdaptor.getAllFiles(studyId, null);
+        QueryResult<File> allFiles = catalogDBAdaptor.getAllFilesInStudy(studyId, null);
         List<File> files = allFiles.getResult();
         System.out.println(files);
         assertTrue(!files.isEmpty());
 
         studyId = catalogDBAdaptor.getStudyId(catalogUserDBAdaptor.getProjectId("jcoll", "1000G"), "ph7");
-        allFiles = catalogDBAdaptor.getAllFiles(studyId, null);
+        allFiles = catalogDBAdaptor.getAllFilesInStudy(studyId, null);
         assertTrue(allFiles.getResult().isEmpty());
     }
 
@@ -862,7 +862,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void getAllJobTest() throws CatalogDBException {
                  int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 //        int analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
-        QueryResult<Job> allJobs = catalogDBAdaptor.getAllJobs(studyId, null);
+        QueryResult<Job> allJobs = catalogDBAdaptor.getAllJobsInStudy(studyId, null);
         System.out.println(allJobs);
     }
 

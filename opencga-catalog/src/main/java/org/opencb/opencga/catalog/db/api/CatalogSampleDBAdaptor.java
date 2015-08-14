@@ -126,7 +126,7 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
 
     QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
 
@@ -145,6 +145,6 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
-    int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
+    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 
 }
