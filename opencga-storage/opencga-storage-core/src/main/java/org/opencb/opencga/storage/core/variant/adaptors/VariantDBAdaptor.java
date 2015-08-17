@@ -135,7 +135,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     /**
      * Delete the given study from the database
      * @param studyName The study name to delete
-     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @param options Query modifiers, accepted values are: purge
      * @return A QueryResult with the study deleted
      */
     QueryResult deleteStudy(String studyName, QueryOptions options);
@@ -226,7 +226,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
-    QueryResult deleteAnnotation(String annotationId, QueryOptions queryOptions);
+    QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
 
     boolean close();

@@ -26,6 +26,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -97,8 +98,9 @@ public class VariantStatisticsManager {
 //        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
         VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyName);
 
-        options.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyName));
-        options.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId)); // query just the asked file
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyName));
+        query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId)); // query just the asked file
 
 
         VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
@@ -107,7 +109,7 @@ public class VariantStatisticsManager {
         logger.info("starting stats calculation");
         long start = System.currentTimeMillis();
 
-        Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, options);
+        Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, query, options);
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
             retrievedVariants++;
@@ -173,18 +175,17 @@ public class VariantStatisticsManager {
     }
 
     /** Gets iterator from OpenCGA Variant database. **/
-    private Iterator<Variant> obtainIterator(VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
+    private Iterator<Variant> obtainIterator(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
 
-        QueryOptions iteratorQueryOptions = new QueryOptions();
-        if(options != null) { //Parse query options
-            iteratorQueryOptions = options;
-        }
+        Query iteratorQuery = query != null ? query : new Query();
+        //Parse query options
+        QueryOptions iteratorQueryOptions = options != null ? options : new QueryOptions();
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference", "sourceEntries");
         iteratorQueryOptions.add("include", include);
 
-        return variantDBAdaptor.iterator(iteratorQueryOptions);
+        return variantDBAdaptor.iterator(iteratorQuery, iteratorQueryOptions);
     }
 
     /**
@@ -233,8 +234,8 @@ public class VariantStatisticsManager {
 
 
        // reader, tasks and writer
-        QueryOptions readerQueryOptions = new QueryOptions(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQueryOptions);
+        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/, variantSourceStats));

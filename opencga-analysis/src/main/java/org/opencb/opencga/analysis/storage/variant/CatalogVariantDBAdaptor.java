@@ -67,16 +67,16 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         dbAdaptor.setDataWriter(dataWriter);
     }
 
-    @Override
-    public QueryResult<Variant> getAllVariants(QueryOptions options) {
-
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            return queryError("getAllVariants", e);
-        }
-        return dbAdaptor.getAllVariants(options);
-    }
+//    @Override
+//    public QueryResult<Variant> getAllVariants(QueryOptions options) {
+//
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            return queryError("getAllVariants", e);
+//        }
+//        return dbAdaptor.getAllVariants(options);
+//    }
 
     private void checkQueryOptions(QueryOptions options) throws CatalogException {
         Map<Integer, Study> studiesMap = getStudiesMap(options);
@@ -84,56 +84,56 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         checkFiles(filesMap.values());
     }
 
-    @Override
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            return queryError("getAllVariants", e);
-        }
-        return dbAdaptor.getVariantById(id, options);
-    }
-
-    @Override
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            return Collections.singletonList(this.<Variant>queryError("getAllVariants", e));
-        }
-        return dbAdaptor.getAllVariantsByIdList(idList, options);
-    }
-
-    @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            return queryError("getAllVariants", e);
-        }
-        return dbAdaptor.getAllVariantsByRegion(region, options);
-    }
-
-    @Override
-    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Collections.singletonList(this.<Variant>queryError("getAllVariants", e));
-        }
-        return dbAdaptor.getAllVariantsByRegionList(regionList, options);
-    }
-
-    @Override
-    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
-        try {
-            checkQueryOptions(options);
-        } catch (Exception e) {
-            return this.<Variant>queryError("getAllVariants", e);
-        }
-        return dbAdaptor.getVariantFrequencyByRegion(region, options);
-    }
+//    @Override
+//    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            return queryError("getAllVariants", e);
+//        }
+//        return dbAdaptor.getVariantById(id, options);
+//    }
+//
+//    @Override
+//    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            return Collections.singletonList(this.<Variant>queryError("getAllVariants", e));
+//        }
+//        return dbAdaptor.getAllVariantsByIdList(idList, options);
+//    }
+//
+//    @Override
+//    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            return queryError("getAllVariants", e);
+//        }
+//        return dbAdaptor.getAllVariantsByRegion(region, options);
+//    }
+//
+//    @Override
+//    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return Collections.singletonList(this.<Variant>queryError("getAllVariants", e));
+//        }
+//        return dbAdaptor.getAllVariantsByRegionList(regionList, options);
+//    }
+//
+//    @Override
+//    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
+//        try {
+//            checkQueryOptions(options);
+//        } catch (Exception e) {
+//            return this.<Variant>queryError("getAllVariants", e);
+//        }
+//        return dbAdaptor.getVariantFrequencyByRegion(region, options);
+//    }
 //
 //    @Override
 //    public QueryResult groupBy(String field, QueryOptions options) {

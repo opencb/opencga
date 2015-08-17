@@ -120,12 +120,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
-        return null;
+        //TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
-        return null;
+        //TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -134,8 +136,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
-        options.put(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        DBObject query = parseQueryOptions(options, new QueryBuilder()).get();
+        DBObject query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new QueryBuilder()).get();
 
         // { $pull : { files : {  sid : <studyId> } } }
         BasicDBObject update = new BasicDBObject(
@@ -216,6 +217,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
+        }
+        if (query == null) {
+            query = new Query();
         }
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
@@ -458,14 +462,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
-        return null;
+        String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
+        logger.warn(warningMsg);
+        QueryResult queryResult = groupBy(query, fields.get(0), options);
+        queryResult.setWarningMsg(warningMsg);
+        return queryResult;
     }
 
 
 
     @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        return null;
+        return updateStats(variantStatsWrappers, studyName, queryOptions);
     }
 
     @Override
@@ -576,7 +584,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        return null;
+        logger.warn("Unimplemented VariantMongoDBAdaptor::addAnnotations. Using \"VariantMongoDBAdaptor::updateAnnotations\"");
+        return updateAnnotations(variantAnnotations, queryOptions);
     }
 
     @Override
@@ -602,20 +611,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult deleteAnnotation(String annotationId, QueryOptions queryOptions) {
+    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         if (queryOptions == null) {
             queryOptions = new QueryOptions();
         }
 //        queryOptions.put(VariantQueryParams.STUDIES.key(), studyId);
-        DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
+        DBObject dbQuery = parseQuery(query, new QueryBuilder()).get();
 
 //        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
         DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD + ".0", null));
 
-        logger.debug("deleteAnnotation: query = {}", query);
+        logger.debug("deleteAnnotation: query = {}", dbQuery);
         logger.debug("deleteAnnotation: update = {}", update);
 
-        return variantsCollection.update(query, update, new QueryOptions("multi", true));
+        return variantsCollection.update(dbQuery, update, new QueryOptions("multi", true));
     }
 
 
