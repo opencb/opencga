@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -70,21 +71,21 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         /**
          * Annotation options
          */
-        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
         if (annotateVariantsCommandOptions.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.REGION.key(), annotateVariantsCommandOptions.filterRegion);
+            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), annotateVariantsCommandOptions.filterRegion);
         }
         if (annotateVariantsCommandOptions.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
+            query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
         }
         if (annotateVariantsCommandOptions.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.GENE.key(), annotateVariantsCommandOptions.filterGene);
+            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), annotateVariantsCommandOptions.filterGene);
         }
         if (annotateVariantsCommandOptions.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), annotateVariantsCommandOptions.filterAnnotConsequenceType);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), annotateVariantsCommandOptions.filterAnnotConsequenceType);
         }
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
@@ -102,7 +103,9 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null ? annotateVariantsCommandOptions.dbName : annotateVariantsCommandOptions.fileName, queryOptions);
+            annotationFile = variantAnnotationManager.createAnnotation(outDir,
+                    annotateVariantsCommandOptions.fileName == null ? annotateVariantsCommandOptions.dbName : annotateVariantsCommandOptions.fileName,
+                    query, new QueryOptions());
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 

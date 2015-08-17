@@ -160,7 +160,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         QueryOptions queryOptions = new QueryOptions();
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
         queryOptions.add("include", include);
-        VariantExporter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), queryOptions);
+        VariantExporter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
 
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }

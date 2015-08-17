@@ -31,6 +31,7 @@ import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
@@ -172,7 +173,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     /////// CREATE ANNOTATION
 
     @Override
-    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options)
+    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options)
             throws IOException {
         if(cellBaseClient == null && dbAdaptorFactory == null) {
             throw new IllegalStateException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
@@ -211,7 +212,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
 
 
-        Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
+        Iterator<Variant> iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
 
         try {
             final int[] readsCounter = {0};

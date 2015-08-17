@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -73,14 +74,14 @@ public class VariantAnnotationManager {
         this.variantAnnotator = variantAnnotator;
     }
 
-    public void annotate(QueryOptions options) throws IOException {
+    public void annotate(Query query, QueryOptions options) throws IOException {
 
         long start = System.currentTimeMillis();
         logger.info("Starting annotation creation ");
         URI annotationFile = createAnnotation(
                 Paths.get(options.getString(OUT_DIR, "/tmp")),
                 options.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
-                options);
+                query, options);
         logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
 
         start = System.currentTimeMillis();
@@ -89,8 +90,8 @@ public class VariantAnnotationManager {
         logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
     }
 
-    public URI createAnnotation(Path outDir, String fileName, QueryOptions options) throws IOException {
-        return this.variantAnnotator.createAnnotation(dbAdaptor, outDir, fileName, options);
+    public URI createAnnotation(Path outDir, String fileName, Query query, QueryOptions options) throws IOException {
+        return this.variantAnnotator.createAnnotation(dbAdaptor, outDir, fileName, query, options);
     }
 
     public void loadAnnotation(URI uri, QueryOptions options) throws IOException {
@@ -133,11 +134,11 @@ public class VariantAnnotationManager {
     class AnnotatorDBReader implements DataReader<VariantAnnotation> {
         private final VariantDBIterator iterator;
         private final VariantDBAdaptor variantDBAdaptor;
-        AnnotatorDBReader(VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
+        AnnotatorDBReader(VariantDBAdaptor variantDBAdaptor, Query query) {
             this.variantDBAdaptor = variantDBAdaptor;
-            QueryOptions iteratorQueryOptions = new QueryOptions(options);
+            QueryOptions iteratorQueryOptions = new QueryOptions();
             iteratorQueryOptions.add("include", Arrays.asList("chromosome", "start", "end", "alternate", "reference"));
-            this.iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
+            this.iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
         }
         @Override public boolean open() {return true;}
         @Override public boolean close() {return true;}

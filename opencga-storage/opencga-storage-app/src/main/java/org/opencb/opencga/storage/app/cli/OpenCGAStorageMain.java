@@ -37,6 +37,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.Config;
@@ -688,21 +689,21 @@ public class OpenCGAStorageMain {
         /**
          * Annotation options
          */
-        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
         if (c.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.REGION.key(), c.filterRegion);
+            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), c.filterRegion);
         }
         if (c.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), c.filterChromosome);
+            query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), c.filterChromosome);
         }
         if (c.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.GENE.key(), c.filterGene);
+            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), c.filterGene);
         }
         if (c.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), c.filterAnnotConsequenceType);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), c.filterAnnotConsequenceType);
         }
         if (!c.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = new URI(null , c.outdir, null);
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
@@ -723,7 +724,7 @@ public class OpenCGAStorageMain {
         if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, queryOptions);
+            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, query, new QueryOptions());
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 
