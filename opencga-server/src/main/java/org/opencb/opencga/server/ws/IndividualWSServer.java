@@ -3,9 +3,11 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -96,6 +99,32 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       ) {
         try {
             QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class UpdateIndividual {
+        public String name;
+        public int fatherId;
+        public int motherId;
+        public String family;
+        public Individual.Gender gender;
+
+        public String race;
+        public Individual.Species species;
+        public Individual.Population population;
+    }
+
+    @POST
+    @Path("/{individualId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
+    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
+                                 @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
+        try {
+            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
