@@ -140,7 +140,7 @@ public class VariantExporter {
     private static VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
-        List<String> returnedSamples = null;
+        List<String> returnedSamples = new ArrayList<>();
         if (options != null) {
             returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
@@ -150,9 +150,9 @@ public class VariantExporter {
         }
         String fileHeader = headers.iterator().next();
 
-        if (headers.size() > 1 || returnedSamples != null) {
+        if (headers.size() > 1 || !returnedSamples.isEmpty()) {
             String[] lines = fileHeader.split("\n");
-            Set<String> sampleSet = returnedSamples != null?
+            Set<String> sampleSet = !returnedSamples.isEmpty() ?
                     new HashSet<>(returnedSamples)
                     : studyConfiguration.getSampleIds().keySet();
             String samples = String.join("\t", sampleSet);
