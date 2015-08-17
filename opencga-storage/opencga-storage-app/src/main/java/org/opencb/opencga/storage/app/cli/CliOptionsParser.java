@@ -234,32 +234,32 @@ public class CliOptionsParser {
         @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
         public boolean includeSrc = false;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
-        String aggregationMappingFile = null;
+        public String aggregationMappingFile = null;
 
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
-        public boolean gvcf = false;
+        public boolean gvcf;
 
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-        public boolean bgzip = false;
+        public boolean bgzip;
 
-        @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load step (optional)")
-        public boolean calculateStats = false;
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
+        public boolean calculateStats;
 
-        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
-        public boolean annotate = false;
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
+        public boolean annotate;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
-        public boolean overwriteAnnotations = false;
+        public boolean overwriteAnnotations;
 
         @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
