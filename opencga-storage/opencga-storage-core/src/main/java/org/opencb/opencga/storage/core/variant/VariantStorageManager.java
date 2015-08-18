@@ -27,6 +27,7 @@ import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
@@ -520,6 +521,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, getDBAdaptor(dbName));
 
             QueryOptions annotationOptions = new QueryOptions();
+            Query annotationQuery = new Query();
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
                 annotationOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
             }
@@ -527,7 +529,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
-            variantAnnotationManager.annotate(annotationOptions);
+            variantAnnotationManager.annotate(annotationQuery, annotationOptions);
 //            URI annotationFile = variantAnnotationManager.createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }

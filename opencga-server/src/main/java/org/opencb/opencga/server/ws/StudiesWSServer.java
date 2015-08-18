@@ -26,10 +26,7 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
@@ -439,6 +436,36 @@ public class StudiesWSServer extends OpenCGAWSServer {
             System.out.println(objectMap.toJson());
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public static class UpdateStudy {
+
+        public String name;
+        public Study.Type type;
+        public String description;
+        public String status;
+        public String lastActivity;
+//        public long diskUsage;
+//        public String cipher;
+
+        //public URI uri;
+
+        public Map<String, Object> stats;
+        public Map<String, Object> attributes;
+    }
+
+    @POST
+    @Path("/{studyId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some study attributes using POST method", position = 6)
+    public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
+                                 @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
+        try {
+            QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

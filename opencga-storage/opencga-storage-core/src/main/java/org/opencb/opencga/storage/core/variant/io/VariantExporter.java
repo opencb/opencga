@@ -12,6 +12,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.cellbase.core.client.CellBaseClient;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -55,10 +56,10 @@ public class VariantExporter {
      * @param outputUri
      * @param options
      */
-    public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, QueryOptions options) {
+    public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, Query query, QueryOptions options) {
 
         // Default objects
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, options);
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, query, options);
         VariantVcfDataWriter writer = new VariantVcfDataWriter(reader, outputUri.getPath());
         int batchSize = 100;
 
