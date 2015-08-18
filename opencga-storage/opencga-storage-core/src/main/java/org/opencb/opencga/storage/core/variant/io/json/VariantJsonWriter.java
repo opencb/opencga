@@ -35,6 +35,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 /**
  *
@@ -55,7 +56,7 @@ public class VariantJsonWriter implements VariantWriter {
     private OutputStream fileStream;
 
     private long numVariantsWritten;
-    private boolean includeSrc;
+    private VariantStorageManager.IncludeSrc includeSrc;
     private boolean includeStats;
     private boolean includeSamples;
 
@@ -119,7 +120,7 @@ public class VariantJsonWriter implements VariantWriter {
         for (Variant variant : batch) {
             try {
                 for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                    if (!includeSrc) {
+                    if (!includeSrc.equals(VariantStorageManager.IncludeSrc.NO)) {  // avoid parsing the source line here
                         if (variantSourceEntry.getAttributes().containsKey("src")) {
                             variantSourceEntry.getAttributes().remove("src");
                         }
@@ -185,7 +186,7 @@ public class VariantJsonWriter implements VariantWriter {
         this.includeStats = stats;
     }
 
-    public void includeSrc(boolean src) {
+    public void includeSrc(VariantStorageManager.IncludeSrc src) {
         this.includeSrc = src;
     }
 

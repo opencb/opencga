@@ -230,9 +230,8 @@ public class CliOptionsParser {
         @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
         public boolean compressGenotypes = false;
 
-        @Deprecated
-        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
-        public boolean includeSrc = false;
+        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant: {NO, FIRST_8_COLUMNS, FULL}")
+        String includeSrc = "NO";
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;

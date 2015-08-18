@@ -383,8 +383,8 @@ public class OptionsParser {
         @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
         boolean compressGenotypes = false;
 
-        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
-        boolean includeSrc = false;
+        @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant: {NO, FIRST_8_COLUMNS, FULL}")
+        String includeSrc = "NO";
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or EXAC (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;

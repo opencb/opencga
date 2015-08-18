@@ -52,6 +52,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+
+
 /**
  * Created by imedina on 13/08/14.
  */
@@ -83,11 +85,29 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //    public static final String LOAD_THREADS = "load.threads";
 //    public static final String ANNOTATE = "annotate";
 
+    public enum IncludeSrc {
+        NO, FIRST_8_COLUMNS, FULL;
+
+        public static IncludeSrc parse(String value) {
+            for (IncludeSrc element : IncludeSrc.values()) {
+                if (element.toString().equalsIgnoreCase(value)) {
+                    return element;
+                }
+            }
+            // no match found
+            StringBuilder stringBuilder = new StringBuilder("\"").append(value)
+                    .append("\" is an invalid IncludeSrc option, it must be one of: ");
+            for (IncludeSrc element : IncludeSrc.values()) {
+                stringBuilder.append(element).append(", ");
+            }
+            throw new IllegalArgumentException(stringBuilder.toString());
+        }
+    };
+
     public enum Options {
         INCLUDE_STATS ("include.stats", true),              //Include existing stats on the original file.
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
-        @Deprecated
-        INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
+        INCLUDE_SRC ("include.src", "NO"),                  //Include original source file on the transformed file and the final db
         COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
 
         STUDY_CONFIGURATION ("studyConfiguration", ""),      //
@@ -192,7 +212,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+        IncludeSrc includeSrc = IncludeSrc.parse(options.getString(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue()));
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field

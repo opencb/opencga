@@ -167,7 +167,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), false);
+        IncludeSrc includeSrc = IncludeSrc.parse(options.getString(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue()));
 
         String defaultGenotype = options.getString(DEFAULT_GENOTYPE, "");
         boolean compressSamples = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);

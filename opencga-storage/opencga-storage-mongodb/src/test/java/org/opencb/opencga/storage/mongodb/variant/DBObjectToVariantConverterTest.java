@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 /**
  *
@@ -108,7 +109,7 @@ public class DBObjectToVariantConverterTest {
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
-                        true,
+                        VariantStorageManager.IncludeSrc.FULL,
                         new DBObjectToSamplesConverter(sampleNames)), 
                 new DBObjectToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
@@ -137,7 +138,7 @@ public class DBObjectToVariantConverterTest {
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
-                        true,
+                        VariantStorageManager.IncludeSrc.FULL,
                         new DBObjectToSamplesConverter(sampleNames)),
                 new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(variant);

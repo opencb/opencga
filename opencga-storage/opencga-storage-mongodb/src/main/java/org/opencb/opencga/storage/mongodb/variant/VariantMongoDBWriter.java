@@ -30,6 +30,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.slf4j.LoggerFactory;
@@ -62,8 +63,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     @Deprecated private DB db;
 
 
+    private VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.Options.INCLUDE_SRC.defaultValue();
     private boolean includeStats;
-    private boolean includeSrc = true;
     private boolean includeSamples;
     private boolean compressDefaultGenotype = true;
     private String defaultGenotype = null;
@@ -350,7 +351,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeStats = b;
     }
 
-    public final void includeSrc(boolean b) {
+    public final void includeSrc(VariantStorageManager.IncludeSrc b) {
         includeSrc = b;
     }
 
@@ -390,7 +391,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                 includeSrc,
                 sampleConverter
         );
-        sourceEntryConverter.setIncludeSrc(includeSrc);
+//        sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter nor the statsconverter.
         // The variantSourceEntry and stats conversion will be done on demand to create a proper mongoDB update query.
