@@ -77,7 +77,7 @@ public abstract class StudyConfigurationManager {
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            if (!studyName.equals(studyConfiguration.getStudyName()) ) {
+            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName()) ) {
                 stringStudyConfigurationMap.put(studyName, studyConfiguration);
             }
             if (!readOnly) {
