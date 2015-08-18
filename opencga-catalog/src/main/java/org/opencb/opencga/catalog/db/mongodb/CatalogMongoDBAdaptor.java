@@ -52,6 +52,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private static final String SAMPLE_COLLECTION = "sample";
     private static final String INDIVIDUAL_COLLECTION = "individual";
     private static final String METADATA_COLLECTION = "metadata";
+    private static final String AUDIT_COLLECTION = "audit";
 
     static final String METADATA_OBJECT_ID = "METADATA";
 
@@ -78,10 +79,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private MongoDBCollection sampleCollection;
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
+    private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
     private CatalogMongoIndividualDBAdaptor individualDBAdaptor;
     private CatalogMongoSampleDBAdaptor sampleDBAdaptor;
+    private CatalogAuditDBAdaptor auditDBAdaptor;
 
     //    private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -117,6 +120,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         return this;
     }
 
+    @Override
+    public CatalogAuditDBAdaptor getCatalogAuditDbAdaptor() { return auditDBAdaptor; }
+
 
     public CatalogMongoDBAdaptor(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration, String database)
             throws CatalogDBException {
@@ -142,10 +148,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         collections.put(SAMPLE_COLLECTION, sampleCollection = db.getCollection(SAMPLE_COLLECTION));
         collections.put(INDIVIDUAL_COLLECTION, individualCollection = db.getCollection(INDIVIDUAL_COLLECTION));
         collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
+        collections.put(AUDIT_COLLECTION, auditCollection = db.getCollection(AUDIT_COLLECTION));
 
         userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);
         individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, metaCollection, individualCollection);
         sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, metaCollection, sampleCollection, studyCollection);
+        auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
     }
 
     @Override
