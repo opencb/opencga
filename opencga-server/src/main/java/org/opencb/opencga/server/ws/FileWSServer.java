@@ -48,10 +48,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -525,7 +522,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/fetch")
-    @ApiOperation(value = "File fetch", position = 15)
+    @ApiOperation(value = "File fetch", notes = "DEPRECATED. Use .../files/{fileId}/[variants|alignments] or .../studies/{studyId}/[variants|alignments] instead", position = 15)
     @Deprecated
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") String fileIds,
                           @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
@@ -628,34 +625,31 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
 
                 case VARIANT: {
-                    Query query = new Query();
+                    String warningMsg = null;
+                    Query query = VariantFetcher.getVariantQuery(queryOptions);
                     query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
 
-                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-                        List<String> values = entry.getValue();
-                        String csv = values.get(0);
-                        for (int i = 1; i < values.size(); i++) {
-                            csv += "," + values.get(i);
-                        }
-                        queryOptions.add(entry.getKey(), csv);
-                    }
+//                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+//                        List<String> values = entry.getValue();
+//                        String csv = values.get(0);
+//                        for (int i = 1; i < values.size(); i++) {
+//                            csv += "," + values.get(i);
+//                        }
+//                        queryOptions.add(entry.getKey(), csv);
+//                    }
 //                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
-                    query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(Integer.toString(fileIdNum)));
+                    query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIdNum);
 
-                    if(params.containsKey("fileId")) {
-                        if(params.get("fileId").get(0).isEmpty()) {
-//                            queryOptions.put("fileId", fileId);
+                    if (params.containsKey("fileId")) {
+                        warningMsg = "Do not use param \"fileI\". Use \"" + VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key() + "\" instead";
+                        if (params.get("fileId").get(0).isEmpty()) {
                             query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
                         } else {
                             List<String> files = params.get("fileId");
-//                            queryOptions.put("fileId", files.get(0));
-                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
+                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), files);
                         }
                     }
-//                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
-//                    queryOptions.put("include", Arrays.asList(include.split(",")));
 
-                    //java.nio.file.Path configPath = Paths.get(Config.getGcsaHome(), "config", "application.properties");
                     VariantDBAdaptor dbAdaptor;
                     try {
                         dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
@@ -679,6 +673,9 @@ public class FileWSServer extends OpenCGAWSServer {
                         queryResult = dbAdaptor.get(query, queryOptions);
                     }
                     result = queryResult;
+                    if (warningMsg != null) {
+                        result.setWarningMsg(result.getWarningMsg() == null ? warningMsg : (result.getWarningMsg() + warningMsg));
+                    }
                     break;
 
                 }
@@ -697,8 +694,56 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/variants")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15)
-    public Response getVariants(@ApiParam(value = "fileId", required = true) @PathParam("fileId") String fileId) {
-        return createOkResponse("PENDING");
+    public Response getVariants(@ApiParam(value = "", required = true) @PathParam("fileId") String fileIdCsv,
+                                @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
+                                @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
+                                @ApiParam(value = "CSV list of chromosomes") @QueryParam("chromosome") String chromosome,
+                                @ApiParam(value = "CSV list of genes") @QueryParam("gene") String gene,
+                                @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
+                                @ApiParam(value = "Filter by reference") @QueryParam("reference") String reference,
+                                @ApiParam(value = "Filter by alternate") @QueryParam("alternate") String alternate,
+//                                @ApiParam(value = "") @QueryParam("studies") String studies,
+                                @ApiParam(value = "CSV list of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
+                                @ApiParam(value = "CSV list of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
+                                @ApiParam(value = "CSV list of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
+                                @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
+                                @ApiParam(value = "Minor Allele Frequency: [<|>|<=|>=]{number}") @QueryParam("maf") String maf,
+                                @ApiParam(value = "Minor Genotype Frequency: [<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
+                                @ApiParam(value = "Number of missing alleles: [<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
+                                @ApiParam(value = "Number of missing genotypes: [<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
+                                @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
+                                @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
+                                @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046") @QueryParam("annot-ct") String annot_ct,
+                                @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
+                                @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
+                                @ApiParam(value = "Polyphen value: [<|>|<=|>=]{number}") @QueryParam("polyphen") String polyphen,
+                                @ApiParam(value = "Sift value: [<|>|<=|>=]{number}") @QueryParam("sift") String sift,
+//                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
+                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number}") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
+                                @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
+                                @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
+                                @ApiParam(value = "Limit the number of returned variants.") @QueryParam("limit") int limit,
+                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+                                @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
+                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
+                                @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
+
+        List<QueryResult> results = new LinkedList<>();
+        try {
+            VariantFetcher variantFetcher = new VariantFetcher(this);
+            String[] splitFileId = fileIdCsv.split(",");
+            for (String fileId : splitFileId) {
+                QueryResult result;
+                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId);
+                results.add(result);
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+        return createOkResponse(results);
     }
 
     @GET
