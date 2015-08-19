@@ -28,10 +28,15 @@ import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -114,6 +119,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
             checkNotNull(cellbaseVersion, "cellbase version");
             checkNotNull(cellbaseRest, "cellbase hosts");
+            checkNotNull(species, "species");
 
             CellBaseClient cellBaseClient;
             try {
@@ -167,7 +173,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
     /////// CREATE ANNOTATION
 
     @Override
-    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options)
+    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options)
             throws IOException {
         if(cellBaseClient == null && dbAdaptorFactory == null) {
             throw new IllegalStateException("Cant createAnnotation without a CellBase source (DBAdaptorFactory or a CellBaseClient)");
@@ -178,14 +184,15 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         URI fileUri = path.toUri();
 
         /** Open output stream **/
-        OutputStream outputStream;
-        outputStream = new FileOutputStream(path.toFile());
+        final OutputStream outputStream;
         if(gzip) {
-            outputStream = new GZIPOutputStream(outputStream);
+            outputStream = new GZIPOutputStream(new FileOutputStream(path.toFile()));
+        } else {
+            outputStream = new FileOutputStream(path.toFile());
         }
 
         /** Initialize Json serializer**/
-        ObjectWriter writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
+        ObjectWriter writer = jsonObjectMapper.writerFor(VariantAnnotation.class);
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions;
@@ -194,56 +201,93 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         } else {
             iteratorQueryOptions = new QueryOptions(options);
         }
-        int batchSize = 100;
-        List<String> include = Arrays.asList("chromosome", "start",  "end", "alternative", "reference");
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
         iteratorQueryOptions.add("include", include);
+
+        int batchSize = 200;
+        int numThreads = 8;
         if(options != null) { //Parse query options
             batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
+            numThreads = options.getInt(VariantAnnotationManager.NUM_THREADS, numThreads);
         }
 
-        Variant variant = null;
-        List<GenomicVariant> genomicVariantList = new ArrayList<>(batchSize);
-        Iterator<Variant> iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
-        int readsCounter = 0;
-        while(iterator.hasNext()) {
-            variant = iterator.next();
-            readsCounter++;
-            if (readsCounter % 1000 == 0) {
-                logger.info("Element {}", readsCounter);
-            }
 
-            // If Variant is SV some work is needed
-            if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
+        Iterator<Variant> iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
+
+        try {
+            final int[] readsCounter = {0};
+            DataReader<GenomicVariant> genomicVariantDataReader = readBatchSize -> {
+                List<GenomicVariant> genomicVariantList = new ArrayList<>(readBatchSize);
+                int i = 0;
+                while(iterator.hasNext() && i++ < readBatchSize) {
+                    Variant variant = iterator.next();
+                    readsCounter[0]++;
+                    if (readsCounter[0] % 1000 == 0) {
+                        logger.info("Element {}", readsCounter[0]);
+                    }
+
+                    // If Variant is SV some work is needed
+                    if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
 //                logger.info("Skip variant! {}", genomicVariant);
-                logger.info("Skip variant! {}", variant.getChromosome() + ":" +
-                                variant.getStart() + ":" +
-                                (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
-                                (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
-                );
-                logger.debug("Skip variant! {}", variant);
-            } else {
-                GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
-                        variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
-                        variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
-                genomicVariantList.add(genomicVariant);
-            }
+                        logger.info("Skip variant! {}", variant.getChromosome() + ":" +
+                                        variant.getStart() + ":" +
+                                        (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
+                                        (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
+                        );
+                        logger.debug("Skip variant! {}", variant);
+                    } else {
+                        GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
+                                variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
+                                variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
+                        genomicVariantList.add(genomicVariant);
+                    }
+                }
 
-            if(genomicVariantList.size() == batchSize || !iterator.hasNext() && !genomicVariantList.isEmpty()) {
+                return genomicVariantList;
+            };
+
+            ParallelTaskRunner.Task<GenomicVariant,VariantAnnotation> annotationTask = genomicVariantList -> {
                 List<VariantAnnotation> variantAnnotationList;
-                if(cellBaseClient != null) {
-                    variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
-                } else {
-                    variantAnnotationList = getVariantAnnotationsDbAdaptor(genomicVariantList);
+                long start = System.currentTimeMillis();
+                logger.debug("Annotating batch of {} genomic variants.", genomicVariantList.size());
+                try {
+                    if(cellBaseClient != null) {
+                        variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
+                    } else {
+                        variantAnnotationList = getVariantAnnotationsDbAdaptor(genomicVariantList);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                for (VariantAnnotation variantAnnotation : variantAnnotationList) {
-                    outputStream.write(writer.writeValueAsString(variantAnnotation).getBytes());
-                    outputStream.write('\n');
+                logger.debug("Annotated batch of {} genomic variants. Time: {}s", genomicVariantList.size(), (System.currentTimeMillis()-start)/1000.0);
+                return variantAnnotationList;
+            };
+
+            DataWriter<VariantAnnotation> variantAnnotationDataWriter = variantAnnotationList -> {
+                try {
+                    for (VariantAnnotation variantAnnotation : variantAnnotationList) {
+                        outputStream.write(writer.writeValueAsString(variantAnnotation).getBytes());
+                        outputStream.write('\n');
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
-                genomicVariantList.clear();
-            }
+                return true;
+            };
+
+            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
+            ParallelTaskRunner<GenomicVariant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(genomicVariantDataReader, annotationTask, variantAnnotationDataWriter, config);
+            parallelTaskRunner.run();
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
+        } finally {
+            outputStream.close();
         }
 
-        outputStream.close();
         return fileUri;
     }
 
@@ -263,7 +307,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     CellBaseClient.SubCategory.variant,
                     genomicVariantStringList,
                     CellBaseClient.Resource.fullAnnotation,
-                    null);
+                    new QueryOptions("post", true));
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
                 queryError = true;
@@ -273,6 +317,13 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             queryError = true;
             queryResponse = null;
         }
+
+        if(queryResponse != null && queryResponse.getResponse().size() != genomicVariantList.size()) {
+            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != genomicVariantList size (" + genomicVariantList.size() + ").");
+            //throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
+            queryError = true;
+        }
+
         if(queryError) {
 //            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
 
@@ -294,9 +345,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         }
 
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
-        if(response.size() != genomicVariantList.size()) {
-            throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
-        }
+
         QueryResult<VariantAnnotation>[] queryResults = response.toArray(new QueryResult[1]);
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
         for (QueryResult<VariantAnnotation> queryResult : queryResults) {

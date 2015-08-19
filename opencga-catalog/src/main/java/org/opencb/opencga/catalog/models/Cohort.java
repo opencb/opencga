@@ -16,38 +16,61 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Created by jacobo on 17/12/14.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ *
+ * Set of samples grouped according to criteria
  */
 public class Cohort {
 
     private int id;
     private String name;
+    private Type type;
     private String creationDate;
+    private Status status;
     private String description;
 
     private List<Integer> samples;
 
+    private Map<String, Object> stats;
     private Map<String, Object> attributes;
+
+    public enum Status {NONE, CALCULATING, READY, INVALID}
+
+    //Represents the criteria of grouping samples in the cohort
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        FAMILY,
+        TRIO,
+        COLLECTION
+    }
 
     public Cohort() {
     }
 
-    public Cohort(String name, String creationDate, String description, List<Integer> samples,
+    public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, creationDate, description, samples, attributes);
+        this(-1, name, type, creationDate, Status.NONE, description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, String creationDate, String description, List<Integer> samples,
-                  Map<String, Object> attributes) {
+    public Cohort(int id, String name, Type type, String creationDate, Status status, String description, List<Integer> samples,
+                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
+        this.type = type;
         this.creationDate = creationDate;
+        this.status = status;
         this.description = description;
         this.samples = samples;
+        this.stats = stats;
         this.attributes = attributes;
     }
 
@@ -56,9 +79,12 @@ public class Cohort {
         return "Cohort{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", type=" + type +
                 ", creationDate='" + creationDate + '\'' +
+                ", status=" + status +
                 ", description='" + description + '\'' +
                 ", samples=" + samples +
+                ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
     }
@@ -79,12 +105,28 @@ public class Cohort {
         this.name = name;
     }
 
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
     public String getCreationDate() {
         return creationDate;
     }
 
     public void setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public String getDescription() {
@@ -101,6 +143,14 @@ public class Cohort {
 
     public void setSamples(List<Integer> samples) {
         this.samples = samples;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public void setStats(Map<String, Object> stats) {
+        this.stats = stats;
     }
 
     public Map<String, Object> getAttributes() {

@@ -17,11 +17,11 @@
 package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
@@ -53,6 +53,74 @@ public class JobWSServer extends OpenCGAWSServer {
                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
+
+//    @GET
+//    @Path("/search")
+//    @Produces("application/json")
+//    @ApiOperation(value = "Search jobs")
+//
+//    public Response search(
+//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
+//    ) {
+//        catalogManager.search
+//    }
+
+    public static class InputJob {
+        public InputJob() {
+        }
+
+        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status, int outDirId,
+                        List<Integer> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+            this.name = name;
+            this.toolName = toolName;
+            this.description = description;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.commandLine = commandLine;
+            this.status = status;
+            this.outDirId = outDirId;
+            this.input = input;
+            this.attributes = attributes;
+            this.resourceManagerAttributes = resourceManagerAttributes;
+        }
+
+        enum Status{READY, ERROR}
+        @ApiModelProperty(required = true) 
+        public String name;
+        @ApiModelProperty(required = true) 
+        public String toolName;
+        public String description;
+        public long startTime;
+        public long endTime;
+        @ApiModelProperty(required = true)
+        public String commandLine;
+        public Status status = Status.READY;
+        @ApiModelProperty(required = true)
+        public int outDirId;
+        public List<Integer> input;
+        public List<Integer> output;
+        public Map<String, Object> attributes;
+        public Map<String, Object> resourceManagerAttributes;
+
+    }
+
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create job with POST method", position = 1, notes = "Required values: [name, toolName, commandLine]")
+    public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "studies", required = true) InputJob job) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
+                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
+                    job.resourceManagerAttributes, Job.Status.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/create")

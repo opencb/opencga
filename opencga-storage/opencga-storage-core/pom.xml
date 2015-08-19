@@ -39,6 +39,10 @@
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.datastore</groupId>
+            <artifactId>datastore-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -56,12 +60,16 @@
                 </includes>
             </resource>
         </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.3.1</version>
-
                 <executions>
                     <execution>
                         <id>test-jar</id>
@@ -69,14 +77,13 @@
                             <goal>test-jar</goal>
                         </goals>
                         <!--<configuration>-->
-                            <!--<includes>-->
-                                <!--<include>**/org/opencb/opencga/storage/core/*</include>-->
-                            <!--</includes>-->
+                        <!--<includes>-->
+                        <!--<include>**/org/opencb/opencga/storage/core/*</include>-->
+                        <!--</includes>-->
                         <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

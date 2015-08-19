@@ -24,6 +24,7 @@ import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
 import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
 import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
@@ -66,7 +67,7 @@ public class VepVariantAnnotator implements VariantAnnotator {
     /////// CREATE ANNOTATION: empty. Vep annotation must be created beforehand by using VEP's cli and stored in a vep format file
 
     @Override
-    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options) {
+    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options) {
         return null;
     }
 

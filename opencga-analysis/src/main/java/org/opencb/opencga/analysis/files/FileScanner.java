@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -80,7 +81,7 @@ public class FileScanner {
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
         int studyId = study.getId();
-//        File root = catalogManager.searchFile(studyId, new QueryOptions("path", ""), sessionId).first();
+//        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         QueryOptions query = new QueryOptions();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
         query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
@@ -120,9 +121,10 @@ public class FileScanner {
                 untrackedFiles.put(entry.getKey(), entry.getValue());
                 continue;
             }
-            List<URI> files = ioManager.listFiles(entry.getValue());
+            Stream<URI> files = ioManager.listFilesStream(entry.getValue());
 
-            for (URI uri : files) {
+            for (Iterator<URI> iterator = files.iterator(); iterator.hasNext(); ) {
+                URI uri = iterator.next();
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
                 QueryResult<File> searchFile = catalogManager.searchFile(studyId,
@@ -175,10 +177,13 @@ public class FileScanner {
         }
         int studyId = catalogManager.getStudyIdByFileId(directory.getId());
 
-        List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFiles(directoryToScan);
-
+        long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
+        Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
         List<File> files = new LinkedList<>();
-        for (URI uri : uris) {
+        FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
+        for (Iterator<URI> iterator = uris.iterator(); iterator.hasNext(); ) {
+            long fileScanStart = System.currentTimeMillis();
+            URI uri = iterator.next();
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
 
@@ -204,23 +209,42 @@ public class FileScanner {
                 }
             }
 
+            long createFileTime = 0, uploadFileTime = 0, metadataFileTime = 0;
             if (file == null) {
-                file = catalogManager.createFile(studyId, FormatDetector.detect(uri), BioformatDetector.detect(uri), filePath, "", true, jobId, sessionId).first();
-                logger.info("Added new file " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" }");
-                /** Moves the file to the read output **/
-                catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
-                returnFile = true;      //Return file because is new
+                long start, end;
+                if (uri.getPath().endsWith("/")) {
+                    file = catalogManager.createFolder(studyId, Paths.get(filePath), true, null, sessionId).first();
+                } else {
+                    start = System.currentTimeMillis();
+                    file = catalogManager.createFile(studyId, FormatDetector.detect(uri), BioformatDetector.detect(uri), filePath, "", true, jobId, sessionId).first();
+                    end = System.currentTimeMillis();
+                    createFilesTime += createFileTime = end - start;
+
+                    /** Moves the file to the read output **/
+                    start = System.currentTimeMillis();
+                    catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
+                    end = System.currentTimeMillis();
+                    uploadFilesTime += uploadFileTime = end - start;
+                    returnFile = true;      //Return file because is new
+                }
+                logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
                 if (file.getStatus().equals(File.Status.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                    logger.info("Set status to " + File.Status.READY);
+                    logger.debug("Set status to " + File.Status.READY);
                     returnFile = true;      //Return file because was missing
                 }
+                long start = System.currentTimeMillis();
                 catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
+                long end = System.currentTimeMillis();
+                uploadFilesTime += end - start;
             }
 
             try {
-                FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, null, sessionId, false);
+                long start = System.currentTimeMillis();
+                fileMetadataReader.setMetadataInformation(file, null, null, sessionId, false);
+                long end = System.currentTimeMillis();
+                metadataReadTime += metadataFileTime = end - start;
             } catch (Exception e) {
                 logger.error("Unable to read metadata information from file { id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
             }
@@ -228,7 +252,13 @@ public class FileScanner {
             if (returnFile) { //Return only new and found files.
                 files.add(catalogManager.getFile(file.getId(), sessionId).first());
             }
+            logger.info("Added file {}", filePath);
+            logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart ) /1000.0,
+                    createFileTime/1000.0, uploadFileTime/1000.0, metadataFileTime/1000.0);
         }
+        logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
+        logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");
+        logger.debug("Read metadata information: " + metadataReadTime / 1000.0 + "s");
         return files;
     }
 

@@ -17,19 +17,23 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.*;
+
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -44,192 +48,218 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * @author Ignacio Medina <igmecas@gmail.com>
+ * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
-
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private DBObjectToVariantConverter variantConverter;
-    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
     private final String collectionName;
+    private final MongoDBCollection variantsCollection;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
-    private final StudyConfigurationManager studyConfigurationManager;
 
+    private StudyConfigurationManager studyConfigurationManager;
+
+    @Deprecated
     private DataWriter dataWriter;
+
+
+    private enum QueryOperation {
+        AND, OR
+    }
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName)
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName, StudyConfigurationManager studyConfigurationManager)
             throws UnknownHostException {
-        // Mongo configuration
+        // MongoDB configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
-
-        String studiesCollectionName = filesCollectionName;
-        studyConfigurationManager = new MongoDBStudyConfigurationManager(credentials, studiesCollectionName);
-
         collectionName = variantsCollectionName;
-        
-        // Converters from DBObject to Java classes
-        // TODO Allow to configure depending on the type of study?
-        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
-                new DBObjectToSamplesConverter(studyConfigurationManager, variantSourceMongoDBAdaptor));
-        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
+        variantsCollection = db.getCollection(collectionName);
+        this.studyConfigurationManager = studyConfigurationManager;
     }
 
 
     @Override
+    @Deprecated
     public void setDataWriter(DataWriter dataWriter) {
         this.dataWriter = dataWriter;
     }
 
+
     @Override
-    public void setConstantSamples(String sourceEntry) {
-        List<String> samples = null;
-        QueryResult samplesBySource = variantSourceMongoDBAdaptor.getSamplesBySource(sourceEntry, null);    // TODO jmmut: check when we remove fileId
-        if(samplesBySource.getResult().isEmpty()) {
-            logger.error("setConstantSamples(): couldn't find samples in source {} " + sourceEntry);
-        } else {
-            samples = (List<String>) samplesBySource.getResult().get(0);
+    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        // TODO FILE_ID must be in QueryOptions?
+        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
+        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
+        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
+        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
+//        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
+//        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
+
+        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter(studyConfigurationManager) : null);
+        DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
+                includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
+        return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, null);
+    }
+
+    @Override
+    public QueryResult delete(Query query, QueryOptions options) {
+        QueryBuilder qb = QueryBuilder.start();
+        qb = parseQuery(query, qb);
+        logger.debug("Delete to be executed: '{}'", qb.get().toString());
+        QueryResult queryResult = variantsCollection.remove(qb.get(), options);
+
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
+        //TODO
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
+        //TODO
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public QueryResult deleteStudy(String studyName, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
         }
-        
-        variantSourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                true,
-                new DBObjectToSamplesConverter(samples)
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        DBObject query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new QueryBuilder()).get();
+
+        // { $pull : { files : {  sid : <studyId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(
+                        DBObjectToVariantConverter.STUDIES_FIELD,
+                        new BasicDBObject(
+                                DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyConfiguration.getStudyId()
+                        )
+                )
         );
-        
-        variantConverter = new DBObjectToVariantConverter(variantSourceEntryConverter, new DBObjectToVariantStatsConverter());
-    }
+        QueryResult<WriteResult> result = variantsCollection.update(query, update, new QueryOptions("multi", true));
 
-    @Override
-    public QueryResult<Variant> getAllVariants(QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
+        logger.debug("deleteStudy: query = {}", query);
+        logger.debug("deleteStudy: update = {}", update);
 
-        QueryBuilder qb = QueryBuilder.start();
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-        logger.debug("Query to be executed {}", qb.get().toString());
-
-        return coll.find(qb.get(), projection, variantConverter, options);
-    }
-
-
-    @Override
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
-//        BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
-
-        if(options == null) {
-            options = new QueryOptions(ID, id);
-        } else {
-            options.addToListOption(ID, id);
+        if (options.getBoolean("purge", false)) {
+            BasicDBObject purgeQuery = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, new BasicDBObject("$size", 0));
+            variantsCollection.remove(purgeQuery, new QueryOptions("multi", true));
         }
 
-        QueryBuilder qb = QueryBuilder.start();
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-        logger.debug("Query to be executed {}", qb.get().toString());
+        return result;
+    }
 
-//        return coll.find(query, options, variantConverter);
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
-        queryResult.setId(id);
+
+
+    @Override
+    public QueryResult<Variant> get(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        QueryBuilder qb = QueryBuilder.start();
+//        parseQueryOptions(options, qb);
+        parseQuery(query, qb);
+//        DBObject projection = parseProjectionQueryOptions(options);
+        DBObject projection = createProjection(query, options);
+        logger.debug("Query to be executed: '{}'", qb.get().toString());
+
+        QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
+        // set query Id?
+
         return queryResult;
     }
 
     @Override
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        List<QueryResult<Variant>> allResults = new ArrayList<>(idList.size());
-        for (String r : idList) {
-            QueryResult<Variant> queryResult = getVariantById(r, options);
-            allResults.add(queryResult);
+    public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
+        List<QueryResult<Variant>> queryResultList = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            QueryResult<Variant> queryResult = get(query, options);
+            queryResultList.add(queryResult);
         }
-        return allResults;
+        return queryResultList;
     }
 
 
     @Override
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
+    public QueryResult<Long> count(Query query) {
         QueryBuilder qb = QueryBuilder.start();
-        getRegionFilter(region, qb);
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-
-        if (options == null) {
-            options = new QueryOptions();
-        }
-        
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
-        queryResult.setId(region.toString());
+        parseQuery(query, qb);
+        logger.debug("Query to be executed: '{}'", qb.get().toString());
+        QueryResult<Long> queryResult = queryResult = variantsCollection.count(qb.get());
         return queryResult;
     }
 
     @Override
-    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        List<QueryResult<Variant>> allResults;
+    public QueryResult distinct(Query query, String field) {
+        QueryBuilder qb = QueryBuilder.start();
+        parseQuery(query, qb);
+        return variantsCollection.distinct(field, qb.get());
+    }
+
+    @Override
+    public VariantDBIterator iterator() {
+        return iterator(new Query(), new QueryOptions());
+    }
+
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
         }
-        
-        // If the users asks to sort the results, do it by chromosome and start
-        if (options.getBoolean(SORT, false)) {
-            options.put(SORT, new BasicDBObject("chr", 1).append("start", 1));
+        if (query == null) {
+            query = new Query();
         }
-        
-        // If the user asks to merge the results, run only one query,
-        // otherwise delegate in the method to query regions one by one
-        if (options.getBoolean(MERGE, false)) {
-            options.add(REGION, regionList);
-            allResults = Collections.singletonList(getAllVariants(options));
-        } else {
-            allResults = new ArrayList<>(regionList.size());
-            for (Region r : regionList) {
-                QueryResult queryResult = getAllVariantsByRegion(r, options);
-                queryResult.setId(r.toString());
-                allResults.add(queryResult);
-            }
-        }
-        return allResults;
+        QueryBuilder qb = QueryBuilder.start();
+//        parseQueryOptions(options, qb);
+        qb = parseQuery(query, qb);
+//        DBObject projection = parseProjectionQueryOptions(options);
+        DBObject projection = createProjection(query, options);
+        DBCursor dbCursor = variantsCollection.nativeQuery().find(qb.get(), projection, options);
+        dbCursor.batchSize(options.getInt("batchSize", 100));
+        return new VariantMongoDBIterator(dbCursor, getDbObjectToVariantConverter(query, options));
     }
 
     @Override
-    public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
-        // Aggregation for filtering when more than one study is present
-        QueryBuilder qb = QueryBuilder.start(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD).in(studyId);
-        getRegionFilter(region, qb);
-        parseQueryOptions(options, qb);
-
-        DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject unwind = new BasicDBObject("$unwind", "$" + DBObjectToVariantConverter.FILES_FIELD);
-        DBObject match2 = new BasicDBObject("$match", 
-                new BasicDBObject(DBObjectToVariantConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 
-                        new BasicDBObject("$in", studyId)));
-
-        logger.debug("Query to be executed {}", qb.get().toString());
-
-        return coll.aggregate(/*"$variantsRegionStudies", */Arrays.asList(match, unwind, match2), options);
+    public void forEach(Consumer<? super Variant> action) {
+        forEach(new Query(), action, new QueryOptions());
     }
 
     @Override
-    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
-        // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }}, 
-        //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] }, 
+    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
+        Objects.requireNonNull(action);
+        VariantDBIterator variantDBIterator = iterator(query, options);
+        while (variantDBIterator.hasNext()) {
+            action.accept(variantDBIterator.next());
+        }
+    }
+
+
+
+    @Override
+    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
+        // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }},
+        //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] },
         //                                  totalCount: {$sum: 1}}})
-        MongoDBCollection coll = db.getCollection(collectionName);
 
-        if(options == null) {
-            options = new QueryOptions();
+        QueryOptions options = new QueryOptions();
+
+        // If interval is not provided is set to the value that returns 200 values
+        if (regionIntervalSize <= 0) {
+//            regionIntervalSize = options.getInt("interval", (region.getEnd() - region.getStart()) / 200);
+            regionIntervalSize = (region.getEnd() - region.getStart()) / 200;
         }
-
-        int interval = options.getInt("interval", 20000);
 
         BasicDBObject start = new BasicDBObject("$gt", region.getStart());
         start.append("$lt", region.getEnd());
@@ -240,12 +270,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Parsing the rest of options
         QueryBuilder qb = new QueryBuilder();
-        DBObject optionsMatch = parseQueryOptions(options, qb).get();
+//        DBObject optionsMatch = parseQueryOptions(options, qb).get();
+        DBObject optionsMatch = parseQuery(query, qb).get();
         if(!optionsMatch.keySet().isEmpty()) {
             andArr.add(optionsMatch);
         }
         DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
-
 
 //        qb.and("_at.chunkIds").in(chunkIds);
 //        qb.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
@@ -256,39 +286,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
 //                .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
 
-
         BasicDBList divide1 = new BasicDBList();
         divide1.add("$start");
-        divide1.add(interval);
+        divide1.add(regionIntervalSize);
 
         BasicDBList divide2 = new BasicDBList();
         divide2.add(new BasicDBObject("$mod", divide1));
-        divide2.add(interval);
+        divide2.add(regionIntervalSize);
 
         BasicDBList subtractList = new BasicDBList();
         subtractList.add(new BasicDBObject("$divide", divide1));
         subtractList.add(new BasicDBObject("$divide", divide2));
 
-
-        BasicDBObject substract = new BasicDBObject("$subtract", subtractList);
-
+        BasicDBObject subtract = new BasicDBObject("$subtract", subtractList);
         DBObject totalCount = new BasicDBObject("$sum", 1);
-
-        BasicDBObject g = new BasicDBObject("_id", substract);
+        BasicDBObject g = new BasicDBObject("_id", subtract);
         g.append("features_count", totalCount);
         DBObject group = new BasicDBObject("$group", g);
-
         DBObject sort = new BasicDBObject("$sort", new BasicDBObject("_id", 1));
 
 //        logger.info("getAllIntervalFrequencies - (>·_·)>");
 //        System.out.println(options.toString());
-//
 //        System.out.println(match.toString());
 //        System.out.println(group.toString());
 //        System.out.println(sort.toString());
 
         long dbTimeStart = System.currentTimeMillis();
-        QueryResult output = coll.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
+        QueryResult output = variantsCollection.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
         long dbTimeEnd = System.currentTimeMillis();
 
         Map<Long, DBObject> ids = new HashMap<>();
@@ -299,8 +323,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DBObject intervalVisited = ids.get(_id);
             if (intervalVisited == null) {
                 intervalObj.put("_id", _id);
-                intervalObj.put("start", getChunkStart(_id.intValue(), interval));
-                intervalObj.put("end", getChunkEnd(_id.intValue(), interval));
+                intervalObj.put("start", getChunkStart(_id.intValue(), regionIntervalSize));
+                intervalObj.put("end", getChunkEnd(_id.intValue(), regionIntervalSize));
                 intervalObj.put("chromosome", region.getChromosome());
                 intervalObj.put("features_count", Math.log((int) intervalObj.get("features_count")));
                 ids.put(_id, intervalObj);
@@ -312,16 +336,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Create DBObject for intervals without features inside them
         BasicDBList resultList = new BasicDBList();
-        int firstChunkId = getChunkId(region.getStart(), interval);
-        int lastChunkId = getChunkId(region.getEnd(), interval);
+        int firstChunkId = getChunkId(region.getStart(), regionIntervalSize);
+        int lastChunkId = getChunkId(region.getEnd(), regionIntervalSize);
         DBObject intervalObj;
         for (int chunkId = firstChunkId; chunkId <= lastChunkId; chunkId++) {
             intervalObj = ids.get((long) chunkId);
             if (intervalObj == null) {
                 intervalObj = new BasicDBObject();
                 intervalObj.put("_id", chunkId);
-                intervalObj.put("start", getChunkStart(chunkId, interval));
-                intervalObj.put("end", getChunkEnd(chunkId, interval));
+                intervalObj.put("start", getChunkStart(chunkId, regionIntervalSize));
+                intervalObj.put("end", getChunkEnd(chunkId, regionIntervalSize));
                 intervalObj.put("chromosome", region.getChromosome());
                 intervalObj.put("features_count", 0);
             }
@@ -334,161 +358,138 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return queryResult;
     }
 
-
     @Override
-    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        QueryOptions options = new QueryOptions();
+        options.put("limit", numResults);
+        options.put("count", true);
+        options.put("order", (asc) ? 1 : -1); // MongoDB: 1 = ascending, -1 = descending
 
-        QueryBuilder qb = QueryBuilder.start();
-        if(options == null) {
-            options = new QueryOptions(GENE, geneName);
-        } else {
-            options.addToListOption(GENE, geneName);
-        }
-        options.put(GENE, geneName);
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-        QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
-        queryResult.setId(geneName);
-        return queryResult;
+        return groupBy(query, field, options);
     }
 
-
     @Override
-    public QueryResult groupBy(String field, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
         String documentPath;
+        String unwindPath;
+        int numUnwinds = 2;
         switch (field) {
             case "gene":
             default:
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
             case "ensemblGene":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                unwindPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
+                numUnwinds = 3;
                 break;
         }
 
         QueryBuilder qb = QueryBuilder.start();
-        parseQueryOptions(options, qb);
+        parseQuery(query, qb);
+
+        boolean count = options != null && options.getBoolean("count", false);
+        int order = options != null ? options.getInt("order", -1) : -1;
+
+        DBObject project;
+        DBObject projectAndCount;
+        if (count) {
+            project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("count", new BasicDBObject("$size", "$values")));
+        } else {
+            project = new BasicDBObject("$project", new BasicDBObject()
+                    .append("field", "$" + documentPath)
+                            //.append("_id._id", "$_id")
+                    .append("_id.start", "$" + DBObjectToVariantConverter.START_FIELD)
+                    .append("_id.end", "$" + DBObjectToVariantConverter.END_FIELD)
+                    .append("_id.chromosome", "$" + DBObjectToVariantConverter.CHROMOSOME_FIELD)
+                    .append("_id.alternate", "$" + DBObjectToVariantConverter.ALTERNATE_FIELD)
+                    .append("_id.reference", "$" + DBObjectToVariantConverter.REFERENCE_FIELD)
+                    .append("_id.ids", "$" + DBObjectToVariantConverter.IDS_FIELD));
+            projectAndCount = new BasicDBObject("$project", new BasicDBObject()
+                    .append("id", "$_id")
+                    .append("_id", 0)
+                    .append("values", "$values")
+                    .append("count", new BasicDBObject("$size", "$values")));
+        }
 
         DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
-        DBObject unwind = new BasicDBObject("$unwind", "$field");
-        DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
-//                .append("field", "$field")
-                .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
-        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
-        DBObject limit = new BasicDBObject("$limit", options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
-
-        return coll.aggregate(Arrays.asList(match, project, unwind, group, sort, limit), options);
-    }
-
-    @Override
-    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
-        return getGenesRanking(numGenes, -1, options);
-    }
-
-    @Override
-    public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
-        return getGenesRanking(numGenes, 1, options);
-    }
-
-    private QueryResult getGenesRanking(int numGenes, int order, QueryOptions options) {
-        if (options == null) {
-            options = new QueryOptions();
+        DBObject unwindField = new BasicDBObject("$unwind", "$field");
+        DBObject notNull = new BasicDBObject("$match", new BasicDBObject("field", new BasicDBObject("$ne", null)));
+        DBObject groupAndAddToSet = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
+                .append("values", new BasicDBObject("$addToSet", "$_id"))); // sum, count, avg, ...?
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", order)); // 1 = ascending, -1 = descending
+        DBObject skip = null;
+        if (options != null && options.getInt("skip", -1) > 0) {
+            skip = new BasicDBObject("$skip", options.getInt("skip", -1));
         }
-        options.put("limit", numGenes);
-        options.put("order", order);
+        DBObject limit = new BasicDBObject("$limit",
+                options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
 
-        return groupBy("gene", options);
-    }
-
-
-    @Override
-    public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        return getConsequenceTypesRanking(numConsequenceTypes, -1, options);
-    }
-
-    @Override
-    public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
-        return getConsequenceTypesRanking(numConsequenceTypes, 1, options);
-    }
-
-    private QueryResult getConsequenceTypesRanking(int numConsequenceTypes, int order, QueryOptions options) {
-        if (options == null) {
-            options = new QueryOptions();
+        List<DBObject> operations = new LinkedList<>();
+        operations.add(match);
+        operations.add(project);
+        for (int i = 0; i < numUnwinds; i++) {
+            operations.add(unwindField);
         }
-        options.put("limit", numConsequenceTypes);
-        options.put("order", order);
+        operations.add(notNull);
+        operations.add(groupAndAddToSet);
+        operations.add(projectAndCount);
+        operations.add(sort);
+        if (skip != null) {
+            operations.add(skip);
+        }
+        operations.add(limit);
+        logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
+        QueryResult<DBObject> queryResult = variantsCollection.aggregate(operations, options);
 
-        return groupBy("ct", options);
+//            List<Map<String, Object>> results = new ArrayList<>(queryResult.getResult().size());
+//            results.addAll(queryResult.getResult().stream().map(dbObject -> new ObjectMap("id", dbObject.get("_id")).append("count", dbObject.get("count"))).collect(Collectors.toList()));
+        List<Map> results = queryResult.getResult().stream().map(DBObject::toMap).collect(Collectors.toList());
+
+        return new QueryResult<>(queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults(), queryResult.getWarningMsg(), queryResult.getErrorMsg(), results);
     }
 
     @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        String warningMsg = "Unimplemented VariantMongoDBAdaptor::groupBy list of fields. Using field[0] : '" + fields.get(0) + "'";
+        logger.warn(warningMsg);
+        QueryResult queryResult = groupBy(query, fields.get(0), options);
+        queryResult.setWarningMsg(warningMsg);
+        return queryResult;
     }
 
-    public StudyConfigurationManager getStudyConfigurationDBAdaptor() {
-        return studyConfigurationManager;
+
+
+    @Override
+    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        return updateStats(variantStatsWrappers, studyName, queryOptions);
     }
 
     @Override
-    public VariantDBIterator iterator() {
-        return iterator(new QueryOptions());
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions options) {
+        return updateStats(variantStatsWrappers, studyConfigurationManager.getStudyConfiguration(studyName, options).first(), options);
     }
 
     @Override
-    public VariantDBIterator iterator(QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-
-        QueryBuilder qb = QueryBuilder.start();
-        parseQueryOptions(options, qb);
-        DBObject projection = parseProjectionQueryOptions(options);
-        DBCursor dbCursor = coll.nativeQuery().find(qb.get(), projection, options);
-        dbCursor.batchSize(options.getInt("batchSize", 100));
-        return new VariantMongoDBIterator(dbCursor, variantConverter);
-    }
-
-    @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options) {
         DBCollection coll = db.getDb().getCollection(collectionName);
         BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
 
         long start = System.nanoTime();
-        for (VariantAnnotation variantAnnotation : variantAnnotations) {
-            String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternativeAllele());
-            DBObject find = new BasicDBObject("_id", id);
-            DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
-            DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
-//            System.out.println("convertedVariantAnnotation = " + convertedVariantAnnotation);
-            DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD,
-                    convertedVariantAnnotation));
-            builder.find(find).updateOne(update);
-        }
-
-        BulkWriteResult writeResult = builder.execute();
-
-        return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
-    }
-
-    @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-        DBCollection coll = db.getDb().getCollection(collectionName);
-        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
-
-        long start = System.nanoTime();
-        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter();
+        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        String fileId = queryOptions.getString(VariantStorageManager.Options.FILE_ID.key());  //TODO: Change to int defaultValue
-        String studyId = ""+ studyConfiguration.getStudyId();                    //TODO: Change to int defaultValue
+        DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -496,7 +497,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
             Iterator<VariantStats> iterator = cohortStats.values().iterator();
             VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
-            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId, fileId);   // TODO remove when we remove fileId
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyConfiguration.getStudyId());   // TODO remove when we remove fileId
 //            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
 
             // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
@@ -513,13 +514,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
-                List<String> cohortIds = new ArrayList<>(cohorts.size());
-                List<String> fileIds = new ArrayList<>(cohorts.size());
-                List<String> studyIds = new ArrayList<>(cohorts.size());
+                List<Integer> cohortIds = new ArrayList<>(cohorts.size());
+                List<Integer> studyIds = new ArrayList<>(cohorts.size());
                 for (DBObject cohort : cohorts) {
-                    cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
-                    fileIds.add((String) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
-                    studyIds.add((String) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
+                    cohortIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
+                    studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
                 }
 
                 DBObject find = new BasicDBObject("_id", id);
@@ -530,9 +529,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                         .append(
                                                 DBObjectToVariantStatsConverter.STUDY_ID,
                                                 new BasicDBObject("$in", studyIds))
-                                        .append(
-                                                DBObjectToVariantStatsConverter.FILE_ID,
-                                                new BasicDBObject("$in", fileIds))
+//                                        .append(
+//                                                DBObjectToVariantStatsConverter.FILE_ID,
+//                                                new BasicDBObject("$in", fileIds))
                                         .append(
                                                 DBObjectToVariantStatsConverter.COHORT_ID,
                                                 new BasicDBObject("$in", cohortIds))));
@@ -552,8 +551,82 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         BulkWriteResult writeResult = builder.execute();
         int writes = writeResult.getModifiedCount();
 
+
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
     }
+
+    @Override
+    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
+        int cohortId = studyConfiguration.getCohortIds().get(cohortName);
+
+        // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
+        DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)));
+
+        // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyConfiguration.getStudyId())
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)
+                )
+        );
+        logger.debug("deleteStats: query = {}", query);
+        logger.debug("deleteStats: update = {}", update);
+
+        return variantsCollection.update(query, update, new QueryOptions("multi", true));
+    }
+
+
+
+    @Override
+    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        logger.warn("Unimplemented VariantMongoDBAdaptor::addAnnotations. Using \"VariantMongoDBAdaptor::updateAnnotations\"");
+        return updateAnnotations(variantAnnotations, queryOptions);
+    }
+
+    @Override
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        DBCollection coll = db.getDb().getCollection(collectionName);
+        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
+
+        long start = System.nanoTime();
+        DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), queryOptions);
+        for (VariantAnnotation variantAnnotation : variantAnnotations) {
+            String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternateAllele());
+            DBObject find = new BasicDBObject("_id", id);
+            DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
+            DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
+            DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD + ".0",
+                    convertedVariantAnnotation));
+            builder.find(find).updateOne(update);
+        }
+        BulkWriteResult writeResult = builder.execute();
+
+        return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+    }
+
+    @Override
+    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
+        if (queryOptions == null) {
+            queryOptions = new QueryOptions();
+        }
+//        queryOptions.put(VariantQueryParams.STUDIES.key(), studyId);
+        DBObject dbQuery = parseQuery(query, new QueryBuilder()).get();
+
+//        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
+        DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD + ".0", null));
+
+        logger.debug("deleteAnnotation: query = {}", dbQuery);
+        logger.debug("deleteAnnotation: update = {}", update);
+
+        return variantsCollection.update(dbQuery, update, new QueryOptions("multi", true));
+    }
+
 
     @Override
     public boolean close() {
@@ -561,32 +634,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return true;
     }
 
-    private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
-        if (options != null) {
+    private QueryBuilder parseQuery(Query query, QueryBuilder builder) {
+        if (query != null) {
 
-            if (options.containsKey("sort")) {
-                if (options.getBoolean("sort")) {
-                    options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+            if (query.containsKey("sort")) {
+                if (query.getBoolean("sort")) {
+                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
                 } else {
-                    options.remove("sort");
+                    query.remove("sort");
                 }
             }
 
-            /** GENOMIC REGION **/
+            /** VARIANT PARAMS **/
 
-            if (options.getString(ID) != null && !options.getString(ID).isEmpty()) { //) && !options.getString("id").isEmpty()) {
-                List<String> ids = options.getAsStringList(ID);
-                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
-                        , ids, builder, QueryOperation.OR);
-
-                addQueryListFilter(DBObjectToVariantConverter.IDS_FIELD
-                        , ids, builder, QueryOperation.OR);
-            }
-
-            if (options.containsKey(REGION) && !options.getString(REGION).isEmpty()) {
-                List<String> stringList = options.getAsStringList(REGION);
+            if (query.containsKey(VariantQueryParams.REGION.key()) && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
+                List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
                 for (String reg : stringList) {
                     Region region = Region.parseRegion(reg);
@@ -595,51 +657,50 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getRegionFilter(regions, builder);
             }
 
-            if (options.containsKey(GENE)) {
-                List<String> xrefs = options.getAsStringList(GENE);
+            if (query.getString(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
+                List<String> ids = query.getAsStringList(VariantQueryParams.ID.key());
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
-                        , xrefs, builder, QueryOperation.OR);
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
+                addQueryListFilter(DBObjectToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
             }
 
-            if (options.containsKey(CHROMOSOME)) {
-                List<String> chromosome = options.getAsStringList(CHROMOSOME);
-                addQueryListFilter(DBObjectToVariantConverter.CHROMOSOME_FIELD
-                        , chromosome, builder, QueryOperation.OR);
-            }
-
-            /** VARIANT **/
-
-            if (options.containsKey(TYPE)) { // && !options.getString("type").isEmpty()) {
-                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, options.getString(TYPE), builder);
-            }
-
-            if (options.containsKey(REFERENCE) && options.getString(REFERENCE) != null) {
-                addQueryStringFilter(DBObjectToVariantConverter.REFERENCE_FIELD, options.getString(REFERENCE), builder);
-            }
-
-            if (options.containsKey(ALTERNATE) && options.getString(ALTERNATE) != null) {
-                addQueryStringFilter(DBObjectToVariantConverter.ALTERNATE_FIELD, options.getString(ALTERNATE), builder);
-            }
-
-            /** ANNOTATION **/
-
-            if (options.containsKey(ANNOTATION_EXISTS)) {
-                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean(ANNOTATION_EXISTS));
-            }
-
-            if (options.containsKey(ANNOT_XREF)) {
-                List<String> xrefs = options.getAsStringList(ANNOT_XREF);
+            if (query.containsKey(VariantQueryParams.GENE.key())) {
+                List<String> xrefs = query.getAsStringList(VariantQueryParams.GENE.key());
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD
-                        , xrefs, builder, QueryOperation.AND);
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
             }
 
-            if (options.containsKey(ANNOT_CONSEQUENCE_TYPE)) {
-//                List<Integer> cts = getIntegersList(options.get(ANNOT_CONSEQUENCE_TYPE));
-                List<String> cts = new ArrayList<>(options.getAsStringList(ANNOT_CONSEQUENCE_TYPE));
+            if (query.containsKey(VariantQueryParams.REFERENCE.key()) && query.getString(VariantQueryParams.REFERENCE.key()) != null) {
+                addQueryStringFilter(DBObjectToVariantConverter.REFERENCE_FIELD, query.getString(VariantQueryParams.REFERENCE.key()), builder);
+            }
+
+            if (query.containsKey(VariantQueryParams.ALTERNATE.key()) && query.getString(VariantQueryParams.ALTERNATE.key()) != null) {
+                addQueryStringFilter(DBObjectToVariantConverter.ALTERNATE_FIELD, query.getString(VariantQueryParams.ALTERNATE.key()), builder);
+            }
+
+            if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
+                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder);
+            }
+
+
+            /** ANNOTATION PARAMS **/
+
+            if (query.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.ANNOT_ID_FIELD);
+                builder.exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
+            }
+
+            if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
+                List<String> xrefs = query.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
+            }
+
+            if (query.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())) {
+                List<String> cts = new ArrayList<>(query.getAsStringList(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()));
                 List<Integer> ctsInteger = new ArrayList<>(cts.size());
                 for (Iterator<String> iterator = cts.iterator(); iterator.hasNext(); ) {
                     String ct = iterator.next();
@@ -653,78 +714,93 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         iterator.remove();  //Remove the malformed query params.
                     }
                 }
-                options.put(ANNOT_CONSEQUENCE_TYPE, cts); //Replace the QueryOption without the malformed query params
+                query.put(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cts);
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD
-                        , ctsInteger, builder, QueryOperation.AND);
+                        DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, ctsInteger, builder, QueryOperation.AND);
             }
 
-            if (options.containsKey(ANNOT_BIOTYPE)) {
-                List<String> biotypes = options.getAsStringList(ANNOT_BIOTYPE);
+            if (query.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
+                List<String> biotypes = query.getAsStringList(VariantQueryParams.ANNOT_BIOTYPE.key());
                 addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD
-                        , biotypes, builder, QueryOperation.AND);
+                        DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
             }
 
-            if (options.containsKey(POLYPHEN)) {
+            if (query.containsKey(VariantQueryParams.POLYPHEN.key())) {
                 addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(POLYPHEN), builder);
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, query.getString(VariantQueryParams.POLYPHEN.key()), builder);
             }
 
-            if (options.containsKey(SIFT)) {
+            if (query.containsKey(VariantQueryParams.SIFT.key())) {
+                System.out.println(query.getString(VariantQueryParams.SIFT.key()));
                 addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(SIFT), builder);
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, query.getString(VariantQueryParams.SIFT.key()), builder);
             }
 
-            if (options.containsKey(PROTEIN_SUBSTITUTION)) {
-                List<String> list = new ArrayList<>(options.getAsStringList(PROTEIN_SUBSTITUTION));
+            if (query.containsKey(VariantQueryParams.PROTEIN_SUBSTITUTION.key())) {
+                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.PROTEIN_SUBSTITUTION.key()));
                 addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, list, builder);
-                options.put(PROTEIN_SUBSTITUTION, list); //Replace the QueryOption without the malformed query params
+                query.put(VariantQueryParams.PROTEIN_SUBSTITUTION.key(), list); //Replace the QueryOption without the malformed query params
             }
 
-            if (options.containsKey(CONSERVED_REGION)) {
-                List<String> list = new ArrayList<>(options.getAsStringList(CONSERVED_REGION));
+            if (query.containsKey(VariantQueryParams.CONSERVATION.key())) {
+                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.CONSERVATION.key()));
                 addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, list, builder);
-                options.put(PROTEIN_SUBSTITUTION, list); //Replace the QueryOption without the malformed query params
+                query.put(VariantQueryParams.CONSERVATION.key(), list);
             }
 
-            /** STATS **/
+            if (query.containsKey(VariantQueryParams.ALTERNATE_FREQUENCY.key())) {
+                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.ALTERNATE_FREQUENCY.key()));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                                DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
 
-            if (options.get(MAF) != null && !options.getString(MAF).isEmpty()) {
+            if (query.containsKey(VariantQueryParams.REFERENCE_FREQUENCY.key())) {
+                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.REFERENCE_FREQUENCY.key()));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                                DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
+
+
+
+            /** STATS PARAMS **/
+
+            if (query.get(VariantQueryParams.STATS_MAF.key()) != null && !query.getString(VariantQueryParams.STATS_MAF.key()).isEmpty()) {
                 addCompQueryFilter(
                         DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD,
-                        options.getString(MAF), builder);
+                        query.getString(VariantQueryParams.STATS_MAF.key()), builder);
             }
 
-            if (options.get(MGF) != null && !options.getString(MGF).isEmpty()) {
+            if (query.get(VariantQueryParams.STATS_MGF.key()) != null && !query.getString(VariantQueryParams.STATS_MGF.key()).isEmpty()) {
                 addCompQueryFilter(
                         DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD,
-                        options.getString(MGF), builder);
+                        query.getString(VariantQueryParams.STATS_MGF.key()), builder);
             }
 
-            if (options.get(MISSING_ALLELES) != null && !options.getString(MISSING_ALLELES).isEmpty()) {
+            if (query.get(VariantQueryParams.MISSING_ALLELES.key()) != null && !query.getString(VariantQueryParams.MISSING_ALLELES.key()).isEmpty()) {
                 addCompQueryFilter(
                         DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD,
-                        options.getString(MISSING_ALLELES), builder);
+                        query.getString(VariantQueryParams.MISSING_ALLELES.key()), builder);
             }
 
-            if (options.get(MISSING_GENOTYPES) != null && !options.getString(MISSING_GENOTYPES).isEmpty()) {
+            if (query.get(VariantQueryParams.MISSING_GENOTYPES.key()) != null && !query.getString(VariantQueryParams.MISSING_GENOTYPES.key()).isEmpty()) {
                 addCompQueryFilter(
                         DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD,
-                        options.getString(MISSING_GENOTYPES), builder);
+                        query.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder);
             }
 
-            if (options.get("numgt") != null && !options.getString("numgt").isEmpty()) {
-                for (String numgt : options.getAsStringList("numgt")) {
+            if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
+                for (String numgt : query.getAsStringList("numgt")) {
                     String[] split = numgt.split(":");
                     addCompQueryFilter(
                             DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
@@ -732,33 +808,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-//            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
-//                for (String freqgt : getStringList(options.get("freqgt"))) {
-//                    String[] split = freqgt.split(":");
-//                    addCompQueryFilter(
-//                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
-//                            split[1], builder);
-//                }
-//            }
 
+            /** STUDIES **/
+            QueryBuilder studyBuilder = QueryBuilder.start();
 
-            /** FILES **/
-            QueryBuilder fileBuilder = QueryBuilder.start();
-
-            if (options.containsKey(STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
-                addQueryListFilter(
-                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getAsStringList(STUDIES),
-                        fileBuilder, QueryOperation.AND);
+            if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), null);
+                addQueryListFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds, studyBuilder, QueryOperation.AND);
             }
 
-            if (options.containsKey(FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
-                addQueryListFilter(
-                        DBObjectToVariantSourceConverter.FILEID_FIELD, options.getAsStringList(FILES),
-                        fileBuilder, QueryOperation.AND);
+            if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
+                addQueryListFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                        query.getAsIntegerList(VariantQueryParams.FILES.key()), studyBuilder, QueryOperation.AND);
             }
 
-            if (options.containsKey(GENOTYPE)) {
-                String sampleGenotypesCSV = options.getString(GENOTYPE);
+            if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
+                String sampleGenotypesCSV = query.getString(VariantQueryParams.GENOTYPE.key());
 
 //                String AND = ",";
 //                String OR = ";";
@@ -772,7 +837,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String OR = ",";
                 String IS = ":";
 
+
+                // we may need to know the study type
+//                studyConfigurationManager.getStudyConfiguration(1, null).getResult().get(0).
+
+
                 String[] sampleGenotypesArray = sampleGenotypesCSV.split(AND);
+                System.out.println("sampleGenotypesArray = " + Arrays.toString(sampleGenotypesArray));
+
                 for (String sampleGenotypes : sampleGenotypesArray) {
                     String[] sampleGenotype = sampleGenotypes.split(IS);
                     if(sampleGenotype.length != 2) {
@@ -782,18 +854,33 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     String[] genotypes = sampleGenotype[1].split(OR);
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
                     for (String genotype : genotypes) {
-                        String s = DBObjectToVariantSourceEntryConverter.SAMPLES_FIELD + "." +
-                                DBObjectToSamplesConverter.genotypeToStorageType(genotype);
-                        //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
-                        genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
+                        if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
+                            QueryBuilder andBuilder = QueryBuilder.start();
+                            if (genotype.charAt(1) == '/') {
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                            } else {
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                            }
+                            genotypesBuilder.or(andBuilder.get());
+                        } else {
+                            String s = DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." +
+                                    DBObjectToSamplesConverter.genotypeToStorageType(genotype);
+                            //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
+                            genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
+                        }
                     }
-                    fileBuilder.and(genotypesBuilder.get());
+                    studyBuilder.and(genotypesBuilder.get());
                 }
             }
 
-            DBObject fileQuery = fileBuilder.get();
-            if (fileQuery.keySet().size() != 0) {
-                builder.and(DBObjectToVariantConverter.FILES_FIELD).elemMatch(fileQuery);
+            // If Study Query is used then we add a elemMatch query
+            DBObject studyQuery = studyBuilder.get();
+            if (studyQuery.keySet().size() != 0) {
+                builder.and(DBObjectToVariantConverter.STUDIES_FIELD).elemMatch(studyQuery);
             }
         }
 
@@ -801,18 +888,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    /**
-     * when the tags "include" or "exclude" The names are the same as the members of Variant.
-     * @param options
-     * @return
-     */
-    private DBObject parseProjectionQueryOptions(QueryOptions options) {
+    private DBObject createProjection(Query query, QueryOptions options) {
         DBObject projection = new BasicDBObject();
 
         if(options == null) {
-            return projection;
+            options = new QueryOptions();
         }
-
         List<String> includeList = options.getAsStringList("include");
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
@@ -840,31 +921,258 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (options.containsKey(FILE_ID) && projection.containsField(DBObjectToVariantConverter.FILES_FIELD)) {
-//            List<String> files = options.getListAs(FILES, String.class);
-            String file = options.getString(FILE_ID);
+        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
             projection.put(
-                    DBObjectToVariantConverter.FILES_FIELD,
+                    DBObjectToVariantConverter.STUDIES_FIELD,
                     new BasicDBObject(
                             "$elemMatch",
                             new BasicDBObject(
-                                    DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                                    file
-//                                    new BasicDBObject(
-//                                            "$in",
-//                                            files
-//                                    )
+                                    DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                                    new BasicDBObject(
+                                            "$in",
+                                            files
+                                    )
                             )
                     )
             );
+        }
+        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+            List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+//            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
+            if (!studiesIds.isEmpty()) {
+                projection.put(
+                        DBObjectToVariantConverter.STUDIES_FIELD,
+                        new BasicDBObject(
+                                "$elemMatch",
+                                new BasicDBObject(
+                                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                                        new BasicDBObject(
+                                                "$in",
+                                                studiesIds
+                                        )
+                                )
+                        )
+                );
+            }
         }
 
         logger.debug("Projection: {}", projection);
         return projection;
     }
 
-    private enum QueryOperation {
-        AND, OR
+    private List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
+        List<Integer> studiesIds;
+        studiesIds = new ArrayList<>(studiesNames.size());
+        for (Object studyObj : studiesNames) {
+            if (studyObj instanceof Integer) {
+                studiesIds.add(((Integer) studyObj));
+            } else {
+                String studyName = studyObj.toString();
+                try {
+                    studiesIds.add(Integer.parseInt(studyName));
+                } catch (NumberFormatException e) {
+                    QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, options);
+                    if (result.getResult().isEmpty()) {
+                        throw new IllegalStateException("Study " + studyName + " not found");
+                    }
+                    studiesIds.add(result.first().getStudyId());
+                }
+            }
+        }
+        return studiesIds;
+    }
+
+
+    /**
+     * Two steps insertion:
+     *      First check that the variant and study exists making an update.
+     *      For those who doesn't exist, pushes a study with the file and genotype information
+     *
+     *      The documents that throw a "dup key" exception are those variants that exist and have the study.
+     *      Then, only for those variants, make a second update.
+     *
+     * *An interesting idea would be to invert this actions depending on the number of already inserted variants.
+     *
+     * @param loadedSampleIds Other loaded sampleIds EXCEPT those that are going to be loaded
+     * @param data  Variants to insert
+     */
+    QueryResult insert(List<Variant> data, int fileId, DBObjectToVariantConverter variantConverter,
+                       DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, StudyConfiguration studyConfiguration, List<Integer> loadedSampleIds) {
+        if (data.isEmpty()) {
+            return new QueryResult("insertVariants");
+        }
+        List<DBObject> queries = new ArrayList<>(data.size());
+        List<DBObject> updates = new ArrayList<>(data.size());
+        Set<String> nonInsertedVariants;
+        String fileIdStr = Integer.toString(fileId);
+
+        {
+            nonInsertedVariants = new HashSet<>();
+            Map missingSamples = Collections.emptyMap();
+            String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
+            if (defaultGenotype.equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
+                logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).");
+            } else if (!loadedSampleIds.isEmpty()) {
+                missingSamples = new BasicDBObject(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, loadedSampleIds);   // ?/?
+            }
+            for (Variant variant : data) {
+                String id = variantConverter.buildStorageId(variant);
+                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                    if (!variantSourceEntry.getFileId().equals(fileIdStr)) {
+                        continue;
+                    }
+                    int studyId = studyConfiguration.getStudyId();
+                    DBObject study = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
+                    DBObject genotypes = (DBObject) study.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
+                    if (genotypes != null) {        //If genotypes is null, genotypes are not suppose to be loaded
+                        genotypes.putAll(missingSamples);   //Add missing samples
+                    }
+                    DBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, study);
+                    BasicDBObject update = new BasicDBObject()
+                            .append("$push", push)
+                            .append("$setOnInsert", variantConverter.convertToStorageType(variant));
+                    if (variant.getIds() != null && !variant.getIds().isEmpty() && !variant.getIds().iterator().next().isEmpty()) {
+                        update.put("$addToSet", new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, new BasicDBObject("$each", variant.getIds())));
+                    }
+                    // { _id: <variant_id>, "studies.sid": {$ne: <studyId> } }
+                    //If the variant exists and contains the study, this find will fail, will try to do the upsert, and throw a duplicated key exception.
+                    queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                            new BasicDBObject("$ne", studyId)));
+                    updates.add(update);
+                }
+            }
+            QueryOptions options = new QueryOptions("upsert", true);
+            options.put("multi", false);
+            try {
+                variantsCollection.update(queries, updates, options);
+            } catch (BulkWriteException e) {
+                for (BulkWriteError writeError : e.getWriteErrors()) {
+                    if (writeError.getCode() == 11000) { //Dup Key error code
+                        nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            queries.clear();
+            updates.clear();
+        }
+
+        for (Variant variant : data) {
+            variant.setAnnotation(null);
+            String id = variantConverter.buildStorageId(variant);
+
+            if (nonInsertedVariants != null && !nonInsertedVariants.contains(id)) {
+                continue;   //Already inserted variant
+            }
+
+            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                if (!variantSourceEntry.getFileId().equals(fileIdStr)) {
+                    continue;
+                }
+
+                DBObject studyObject = variantSourceEntryConverter.convertToStorageType(variantSourceEntry);
+                DBObject genotypes = (DBObject) studyObject.get(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD);
+                DBObject push = new BasicDBObject();
+                if (genotypes != null) { //If genotypes is null, genotypes are not suppose to be loaded
+                    for (String genotype : genotypes.keySet()) {
+                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
+                    }
+                } else {
+                    push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
+                }
+                push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToVariantSourceEntryConverter.FILES_FIELD, ((List) studyObject.get(DBObjectToVariantSourceEntryConverter.FILES_FIELD)).get(0));
+                BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
+
+
+                queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyConfiguration.getStudyId()));
+                updates.add(update);
+
+            }
+
+        }
+        if (queries.isEmpty()) {
+            return new QueryResult();
+        } else {
+            QueryOptions options = new QueryOptions("upsert", false);
+            options.put("multi", false);
+            return variantsCollection.update(queries, updates, options);
+        }
+    }
+
+    QueryResult<WriteResult> fillFileGaps(int fileId, List<String> chromosomes, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
+
+        // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
+        // { $push : {
+        //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
+        // } }
+
+        if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "").
+                equals(Collections.singletonList(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE))) {
+            logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+            return new QueryResult<>();
+        }
+
+        DBObject query = new BasicDBObject();
+        if (chromosomes != null && !chromosomes.isEmpty()) {
+            query.put(DBObjectToVariantConverter.CHROMOSOME_FIELD, new BasicDBObject("$in", chromosomes));
+        }
+
+        query.put(DBObjectToVariantConverter.STUDIES_FIELD, new BasicDBObject("$elemMatch",
+                new BasicDBObject(
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                        studyConfiguration.getStudyId())
+                .append(
+                        DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                        new BasicDBObject("$ne", fileId)
+                )
+        ));
+
+        BasicDBObject update = new BasicDBObject("$push", new BasicDBObject()
+                .append(DBObjectToVariantConverter.STUDIES_FIELD + ".$." +
+                        DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." +
+                        DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds)));
+
+        QueryOptions queryOptions = new QueryOptions("multi", true);
+        logger.debug("FillGaps find : {}", query);
+        logger.debug("FillGaps update : {}", update);
+        return variantsCollection.update(query, update, queryOptions);
+    }
+
+
+    private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
+        studyConfigurationManager.setDefaultQueryOptions(options);
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
+
+        DBObjectToSamplesConverter samplesConverter;
+        if (studyIds.isEmpty()) {
+            samplesConverter = new DBObjectToSamplesConverter(studyConfigurationManager, null);
+        } else {
+            List<StudyConfiguration> studyConfigurations = new LinkedList<>();
+            for (Integer studyId : studyIds) {
+                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
+                if (queryResult.getResult().isEmpty()) {
+                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
+                } else {
+                    studyConfigurations.add(queryResult.first());
+                }
+            }
+            samplesConverter = new DBObjectToSamplesConverter(studyConfigurations);
+        }
+        if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
+            samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
+        }
+        if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
+            samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
+        }
+        DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
+                false,
+                query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key()) : null,
+                samplesConverter
+        );
+        sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
+        return new DBObjectToVariantConverter(sourceEntryConverter, new DBObjectToVariantStatsConverter(studyConfigurationManager));
     }
 
     private QueryBuilder addQueryStringFilter(String key, String value, QueryBuilder builder) {
@@ -930,21 +1238,39 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryBuilder addScoreFilter(String key, List<String> list, QueryBuilder builder) {
-//        ArrayList<DBObject> and = new ArrayList<>(list.size());
-//        DBObject[] ands = new DBObject[list.size()];
+        List<DBObject> ands = new ArrayList<>();
+        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
+            String elem = iterator.next();
+            String[] populationFrequency = splitKeyValue(elem);
+            QueryBuilder scoreBuilder = new QueryBuilder();
+            scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(populationFrequency[0]);
+            addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, populationFrequency[1], scoreBuilder);
+            ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
+        }
+        if (!ands.isEmpty()) {
+            builder.and(ands.toArray(new DBObject[ands.size()]));
+        }
+        return builder;
+    }
+
+    private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, List<String> list, QueryBuilder builder) {
         List<DBObject> ands = new ArrayList<>();
         for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
             String elem = iterator.next();
             String[] split = elem.split(":");
             if (split.length == 2) {
-                String source = split[0];
-                String score = split[1];
-                QueryBuilder scoreBuilder = new QueryBuilder();
-                scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(source);
-                addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD
-                        , score, scoreBuilder);
-//                builder.and(key).elemMatch(scoreBuilder.get());
-                ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
+                String study = split[0];
+                String population = split[1];
+//                String frequency = split[2];
+                String[] populationFrequency = splitKeyValue(population);
+                QueryBuilder frequencyBuilder = new QueryBuilder();
+                frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
+//                frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(population);
+                frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(populationFrequency[0]);
+//                addCompQueryFilter(alleleFrequencyField, frequency, frequencyBuilder);
+                System.out.println("populationFrequency = " + Arrays.toString(populationFrequency));
+                addCompQueryFilter(alleleFrequencyField, populationFrequency[1], frequencyBuilder);
+                ands.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get())));
             } else {
                 logger.error("Bad score filter: " + elem);
                 iterator.remove(); //Remove the malformed query params.
@@ -965,19 +1291,82 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryBuilder getRegionFilter(List<Region> regions, QueryBuilder builder) {
-        DBObject[] objects = new DBObject[regions.size()];
-
-        int i = 0;
-        for (Region region : regions) {
-            List<String> chunkIds = getChunkIds(region);
-            DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
-                    .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
-                    .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
-            objects[i] = regionObject;
-            i++;
+        if (regions != null && !regions.isEmpty()) {
+            DBObject[] objects = new DBObject[regions.size()];
+            int i = 0;
+            for (Region region : regions) {
+                if (region.getEnd() - region.getStart() < 1000000) {
+                    List<String> chunkIds = getChunkIds(region);
+                    DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
+                            .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()))
+                            .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
+                    objects[i] = regionObject;
+                } else {
+                    DBObject regionObject = new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome())
+                            .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()))
+                            .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()));
+                    objects[i] = regionObject;
+                }
+                i++;
+            }
+            builder.or(objects);
         }
-        builder.or(objects);
         return builder;
+    }
+
+    void createIndexes(QueryOptions options) {
+        logger.debug("Start creating indexes");
+
+        DBObject onBackground = new BasicDBObject("background", true);
+        DBObject sparse = new BasicDBObject("background", true).append("sparse", true);
+        variantsCollection.createIndex(new BasicDBObject("_at.chunkIds", 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1)
+                .append(DBObjectToVariantConverter.START_FIELD, 1)
+                .append(DBObjectToVariantConverter.END_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.IDS_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.XREFS_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)
+                .append(DBObjectToVariantConverter.ANNOTATION_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
+                        + "." + DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD, 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD
+                + "." + DBObjectToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1), sparse);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD, 1), onBackground);
+        variantsCollection.createIndex(new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD, 1), onBackground);
+
+        logger.debug("sent order to create indices");
+    }
+
+
+    /**
+     * This method split a typical key-value param such as 'sift<=0.2' in an array ["sift", "<=0.2"].
+     * This implementation can and probably should be improved.
+     * @param keyValue The keyvalue parameter to be split
+     * @return An array with 2 positions for the key and value
+     */
+    private String[] splitKeyValue(String keyValue) {
+        String[] keyValueArray = new String[2];
+        String[] arr = keyValue.replaceAll("==", " ")
+                .replaceAll(">=", " ")
+                .replaceAll("<=", " ")
+                .replaceAll("!=", " ")
+                .replaceAll("~=", " ")
+                .replaceAll("=", " ")
+                .replaceAll("<", " ")
+                .replaceAll(">", " ")
+                .split(" ");
+        keyValueArray[0] = arr[0];
+        keyValueArray[1] = keyValue.replaceAll(arr[0], "");
+        return keyValueArray;
     }
 
     /* *******************
@@ -1013,5 +1402,838 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return (id * chunksize) + chunksize - 1;
     }
 
+
+
+
+
+
+    /* OLD METHODS*/
+
+    @Deprecated
+    private QueryBuilder parseQueryOptions(QueryOptions options, QueryBuilder builder) {
+        if (options != null) {
+
+            if (options.containsKey("sort")) {
+                if (options.getBoolean("sort")) {
+                    options.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
+                } else {
+                    options.remove("sort");
+                }
+            }
+
+            /** GENOMIC REGION **/
+
+            if (options.containsKey(VariantQueryParams.REGION.key()) && !options.getString(VariantQueryParams.REGION.key()).isEmpty()) {
+                List<String> stringList = options.getAsStringList(VariantQueryParams.REGION.key());
+                List<Region> regions = new ArrayList<>(stringList.size());
+                for (String reg : stringList) {
+                    Region region = Region.parseRegion(reg);
+                    regions.add(region);
+                }
+                getRegionFilter(regions, builder);
+            }
+
+//            if (options.containsKey(VariantQueryParams.CHROMOSOME.key())) {
+//                List<String> chromosome = options.getAsStringList(VariantQueryParams.CHROMOSOME.key());
+//                addQueryListFilter(DBObjectToVariantConverter.CHROMOSOME_FIELD, chromosome, builder, QueryOperation.OR);
+//            }
+
+            if (options.containsKey(VariantQueryParams.GENE.key())) {
+                List<String> xrefs = options.getAsStringList(VariantQueryParams.GENE.key());
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
+            }
+
+            if (options.getString(VariantQueryParams.ID.key()) != null && !options.getString(VariantQueryParams.ID.key()).isEmpty()) { //) && !options.getString("id").isEmpty()) {
+                List<String> ids = options.getAsStringList(VariantQueryParams.ID.key());
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
+                addQueryListFilter(DBObjectToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
+            }
+
+
+            /** VARIANT **/
+
+            if (options.containsKey(VariantQueryParams.TYPE.key())) { // && !options.getString("type").isEmpty()) {
+                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, options.getString(VariantQueryParams.TYPE.key()), builder);
+            }
+
+            if (options.containsKey(VariantQueryParams.REFERENCE.key()) && options.getString(VariantQueryParams.REFERENCE.key()) != null) {
+                addQueryStringFilter(DBObjectToVariantConverter.REFERENCE_FIELD, options.getString(VariantQueryParams.REFERENCE.key()), builder);
+            }
+
+            if (options.containsKey(VariantQueryParams.ALTERNATE.key()) && options.getString(VariantQueryParams.ALTERNATE.key()) != null) {
+                addQueryStringFilter(DBObjectToVariantConverter.ALTERNATE_FIELD, options.getString(VariantQueryParams.ALTERNATE.key()), builder);
+            }
+
+            /** ANNOTATION **/
+
+            if (options.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+                builder.and(DBObjectToVariantConverter.ANNOTATION_FIELD).exists(options.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
+            }
+
+            if (options.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
+                List<String> xrefs = options.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())) {
+                List<String> cts = new ArrayList<>(options.getAsStringList(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()));
+                List<Integer> ctsInteger = new ArrayList<>(cts.size());
+                for (Iterator<String> iterator = cts.iterator(); iterator.hasNext(); ) {
+                    String ct = iterator.next();
+                    if (ct.startsWith("SO:")) {
+                        ct = ct.substring(3);
+                    }
+                    try {
+                        ctsInteger.add(Integer.parseInt(ct));
+                    } catch (NumberFormatException e) {
+                        logger.error("Error parsing integer ", e);
+                        iterator.remove();  //Remove the malformed query params.
+                    }
+                }
+                options.put(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cts); //Replace the QueryOption without the malformed query params
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, ctsInteger, builder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
+                List<String> biotypes = options.getAsStringList(VariantQueryParams.ANNOT_BIOTYPE.key());
+                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(VariantQueryParams.POLYPHEN.key())) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(VariantQueryParams.POLYPHEN.key()), builder);
+            }
+
+            if (options.containsKey(VariantQueryParams.SIFT.key())) {
+                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, options.getString(VariantQueryParams.SIFT.key()), builder);
+            }
+
+            if (options.containsKey(VariantQueryParams.PROTEIN_SUBSTITUTION.key())) {
+                List<String> list = new ArrayList<>(options.getAsStringList(VariantQueryParams.PROTEIN_SUBSTITUTION.key()));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, list, builder);
+                options.put(VariantQueryParams.PROTEIN_SUBSTITUTION.key(), list); //Replace the QueryOption without the malformed query params
+            }
+
+            if (options.containsKey(VariantQueryParams.CONSERVATION.key())) {
+                List<String> list = new ArrayList<>(options.getAsStringList(VariantQueryParams.CONSERVATION.key()));
+                addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                        DBObjectToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, list, builder);
+                options.put(VariantQueryParams.CONSERVATION.key(), list); //Replace the QueryOption without the malformed query params
+            }
+
+            if (options.containsKey(VariantQueryParams.ALTERNATE_FREQUENCY.key())) {
+                List<String> list = new ArrayList<>(options.getAsStringList(VariantQueryParams.ALTERNATE_FREQUENCY.key()));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                                DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
+
+            if (options.containsKey(VariantQueryParams.REFERENCE_FREQUENCY.key())) {
+                List<String> list = new ArrayList<>(options.getAsStringList(VariantQueryParams.REFERENCE_FREQUENCY.key()));
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                                DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, list, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
+            }
+
+
+
+            /** STATS **/
+
+            if (options.get(VariantQueryParams.STATS_MAF.key()) != null && !options.getString(VariantQueryParams.STATS_MAF.key()).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MAF_FIELD,
+                        options.getString(VariantQueryParams.STATS_MAF.key()), builder);
+            }
+
+            if (options.get(VariantQueryParams.STATS_MGF.key()) != null && !options.getString(VariantQueryParams.STATS_MGF.key()).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MGF_FIELD,
+                        options.getString(VariantQueryParams.STATS_MGF.key()), builder);
+            }
+
+            if (options.get(VariantQueryParams.MISSING_ALLELES.key()) != null && !options.getString(VariantQueryParams.MISSING_ALLELES.key()).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSALLELE_FIELD,
+                        options.getString(VariantQueryParams.MISSING_ALLELES.key()), builder);
+            }
+
+            if (options.get(VariantQueryParams.MISSING_GENOTYPES.key()) != null && !options.getString(VariantQueryParams.MISSING_GENOTYPES.key()).isEmpty()) {
+                addCompQueryFilter(
+                        DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD,
+                        options.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder);
+            }
+
+            if (options.get("numgt") != null && !options.getString("numgt").isEmpty()) {
+                for (String numgt : options.getAsStringList("numgt")) {
+                    String[] split = numgt.split(":");
+                    addCompQueryFilter(
+                            DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
+                            split[1], builder);
+                }
+            }
+
+//            if (options.get("freqgt") != null && !options.getString("freqgt").isEmpty()) {
+//                for (String freqgt : getStringList(options.get("freqgt"))) {
+//                    String[] split = freqgt.split(":");
+//                    addCompQueryFilter(
+//                            DBObjectToVariantSourceEntryConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.FREQGT_FIELD + "." + split[0],
+//                            split[1], builder);
+//                }
+//            }
+
+
+            /** FILES **/
+            QueryBuilder fileBuilder = QueryBuilder.start();
+
+            if (options.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
+                addQueryListFilter(
+                        DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, options.getAsIntegerList(VariantQueryParams.STUDIES.key()),
+                        fileBuilder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
+                addQueryListFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." +
+                                DBObjectToVariantSourceEntryConverter.FILEID_FIELD, options.getAsIntegerList(VariantQueryParams.FILES.key()),
+                        fileBuilder, QueryOperation.AND);
+            }
+
+            if (options.containsKey(VariantQueryParams.GENOTYPE.key())) {
+                String sampleGenotypesCSV = options.getString(VariantQueryParams.GENOTYPE.key());
+
+//                String AND = ",";
+//                String OR = ";";
+//                String IS = ":";
+
+//                String AND = "AND";
+//                String OR = "OR";
+//                String IS = ":";
+
+                String AND = ";";
+                String OR = ",";
+                String IS = ":";
+
+                String[] sampleGenotypesArray = sampleGenotypesCSV.split(AND);
+                for (String sampleGenotypes : sampleGenotypesArray) {
+                    String[] sampleGenotype = sampleGenotypes.split(IS);
+                    if(sampleGenotype.length != 2) {
+                        continue;
+                    }
+                    int sample = Integer.parseInt(sampleGenotype[0]);
+                    String[] genotypes = sampleGenotype[1].split(OR);
+                    QueryBuilder genotypesBuilder = QueryBuilder.start();
+                    for (String genotype : genotypes) {
+                        String s = DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." +
+                                DBObjectToSamplesConverter.genotypeToStorageType(genotype);
+                        //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
+                        genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
+                    }
+                    fileBuilder.and(genotypesBuilder.get());
+                }
+            }
+
+            DBObject fileQuery = fileBuilder.get();
+            if (fileQuery.keySet().size() != 0) {
+                builder.and(DBObjectToVariantConverter.STUDIES_FIELD).elemMatch(fileQuery);
+            }
+        }
+
+        logger.debug("Find = " + builder.get());
+        return builder;
+    }
+
+    @Deprecated
+    private DBObject parseProjectionQueryOptions(QueryOptions options) {
+        DBObject projection = new BasicDBObject();
+
+        if(options == null) {
+            return projection;
+        }
+
+        List<String> includeList = options.getAsStringList("include");
+        if (!includeList.isEmpty()) { //Include some
+            for (String s : includeList) {
+                String key = DBObjectToVariantConverter.toShortFieldName(s);
+                if (key != null) {
+                    projection.put(key, 1);
+                } else {
+                    logger.warn("Unknown include field: {}", s);
+                }
+            }
+        } else { //Include all
+            for (String values : DBObjectToVariantConverter.fieldsMap.values()) {
+                projection.put(values, 1);
+            }
+            if (options.containsKey("exclude")) { // Exclude some
+                List<String> excludeList = options.getAsStringList("exclude");
+                for (String s : excludeList) {
+                    String key = DBObjectToVariantConverter.toShortFieldName(s);
+                    if (key != null) {
+                        projection.removeField(key);
+                    } else {
+                        logger.warn("Unknown exclude field: {}", s);
+                    }
+                }
+            }
+        }
+
+        if (options.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
+//            List<String> files = options.getListAs(FILES, String.class);
+            int file = options.getInt(VariantQueryParams.RETURNED_FILES.key());
+            projection.put(
+                    DBObjectToVariantConverter.STUDIES_FIELD,
+                    new BasicDBObject(
+                            "$elemMatch",
+                            new BasicDBObject(
+                                    DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                                    file
+//                                    new BasicDBObject(
+//                                            "$in",
+//                                            files
+//                                    )
+                            )
+                    )
+            );
+        }
+
+        logger.debug("Projection: {}", projection);
+        return projection;
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult<Variant> getAllVariants(QueryOptions options) {
+
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+        DBObject projection = parseProjectionQueryOptions(options);
+        logger.debug("Query to be executed {}", qb.get().toString());
+
+        return variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(new Query(options), options), options);
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
+
+//        BasicDBObject query = new BasicDBObject(DBObjectToVariantConverter.ID_FIELD, id);
+
+        if(options == null) {
+            options = new QueryOptions(VariantQueryParams.ID.key(), id);
+        } else {
+            options.addToListOption(VariantQueryParams.ID.key(), id);
+        }
+
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+        DBObject projection = parseProjectionQueryOptions(options);
+        logger.debug("Query to be executed {}", qb.get().toString());
+
+//        return coll.find(query, options, variantConverter);
+        QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(new Query(options), options), options);
+        queryResult.setId(id);
+        return queryResult;
+    }
+
+    @Override
+    @Deprecated
+    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults = new ArrayList<>(idList.size());
+        for (String r : idList) {
+            QueryResult<Variant> queryResult = getVariantById(r, options);
+            allResults.add(queryResult);
+        }
+        return allResults;
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
+
+        QueryBuilder qb = QueryBuilder.start();
+        getRegionFilter(region, qb);
+        parseQueryOptions(options, qb);
+        DBObject projection = parseProjectionQueryOptions(options);
+
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(new Query(options), options), options);
+        queryResult.setId(region.toString());
+        return queryResult;
+    }
+
+    @Override
+    @Deprecated
+    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
+        List<QueryResult<Variant>> allResults;
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        // If the users asks to sort the results, do it by chromosome and start
+        if (options.getBoolean("sort", false)) {
+            options.put("sort", new BasicDBObject("chr", 1).append("start", 1));
+        }
+
+        // If the user asks to merge the results, run only one query,
+        // otherwise delegate in the method to query regions one by one
+        if (options.getBoolean("merge", false)) {
+            options.add(VariantQueryParams.REGION.key(), regionList);
+            allResults = Collections.singletonList(getAllVariants(options));
+        } else {
+            allResults = new ArrayList<>(regionList.size());
+            for (Region r : regionList) {
+                QueryResult queryResult = getAllVariantsByRegion(r, options);
+                queryResult.setId(r.toString());
+                allResults.add(queryResult);
+            }
+        }
+        return allResults;
+    }
+
+    @Deprecated
+    public QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyId, QueryOptions options) {
+
+        // Aggregation for filtering when more than one study is present
+        QueryBuilder qb = QueryBuilder.start(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD).in(studyId);
+        getRegionFilter(region, qb);
+        parseQueryOptions(options, qb);
+
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject unwind = new BasicDBObject("$unwind", "$" + DBObjectToVariantConverter.STUDIES_FIELD);
+        DBObject match2 = new BasicDBObject("$match",
+                new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD,
+                        new BasicDBObject("$in", studyId)));
+
+        logger.debug("Query to be executed {}", qb.get().toString());
+
+        return variantsCollection.aggregate(/*"$variantsRegionStudies", */Arrays.asList(match, unwind, match2), options);
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
+        // db.variants.aggregate( { $match: { $and: [ {chr: "1"}, {start: {$gt: 251391, $lt: 2701391}} ] }}, 
+        //                        { $group: { _id: { $subtract: [ { $divide: ["$start", 20000] }, { $divide: [{$mod: ["$start", 20000]}, 20000] } ] }, 
+        //                                  totalCount: {$sum: 1}}})
+
+        if(options == null) {
+            options = new QueryOptions();
+        }
+
+        int interval = options.getInt("interval", 20000);
+
+        BasicDBObject start = new BasicDBObject("$gt", region.getStart());
+        start.append("$lt", region.getEnd());
+
+        BasicDBList andArr = new BasicDBList();
+        andArr.add(new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, region.getChromosome()));
+        andArr.add(new BasicDBObject(DBObjectToVariantConverter.START_FIELD, start));
+
+        // Parsing the rest of options
+        QueryBuilder qb = new QueryBuilder();
+        DBObject optionsMatch = parseQueryOptions(options, qb).get();
+        if(!optionsMatch.keySet().isEmpty()) {
+            andArr.add(optionsMatch);
+        }
+        DBObject match = new BasicDBObject("$match", new BasicDBObject("$and", andArr));
+
+
+//        qb.and("_at.chunkIds").in(chunkIds);
+//        qb.and(DBObjectToVariantConverter.END_FIELD).greaterThanEquals(region.getStart());
+//        qb.and(DBObjectToVariantConverter.START_FIELD).lessThanEquals(region.getEnd());
+//
+//        List<String> chunkIds = getChunkIds(region);
+//        DBObject regionObject = new BasicDBObject("_at.chunkIds", new BasicDBObject("$in", chunkIds))
+//                .append(DBObjectToVariantConverter.END_FIELD, new BasicDBObject("$gte", region.getStart()))
+//                .append(DBObjectToVariantConverter.START_FIELD, new BasicDBObject("$lte", region.getEnd()));
+
+
+        BasicDBList divide1 = new BasicDBList();
+        divide1.add("$start");
+        divide1.add(interval);
+
+        BasicDBList divide2 = new BasicDBList();
+        divide2.add(new BasicDBObject("$mod", divide1));
+        divide2.add(interval);
+
+        BasicDBList subtractList = new BasicDBList();
+        subtractList.add(new BasicDBObject("$divide", divide1));
+        subtractList.add(new BasicDBObject("$divide", divide2));
+
+
+        BasicDBObject substract = new BasicDBObject("$subtract", subtractList);
+
+        DBObject totalCount = new BasicDBObject("$sum", 1);
+
+        BasicDBObject g = new BasicDBObject("_id", substract);
+        g.append("features_count", totalCount);
+        DBObject group = new BasicDBObject("$group", g);
+
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("_id", 1));
+
+//        logger.info("getAllIntervalFrequencies - (>·_·)>");
+//        System.out.println(options.toString());
+//
+//        System.out.println(match.toString());
+//        System.out.println(group.toString());
+//        System.out.println(sort.toString());
+
+        long dbTimeStart = System.currentTimeMillis();
+        QueryResult output = variantsCollection.aggregate(/*"$histogram", */Arrays.asList(match, group, sort), options);
+        long dbTimeEnd = System.currentTimeMillis();
+
+        Map<Long, DBObject> ids = new HashMap<>();
+        // Create DBObject for intervals with features inside them
+        for (DBObject intervalObj : (List<DBObject>) output.getResult()) {
+            Long _id = Math.round((Double) intervalObj.get("_id"));//is double
+
+            DBObject intervalVisited = ids.get(_id);
+            if (intervalVisited == null) {
+                intervalObj.put("_id", _id);
+                intervalObj.put("start", getChunkStart(_id.intValue(), interval));
+                intervalObj.put("end", getChunkEnd(_id.intValue(), interval));
+                intervalObj.put("chromosome", region.getChromosome());
+                intervalObj.put("features_count", Math.log((int) intervalObj.get("features_count")));
+                ids.put(_id, intervalObj);
+            } else {
+                Double sum = (Double) intervalVisited.get("features_count") + Math.log((int) intervalObj.get("features_count"));
+                intervalVisited.put("features_count", sum.intValue());
+            }
+        }
+
+        // Create DBObject for intervals without features inside them
+        BasicDBList resultList = new BasicDBList();
+        int firstChunkId = getChunkId(region.getStart(), interval);
+        int lastChunkId = getChunkId(region.getEnd(), interval);
+        DBObject intervalObj;
+        for (int chunkId = firstChunkId; chunkId <= lastChunkId; chunkId++) {
+            intervalObj = ids.get((long) chunkId);
+            if (intervalObj == null) {
+                intervalObj = new BasicDBObject();
+                intervalObj.put("_id", chunkId);
+                intervalObj.put("start", getChunkStart(chunkId, interval));
+                intervalObj.put("end", getChunkEnd(chunkId, interval));
+                intervalObj.put("chromosome", region.getChromosome());
+                intervalObj.put("features_count", 0);
+            }
+            resultList.add(intervalObj);
+        }
+
+        QueryResult queryResult = new QueryResult(region.toString(), ((Long) (dbTimeEnd - dbTimeStart)).intValue(),
+                resultList.size(), resultList.size(), null, null, resultList);
+
+        return queryResult;
+    }
+
+    @Deprecated
+    public QueryResult getAllVariantsByGene(String geneName, QueryOptions options) {
+        QueryBuilder qb = QueryBuilder.start();
+        if(options == null) {
+            options = new QueryOptions(VariantQueryParams.GENE.key(), geneName);
+        } else {
+            options.addToListOption(VariantQueryParams.GENE.key(), geneName);
+        }
+        options.put(VariantQueryParams.GENE.key(), geneName);
+        parseQueryOptions(options, qb);
+        DBObject projection = parseProjectionQueryOptions(options);
+        QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(new Query(options), options), options);
+        queryResult.setId(geneName);
+        return queryResult;
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult groupBy(String field, QueryOptions options) {
+
+        String documentPath;
+        switch (field) {
+            case "gene":
+            default:
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD;
+                break;
+            case "ensemblGene":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                break;
+            case "ct":
+            case "consequence_type":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                break;
+        }
+
+        QueryBuilder qb = QueryBuilder.start();
+        parseQueryOptions(options, qb);
+
+        DBObject match = new BasicDBObject("$match", qb.get());
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("field", "$"+documentPath));
+        DBObject unwind = new BasicDBObject("$unwind", "$field");
+        DBObject group = new BasicDBObject("$group", new BasicDBObject("_id", "$field")
+//                .append("field", "$field")
+                .append("count", new BasicDBObject("$sum", 1))); // sum, count, avg, ...?
+        DBObject sort = new BasicDBObject("$sort", new BasicDBObject("count", options != null ? options.getInt("order", -1) : -1)); // 1 = ascending, -1 = descending
+        DBObject limit = new BasicDBObject("$limit", options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
+
+        return variantsCollection.aggregate(Arrays.asList(match, project, unwind, group, sort, limit), options);
+    }
+
+    @Deprecated
+    public QueryResult getMostAffectedGenes(int numGenes, QueryOptions options) {
+        return getGenesRanking(numGenes, -1, options);
+    }
+
+    @Deprecated
+    public QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options) {
+        return getGenesRanking(numGenes, 1, options);
+    }
+
+    @Deprecated
+    private QueryResult getGenesRanking(int numGenes, int order, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        options.put("limit", numGenes);
+        options.put("order", order);
+
+        return groupBy("gene", options);
+    }
+
+    @Deprecated
+    public QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
+        return getConsequenceTypesRanking(numConsequenceTypes, -1, options);
+    }
+
+    @Deprecated
+    public QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options) {
+        return getConsequenceTypesRanking(numConsequenceTypes, 1, options);
+    }
+
+    @Deprecated
+    private QueryResult getConsequenceTypesRanking(int numConsequenceTypes, int order, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        options.put("limit", numConsequenceTypes);
+        options.put("order", order);
+
+        return groupBy("ct", options);
+    }
+
+    @Override
+    @Deprecated
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceMongoDBAdaptor;
+    }
+
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() {
+        return studyConfigurationManager;
+    }
+
+    @Override
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
+    }
+
+
+    @Override
+    @Deprecated
+    public VariantDBIterator iterator(QueryOptions options) {
+        return iterator(new Query(options), options);
+    }
+
+    @Deprecated
+    public QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions options) {
+        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
+        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
+        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
+        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
+//        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
+//        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
+
+        DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats? new DBObjectToVariantStatsConverter(studyConfigurationManager) : null);
+        DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc,
+                includeGenotypes? new DBObjectToSamplesConverter(studyConfiguration) : null);
+        return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, getLoadedSamples(fileId, studyConfiguration));
+    }
+
+    public static List<Integer> getLoadedSamples(int fileId, StudyConfiguration studyConfiguration) {
+        List<Integer> loadedSampleIds = new LinkedList<>();
+        for (Integer indexedFile : studyConfiguration.getIndexedFiles()) {
+            if (indexedFile.equals(fileId)) {
+                continue;
+            } else {
+                loadedSampleIds.addAll(studyConfiguration.getSamplesInFiles().get(indexedFile));
+            }
+        }
+        loadedSampleIds.removeAll(studyConfiguration.getSamplesInFiles().get(fileId));
+        return loadedSampleIds;
+    }
+
+    @Override
+    @Deprecated
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+        DBCollection coll = db.getDb().getCollection(collectionName);
+        BulkWriteOperation builder = coll.initializeUnorderedBulkOperation();
+
+        long start = System.nanoTime();
+        DBObjectToVariantStatsConverter statsConverter = new DBObjectToVariantStatsConverter(studyConfigurationManager);
+//        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+        int fileId = queryOptions.getInt(VariantStorageManager.Options.FILE_ID.key());
+        DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(queryOptions), queryOptions);
+        //TODO: Use the StudyConfiguration to change names to ids
+
+        // TODO make unset of 'st' if already present?
+        for (VariantStatsWrapper wrapper : variantStatsWrappers) {
+            Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
+            Iterator<VariantStats> iterator = cohortStats.values().iterator();
+            VariantStats variantStats = iterator.hasNext()? iterator.next() : null;
+            List<DBObject> cohorts = statsConverter.convertCohortsToStorageType(cohortStats, studyId);   // TODO remove when we remove fileId
+//            List cohorts = statsConverter.convertCohortsToStorageType(cohortStats, variantSource.getStudyId());   // TODO use when we remove fileId
+
+            // add cohorts, overwriting old values if that cid, fid and sid already exists: remove and then add
+            // db.variants.update(
+            //      {_id:<id>},
+            //      {$pull:{st:{cid:{$in:["Cohort 1","cohort 2"]}, fid:{$in:["file 1", "file 2"]}, sid:{$in:["study 1", "study 2"]}}}}
+            // )
+            // db.variants.update(
+            //      {_id:<id>},
+            //      {$push:{st:{$each: [{cid:"Cohort 1", fid:"file 1", ... , defaultValue:3},{cid:"Cohort 2", ... , defaultValue:3}] }}}
+            // )
+
+            if (!cohorts.isEmpty()) {
+                String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
+                        variantStats.getRefAllele(), variantStats.getAltAllele());
+
+                List<String> cohortIds = new ArrayList<>(cohorts.size());
+                List<Integer> fileIds = new ArrayList<>(cohorts.size());
+                List<Integer> studyIds = new ArrayList<>(cohorts.size());
+                for (DBObject cohort : cohorts) {
+                    cohortIds.add((String) cohort.get(DBObjectToVariantStatsConverter.COHORT_ID));
+//                    fileIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.FILE_ID));
+                    studyIds.add((Integer) cohort.get(DBObjectToVariantStatsConverter.STUDY_ID));
+                }
+
+                DBObject find = new BasicDBObject("_id", id);
+
+                DBObject update = new BasicDBObject("$pull",
+                        new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                                new BasicDBObject()
+                                        .append(
+                                                DBObjectToVariantStatsConverter.STUDY_ID,
+                                                new BasicDBObject("$in", studyIds))
+//                                        .append(
+//                                                DBObjectToVariantStatsConverter.FILE_ID,
+//                                                new BasicDBObject("$in", fileIds))
+                                        .append(
+                                                DBObjectToVariantStatsConverter.COHORT_ID,
+                                                new BasicDBObject("$in", cohortIds))));
+
+                builder.find(find).updateOne(update);
+
+                DBObject push = new BasicDBObject("$push",
+                        new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                                new BasicDBObject("$each", cohorts)));
+
+                builder.find(find).update(push);
+            }
+        }
+
+        // TODO handle if the variant didn't had that studyId in the files array
+        // TODO check the substitution is done right if the stats are already present
+        BulkWriteResult writeResult = builder.execute();
+        int writes = writeResult.getModifiedCount();
+
+        return new QueryResult<>("", ((int) (System.nanoTime() - start)), writes, writes, "", "", Collections.singletonList(writeResult));
+    }
+
+    @Deprecated
+    QueryResult deleteStats(int studyId, String cohortId) {
+
+        // { st : { $elemMatch : {  sid : <studyId>, cid : <cohortId> } } }
+        DBObject query = new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                new BasicDBObject("$elemMatch",
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyId)
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)));
+
+        // { $pull : { st : {  sid : <studyId>, cid : <cohortId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
+                        new BasicDBObject(DBObjectToVariantStatsConverter.STUDY_ID, studyId)
+                                .append(DBObjectToVariantStatsConverter.COHORT_ID, cohortId)
+                )
+        );
+        logger.debug("deleteStats: query = {}", query);
+        logger.debug("deleteStats: update = {}", update);
+
+        return variantsCollection.update(query, update, new QueryOptions("multi", true));
+    }
+
+    @Deprecated
+    public QueryResult deleteStudy(int studyId, QueryOptions queryOptions) {
+
+        if (queryOptions == null) {
+            queryOptions = new QueryOptions();
+        }
+        queryOptions.put(VariantQueryParams.STUDIES.key(), studyId);
+        DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
+
+        // { $pull : { files : {  sid : <studyId> } } }
+        BasicDBObject update = new BasicDBObject(
+                "$pull",
+                new BasicDBObject(
+                        DBObjectToVariantConverter.STUDIES_FIELD,
+                        new BasicDBObject(
+                                DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId
+                        )
+                )
+        );
+        QueryResult<WriteResult> result = variantsCollection.update(query, update, new QueryOptions("multi", true));
+
+        logger.debug("deleteStudy: query = {}", query);
+        logger.debug("deleteStudy: update = {}", update);
+
+        if (queryOptions.getBoolean("purge", false)) {
+            BasicDBObject purgeQuery = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, new BasicDBObject("$size", 0));
+            variantsCollection.remove(purgeQuery, new QueryOptions("multi", true));
+        }
+
+        return result;
+    }
+
+    @Deprecated
+    QueryResult deleteAnnotation(int annotationId, int studyId, QueryOptions queryOptions) {
+
+        if (queryOptions == null) {
+            queryOptions = new QueryOptions();
+        }
+        queryOptions.put(VariantQueryParams.STUDIES.key(), studyId);
+        DBObject query = parseQueryOptions(queryOptions, new QueryBuilder()).get();
+
+        DBObject update = new BasicDBObject("$unset", new BasicDBObject(DBObjectToVariantConverter.ANNOTATION_FIELD, ""));
+
+        logger.debug("deleteAnnotation: query = {}", query);
+        logger.debug("deleteAnnotation: update = {}", update);
+
+        return variantsCollection.update(query, update, new QueryOptions("multi", true));
+    }
 
 }

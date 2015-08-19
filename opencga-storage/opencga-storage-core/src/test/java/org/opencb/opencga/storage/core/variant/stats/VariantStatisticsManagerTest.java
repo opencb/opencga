@@ -5,6 +5,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -30,7 +31,6 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerTest extends VariantStorageManagerTestUtils {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
-    private static Object etlResult;
     private StudyConfiguration studyConfiguration;
     private VariantDBAdaptor dbAdaptor;
 
@@ -39,7 +39,6 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        etlResult = null;
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
@@ -51,7 +50,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
-        etlResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration);
+        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
     }
 
@@ -59,6 +58,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
         VariantStatisticsManager vsm = new VariantStatisticsManager();
+
+        checkCohorts(dbAdaptor, studyConfiguration);
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
@@ -82,12 +83,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort2", 11);
 
         //Calculate stats
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
         checkCohorts(dbAdaptor, studyConfiguration);
     }
@@ -98,6 +96,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         VariantStatisticsManager vsm = new VariantStatisticsManager();
 
         int studyId = studyConfiguration.getStudyId();
+        String studyName = studyConfiguration.getStudyName();
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
         options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
@@ -105,7 +104,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         StudyConfiguration studyConfiguration;
 
         /** Create first cohort **/
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyId, null).first();
+        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
         HashSet<String> cohort1 = new HashSet<>();
         cohort1.add(iterator.next());
         cohort1.add(iterator.next());
@@ -119,16 +118,14 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort1", 10);
 
         //Calculate stats for cohort1
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.stats"), cohorts, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
+        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
         checkCohorts(dbAdaptor, studyConfiguration);
 
         /** Create second cohort **/
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyId, null).first();
+        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
         HashSet<String> cohort2 = new HashSet<>();
         cohort2.add(iterator.next());
         cohort2.add(iterator.next());
@@ -139,22 +136,18 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         cohortIds.put("cohort2", 11);
 
         //Calculate stats for cohort2
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, studyConfiguration, options);
+        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
+        assertTrue(studyConfiguration.getCalculatedStats().contains(10));
+        assertTrue(studyConfiguration.getCalculatedStats().contains(11));
         checkCohorts(dbAdaptor, studyConfiguration);
 
         //Try to recalculate stats for cohort2. Will fail
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyId, null).first();
+        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
         thrown.expect(IOException.class);
-        vsm.checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
-        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, studyConfiguration, options);
+        stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-        variantStorageManager.checkStudyConfiguration(studyConfiguration, dbAdaptor);
-        variantStorageManager.getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, options);
 
     }
 

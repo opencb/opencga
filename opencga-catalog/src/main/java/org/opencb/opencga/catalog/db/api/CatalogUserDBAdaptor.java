@@ -31,6 +31,8 @@ public interface CatalogUserDBAdaptor {
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
+    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
+
     QueryResult logout(String userId, String sessionId) throws CatalogDBException;
 
     QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException;
@@ -41,15 +43,13 @@ public interface CatalogUserDBAdaptor {
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    QueryResult changeEmail(String userId, String newEmail) throws CatalogDBException;
-
     void updateUserLastActivity(String userId) throws CatalogDBException;
 
     QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;
 
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
-    QueryResult getSession(String userId, String sessionId) throws CatalogDBException;
+    QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException;
 
     String getUserIdBySessionId(String sessionId);
 

@@ -22,6 +22,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
@@ -32,10 +34,14 @@ import org.opencb.opencga.analysis.beans.Option;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exec.Command;
+import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,11 +49,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnalysisJobExecutor {
 
     public static final String EXECUTE = "execute";
     public static final String SIMULATE = "simulate";
+    public static final String OPENCGA_ANALYSIS_JOB_EXECUTOR = "OPENCGA.ANALYSIS.JOB.EXECUTOR";
     protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecutor.class);
     protected final Properties analysisProperties;
     protected final String home;
@@ -123,7 +131,7 @@ public class AnalysisJobExecutor {
         logger.debug("AnalysisJobExecuter: execute, job: {}", job);
 
         // read execution param
-        String jobExecutor = Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.JOB.EXECUTOR");
+        String jobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR);
 
         // local execution
         if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
@@ -240,8 +248,8 @@ public class AnalysisJobExecutor {
                 randomString, temporalOutDirUri, commandLine, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public static QueryResult<Job> createJob(CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Integer> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
                                              Map<String, Object> resourceManagerAttributes)
@@ -264,7 +272,7 @@ public class AnalysisJobExecutor {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.RUNNING, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 jobQueryResult = executeLocal(catalogManager, job, sessionId);
@@ -273,27 +281,67 @@ public class AnalysisJobExecutor {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, attributes, resourceManagerAttributes, Job.Status.PREPARED, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
             }
         }
         return jobQueryResult;
     }
 
     private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
+
+        Command com = new Command(job.getCommandLine());
+        final int jobId = job.getId();
+        Thread hook = new Thread(() -> {
+            try {
+                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                com.setStatus(RunnableProcess.Status.KILLED);
+                com.setExitValue(-2);
+                postExecuteLocal(catalogManager, job, sessionId, com);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+            }
+        });
+
         logger.info("==========================================");
         logger.info("Executing job {}({})", job.getName(), job.getId());
         logger.debug("Executing commandLine {}", job.getCommandLine());
         logger.info("==========================================");
         System.err.println();
 
-        Command com = new Command(job.getCommandLine());
+        Runtime.getRuntime().addShutdownHook(hook);
         com.run();
+        Runtime.getRuntime().removeShutdownHook(hook);
 
         System.err.println();
         logger.info("==========================================");
         logger.info("Finished job {}({})", job.getName(), job.getId());
         logger.info("==========================================");
 
+        return postExecuteLocal(catalogManager, job, sessionId, com);
+    }
+
+    private static QueryResult<Job> postExecuteLocal(CatalogManager catalogManager, Job job, String sessionId, Command com)
+            throws CatalogException {
+        /** Write output to file **/
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+        try {
+            URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
+            if (com.getOutput() != null) {
+                ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
+                com.setOutput(null);
+            }
+        } catch (CatalogIOException e) {
+            e.printStackTrace();
+        }
+        try {
+            URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
+            if (com.getError() != null) {
+                ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
+                com.setError(null);
+            }
+        } catch (CatalogIOException e) {
+            e.printStackTrace();
+        }
 
         /** Change status to DONE  - Add the execution information to the job entry **/
 //                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);

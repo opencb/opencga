@@ -18,8 +18,12 @@ package org.opencb.opencga.catalog.io;
 
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.core.common.UriUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -32,10 +36,18 @@ public class CatalogIOManagerFactory {
     private String defaultCatalogScheme = "file";
     private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
     private final Properties properties;
+    private final URI mainRootdir;
+    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
 
-    public CatalogIOManagerFactory(Properties properties) {
+    public CatalogIOManagerFactory(Properties properties) throws CatalogIOException {
         this.properties = properties;
-        String scheme = URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)).getScheme();
+        try {
+            mainRootdir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+        } catch (URISyntaxException e) {
+            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+        }
+
+        String scheme = mainRootdir.getScheme();
         if (scheme != null) {
             defaultCatalogScheme = scheme;
         }

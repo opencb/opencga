@@ -33,7 +33,7 @@ def main(vcf, ped, outdir):
     print cmd
     execute(cmd)
 
-    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --index --annot --effect --stats --annot-snp --vcf-file ' + outdir + '/annot_final.vcf ' + cmd_ped + ' --outdir ' + outdir + ' --output-file ' + db_name
+    cmd = "export JAVA_HOME=/opt/jdk1.7.0_40 && " + variantPath + '/variant.sh --index --annot --annot --stats --annot-snp --vcf-file ' + outdir + '/annot_final.vcf ' + cmd_ped + ' --outdir ' + outdir + ' --output-file ' + db_name
     print cmd
     execute(cmd)
 

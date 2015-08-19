@@ -40,9 +40,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -186,7 +186,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!paths.isEmpty()) {
             QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
             query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
-            QueryResult<File> result = fileDBAdaptor.searchFile(
+            QueryResult<File> result = fileDBAdaptor.getAllFiles(
                     query,
                     options);
             result.getResult().sort(rootFirst? rootFirstComparator : rootLastComparator);
@@ -221,10 +221,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, QueryOptions options, String sessionId)
+    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, String description, QueryOptions options, String sessionId)
             throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, null, null, status, 0, -1, null, -1, null, null,
+                path, null, null, description, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 
@@ -372,7 +372,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
 
-        return fileDBAdaptor.createFileToStudy(studyId, file, options);
+        return fileDBAdaptor.createFile(studyId, file, options);
     }
 
     @Override
@@ -429,7 +429,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
             query.put("studyId", studyId);
         }
-        return fileDBAdaptor.searchFile(query, options);
+        return fileDBAdaptor.getAllFiles(query, options);
     }
 
     @Override

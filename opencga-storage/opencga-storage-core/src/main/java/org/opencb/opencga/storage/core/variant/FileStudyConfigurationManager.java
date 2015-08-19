@@ -40,45 +40,47 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationManager.class);
 
     static final private Map<Integer, Path> filePaths = new HashMap<>();
-    static final private Map<Integer, StudyConfiguration> studyConfigurationMap = new HashMap<>();
 
     public FileStudyConfigurationManager(ObjectMap objectMap) {
         super(objectMap);
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
-        long startTime = System.currentTimeMillis();
+    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+        Path path = getPath(studyName, options);
+        return readStudyConfiguration(path);    }
 
+    @Override
+    public QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        Path path = getPath(studyId, options);
+        return readStudyConfiguration(path);
+    }
+
+    public QueryResult<StudyConfiguration> readStudyConfiguration(Path path) {
+        long startTime = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
-        if (studyConfigurationMap.containsKey(studyId)) {
-            studyConfiguration = studyConfigurationMap.get(studyId);
-        } else {
-            Path path = getPath(studyId, options);
-            try {
-                studyConfiguration = read(path);
-            } catch (IOException e) {
-                logger.error("Fail at reading StudyConfiguration " + studyId, e);
-                return new QueryResult<>(Integer.toString(studyId), (int) (System.currentTimeMillis() - startTime), 0, 0, "", e.getMessage(), Collections.<StudyConfiguration>emptyList());
-            }
-            studyConfigurationMap.put(studyId, studyConfiguration); //Add to the StudyConfiguration map
+        try {
+            studyConfiguration = read(path);
+        } catch (IOException e) {
+            logger.error("Fail at reading StudyConfiguration from " + path, e);
+            return new QueryResult<>(path.getFileName().toString(), (int) (System.currentTimeMillis() - startTime), 0, 0, "", e.getMessage(), Collections.<StudyConfiguration>emptyList());
         }
-        return new QueryResult<>(Integer.toString(studyId), (int) (System.currentTimeMillis() - startTime), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+
+        return new QueryResult<>(path.getFileName().toString(), (int) (System.currentTimeMillis() - startTime), 1, 1, "", "", Collections.singletonList(studyConfiguration));
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
         try {
             write(studyConfiguration, path);
-            studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration); //Update the StudyConfiguration map
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return null;
+        return new QueryResult();
     }
 
     private Path getPath(int studyId, QueryOptions options) {
@@ -96,6 +98,20 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
                 path = Paths.get(o.toString());
             }
             filePaths.put(studyId, path);
+        }
+        return path;
+    }
+
+    private Path getPath(String studyName, QueryOptions options) {
+        Path path;
+        Object o = options.get(STUDY_CONFIGURATION_PATH);
+        if (o == null) {
+            //TODO: Read path from a default folder?
+            return null;
+        } else if (o instanceof Path) {
+            path = (Path) o;
+        } else {
+            path = Paths.get(o.toString());
         }
         return path;
     }

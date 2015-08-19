@@ -10,9 +10,10 @@ import org.opencb.opencga.catalog.models.Project;
 */
 public interface IProjectManager extends ResourceManager<Integer, Project> {
 
-    public String  getUserId(int projectId) throws CatalogException;
-    public int getProjectId(String projectId) throws CatalogException;
+    String  getUserId(int projectId) throws CatalogException;
 
-    public QueryResult<Project> create(String ownerId, String name, String alias, String description,
+    int getProjectId(String projectId) throws CatalogException;
+
+    QueryResult<Project> create(String ownerId, String name, String alias, String description,
                                        String organization, QueryOptions options, String sessionId) throws CatalogException;
 }

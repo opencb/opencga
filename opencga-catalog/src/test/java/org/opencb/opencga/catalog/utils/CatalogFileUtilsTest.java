@@ -167,6 +167,9 @@ public class CatalogFileUtilsTest {
         }
         Files.createDirectory(directory);
         List<java.io.File> createdFiles = new LinkedList<>();
+        for (int i = 0; i < 1000; i++) {
+            createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file_" + i + ".txt").toString(), 0));
+        }
         createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString()));
         createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file2.txt").toString()));
         Files.createDirectory(directory.resolve("dir"));
@@ -174,6 +177,12 @@ public class CatalogFileUtilsTest {
         Files.createDirectory(directory.resolve("dir").resolve("subdir"));
         createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("subdir").resolve("file3.txt").toString()));
         URI sourceUri = directory.toUri();
+
+        System.out.println("--------------------------------");
+        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFilesStream(directory.toUri()).forEach(System.out::println);
+        System.out.println("--------------------------------");
+        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).forEach(System.out::println);
+        System.out.println("--------------------------------");
 
         URI fileUri;
 

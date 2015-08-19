@@ -25,9 +25,9 @@ import java.util.Properties;
 public class ProjectManager extends AbstractManager implements IProjectManager{
 
     public ProjectManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                          CatalogDBAdaptor catalogDBAdaptor, CatalogIOManagerFactory ioManagerFactory,
+                          CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptor, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override

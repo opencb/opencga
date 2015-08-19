@@ -26,11 +26,14 @@ import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,6 +51,7 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
     private final VariantSource source;
     private final ObjectMapper jsonObjectMapper;
     private final Path outputFileJsonFile;
+    protected static Logger logger = LoggerFactory.getLogger(VariantJsonTransformTask.class);
 
     public VariantJsonTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
         this.factory = factory;
@@ -86,13 +90,25 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
-                List<Variant> variants = factory.create(source, line);
+                List<Variant> variants = null;
+                try {
+                    variants = factory.create(source, line);
+                } catch (NotAVariantException e) {
+                    variants = Collections.emptyList();
+                } catch (Exception e) {
+                    logger.error("Error parsing line: {}", line);
+                    throw e;
+                }
                 for (Variant variant : variants) {
                     try {
                         String e = objectWriter.writeValueAsString(variant);
                         outputBatch.add(e + "\n");
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error("Error parsing line: {}", line);
+                        throw new IllegalStateException("Error parsing line: " + line , e);
+                    } catch (Exception e) {
+                        logger.error("Error parsing line: {}", line);
+                        throw e;
                     }
                 }
             }

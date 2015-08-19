@@ -45,7 +45,6 @@ public class CliOptionsParser {
     private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
     private final StatsVariantsCommandOptions statsVariantsCommandOptions;
 
-
     public CliOptionsParser() {
 
         generalOptions = new GeneralOptions();
@@ -94,25 +93,17 @@ public class CliOptionsParser {
         return getCommonCommandOptions().help;
     }
 
-    public void printUsage(){
-        if(getCommand().isEmpty()) {
-            jcommander.usage();
-        } else {
-            jcommander.usage(getCommand());
-        }
-    }
-
-    @Deprecated
-    public String usage() {
-        StringBuilder builder = new StringBuilder();
-        String parsedCommand = jcommander.getParsedCommand();
-        if(parsedCommand != null && !parsedCommand.isEmpty()){
-            jcommander.usage(parsedCommand, builder);
-        } else {
-            jcommander.usage(builder);
-        }
-        return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
-    }
+//    @Deprecated
+//    public String usage() {
+//        StringBuilder builder = new StringBuilder();
+//        String parsedCommand = jcommander.getParsedCommand();
+//        if(parsedCommand != null && !parsedCommand.isEmpty()){
+//            jcommander.usage(parsedCommand, builder);
+//        } else {
+//            jcommander.usage(builder);
+//        }
+//        return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
+//    }
 
     public class GeneralOptions {
 
@@ -139,15 +130,15 @@ public class CliOptionsParser {
         @Parameter(names = {"-C", "--conf" }, description = "Configuration file path.")
         public String configFile;
 
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in storage-configuration.yml")
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
         public String storageEngine;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb.compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
 
-        @Deprecated
-        @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
-        public String storageManagerName;
+//        @Deprecated
+//        @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
+//        public String storageManagerName;
 
     }
 
@@ -171,14 +162,6 @@ public class CliOptionsParser {
         @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
         public String resumeFromAccession;
 
-//        class StudyIdValidator implements IValueValidator<String> {
-//            @Override
-//            public void validate(String name, String defaultValue) throws ParameterException {
-//                if (defaultValue.length() < 6) {
-//                    throw new ParameterException("The study ID must be at least 6 characters long");
-//                }
-//            }
-//        }
     }
 
 
@@ -243,39 +226,40 @@ public class CliOptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         public boolean includeGenotype = false;
 
-        @Parameter(names = {"--compress-genotypes"}, description = "Store genotypes as lists of samples")
+        @Deprecated
+        @Parameter(names = {"--compress-genotypes"}, description = "[DEPRECATED]")
         public boolean compressGenotypes = false;
 
         @Deprecated
         @Parameter(names = {"--include-src"}, description = "Store also the source vcf row of each variant")
         public boolean includeSrc = false;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic, EVS or ExAC", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
-        String aggregationMappingFile = null;
+        public String aggregationMappingFile = null;
 
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
-        public boolean gvcf = false;
+        public boolean gvcf;
 
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-        public boolean bgzip = false;
+        public boolean bgzip;
 
-        @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load step (optional)")
-        public boolean calculateStats = false;
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
+        public boolean calculateStats;
 
-        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
-        public boolean annotate = false;
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
+        public boolean annotate;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
-        public boolean overwriteAnnotations = false;
+        public boolean overwriteAnnotations;
 
         @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
@@ -286,27 +270,43 @@ public class CliOptionsParser {
 
     class QueryCommandOptions extends CommonCommandOptions {
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
-        public String backend = "mongodb";
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        public String output;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
+
+        @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
+        public String region;
+
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        public String regionFile;
+
+        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
+        public String gene;
+
+        @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
+        public String include;
+
+        @Parameter(names = {"-e", "--exclude"}, description = "", required = false, arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "", required = false, arity = 1)
+        public int skip;
+
+        @Parameter(names = {"--limit"}, description = "", required = false, arity = 1)
+        public int limit;
+
+        @Parameter(names = {"--count"}, description = "", required = false, arity = 0)
+        public boolean count;
 
         @Deprecated
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         public String credentials;
 
-        @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
-        public List<String> regions = new LinkedList<>();
-
-        @Parameter(names = {"--region-gff-file"}, description = "", required = false)
-        public String gffFile;
-
-        @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
-        public String output;
-
-        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
-        public String outputFormat = "vcf";
+        @Deprecated
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        public String backend = "mongodb";
 
     }
 
@@ -340,32 +340,73 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
     public class QueryVariantsCommandOptions extends QueryCommandOptions {
 
-        @Parameter(names = {"--study-alias"}, description = " [CSV]", required = false)
-        public String studyAlias;
-
-        @Parameter(names = {"-a", "--alias"}, description = "File unique ID. [CSV]", required = false, arity = 1)
-        public String fileId;
-
-        @Parameter(names = {"-e", "--effect"}, description = " [CSV]", required = false, arity = 1)
-        public String effect;
-
         @Parameter(names = {"--id"}, description = " [CSV]", required = false)
         public String id;
 
-        @Parameter(names = {"-t", "--type"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--group-by"}, description = " [CSV]", required = false)
+        public String groupBy;
+
+        @Parameter(names = {"--rank"}, description = " [CSV]", required = false)
+        public String rank;
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
+        public String study;
+
+        @Parameter(names = {"--not-in-study"}, description = "A comma separated list of studies where the variant can not be present", required = false)
+        public String notInStudy;
+
+        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, ie. NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
+        public String sampleGenotype;
+
+        @Deprecated
+        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
         public String type;
 
-        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
-        public String gene;
 
-        @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
-        public String reference;
+        @Deprecated
+        @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
+        public String annot;
 
-        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
-        public List<String> stats = new LinkedList<>();
+        @Parameter(names = {"--consequence-type"}, description = " [CSV]", required = false, arity = 1)
+        public String consequenceType;
 
-        @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
-        public List<String> annot = new LinkedList<>();
+        @Parameter(names = {"--biotype"}, description = " [CSV]", required = false, arity = 1)
+        public String biotype;
+
+        @Parameter(names = {"--population-freqs"}, description = " [CSV]", required = false, arity = 1)
+        public String populationFreqs;
+
+        @Parameter(names = {"--conservation"}, description = " [CSV]", required = false, arity = 1)
+        public String conservation;
+
+        @Parameter(names = {"--protein-substitution"}, description = "", required = false, arity = 1)
+        public String proteinSubstitution;
+
+        @Parameter(names = {"--gwas"}, description = "", required = false, arity = 1)
+        public String gwas;
+
+        @Parameter(names = {"--cosmic"}, description = "", required = false, arity = 1)
+        public String cosmic;
+
+        @Parameter(names = {"--clinvar"}, description = "", required = false, arity = 1)
+        public String clinvar;
+
+
+
+        @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
+        public String stats;
+
+        @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
+        public String returnStudy;
+
+        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
+        public String returnSample;
+
+        @Parameter(names = {"--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
+        public String outputFormat = "vcf";
 
     }
 
@@ -440,7 +481,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         public int studyId;
 
-        @Parameter(names = {"-f", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        @Deprecated @Parameter(names = {"-f", "--file-id"}, description = "[DEPRECATED] Unique ID for the file", required = false, arity = 1)
         public int fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
@@ -476,6 +517,51 @@ public class CliOptionsParser {
         */
     }
 
+    public void printUsage(){
+        if(getCommand().isEmpty()) {
+            System.err.println("");
+            System.err.println("Program:     OpenCGA Storage (OpenCB)");
+            System.err.println("Version:     0.6.0");
+            System.err.println("Description: Big Data platform for processing and analysing NGS data");
+            System.err.println("");
+            System.err.println("Usage:       opencga-storage.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("");
+            System.err.println("Commands:");
+            printMainUsage();
+            System.err.println("");
+        } else {
+            String parsedCommand = getCommand();
+            System.err.println("");
+            System.err.println("Usage:   opencga-storage.sh " + parsedCommand + " [options]");
+            System.err.println("");
+            System.err.println("Options:");
+            printCommandUsage(jcommander.getCommands().get(parsedCommand));
+            System.err.println("");
+        }
+    }
+
+    private void printMainUsage() {
+        for (String s : jcommander.getCommands().keySet()) {
+            System.err.printf("%20s  %s\n", s, jcommander.getCommandDescription(s));
+        }
+    }
+
+    private void printCommandUsage(JCommander commander) {
+        for (ParameterDescription parameterDescription : commander.getParameters()) {
+            String type = "";
+            if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() > 0) {
+                type = parameterDescription.getParameterized().getGenericType().getTypeName().replace("java.lang.", "").toUpperCase();
+            }
+            System.err.printf("%5s %-20s %-10s %s [%s]\n",
+                    (parameterDescription.getParameterized().getParameter() != null
+                            && parameterDescription.getParameterized().getParameter().required()) ? "*": "",
+                    parameterDescription.getNames(),
+                    type,
+                    parameterDescription.getDescription(),
+                    parameterDescription.getDefault());
+        }
+    }
+
 
     public GeneralOptions getGeneralOptions() {
         return generalOptions;
@@ -489,29 +575,26 @@ public class CliOptionsParser {
         return createAccessionsCommandOption;
     }
 
-    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
-        return indexVariantsCommandOptions;
-    }
-
     public IndexAlignmentsCommandOptions getIndexAlignmentsCommandOptions() {
         return indexAlignmentsCommandOptions;
     }
 
-//    IndexSequenceCommandOptions getIndexSequenceCommandOptions() {
-//        return indexSequenceCommandOptions;
-//    }
-
-    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
-        return queryVariantsCommandOptions;
+    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
+        return indexVariantsCommandOptions;
     }
 
     public QueryAlignmentsCommandOptions getQueryAlignmentsCommandOptions() {
         return queryAlignmentsCommandOptions;
     }
 
+    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
+        return queryVariantsCommandOptions;
+    }
+
     public AnnotateVariantsCommandOptions getAnnotateVariantsCommandOptions() {
         return annotateVariantsCommandOptions;
     }
+
     public StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
         return statsVariantsCommandOptions;
     }

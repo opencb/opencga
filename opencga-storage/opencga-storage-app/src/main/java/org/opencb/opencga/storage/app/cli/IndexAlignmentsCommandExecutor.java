@@ -48,113 +48,97 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
 
     @Override
-    public void execute() {
+    public void execute() throws Exception {
         logger.debug("Executing index-alignments command line");
 
-        try {
-            // We need to find out the Storage Engine Id to be used
-            // If not storage engine is passed then the default is taken from storage-configuration.yml file
-            String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine.isEmpty())
-                    ? indexAlignmentsCommandOptions.storageEngine
-                    : configuration.getDefaultStorageEngineId();
-            logger.debug("Storage Engine set to '{}'", storageEngine);
+        // We need to find out the Storage Engine Id to be used
+        // If not storage engine is passed then the default is taken from storage-configuration.yml file
+        String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine.isEmpty())
+                ? indexAlignmentsCommandOptions.storageEngine
+                : configuration.getDefaultStorageEngineId();
+        logger.debug("Storage Engine set to '{}'", storageEngine);
 
-            StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
+        StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
 
-            StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
-            AlignmentStorageManager alignmentStorageManager;
-            if (storageEngine == null || storageEngine.isEmpty()) {
-                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-            } else {
-                alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
-            }
+        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+        AlignmentStorageManager alignmentStorageManager;
+        if (storageEngine == null || storageEngine.isEmpty()) {
+            alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+        } else {
+            alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+        }
 
             /*
              * Getting URIs and checking Paths
              */
-            URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input);
-            FileUtils.checkFile(Paths.get(inputUri));
+        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input);
+        FileUtils.checkFile(Paths.get(inputUri));
 
-            URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())
-                    ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir)
-                    // Get parent folder from input file
-                    : inputUri.resolve(".");
-            FileUtils.checkDirectory(Paths.get(outdirUri));
-            logger.debug("All files and directories exist");
+        URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())
+                ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir)
+                // Get parent folder from input file
+                : inputUri.resolve(".");
+        FileUtils.checkDirectory(Paths.get(outdirUri));
+        logger.debug("All files and directories exist");
 
             /*
              * Add CLI options to the alignmentOptions
              */
-            ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
-            if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-                alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
-            }
-            if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-                alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
-            }
-            if(indexAlignmentsCommandOptions.params != null) {
-                alignmentOptions.putAll(indexAlignmentsCommandOptions.params);
-            }
+        ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
+        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
+            alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
+        }
+        if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
+            alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
+        }
+        if(indexAlignmentsCommandOptions.params != null) {
+            alignmentOptions.putAll(indexAlignmentsCommandOptions.params);
+        }
 
-            alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
-            alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
-            if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
-                alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), indexAlignmentsCommandOptions.meanCoverage);
-            }
-            alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
-            alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
-            logger.debug("Configuration options: {}", alignmentOptions.toJson());
+        alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
+        alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
+        if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
+            alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), indexAlignmentsCommandOptions.meanCoverage);
+        }
+        alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
+        alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
+        logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 
-            boolean extract, transform, load;
-            URI nextFileUri = inputUri;
+        boolean extract, transform, load;
+        URI nextFileUri = inputUri;
 
-            if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load, do both
-                extract = true;
-                transform = true;
-                load = true;
-            } else {
-                extract = indexAlignmentsCommandOptions.transform;
-                transform = indexAlignmentsCommandOptions.transform;
-                load = indexAlignmentsCommandOptions.load;
-            }
+        if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load, do both
+            extract = true;
+            transform = true;
+            load = true;
+        } else {
+            extract = indexAlignmentsCommandOptions.transform;
+            transform = indexAlignmentsCommandOptions.transform;
+            load = indexAlignmentsCommandOptions.load;
+        }
 
-            if (extract) {
-                logger.info("-- Extract alignments -- {}", inputUri);
-                nextFileUri = alignmentStorageManager.extract(inputUri, outdirUri);
-            }
+        if (extract) {
+            logger.info("-- Extract alignments -- {}", inputUri);
+            nextFileUri = alignmentStorageManager.extract(inputUri, outdirUri);
+        }
 
-            if (transform) {
-                logger.info("-- PreTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
-                logger.info("-- Transform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdirUri);
-                logger.info("-- PostTransform alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
-            }
+        if (transform) {
+            logger.info("-- PreTransform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
+            logger.info("-- Transform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdirUri);
+            logger.info("-- PostTransform alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
+        }
 
-            if (load) {
-                logger.info("-- PreLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdirUri);
-                logger.info("-- Load alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.load(nextFileUri);
-                logger.info("-- PostLoad alignments -- {}", nextFileUri);
-                nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdirUri);
-            }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (StorageManagerException e) {
-            e.printStackTrace();
-        } catch (FileFormatException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
+        if (load) {
+            logger.info("-- PreLoad alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdirUri);
+            logger.info("-- Load alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.load(nextFileUri);
+            logger.info("-- PostLoad alignments -- {}", nextFileUri);
+            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdirUri);
         }
     }
 

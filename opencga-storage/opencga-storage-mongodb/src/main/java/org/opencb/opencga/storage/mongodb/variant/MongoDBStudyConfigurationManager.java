@@ -45,7 +45,6 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final MongoDataStore db;
     private final String collectionName;
 
-    private final Map<Integer, StudyConfiguration> studyConfigurationMap = new HashMap();
     private final DBObjectToStudyConfigurationConverter studyConfigurationConverter = new DBObjectToStudyConfigurationConverter();
 
     public MongoDBStudyConfigurationManager(ObjectMap objectMap) throws IllegalOpenCGACredentialsException, UnknownHostException {
@@ -68,48 +67,53 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
-    public QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+        return _getStudyConfiguration(null, studyName, timeStamp, options);
+    }
+    @Override
+    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return _getStudyConfiguration(studyId, null, timeStamp, options);
+    }
+
+    private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
-        if (!studyConfigurationMap.containsKey(studyId)) {
-            MongoDBCollection coll = db.getCollection(collectionName);
 
-            BasicDBObject query = new BasicDBObject("studyId", studyId);
-            if (options != null) {
-                if (options.containsKey("fileId")) {
-                    query.put(DBObjectToStudyConfigurationConverter.FIELD_FILE_IDS, options.getInt("fileId"));
-                }
-            }
+        MongoDBCollection coll = db.getCollection(collectionName);
 
-            QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, options);
-            if (queryResult.getResult().isEmpty()) {
-                studyConfiguration = null;
-            } else {
-                studyConfiguration = queryResult.first();
-            }
-            studyConfigurationMap.put(studyId, studyConfiguration);
-        } else {
-            studyConfiguration = studyConfigurationMap.get(studyId);
+        BasicDBObject query = new BasicDBObject();
+        if (studyId != null) {
+            query.append("studyId", studyId);
+        }
+        if (studyName != null) {
+            query.append("studyName", studyName);
+        }
+        if (timeStamp != null) {
+            query.append("timeStamp", new BasicDBObject("$ne", timeStamp));
         }
 
-        List<StudyConfiguration> list;
+        QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, null);
+        if (queryResult.getResult().isEmpty()) {
+            studyConfiguration = null;
+        } else {
+            studyConfiguration = queryResult.first();
+        }
+
         if (studyConfiguration == null) {
-            list = Collections.emptyList();
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 0, 0, "", "", Collections.emptyList());
         } else {
-            list = Collections.singletonList(studyConfiguration.clone());
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
         }
-
-        return new QueryResult<>("getStudyConfiguration", ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", list);
     }
 
     @Override
-    public QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
         DBObject query = new BasicDBObject("studyId", studyConfiguration.getStudyId());
         QueryResult<WriteResult> queryResult = coll.update(query, studyMongo, new QueryOptions("upsert", true));
-        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
+//        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
 
         return queryResult;
     }

@@ -22,17 +22,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +75,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("sid")
+    @ApiParam(value = "Session Id")
     protected String sessionId;
 
     protected UriInfo uriInfo;
@@ -139,6 +150,7 @@ public class OpenCGAWSServer {
 
         try {
             StorageConfiguration storageConfiguration = StorageConfiguration.load();
+            storageConfiguration.setStudyMetadataManager(CatalogStudyConfigurationManager.class.getName());
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
@@ -146,17 +158,17 @@ public class OpenCGAWSServer {
 
         try {
             catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogIOException | CatalogDBException e) {
+        } catch (CatalogException e) {
             System.out.println("ERROR when creating CatalogManager: " + e.getMessage());
             e.printStackTrace();
         }
 
         jsonObjectMapper = new ObjectMapper();
 
-//        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-//        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
-//        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-//        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         jsonObjectWriter = jsonObjectMapper.writer();
@@ -230,6 +242,10 @@ public class OpenCGAWSServer {
                     logger.debug("Adding '{}' to queryOptions object", entry);
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
+
+        if (multivaluedMap.get("sid") != null) {
+            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
+        }
 
         try {
             System.out.println("queryOptions = \n" + jsonObjectWriter.writeValueAsString(queryOptions));
@@ -315,11 +331,11 @@ public class OpenCGAWSServer {
 
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
-            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new HashMap<>().put("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
+            return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        return null;
+        return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
     protected Response createOkResponse(Object obj) {

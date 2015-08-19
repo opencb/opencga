@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,7 +46,8 @@ class CatalogMongoDBUtils {
     private static ObjectWriter jsonObjectWriter;
     private static Map<Class, ObjectReader> jsonReaderMap;
 
-    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit").stream().collect(Collectors.toSet());
+    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect(Collectors.toSet());
+    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects", "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
@@ -54,6 +56,7 @@ class CatalogMongoDBUtils {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        jsonObjectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonReaderMap = new HashMap<>();
     }
@@ -273,6 +276,19 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterEnumParams(ObjectMap parameters, Map<String, Object> filteredParams, Map<String, Class<? extends Enum>> acceptedParams) throws CatalogDBException {
+        for (Map.Entry<String, Class<? extends Enum>> e : acceptedParams.entrySet()) {
+            if (parameters.containsKey(e.getKey())) {
+                String parameterValue = parameters.getString(e.getKey());
+                Set<String> set = (Set<String>) EnumSet.allOf(e.getValue()).stream().map(Object::toString).collect(Collectors.toSet());
+                if (!set.contains(parameterValue)) {
+                    throw new CatalogDBException("Invalid parameter { " + e.getKey() + ": \"" + parameterValue + "\" }. Accepted values from Enum " + e.getValue() + " " + EnumSet.allOf(e.getValue()));
+                }
+                filteredParams.put(e.getKey(), parameterValue);
+            }
+        }
+    }
+
     static void filterIntegerListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedIntegerListParams) {
         for (String s : acceptedIntegerListParams) {
             if (parameters.containsKey(s)) {
@@ -340,6 +356,15 @@ class CatalogMongoDBUtils {
 
     /*  */
 
+    static boolean isDataStoreOption(String key) {
+        return datastoreOptions.contains(key);
+    }
+
+    static boolean isOtherKnownOption(String key) {
+        return otherOptions.contains(key);
+    }
+
+
     static void addQueryStringListFilter(String key, QueryOptions options, DBObject query) {
         addQueryStringListFilter(key, options, key, query);
     }
@@ -371,19 +396,80 @@ class CatalogMongoDBUtils {
     }
 
 
-    static boolean isDataStoreOption(String key) {
-        return datastoreOptions.contains(key);
+    public static void addAnnotationQueryFilter(String optionKey, QueryOptions options, List<DBObject> annotationSetFilter, Map<String, Variable> variableMap) throws CatalogDBException {
+        // Annotation Filters
+        final String AND = ";";
+        final String OR = ",";
+        final String IS = ":";
+
+        for (String annotation : options.getAsStringList(optionKey, AND)) {
+            String[] split = annotation.split(IS, 2);
+            if (split.length != 2) {
+                throw new CatalogDBException("Malformed annotation query : " + annotation);
+            }
+            final String variableId;
+            final String route;
+            if (split[0].contains(".")) {
+                String[] variableId_route = split[0].split("\\.", 2);
+                variableId = variableId_route[0];
+                route = "." + variableId_route[1];
+            } else {
+                variableId = split[0];
+                route = "";
+            }
+            String[] values = split[1].split(OR);
+
+            CatalogDBAdaptor.FilterOption.Type type = CatalogDBAdaptor.FilterOption.Type.TEXT;
+
+            if (variableMap != null) {
+                Variable variable = variableMap.get(variableId);
+                Variable.VariableType variableType = variable.getType();
+                if ( variable.getType() == Variable.VariableType.OBJECT) {
+                    String[] routes = route.split("\\.");
+                    for (String r : routes) {
+                        if (variable.getType() != Variable.VariableType.OBJECT) {
+                            throw new CatalogDBException("Unable to query variable " + split[0]);
+                        }
+                        if (variable.getVariableSet() != null) {
+                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                            if (subVariableMap.containsKey(r)) {
+                                variable = subVariableMap.get(r);
+                                variableType = variable.getType();
+                            }
+                        } else {
+                            variableType = Variable.VariableType.TEXT;
+                            break;
+                        }
+                    }
+                }
+                if (variableType == Variable.VariableType.BOOLEAN) {
+                    type = CatalogDBAdaptor.FilterOption.Type.BOOLEAN;
+
+                } else if (variableType == Variable.VariableType.NUMERIC) {
+                    type = CatalogDBAdaptor.FilterOption.Type.NUMERICAL;
+                }
+            }
+            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
+            annotationSetFilter.add(
+                    new BasicDBObject("annotations",
+                            new BasicDBObject("$elemMatch",
+                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
+                            )
+                    )
+            );
+        }
     }
 
-    static List<DBObject> addCompQueryFilter(String optionKey, QueryOptions options, CatalogDBAdaptor.FilterOption.Type type, List<DBObject> andQuery) throws CatalogDBException {
-        return addCompQueryFilter(type, optionKey, options, "", andQuery);
-    }
 
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
+    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
         }
+        return addCompQueryFilter(option.getType(), optionsList, queryKey, andQuery);
+    }
+
+    static private List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {

@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -13,7 +14,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
  */
 public interface CatalogFileDBAdaptor {
 
-    public enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
+    enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         directory(Type.TEXT, ""),
 
@@ -35,6 +36,7 @@ public interface CatalogFileDBAdaptor {
         jobId(Type.NUMERICAL, ""),
         acl(Type.TEXT, ""),
         bacl("acl", Type.BOOLEAN, ""),
+        index("index", Type.TEXT, ""),
 
         stats(Type.TEXT, ""),
         nstats("stats", Type.NUMERICAL, ""),
@@ -51,13 +53,13 @@ public interface CatalogFileDBAdaptor {
         @Deprecated startsWith(Type.TEXT, ""),
         ;
 
-        private FileFilterOption(Type type, String description) {
+        FileFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
 
-        private FileFilterOption(String key, Type type, String description) {
+        FileFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;
             this._type = type;
@@ -88,39 +90,46 @@ public interface CatalogFileDBAdaptor {
      * ***************************
      */
 
-    // add file to study
-    QueryResult<File> createFileToStudy(int studyId, File file, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
-
     int getFileId(int studyId, String path) throws CatalogDBException;
-
-    QueryResult<File> getAllFiles(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult setFileStatus(int fileId, File.Status status) throws CatalogDBException;
-
-    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
-
-    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
 
     int getStudyIdByFileId(int fileId) throws CatalogDBException;
 
     String getFileOwnerId(int fileId) throws CatalogDBException;
 
+    QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
+
+    QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
+
+    /**
+     * ACL methods
+     * ***************************
+     */
+
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
 
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
-    QueryResult<File> searchFile(QueryOptions query, QueryOptions options) throws CatalogDBException;
+    /**
+     * Dataset methods
+     * ***************************
+     */
+
+    int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
     QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
-
-    int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
 
 }

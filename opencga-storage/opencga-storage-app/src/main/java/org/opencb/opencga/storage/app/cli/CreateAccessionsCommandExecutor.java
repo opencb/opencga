@@ -33,7 +33,7 @@ public class CreateAccessionsCommandExecutor extends CommandExecutor {
 
 
     @Override
-    public void execute() {
+    public void execute() throws Exception {
         logger.info("Starting execution");
     }
 }
