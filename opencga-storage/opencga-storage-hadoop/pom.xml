@@ -78,27 +78,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <excludes>
-                        <exclude>**/VariantHbaseWriter.java</exclude>
-                        <exclude>**/VariantHbaseDBAdaptor.java</exclude>
-                    </excludes>
-                    <testExcludes>
-                        <exclude>**/VariantHbaseWriterTest.java</exclude>
-                        <exclude>**/VariantHbaseDBAdaptorTest.java</exclude>
-                        <exclude>**/VariantStatsToHbaseConverterTest.java</exclude>
-                    </testExcludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

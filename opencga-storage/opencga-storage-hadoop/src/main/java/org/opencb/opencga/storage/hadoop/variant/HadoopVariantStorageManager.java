@@ -33,18 +33,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
-
-//        Properties credentialsProperties = new Properties(properties);
-
-//        MongoCredentials credentials = getMongoCredentials(dbName);
-//        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
-//        String filesCollection = options.getString(COLLECTION_FILES, "files");
-//        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
-//        return new VariantMongoDBWriter(fileId, studyConfiguration, credentials, variantsCollection, filesCollection, false, false);
-
-        return null;
-    }
+    @Deprecated
+    public VariantWriter getDBWriter(String dbName) throws StorageManagerException { return null;}
 
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
