@@ -1,4 +1,4 @@
-package org.opencb.opencga.lib.common;
+package org.opencb.opencga.core.common;
 
 /**
  * Created by jmmut on 2015-07-02.

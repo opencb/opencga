@@ -4,7 +4,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -77,6 +76,20 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         return sampleDBAdaptor.annotateSample(sampleId, annotationSet);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId) throws CatalogException {
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Sample from Study", studyId, null);
+        }
+
+        sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
+
+        return null;
     }
 
     @Override
@@ -174,7 +187,13 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
-        throw new UnsupportedOperationException();
+        ParamUtils.checkObj(id, "sampleId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
+        }
+        return sampleDBAdaptor.deleteSample(id);
     }
 
     /*
@@ -250,11 +269,16 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
+            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
+        }
         return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
     }
 
 
-    /**
+    /*
      * Cohort methods
      * ***************************
      */
@@ -309,8 +333,21 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
+        Cohort cohort = readCohort(cohortId, new QueryOptions("include", "projects.studies.cohorts.status"), sessionId).first();
+        if (params.containsKey("samples") || params.containsKey("name")/* || params.containsKey("type")*/) {
+            switch (cohort.getStatus()) {
+                case CALCULATING:
+                        throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.Status.CALCULATING + "\"");
+                case READY:
+                    params.put("status", Cohort.Status.INVALID);
+                    break;
+                case NONE:
+                case INVALID:
+                    break;
+            }
+        }
         if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            return sampleDBAdaptor.updateCohort(cohortId, params);
+            return sampleDBAdaptor.modifyCohort(cohortId, params);
         } else {
             throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
         }

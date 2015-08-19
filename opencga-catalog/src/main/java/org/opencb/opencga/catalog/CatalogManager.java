@@ -60,6 +60,7 @@ public class CatalogManager implements AutoCloseable {
     public static final String CATALOG_DB_AUTHENTICATION_DB = "OPENCGA.CATALOG.DB.AUTHENTICATION.DB";
     /* IOManager properties */
     public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
+    public static final String CATALOG_JOBS_ROOTDIR = "OPENCGA.CATALOG.JOBS.ROOTDIR";
     /* Manager policies properties */
     public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
     /* Other properties */
@@ -786,6 +787,10 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
+    public QueryResult<Sample> deleteSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.delete(sampleId, options, sessionId);
+    }
+
     /**
      * VariableSet methods
      * ***************************
@@ -842,12 +847,12 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
-    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
         return sampleManager.updateCohort(cohortId, updateParams, sessionId);
     }
 
-    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
-        return sampleManager.deleteCohort(cohortId, updateParams, sessionId);
+    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+        return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
     /**

@@ -22,10 +22,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.*;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -50,6 +47,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -460,12 +458,24 @@ public class FileWSServer extends OpenCGAWSServer {
 
             // TODO this must be changed: only one queryOptions need to be passed
             QueryOptions query = new QueryOptions();
-            for (CatalogFileDBAdaptor.FileFilterOption option : CatalogFileDBAdaptor.FileFilterOption.values()) {
-                if (params.containsKey(option.name())) {
-                    query.put(option.name(), params.getFirst(option.name()));
+            for (String param : params.keySet()) {
+                try {
+                    CatalogFileDBAdaptor.FileFilterOption.valueOf(param.split("\\.")[0]);
+                    query.put(param, params.getFirst(param));
+                } catch (IllegalArgumentException ignore) {
                 }
             }
 
+            if (query.containsKey("name") && (query.get("name") == null || query.getString("name").isEmpty())) {
+                query.remove("name");
+                System.out.println("Name attribute empty, it;s been removed");
+            }
+
+            if (!this.queryOptions.containsKey("limit")) {
+                this.queryOptions.put("limit", 1000);
+                System.out.println("Adding a limit of 1000");
+            }
+            System.out.println("query = " + query.toJson());
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -503,7 +513,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (!queryOptions.containsKey(AnalysisFileIndexer.PARAMETERS)) {
                 File a = catalogManager.getFile(fileId, sessionId).getResult().get(0);
                 if(a.getBioformat() == File.Bioformat.VARIANT){
-                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--include-genotypes", "--calculate-stats", "--include-stats"));
+                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--calculate-stats", "--include-stats"));
                 }
             }
             QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
@@ -523,6 +533,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "include_coverage", required = false) @DefaultValue("true") @QueryParam("include_coverage") boolean include_coverage,
                           @ApiParam(value = "process_differences", required = false) @DefaultValue("true") @QueryParam("process_differences") boolean process_differences,
                           @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                          @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                           @ApiParam(value = "variantSource", required = false) @DefaultValue("false") @QueryParam("variantSource") boolean variantSource,
                           @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
         List<Region> regions = new LinkedList<>();
@@ -562,7 +573,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore = null;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, file, sessionId);
+                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(file.getId()), file.getBioformat(), sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);
@@ -617,7 +628,9 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
 
                 case VARIANT: {
-                    QueryOptions queryOptions = new QueryOptions();
+                    Query query = new Query();
+                    query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+
                     for (Map.Entry<String, List<String>> entry : params.entrySet()) {
                         List<String> values = entry.getValue();
                         String csv = values.get(0);
@@ -626,14 +639,17 @@ public class FileWSServer extends OpenCGAWSServer {
                         }
                         queryOptions.add(entry.getKey(), csv);
                     }
-                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+//                    queryOptions.put("files", Arrays.asList(Integer.toString(fileIdNum)));
+                    query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(Integer.toString(fileIdNum)));
 
                     if(params.containsKey("fileId")) {
                         if(params.get("fileId").get(0).isEmpty()) {
-                            queryOptions.put("fileId", fileId);
+//                            queryOptions.put("fileId", fileId);
+                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
                         } else {
                             List<String> files = params.get("fileId");
-                            queryOptions.put("fileId", files.get(0));
+//                            queryOptions.put("fileId", files.get(0));
+                            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), fileId);
                         }
                     }
 //                    queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
@@ -647,19 +663,22 @@ public class FileWSServer extends OpenCGAWSServer {
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
                     }
-                    QueryResult variantsByRegion;
+                    QueryResult queryResult;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        variantsByRegion = dbAdaptor.getAllVariants(queryOptions);
+                        queryResult = dbAdaptor.get(query, queryOptions);
 //                    } else if (variantSource) {
 //                        queryOptions.put("fileId", Integer.toString(fileIdNum));
-//                        variantsByRegion = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+//                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
+                    } else if (!groupBy.isEmpty()) {
+                        queryResult = dbAdaptor.groupBy(query, groupBy, queryOptions);
                     } else {
                         //With merge = true, will return only one result.
-                        queryOptions.put("merge", true);
-                        variantsByRegion = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
+//                        queryOptions.put("merge", true);
+//                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
+                        queryResult = dbAdaptor.get(query, queryOptions);
                     }
-                    result = variantsByRegion;
+                    result = queryResult;
                     break;
 
                 }

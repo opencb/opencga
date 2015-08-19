@@ -17,19 +17,16 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -74,21 +71,21 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         /**
          * Annotation options
          */
-        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
         if (annotateVariantsCommandOptions.filterRegion != null) {
-            queryOptions.add(VariantDBAdaptor.REGION, annotateVariantsCommandOptions.filterRegion);
+            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), annotateVariantsCommandOptions.filterRegion);
         }
         if (annotateVariantsCommandOptions.filterChromosome != null) {
-            queryOptions.add(VariantDBAdaptor.CHROMOSOME, annotateVariantsCommandOptions.filterChromosome);
+            query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), annotateVariantsCommandOptions.filterChromosome);
         }
         if (annotateVariantsCommandOptions.filterGene != null) {
-            queryOptions.add(VariantDBAdaptor.GENE, annotateVariantsCommandOptions.filterGene);
+            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), annotateVariantsCommandOptions.filterGene);
         }
         if (annotateVariantsCommandOptions.filterAnnotConsequenceType != null) {
-            queryOptions.add(VariantDBAdaptor.ANNOT_CONSEQUENCE_TYPE, annotateVariantsCommandOptions.filterAnnotConsequenceType);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), annotateVariantsCommandOptions.filterAnnotConsequenceType);
         }
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
-            queryOptions.add(VariantDBAdaptor.ANNOTATION_EXISTS, false);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
         URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
@@ -106,7 +103,9 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null ? annotateVariantsCommandOptions.dbName : annotateVariantsCommandOptions.fileName, queryOptions);
+            annotationFile = variantAnnotationManager.createAnnotation(outDir,
+                    annotateVariantsCommandOptions.fileName == null ? annotateVariantsCommandOptions.dbName : annotateVariantsCommandOptions.fileName,
+                    query, new QueryOptions());
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 

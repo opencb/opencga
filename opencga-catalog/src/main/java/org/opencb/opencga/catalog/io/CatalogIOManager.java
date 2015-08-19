@@ -25,13 +25,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 public abstract class CatalogIOManager {
 
     //    private Path opencgaRootDirPath;
     protected URI rootDir;
+    protected URI jobsDir;
 //    protected URI rootDir;
     protected URI tmp;
 
@@ -54,7 +57,7 @@ public abstract class CatalogIOManager {
     protected static final String USER_PROJECTS_FOLDER = "projects/";
     protected static final String USER_BIN_FOLDER = "bin/";
     protected static final String SHARED_DATA_FOLDER = "shared_data/";
-    protected static final String OPENCGA_JOBS_FOLDER = "jobs/";
+    protected static final String DEFAULT_OPENCGA_JOBS_FOLDER = "jobs/";
 
     protected Properties properties;
     protected static Logger logger;
@@ -94,6 +97,12 @@ public abstract class CatalogIOManager {
         }
         checkDirectoryUri(rootDir, true);
 
+        if(!exists(jobsDir)) {
+            logger.info("Initializing CatalogIOManager. Creating jobs folder '" + jobsDir + "'");
+            createDirectory(jobsDir);
+        }
+        checkDirectoryUri(jobsDir, true);
+
         if(!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_USERS_FOLDER));
         }
@@ -106,9 +115,6 @@ public abstract class CatalogIOManager {
             createDirectory(rootDir.resolve(OPENCGA_BIN_FOLDER));
         }
 
-        if(!exists(rootDir.resolve(OPENCGA_JOBS_FOLDER))) {
-            createDirectory(rootDir.resolve(OPENCGA_JOBS_FOLDER));
-        }
     }
 
     protected void checkParam(String param) throws CatalogIOException {
@@ -205,7 +211,7 @@ public abstract class CatalogIOManager {
 
     public URI getJobsUri(String userId) throws CatalogIOException {
         checkParam(userId);
-        return rootDir.resolve(OPENCGA_JOBS_FOLDER);
+        return jobsDir;
     }
 
     public abstract URI getTmpUri();    // FIXME Still used?
@@ -480,6 +486,10 @@ public abstract class CatalogIOManager {
     public abstract String calculateChecksum(URI file) throws CatalogIOException;
 
     public abstract List<URI> listFiles(URI directory) throws CatalogIOException;
+
+    public Stream<URI> listFilesStream(URI directory) throws CatalogIOException {
+        return listFiles(directory).stream();
+    }
 
     public abstract long getFileSize(URI file) throws CatalogIOException;
 

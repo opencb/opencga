@@ -21,6 +21,9 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -179,7 +182,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
         try {
-            return createOkResponse(catalogManager.updateCohort(cohortId, queryOptions, sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }    }
@@ -191,7 +194,45 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
-            return createOkResponse(catalogManager.updateCohort(cohortId, new QueryOptions(params), sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, new QueryOptions(params), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/stats")
+    @ApiOperation(value = "Cohort stats", position = 2)
+    public Response stats(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdsCsv,
+                          @ApiParam(value = "Calculate cohort stats", required = false) @QueryParam("calculate") boolean calculate,
+                          @ApiParam(value = "Delete stats [PENDING}", required = false) @QueryParam("delete") boolean delete,
+                          @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
+                          @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
+                          ) {
+        try {
+            String[] split = cohortIdsCsv.split(",");
+            List<Integer> cohortIds = new ArrayList<>(split.length);
+            for (String cohortIdStr : split) {
+                cohortIds.add(Integer.parseInt(cohortIdStr));
+            }
+            if (calculate) {
+                VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+                int outdirId = catalogManager.getFileId(outdirIdStr);
+                queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+//                queryOptions.add(AnalysisFileIndexer.PARAMETERS, );
+                queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                QueryResult<Job> jobQueryResult = variantStorage.calculateStats(outdirId, cohortIds, sessionId, queryOptions);
+                return createOkResponse(jobQueryResult);
+            } else if (delete) {
+                return createErrorResponse("Delete cohort stats", "Pending");
+            } else {
+                return createErrorResponse("Get cohort stats", "Pending");
+//                for (Integer cohortId : cohortIds) {
+//                    Cohort first = catalogManager.getCohort(cohortId, null, sessionId).first();
+//                }
+            }
+
         } catch (Exception e) {
             return createErrorResponse(e);
         }

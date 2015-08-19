@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -129,7 +130,7 @@ public class VariantJsonWriter implements VariantWriter {
                         variantSourceEntry.getSamplesData().clear();
                     }
                     if (!includeStats) {
-                        variantSourceEntry.setStats(null);
+                        variantSourceEntry.setCohortStats(Collections.emptyMap());
                     }
                 }
                 variantsGenerator.writeObject(variant);

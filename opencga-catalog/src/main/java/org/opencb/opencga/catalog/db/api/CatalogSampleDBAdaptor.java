@@ -46,6 +46,7 @@ public interface CatalogSampleDBAdaptor {
         id(Type.NUMERICAL, ""),
         name(Type.TEXT, ""),
         type(Type.TEXT, ""),
+        status(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
 
@@ -53,7 +54,12 @@ public interface CatalogSampleDBAdaptor {
 
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
+        battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+
+        stats(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        nstats("stats", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        bstats("stats", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        ;
 
 
         CohortFilterOption(Type type, String description) {this._key = name();this._description = description;this._type = type;}
@@ -103,11 +109,13 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<Integer> deleteSample(int sampleId) throws CatalogDBException;
+    QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException;
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
     QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
 
     /**
      * Cohort methods
@@ -120,7 +128,7 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
 
     QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
 
@@ -139,6 +147,6 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
-    int getStudyIdByVariableSetId(int sampleId) throws CatalogDBException;
+    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 
 }

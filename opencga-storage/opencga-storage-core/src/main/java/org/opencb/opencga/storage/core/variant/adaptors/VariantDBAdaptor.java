@@ -16,115 +16,222 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import java.util.*;
-
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryParam;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+
+import java.util.*;
+import java.util.function.Consumer;
+
+import static org.opencb.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
+ * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
-    public static final String ID = "ids";
-    public static final String REGION = "region";
-    public static final String CHROMOSOME = "chromosome";
-    public static final String GENE = "gene";
-    public static final String TYPE = "type";
-    public static final String REFERENCE = "reference";
-    public static final String ALTERNATE = "alternate";
-    public static final String EFFECT = "effect";
-    public static final String STUDIES = "studies";
-    public static final String FILES = "files";
-    public static final String FILE_ID = "fileId";
-    public static final String MAF = "maf";
-    public static final String MGF = "mgf";
-    public static final String MISSING_ALLELES = "missingAlleles";
-    public static final String MISSING_GENOTYPES = "missingGenotypes";
-    public static final String ANNOTATION_EXISTS = "annotationExists";
-    public static final String GENOTYPE = "genotype";
-    public static final String ANNOT_CONSEQUENCE_TYPE = "annot-ct";
-    public static final String ANNOT_XREF = "annot-xref";
-    public static final String ANNOT_BIOTYPE = "annot-biotype";
-    public static final String POLYPHEN = "polyphen";
-    public static final String SIFT = "sift";
-    public static final String PROTEIN_SUBSTITUTION = "protein_substitution";
-    public static final String CONSERVED_REGION = "conserved_region";
-    public static final String ALTERNATE_FREQUENCY = "alternate_frequency";
-    public static final String REFERENCE_FREQUENCY = "reference_frequency";
-    public static final String MERGE = "merge";
-    public static final String SORT = "sort";
+    enum VariantQueryParams implements QueryParam {
+        ID ("ids", TEXT_ARRAY, ""),
+        REGION ("region", TEXT_ARRAY, ""),
+        CHROMOSOME ("chromosome", TEXT_ARRAY, ""),
+        GENE ("gene", TEXT_ARRAY, ""),
+        TYPE ("type", TEXT_ARRAY, ""),
+        REFERENCE ("reference", TEXT_ARRAY, ""),
+        ALTERNATE ("alternate", TEXT_ARRAY, ""),
+        //EFFECT ("TEXT_ARRAY", null, ""),
+        STUDIES ("studies", TEXT_ARRAY, ""),
+        RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, "Specify a list of studies to be returned"),
+        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
+        FILES ("files", TEXT_ARRAY, ""),
+        RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
+        STATS_MAF("maf", TEXT_ARRAY, ""),
+        STATS_MGF("mgf", TEXT_ARRAY, ""),
+        MISSING_ALLELES ("missingAlleles", TEXT_ARRAY, ""),
+        MISSING_GENOTYPES ("missingGenotypes", TEXT_ARRAY, ""),
+        ANNOTATION_EXISTS ("annotationExists", TEXT_ARRAY, ""),
+        GENOTYPE ("genotype", TEXT_ARRAY, ""),
+        ANNOT_CONSEQUENCE_TYPE ("annot-ct", TEXT_ARRAY, ""),
+        ANNOT_XREF ("annot-xref", TEXT_ARRAY, ""),
+        ANNOT_BIOTYPE ("annot-biotype", TEXT_ARRAY, ""),
+        POLYPHEN ("polyphen", TEXT_ARRAY, ""),
+        SIFT ("sift", TEXT_ARRAY, ""),
+        @Deprecated
+        PROTEIN_SUBSTITUTION ("protein_substitution", TEXT_ARRAY, ""),
+        CONSERVATION("conservation", TEXT_ARRAY, ""),
+        ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
+        REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
+        UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes."),
+        ;
 
-    static public class QueryParams {
-        public static final Set<String> acceptedValues;
-        static {
-            acceptedValues = new HashSet<>();
-            acceptedValues.add(ID);
-            acceptedValues.add(REGION);
-            acceptedValues.add(CHROMOSOME);
-            acceptedValues.add(GENE);
-            acceptedValues.add(TYPE);
-            acceptedValues.add(REFERENCE);
-            acceptedValues.add(ALTERNATE);
-            acceptedValues.add(EFFECT);
-            acceptedValues.add(STUDIES);
-            acceptedValues.add(FILES);
-            acceptedValues.add(FILE_ID);
-            acceptedValues.add(MAF);
-            acceptedValues.add(MGF);
-            acceptedValues.add(MISSING_ALLELES);
-            acceptedValues.add(MISSING_GENOTYPES);
-            acceptedValues.add(ANNOTATION_EXISTS);
-            acceptedValues.add(GENOTYPE);
-            acceptedValues.add(ANNOT_CONSEQUENCE_TYPE);
-            acceptedValues.add(ANNOT_XREF);
-            acceptedValues.add(ANNOT_BIOTYPE);
-            acceptedValues.add(POLYPHEN);
-            acceptedValues.add(SIFT);
-            acceptedValues.add(PROTEIN_SUBSTITUTION);
-            acceptedValues.add(CONSERVED_REGION);
-            acceptedValues.add(MERGE);
+        VariantQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
         }
 
-        //TODO: Think about this
-        public static QueryOptions checkQueryOptions(QueryOptions options) throws Exception {
-            QueryOptions filteredQueryOptions = new QueryOptions(options);
-            Iterator<Map.Entry<String, Object>> iterator = filteredQueryOptions.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<String, Object> entry = iterator.next();
-                if (acceptedValues.contains(entry.getKey())) {
-                    if (entry.getValue() == null || entry.toString().isEmpty()) {
-                        iterator.remove();
-                    } else {
-                        //TODO: check type
-                    }
-                } else {
-                    iterator.remove();
-                    System.out.println("Unknown query param " + entry.getKey());
-                }
-            }
-            return filteredQueryOptions;
-        }
+        private final String key;
+        private Type type;
+        private String description;
+
+        @Override public String key() {return key;}
+        @Override public String description() {return description;}
+        @Override public Type type() {return type;}
     }
 
     /**
-     * This method set a data writer object for data serialization. When used no data will be return in
-     * QueryResult object.
+     * This method sets a data writer object for data serialization. When used no data will be return in
+     * QueryResult object but written into the writer
+     * @param dataWriter
      */
-    public void setDataWriter(DataWriter dataWriter);
+    @Deprecated
+    void setDataWriter(DataWriter dataWriter);
 
     /**
-     * This method can be used if the samples are going to be the same, so optimizations can be done, e.g. skipping the 
-     * samples name retrieval for each variant.
+     * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample
+     * genotypes, also new variants are inserted. If it is a new Study then Sample genotypes are added to the new Study.
+     * @param variants List of variants in OpenCB data model to be inserted
+     * @param studyName Name or alias of the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the number of inserted variants
      */
-    public void setConstantSamples(String sourceEntry);
+    QueryResult insert(List<Variant> variants, String studyName, QueryOptions options);
+
+    /**
+     * Delete all the variants from the database resulting of executing the query.
+     * @param query Query to be executed in the database
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the number of deleted variants
+     */
+    QueryResult delete(Query query, QueryOptions options);
+
+    /**
+     * Delete all the given samples belonging to the study from the database.
+     * @param studyName The study name where samples belong to
+     * @param sampleNames Sample names to be deleted, these must belong to the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with a list with all the samples deleted
+     */
+    QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options);
+
+    /**
+     * Delete the given file from the database with all the samples it has.
+     * @param studyName The study where the file belong
+     * @param fileName The file name to be deleted, it must belong to the study
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the file deleted
+     */
+    QueryResult deleteFile(String studyName, String fileName, QueryOptions options);
+
+    /**
+     * Delete the given study from the database
+     * @param studyName The study name to delete
+     * @param options Query modifiers, accepted values are: purge
+     * @return A QueryResult with the study deleted
+     */
+    QueryResult deleteStudy(String studyName, QueryOptions options);
+
+
+    /**
+     * Fetch all variants resulting of executing the query in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
+     * @param query Query to be executed in the database to filter variants
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
+     * @return A QueryResult with the result of the query
+     */
+    QueryResult<Variant> get(Query query, QueryOptions options);
+
+    /**
+     * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from
+     * the 'include' and 'exclude' fields at options.
+     * @param queries List of queries to be executed in the database to filter variants
+     * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
+     * @return A list of QueryResult with the result of the queries
+     */
+    List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options);
+
+    /**
+     * Performs a distinct operation of the given field over the returned results.
+     * @param query Query to be executed in the database to filter variants
+     * @return A QueryResult with the all the distinct values
+     */
+    QueryResult<Long> count(Query query);
+
+    /**
+     * Performs a distinct operation of the given field over the returned results.
+     * @param query Query to be executed in the database to filter variants
+     * @param field Field to be distinct, it must be a valid QueryParams id
+     * @return A QueryResult with the all the distinct values
+     */
+    QueryResult distinct(Query query, String field);
+
+    @Override
+    VariantDBIterator iterator();
+
+    VariantDBIterator iterator(Query query, QueryOptions options);
+
+    @Override
+    void forEach(Consumer<? super Variant> action);
+
+    void forEach(Query query, Consumer<? super Variant> action, QueryOptions options);
+
+
+    /**
+     * This methods calculates the number of variants at different equally-sized genome chunks. This can be renderer
+     * as a histogram of the number of variants across a genomic region.
+     * @param query Query to be executed in the database to filter variants
+     * @param region Region where to calculate the variant frequency
+     * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
+     * @return
+     */
+    QueryResult getFrequency(Query query, Region region, int regionIntervalSize);
+
+    /**
+     * This method ranks different entities with the most or the least number of variants. These entities
+     * can be 'gene' or 'consequence_type' among others.
+     * @param query Query to be executed in the database to filter variants
+     * @param field The entity to rank
+     * @param numResults The max number of results to return
+     * @param asc Whether we want the top or the bottom part of the rank
+     * @return A QueryResult with a list of the entities and the number of elements
+     */
+    QueryResult rank(Query query, String field, int numResults, boolean asc);
+
+    QueryResult groupBy(Query query, String field, QueryOptions options);
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
+
+
+
+    QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+
+    QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
+
+
+
+    QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
+
+
+    boolean close();
+
+
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -134,12 +241,14 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult<Variant> getAllVariants(QueryOptions options);
+    @Deprecated
+    QueryResult<Variant> getAllVariants(QueryOptions options);
 
+    @Deprecated
+    QueryResult<Variant> getVariantById(String id, QueryOptions options);
 
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options);
-
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
+    @Deprecated
+    List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -150,89 +259,48 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @param options   Optional arguments
      * @return A QueryResult containing a set of variants and other optional information
      */
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
+    @Deprecated
+    QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
 
     /**
      * @deprecated Use "getAllVariants" with VariantDBAdaptor.REGION filter instead.
      */
     @Deprecated
-    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
+    List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
 
-
+    @Deprecated
     QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
 
+    @Deprecated
     QueryResult groupBy(String field, QueryOptions options);
 
-
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor();
-
-    @Override
-    public VariantDBIterator iterator();
-
-    public VariantDBIterator iterator(QueryOptions options);
-
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
-
-    public boolean close();
-
-
-    /**
-     * Given a genomic region and studies IDs, it retrieves a set of variants and, optionally, all the information
-     * about their samples, effects and statistics. These optional arguments are specified in the "options" dictionary,
-     * with the keys (values must be set to true): "samples", "effects" and "stats", respectively.
-     *
-     * @param region    The region where variants must be searched
-     * @param studyIds   The identifier of the studies where variants are classified
-     * @param options   Optional arguments
-     * @return A QueryResult containing a set of variants and other optional information
-     */
     @Deprecated
-    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
+    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
+    StudyConfigurationManager getStudyConfigurationManager();
+
+    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
-    QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
-
-
-    @Deprecated
-    QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
-    @Deprecated
-    QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
-
+    VariantDBIterator iterator(QueryOptions options);
 
     @Deprecated
-    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-    @Deprecated
-    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
-    
-//    QueryResult getStatsByVariant(Variant variant, QueryOptions options);
+    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
 
-//    QueryResult getStatsByVariantList(List<Variant> variant, QueryOptions options);
-
-//    QueryResult getSimpleStatsByVariant(Variant variant, QueryOptions options);
-
-
-//    QueryResult getEffectsByVariant(Variant variant, QueryOptions options);
-
-
-//    QueryResult getAllBySampleList(List<Sample> samples, QueryOptions options);
-
-
-    //    QueryResult getAllBySample(Sample sample, QueryOptions options);
-//
 //    @Deprecated
-//    List<VariantInfo> getRecords(Map<String, String> options);
-//
-//    @Deprecated
-//    List<VariantStats> getRecordsStats(Map<String, String> options);
-//
-//    @Deprecated
-//    List<VariantEffect> getEffect(Map<String, String> options);
-//
-//    @Deprecated
+//    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
-//    VariantAnalysisInfo getAnalysisInfo(Map<String, String> options);
+//    @Deprecated
+//    QueryResult getAllVariantsByRegionAndStudies(Region region, List<String> studyIds, QueryOptions options);
+//    @Deprecated
+//    QueryResult getAllVariantsByGene(String geneName, QueryOptions options);
+//    @Deprecated
+//    QueryResult getMostAffectedGenes(int numGenes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getLeastAffectedGenes(int numGenes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getTopConsequenceTypes(int numConsequenceTypes, QueryOptions options);
+//    @Deprecated
+//    QueryResult getBottomConsequenceTypes(int numConsequenceTypes, QueryOptions options);
 
 }

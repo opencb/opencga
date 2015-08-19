@@ -40,6 +40,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
@@ -49,6 +50,7 @@ import static junit.framework.Assert.assertEquals;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Ignore
 public class VariantMongoDBWriterTest {
 
     private static Properties properties;
@@ -56,6 +58,7 @@ public class VariantMongoDBWriterTest {
     private static String firstAggregatedInputFile = VariantMongoDBWriterTest.class.getResource("/aggregated_example_1.vcf.gz").getFile();
     private static String secondAggregatedInputFile = VariantMongoDBWriterTest.class.getResource("/aggregated_example_2.vcf.gz").getFile();
     private static MongoCredentials credentials;
+    public static final String DB_NAME = "opencga_variants_writer_test";
 //    private static VariantSource study1 = new VariantSource(inputFile, "testAlias", "testStudy1", "Test Study #1");
 //    private static VariantSource study2 = new VariantSource(inputFile, "testAlias2", "testStudy2", "Test Study #2");
 
@@ -121,7 +124,7 @@ public class VariantMongoDBWriterTest {
      * @throws IOException
      */
     @Test
-    public void aggregatedTest() throws IOException {
+    public void aggregatedTest() throws Exception {
         VariantSource study1 = new VariantSource(inputFile, Integer.toString(5), Integer.toString(1), "Test Study #1");
         //Reader
         VariantReader reader = new VariantVcfReader(study1, firstAggregatedInputFile, new VariantAggregatedVcfFactory());
@@ -129,9 +132,9 @@ public class VariantMongoDBWriterTest {
         //Writers
 
         String variantsCollection = "variants";
-        VariantMongoDBWriter dbWriter = new VariantMongoDBWriter(5, studyConfiguration, credentials, variantsCollection, "files", false, true);
-        dbWriter.setVariantSource(study1);
-        
+        VariantMongoDBWriter dbWriter = new VariantMongoDBWriter(5, studyConfiguration,
+                MongoVariantStorageManagerTestUtils.getVariantStorageManager().getDBAdaptor(DB_NAME), false, true);
+
         List<VariantWriter> writers = Collections.<VariantWriter>singletonList(dbWriter);
 
         //Runner

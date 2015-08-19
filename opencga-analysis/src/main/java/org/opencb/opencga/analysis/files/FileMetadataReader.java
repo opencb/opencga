@@ -31,10 +31,12 @@ public class FileMetadataReader {
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
+    private final CatalogFileUtils catalogFileUtils;
 
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
+        catalogFileUtils = new CatalogFileUtils(catalogManager);
     }
 
     /**
@@ -57,6 +59,9 @@ public class FileMetadataReader {
         File.Format format = FormatDetector.detect(fileUri);
         File.Bioformat bioformat = BioformatDetector.detect(fileUri);
 
+        if (path.endsWith("/")) {
+            path += Paths.get(fileUri.getPath()).getFileName().toString();
+        }
 
         QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
                 File.Status.STAGE, 0, -1, null, -1, null, null, parents, options, sessionId);
@@ -100,14 +105,19 @@ public class FileMetadataReader {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ObjectMap modifyParams = new ObjectMap();
 
+//        long start;
         if (file.getType() == File.Type.FOLDER) {
             return file;
         }
 
         //Get metadata information
 
+//        start = System.currentTimeMillis();
         File.Format format = FormatDetector.detect(fileUri);
+//        logger.trace("FormatDetector = " + (System.currentTimeMillis() - start) / 1000.0);
+//        start = System.currentTimeMillis();
         File.Bioformat bioformat = BioformatDetector.detect(fileUri);
+//        logger.trace("BioformatDetector = " + (System.currentTimeMillis() - start) / 1000.0);
 
         if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
             modifyParams.put("format", format);
@@ -118,10 +128,19 @@ public class FileMetadataReader {
             file.setBioformat(bioformat);
         }
 
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
-        if (catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+        Study study = null;
+
+//        start = System.currentTimeMillis();
+        boolean exists = catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri);
+//        logger.trace("Exists = " + (System.currentTimeMillis() - start) / 1000.0);
+
+        if (exists) {
             switch (bioformat) {
                 case ALIGNMENT: {
+//                    start = System.currentTimeMillis();
+                    study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias")).first();
+//                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
+
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
                     if (alignmentHeader != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
@@ -131,6 +150,10 @@ public class FileMetadataReader {
                     break;
                 }
                 case VARIANT: {
+//                    start = System.currentTimeMillis();
+                    study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias")).first();
+//                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
+
                     VariantSource variantSource = readVariantSource(study, file, fileUri);
                     if (variantSource != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
@@ -143,12 +166,19 @@ public class FileMetadataReader {
                     break;
             }
         }
+//        start = System.currentTimeMillis();
         /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+//        logger.trace("FileSamples = " + (System.currentTimeMillis() - start) / 1000.0);
 
-        modifyParams.putAll(new CatalogFileUtils(catalogManager).getModifiedFileAttributes(file, fileUri, false));
+//        start = System.currentTimeMillis();
+        modifyParams.putAll(catalogFileUtils.getModifiedFileAttributes(file, fileUri, false));
+//        logger.trace("FileAttributes = " + (System.currentTimeMillis() - start) / 1000.0);
 
         if (!modifyParams.isEmpty()) {
+//            start = System.currentTimeMillis();
             catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
+//            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
+
             return catalogManager.getFile(file.getId(), options, sessionId).first();
         }
 

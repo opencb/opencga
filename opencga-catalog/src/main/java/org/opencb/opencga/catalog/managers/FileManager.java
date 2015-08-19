@@ -186,7 +186,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!paths.isEmpty()) {
             QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
             query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
-            QueryResult<File> result = fileDBAdaptor.searchFile(
+            QueryResult<File> result = fileDBAdaptor.getAllFiles(
                     query,
                     options);
             result.getResult().sort(rootFirst? rootFirstComparator : rootLastComparator);
@@ -429,7 +429,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
             query.put("studyId", studyId);
         }
-        return fileDBAdaptor.searchFile(query, options);
+        return fileDBAdaptor.getAllFiles(query, options);
     }
 
     @Override

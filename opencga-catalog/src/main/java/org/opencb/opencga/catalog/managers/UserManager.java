@@ -251,7 +251,9 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        objectMap.put("userId", userId);
 //        return new QueryResult<>("login", 0, 1, 1, null, null, Collections.singletonList(objectMap));
 
-        return userDBAdaptor.login(userId, CatalogAuthenticationManager.cipherPassword(password), session);
+        // FIXME This should code above
+        return userDBAdaptor.login(userId, (password.length() != 40)
+                ? CatalogAuthenticationManager.cipherPassword(password) : password, session);
     }
 
     @Override

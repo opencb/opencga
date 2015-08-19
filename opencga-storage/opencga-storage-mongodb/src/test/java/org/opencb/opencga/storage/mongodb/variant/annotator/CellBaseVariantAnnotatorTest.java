@@ -45,7 +45,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
 
-        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testREST", null);
+        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testREST", null, null);
 
         System.out.println(test.toString());
 

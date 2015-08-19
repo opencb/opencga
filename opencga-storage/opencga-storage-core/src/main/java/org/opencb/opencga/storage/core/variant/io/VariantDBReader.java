@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -37,13 +38,15 @@ import java.util.List;
 public class VariantDBReader implements VariantReader {
     private StudyConfiguration studyConfiguration;
     private VariantDBAdaptor variantDBAdaptor;
+    private Query query;
     private QueryOptions options;
     private VariantDBIterator iterator;
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
-    public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, QueryOptions options) {
+    public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
         this.studyConfiguration = studyConfiguration;
         this.variantDBAdaptor = variantDBAdaptor;
+        this.query = query;
         this.options = options;
     }
 
@@ -68,10 +71,10 @@ public class VariantDBReader implements VariantReader {
         }
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
-        List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "sourceEntries");
-        iteratorQueryOptions.add("include", include);
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference", "sourceEntries");
+        iteratorQueryOptions.add("include", include);   // add() does not overwrite in case a "include" was already specified
 
-        iterator = variantDBAdaptor.iterator(iteratorQueryOptions);
+        iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
         return iterator != null;
     }
 

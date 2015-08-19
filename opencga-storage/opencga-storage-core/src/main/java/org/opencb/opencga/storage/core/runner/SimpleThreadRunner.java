@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.runner;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.lib.common.ExceptionUtils;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

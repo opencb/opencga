@@ -126,6 +126,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("field", "other");
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
+        attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
         catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
@@ -624,6 +625,11 @@ public class CatalogManagerTest extends GenericTest {
         int numFolders = result.getNumResults();
         assertEquals(5, numFolders);
 
+        options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "");
+        result = catalogManager.searchFile(studyId, options, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(".", result.first().getName());
+
 
         options = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE,FOLDER");
         result = catalogManager.searchFile(studyId, options, sessionIdUser);
@@ -651,6 +657,13 @@ public class CatalogManagerTest extends GenericTest {
 
         CatalogFileDBAdaptor.FileFilterOption attributes = CatalogFileDBAdaptor.FileFilterOption.attributes;
         CatalogFileDBAdaptor.FileFilterOption nattributes = CatalogFileDBAdaptor.FileFilterOption.nattributes;
+
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".nested.text" , "~H"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        result = catalogManager.searchFile(studyId, new QueryOptions(nattributes + ".nested.num1" , ">0"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".nested.num1" , ">0"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new QueryOptions(attributes + ".field" , "~val"), sessionIdUser);
         assertEquals(3, result.getNumResults());
@@ -957,13 +970,17 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     public static java.io.File createDebugFile(String fileTestName) throws IOException {
+        return createDebugFile(fileTestName, 200);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName, int lines) throws IOException {
         DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
 
         os.writeBytes("Debug file name: " + fileTestName + "\n");
         for (int i = 0; i < 100; i++) {
             os.writeBytes(i + ", ");
         }
-        for (int i = 0; i < 200; i++) {
+        for (int i = 0; i < lines; i++) {
             os.writeBytes(StringUtils.randomString(500));
             os.write('\n');
         }
@@ -1425,7 +1442,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifySample () throws CatalogException {
+    public void testModifySample() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         int individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Gender.MALE, new QueryOptions(), sessionIdUser).first().getId();
@@ -1436,12 +1453,24 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testModifySampleBadIndividual () throws CatalogException {
+    public void testModifySampleBadIndividual() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
         catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
+    }
+
+    @Test
+    public void testDeleteSample() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, new QueryOptions(), sessionIdUser);
+        assertEquals(sampleId, queryResult.first().getId());
+
+        thrown.expect(CatalogDBException.class);
+        catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
     }
 
     /**
@@ -1532,7 +1561,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().contains(sampleId2));
         assertTrue(myCohort.getSamples().contains(sampleId3));
 
-        Cohort myModifiedCohort = catalogManager.updateCohort(myCohort.getId(), new ObjectMap("samples", Arrays.asList(sampleId1, sampleId3, sampleId4, sampleId5)).append("name", "myModifiedCohort"), sessionIdUser).first();
+        Cohort myModifiedCohort = catalogManager.modifyCohort(myCohort.getId(), new ObjectMap("samples", Arrays.asList(sampleId1, sampleId3, sampleId4, sampleId5)).append("name", "myModifiedCohort"), sessionIdUser).first();
 
         assertEquals("myModifiedCohort", myModifiedCohort.getName());
         assertEquals(4, myModifiedCohort.getSamples().size());
@@ -1591,6 +1620,12 @@ public class CatalogManagerTest extends GenericTest {
 
         Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
         deleteFolderTree(rootdir.toFile());
+        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
+            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
     }
 
     public static void deleteFolderTree(java.io.File folder) {

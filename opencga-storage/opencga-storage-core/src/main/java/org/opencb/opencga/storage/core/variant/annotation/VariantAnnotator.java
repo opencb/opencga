@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -34,11 +35,12 @@ public interface VariantAnnotator {
      * @param variantDBAdaptor      DBAdaptor to the variant db
      * @param outDir                File outdir.
      * @param fileName              Generated file name.
+     * @param query                 Query for those variants to annotate.
      * @param options               Specific options.
      * @return                      URI of the generated file.
      * @throws IOException
      */
-    URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, QueryOptions options)
+    URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options)
             throws IOException;
 
     /**

@@ -71,6 +71,7 @@ public class StorageConfiguration {
 
     private String defaultStorageEngineId;
     private String logLevel;
+    private String studyMetadataManager;
 
 //    private String include;
 
@@ -247,5 +248,13 @@ public class StorageConfiguration {
 
     public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
         this.storageEngines = storageEngines;
+    }
+
+    public String getStudyMetadataManager() {
+        return studyMetadataManager;
+    }
+
+    public void setStudyMetadataManager(String studyMetadataManager) {
+        this.studyMetadataManager = studyMetadataManager;
     }
 }

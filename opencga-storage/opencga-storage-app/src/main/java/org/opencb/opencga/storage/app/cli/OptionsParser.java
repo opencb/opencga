@@ -184,7 +184,7 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         String outdir;
 
-        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+        @Parameter(names = {"--include-annot"}, description = "Save variant annot information (optional)")
         boolean includeEffect = false;
 
         @Parameter(names = {"--include-samples"}, description = "Save samples information (optional)")
@@ -213,7 +213,7 @@ public class OptionsParser {
         @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
         String credentials;
 
-        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+        @Parameter(names = {"--include-annot"}, description = "Save variant annot information (optional)")
         boolean includeEffect = false;
 
         @Parameter(names = {"--include-samples"}, description = "Save samples information (optional)")
@@ -371,7 +371,7 @@ public class OptionsParser {
         @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
         public List<String> sampleIds;
 //
-//        @Parameter(names = {"--include-effect"}, description = "Save variant effect information (optional)")
+//        @Parameter(names = {"--include-annot"}, description = "Save variant annot information (optional)")
 //        boolean includeEffect = false;
 
         @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file (optional)")
@@ -482,7 +482,7 @@ public class OptionsParser {
         @Parameter(names = {"-a", "--alias"}, description = "File unique ID. [CSV]", required = false, arity = 1)
         String fileId;
 
-        @Parameter(names = {"-e", "--effect"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"-e", "--annot"}, description = " [CSV]", required = false, arity = 1)
         String effect;
 
         @Parameter(names = {"--id"}, description = " [CSV]", required = false)

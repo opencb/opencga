@@ -61,6 +61,7 @@ public class FileWSServerTest {
 
     @BeforeClass
     static public void initServer() throws Exception {
+        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         serverTestUtils = new WSServerTestUtils();
         serverTestUtils.initServer();
     }
@@ -165,6 +166,62 @@ public class FileWSServerTest {
         assertEquals(updateFile.description, file.getDescription());
     }
 
+    @Test
+    public void searchFiles() throws Exception {
+        String json = webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("path", "data/").request().get(String.class);
+
+        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        File file = response.getResponse().get(0).first();
+        assertEquals(1, response.getResponse().get(0).getNumResults());
+        assertEquals("data/", file.getPath());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:data:").path("update")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .request().post(Entity.json(
+                                new ObjectMap("attributes",
+                                        new ObjectMap("num", 2)
+                                                .append("exists", true)
+                                                .append("txt", "helloWorld"))),
+                        String.class), File.class);
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .request().post(Entity.json(
+                                new ObjectMap("attributes",
+                                        new ObjectMap("num", 3)
+                                                .append("exists", true)
+                                                .append("txt", "helloMundo"))),
+                        String.class), File.class);
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("attributes.txt", "~hello").request().get(String.class), File.class);
+        assertEquals(2, response.getResponse().get(0).getNumResults());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("battributes.exists", true).request().get(String.class), File.class);
+        assertEquals(2, response.getResponse().get(0).getNumResults());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("nattributes.num", "<3").request().get(String.class), File.class);
+        assertEquals(1, response.getResponse().get(0).getNumResults());
+
+    }
+
     public File uploadVcf(int studyId, String sessionId) throws IOException, CatalogException {
         String fileName = "variant-test-file.vcf.gz";
 //        String fileName = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
@@ -245,6 +302,27 @@ public class FileWSServerTest {
         String json = webTarget.path("files").path(String.valueOf(fileId)).path("index")
                 .queryParam("sid", sessionId)
                 .queryParam(VariantStorageManager.Options.ANNOTATE.key(), true)
+                .request().get(String.class);
+
+        QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        Job job = queryResponse.getResponse().get(0).first();
+
+        System.out.println("\nJSON RESPONSE");
+        System.out.println(json);
+
+        return job;
+
+    }
+
+    public Job calculateVariantStats(int cohortId, int outdirId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+
+        String json = webTarget.path("cohorts").path(String.valueOf(cohortId)).path("stats")
+                .queryParam("sid", sessionId)
+                .queryParam("calculate", true)
+                .queryParam("outdirId", outdirId)
+                .queryParam("log", "debug")
                 .request().get(String.class);
 
         QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
