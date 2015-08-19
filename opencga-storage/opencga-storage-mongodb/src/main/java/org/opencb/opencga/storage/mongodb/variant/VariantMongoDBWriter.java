@@ -61,7 +61,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    @Deprecated private DB db;
 //
 
-    private VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.Options.INCLUDE_SRC.defaultValue();
+    private VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.IncludeSrc.parse(VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
     private boolean includeStats;
     private boolean includeSamples;
 //    private boolean compressDefaultGenotype = true;

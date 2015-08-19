@@ -1162,7 +1162,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                VariantStorageManager.Options.INCLUDE_SRC.defaultValue(),
+                VariantStorageManager.IncludeSrc.parse(VariantStorageManager.Options.INCLUDE_SRC.defaultValue()),
                 query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
