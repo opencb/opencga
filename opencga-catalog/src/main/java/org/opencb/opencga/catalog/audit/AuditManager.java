@@ -7,6 +7,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 /**
  * Created on 18/08/15
  *
+ * Create the AuditRecord from simple params
+ * Select which actions will be recorded
+ *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface AuditManager {
@@ -23,7 +26,20 @@ public interface AuditManager {
      * @return                  Generated AuditRecord
      */
     AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
-    throws CatalogException;
+        throws CatalogException;
+
+    /**
+     * Records a object reading over the Catalog Database
+     *
+     * @param resource          Resource type
+     * @param id                Resource id (either String or Integer)
+     * @param userId            User who performs the creation
+     * @param description       Optional description
+     * @param attributes        Optional attributes
+     * @return                  Generated AuditRecord
+     */
+    AuditRecord recordRead(Resource resource, Object id, String userId, String description, ObjectMap attributes)
+        throws CatalogException;
 
     /**
      * Record an atomic change over the Catalog Database
@@ -50,7 +66,7 @@ public interface AuditManager {
      * @param attributes        Optional attributes
      * @return                  Generated AuditRecord
      */
-    AuditRecord recordDelete(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
+    AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException;
 
     /**
@@ -77,6 +93,7 @@ public interface AuditManager {
      * @param queryOptions      Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return                  A QueryResult with a list of all matching AuditRecords
      */
-    QueryResult<AuditRecord> getRecords(Query query, QueryOptions queryOptions, String sessionId);
+    QueryResult<AuditRecord> getRecords(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException;
 
 }

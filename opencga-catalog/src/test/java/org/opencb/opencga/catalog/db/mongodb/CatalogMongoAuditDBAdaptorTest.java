@@ -56,9 +56,9 @@ public class CatalogMongoAuditDBAdaptorTest {
 
     @Test
     public void testInsertAuditRecord() throws Exception {
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", AuditRecord.Status.done, new ObjectMap("name", "HG0001"), new ObjectMap("name", "HG0002"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", AuditRecord.Status.done, new ObjectMap("name", "HG0002"), new ObjectMap("name", "HG0003"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", AuditRecord.Status.done, new ObjectMap("description", ""), new ObjectMap("description", "New sample"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("name", "HG0001"), new ObjectMap("name", "HG0002"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("name", "HG0002"), new ObjectMap("name", "HG0003"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("description", ""), new ObjectMap("description", "New sample"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
     }
 
 //    @Test

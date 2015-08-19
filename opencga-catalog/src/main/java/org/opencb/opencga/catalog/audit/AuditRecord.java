@@ -8,13 +8,12 @@ import org.opencb.datastore.core.ObjectMap;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AuditRecord {
-    public enum Resource {user, project, study, file, sample, job, individual}
-    public enum Status {running, done, fail}
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, variableSet}
+//    public enum Status {running, done, fail}
 
     private Object id;
     private Resource resource;
     private String action;
-    private Status status;
     private ObjectMap before;
     private ObjectMap after;
     private long timeStamp;
@@ -22,14 +21,18 @@ public class AuditRecord {
     private String description;
     private ObjectMap attributes;
 
+    public static final String CREATE = "create";
+    public static final String UPDATE = "update";
+    public static final String DELETE = "delete";
+    public static final String INDEX = "index";
+
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, String action, Status status, ObjectMap before, ObjectMap after, long timeStamp, String userId, String description, ObjectMap attributes) {
+    public AuditRecord(Object id, Resource resource, String action, ObjectMap before, ObjectMap after, long timeStamp, String userId, String description, ObjectMap attributes) {
         this.id = id;
         this.resource = resource;
         this.action = action;
-        this.status = status;
         this.before = before;
         this.after = after;
         this.timeStamp = timeStamp;
@@ -44,7 +47,6 @@ public class AuditRecord {
                 "id=" + id +
                 ", resource=" + resource +
                 ", action=" + action +
-                ", status=" + status +
                 ", before=" + before +
                 ", after=" + after +
                 ", timeStamp=" + timeStamp +
@@ -78,15 +80,6 @@ public class AuditRecord {
 
     public AuditRecord setAction(String action) {
         this.action = action;
-        return this;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public AuditRecord setStatus(Status status) {
-        this.status = status;
         return this;
     }
 
