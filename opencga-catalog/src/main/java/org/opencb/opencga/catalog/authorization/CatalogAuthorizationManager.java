@@ -96,6 +96,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         final boolean auth;
         switch (permission) {
+            case DELETE_JOBS:
+                auth = group.getPermissions().isDeleteJobs();
+                break;
             case LAUNCH_JOBS:
                 auth = group.getPermissions().isLaunchJobs();
                 break;
@@ -239,22 +242,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         throw new UnsupportedOperationException("Unimplemented");
     }
 
-
-
-        /*
-     *  Permission methods. Internal use only.
-     *  Builds the specific ACL for each pair sessionId,object
-     *  ****************
-     */
-
-    /**
-     * Removes from the list the projects that the user can not read.
-     * From the remaining projects, filters the studies and files.
-     *
-     * @param userId   UserId
-     * @param projects Projects list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
-     */
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
         Iterator<Project> projectIt = projects.iterator();
@@ -270,15 +257,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    /**
-     * Removes from the list the studies that the user can not read.
-     * From the remaining studies, filters the files.
-     *
-     * @param userId     UserId
-     * @param projectAcl Project ACL
-     * @param studies    Studies list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
-     */
     @Override
     public void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException {
         Iterator<Study> studyIt = studies.iterator();
@@ -294,14 +272,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    /**
-     * Removes from the list the files that the user can not read.
-     *
-     * @param userId   UserId
-     * @param studyAcl Study ACL
-     * @param files    Files list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
-     */
     @Override
     public void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogException {
         if (files == null || files.isEmpty()) {
@@ -317,6 +287,35 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!fileAcl.isRead()) {
                 fileIt.remove();
             }
+        }
+    }
+
+    @Override
+    public void filterJobs(String userId, List<Job> jobs) throws CatalogException {
+        job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
+            Job job = iterator.next();
+            for (Integer fileId : job.getOutput()) {
+                if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
+                    iterator.remove();
+                    break job_loop;
+                }
+            }
+            for (Integer fileId : job.getInput()) {
+                if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
+                    iterator.remove();
+                    break job_loop;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void checkReadJob(String userId, Job job) throws CatalogException {
+        for (Integer fileId : job.getOutput()) {
+            checkFilePermission(fileId, userId, CatalogPermission.READ);
+        }
+        for (Integer fileId : job.getInput()) {
+            checkFilePermission(fileId, userId, CatalogPermission.READ);
         }
     }
 

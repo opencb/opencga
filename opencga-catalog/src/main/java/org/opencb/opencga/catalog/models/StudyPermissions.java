@@ -25,6 +25,10 @@ public class StudyPermissions {
      */
     private boolean launchJobs;
     /**
+     * Define if the group members are authorized to delete jobs from the db.
+     */
+    private boolean deleteJobs;
+    /**
      * Set the group as Sample Manager
      * Define a set of permissions:
      *      Create, read, update and delete operations over all Samples
@@ -48,52 +52,27 @@ public class StudyPermissions {
     public StudyPermissions() {
     }
 
-    public StudyPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean managerSamples, boolean studyManager) {
-        this.launchJobs = launchJobs;
-        this.studyManager = studyManager;
-        this.managerSamples = managerSamples;
+    public StudyPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean deleteJobs, boolean managerSamples, boolean studyManager) {
         this.read = read;
         this.write = write;
         this.delete = delete;
+        this.launchJobs = launchJobs;
+        this.deleteJobs = deleteJobs;
+        this.managerSamples = managerSamples;
+        this.studyManager = studyManager;
     }
 
     @Override
     public String toString() {
-        return "GroupPermissions{" +
-                "launchJobs=" + launchJobs +
-                ", studyManager=" + studyManager +
-                ", managerSamples=" + managerSamples +
-                ", read=" + read +
+        return "StudyPermissions{" +
+                "read=" + read +
                 ", write=" + write +
                 ", delete=" + delete +
+                ", launchJobs=" + launchJobs +
+                ", deleteJobs=" + deleteJobs +
+                ", managerSamples=" + managerSamples +
+                ", studyManager=" + studyManager +
                 '}';
-    }
-
-    public boolean isLaunchJobs() {
-        return launchJobs;
-    }
-
-    public StudyPermissions setLaunchJobs(boolean launchJobs) {
-        this.launchJobs = launchJobs;
-        return this;
-    }
-
-    public boolean isStudyManager() {
-        return studyManager;
-    }
-
-    public StudyPermissions setStudyManager(boolean studyManager) {
-        this.studyManager = studyManager;
-        return this;
-    }
-
-    public boolean isManagerSamples() {
-        return managerSamples;
-    }
-
-    public StudyPermissions setManagerSamples(boolean managerSamples) {
-        this.managerSamples = managerSamples;
-        return this;
     }
 
     public boolean isRead() {
@@ -120,6 +99,42 @@ public class StudyPermissions {
 
     public StudyPermissions setDelete(boolean delete) {
         this.delete = delete;
+        return this;
+    }
+
+    public boolean isLaunchJobs() {
+        return launchJobs;
+    }
+
+    public StudyPermissions setLaunchJobs(boolean launchJobs) {
+        this.launchJobs = launchJobs;
+        return this;
+    }
+
+    public boolean isDeleteJobs() {
+        return deleteJobs;
+    }
+
+    public StudyPermissions setDeleteJobs(boolean deleteJobs) {
+        this.deleteJobs = deleteJobs;
+        return this;
+    }
+
+    public boolean isManagerSamples() {
+        return managerSamples;
+    }
+
+    public StudyPermissions setManagerSamples(boolean managerSamples) {
+        this.managerSamples = managerSamples;
+        return this;
+    }
+
+    public boolean isStudyManager() {
+        return studyManager;
+    }
+
+    public StudyPermissions setStudyManager(boolean studyManager) {
+        this.studyManager = studyManager;
         return this;
     }
 }

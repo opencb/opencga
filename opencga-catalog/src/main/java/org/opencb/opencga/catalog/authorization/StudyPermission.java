@@ -9,6 +9,7 @@ import java.security.acl.Permission;
  */
 public enum StudyPermission implements Permission {
     LAUNCH_JOBS,
+    DELETE_JOBS,
     MANAGE_SAMPLES,
     MANAGE_STUDY,
     READ_STUDY

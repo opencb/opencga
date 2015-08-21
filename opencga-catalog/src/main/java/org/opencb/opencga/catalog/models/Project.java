@@ -35,7 +35,7 @@ public class Project {
     private String lastActivity;
     private long diskUsage;
 
-    private List<Acl> acl;      // roles?
+    private List<Acl> acl;
     private List<Study> studies;
 
     private Map<File.Bioformat, DataStore> dataStores;

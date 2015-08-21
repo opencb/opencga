@@ -4,6 +4,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
@@ -18,10 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -47,8 +46,6 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-//        int analysisId = catalogDBAdaptor.getStudyIdByJobId(jobId);
-//        int studyId = catalogDBAdaptor.getStudyIdByAnalysisId(analysisId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw new CatalogException("Permission denied. Can't read job");
@@ -102,8 +99,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. Can't create job");
+        authorizationManager.checkFilePermission(outDirId, userId, CatalogPermission.WRITE);
+        for (Integer inputFile : inputFiles) {
+            authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
         File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).getResult().get(0);
@@ -133,20 +131,20 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't read job");
-        }
-
-        return jobDBAdaptor.getJob(jobId, options);
+        QueryResult<Job> queryResult = jobDBAdaptor.getJob(jobId, options);
+        authorizationManager.checkReadJob(userId, queryResult.first());
+        return queryResult;
     }
 
     @Override
     public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         query = ParamUtils.defaultObject(query, QueryOptions::new);
         query.put("studyId", studyId);
-        return readAll(query, options, sessionId);
+        QueryResult<Job> queryResult = readAll(query, options, sessionId);
+        authorizationManager.filterJobs(userId, queryResult.getResult());
+        return queryResult;
     }
 
     @Override
@@ -178,9 +176,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-                throw new CatalogException("Permission denied. Can't modify jobs");
-            }
+            authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
         }
         return jobDBAdaptor.modifyJob(jobId, parameters);
     }
@@ -191,9 +187,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
-            throw new CatalogException("Permission denied. Can't delete job");
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
         return jobDBAdaptor.deleteJob(jobId);
     }
@@ -206,10 +200,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't read study");
-        }
-        URI uri = studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Arrays.asList("projects.studies.uri")))
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.DELETE_JOBS);
+
+        URI uri = studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
                 .first().getUri();
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uri);

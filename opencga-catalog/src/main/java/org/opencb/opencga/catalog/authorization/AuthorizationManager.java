@@ -43,11 +43,40 @@ public interface AuthorizationManager {
 
     QueryResult setSampleACL(int sampleId, Acl acl, String sessionId);
 
+    /**
+     * Removes from the list the projects that the user can not read.
+     * From the remaining projects, filters the studies and files.
+     *
+     * @param userId   UserId
+     * @param projects Projects list
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     */
     void filterProjects(String userId, List<Project> projects) throws CatalogException;
 
+    /**
+     * Removes from the list the studies that the user can not read.
+     * From the remaining studies, filters the files.
+     *
+     * @param userId     UserId
+     * @param projectAcl Project ACL
+     * @param studies    Studies list
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     */
     void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException;
 
+    /**
+     * Removes from the list the files that the user can not read.
+     *
+     * @param userId   UserId
+     * @param studyAcl Study ACL
+     * @param files    Files list
+     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     */
     void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogException;
+
+    void filterJobs(String userId, List<Job> jobs) throws CatalogException;
+
+    void checkReadJob(String userId, Job job) throws CatalogException;
 
     /*--------------------------*/
     // Group management methods
@@ -67,9 +96,9 @@ public interface AuthorizationManager {
      */
     static List<Group> getDefaultGroups(Collection<String> adminUsers) {
         return Arrays.asList(
-                new Group(ADMINS_GROUP, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true)),
-                new Group(DATA_MANAGERS_GROUP, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, false)),
-                new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false)));
+                new Group(ADMINS_GROUP, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true, true)),
+                new Group(DATA_MANAGERS_GROUP, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, true, false)),
+                new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
     }
 
     Group getGroupBelonging(int studyId, String userId) throws CatalogException;
