@@ -71,7 +71,7 @@ public class CatalogAuthorizationManagerTest {
         subFolder = catalogManager.createFolder(s1, Paths.get("data/subfolder/"), false, null, user1SessionId).first().getId();
 
         catalogManager.shareProject(p1, new Acl(user2, true, true, true, true), user1SessionId);
-        catalogManager.shareStudy(s1, new Acl(user2, true, true, true, true), user1SessionId);
+        catalogManager.addMemberToGroup(s1, "members", user2, user1SessionId);
         catalogManager.shareFile(subFolder, new Acl(user2, true, true, true, true), user1SessionId);
 
 

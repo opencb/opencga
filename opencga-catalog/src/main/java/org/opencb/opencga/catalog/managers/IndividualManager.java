@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -49,9 +50,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         family = ParamUtils.defaultObject(family, "");
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantWrite(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
         return individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, null), options);
     }
@@ -105,9 +104,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
 
         options.putAll(parameters);//FIXME: Use separated params and options, or merge
         return individualDBAdaptor.modifyIndividual(individualId, options);
@@ -122,9 +120,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
 
         return individualDBAdaptor.deleteIndividual(individualId, options);
     }

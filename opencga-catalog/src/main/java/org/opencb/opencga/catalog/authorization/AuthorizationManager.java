@@ -14,6 +14,10 @@ import java.util.*;
  */
 public interface AuthorizationManager {
 
+    void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException;
+
+    void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException;
+
     User.Role getUserRole(String userId) throws CatalogException;
 
     Acl getProjectACL(String userId, int projectId) throws CatalogException;

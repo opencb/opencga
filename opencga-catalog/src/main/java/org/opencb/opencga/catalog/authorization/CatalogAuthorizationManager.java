@@ -76,6 +76,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException {
+        checkStudyPermission(studyId, userId, permission, permission.toString());
+    }
+
+    @Override
+    public void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException {
+        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+            return;
+        }
+
+        Group group = getGroupBelonging(studyId, userId);
+
+        if (group == null) {
+            throw CatalogAuthorizationException.denny(userId, message, "Study", studyId, null);
+        }
+
+        final boolean auth;
+        switch (permission) {
+            case LAUNCH_JOBS:
+                auth = group.getPermissions().isLaunchJobs();
+                break;
+            case MANAGE_SAMPLES:
+                auth = group.getPermissions().isManagerSamples();
+                break;
+            case MANAGE_STUDY:
+                auth = group.getPermissions().isStudyManager();
+                break;
+            case READ_STUDY:
+                auth = true; //Authorize if belongs to any group
+                break;
+            default:
+                auth = false;
+        }
+        if (!auth) {
+            throw CatalogAuthorizationException.denny(userId, message, "Study", studyId, null);
+        }
+    }
+
+    @Override
     public Acl getStudyACL(String userId, int studyId) throws CatalogException {
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         return getStudyACL(userId, studyId, getProjectACL(userId, projectId));
@@ -196,6 +235,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (files == null || files.isEmpty()) {
             return;
         }
+        if (studyAcl == null) {
+            studyAcl = getStudyACL(userId, fileDBAdaptor.getStudyIdByFileId(files.get(0).getId()));
+        }
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {
             File f = fileIt.next();
@@ -214,11 +256,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<Group> addMember(int studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Group groupBelonging = getGroupBelonging(studyId, userId);
-        if (groupBelonging == null || !groupBelonging.getPermissions().isStudyManager()) {
-            throw CatalogAuthorizationException.denny(userId, "Change group", "Study", studyId, null);
-        }
+
+        checkStudyPermission(studyId, userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+
         Group groupFromUserToAdd = getGroupBelonging(studyId, userIdToAdd);
         if (groupFromUserToAdd != null) {
             throw new CatalogException("User \"" + userIdToAdd + "\" already belongs to group " + groupFromUserToAdd.getId());
@@ -229,11 +269,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<Group> removeMember(int studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Group groupBelonging = getGroupBelonging(studyId, userId);
-        if (groupBelonging == null || !groupBelonging.getPermissions().isStudyManager()) {
-            throw CatalogAuthorizationException.denny(userId, "Change group", "Study", studyId, null);
-        }
+
+        checkStudyPermission(studyId, userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+
         Group groupFromUserToRemove = getGroupBelonging(studyId, userIdToRemove);
         if (groupFromUserToRemove == null || !groupFromUserToRemove.getId().equals(groupId)) {
             throw new CatalogException("User \"" + userIdToRemove + "\" does not belongs to group " + groupId);

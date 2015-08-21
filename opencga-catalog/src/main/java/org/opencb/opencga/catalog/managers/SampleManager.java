@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -83,9 +84,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Sample from Study", studyId, null);
-        }
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
         sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
 
@@ -122,10 +122,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
         Sample sample = new Sample(-1, name, source, -1, description, Collections.<AnnotationSet>emptyList(),
                 attributes);
 
@@ -238,9 +236,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
@@ -252,18 +248,14 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSet);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
         return sampleDBAdaptor.getVariableSet(variableSet, options);
     }
 
     @Override
     public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
         return sampleDBAdaptor.getAllVariableSets(studyId, options);
     }
 
@@ -271,9 +263,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSetId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
     }
 
@@ -295,19 +285,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            return sampleDBAdaptor.getCohort(cohortId);
-        } else {
-            throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohortId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        //TODO: Filter cohorts
+        return sampleDBAdaptor.getCohort(cohortId);
+
     }
 
     @Override
     public QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        //TODO: Filter Cohorts
         return sampleDBAdaptor.getAllCohorts(studyId, options);
     }
 
@@ -346,11 +334,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     break;
             }
         }
-        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            return sampleDBAdaptor.modifyCohort(cohortId, params);
-        } else {
-            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+        return sampleDBAdaptor.modifyCohort(cohortId, params);
     }
 
     @Override
@@ -358,11 +343,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            return sampleDBAdaptor.deleteCohort(cohortId, options);
-        } else {
-            throw CatalogAuthorizationException.cantModify(userId, "Cohort", cohortId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
+        return sampleDBAdaptor.deleteCohort(cohortId, options);
     }
 
 

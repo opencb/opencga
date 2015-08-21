@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
@@ -207,16 +208,14 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (studyAcl.isRead()) {
-            QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
-            if (!studyResult.getResult().isEmpty()) {
-                authorizationManager.filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
-            }
-            return studyResult;
-        } else {
-            throw CatalogAuthorizationException.cantRead(userId, "Study", studyId, null);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
+        if (!studyResult.getResult().isEmpty()) {
+            authorizationManager.filterFiles(userId, null, studyResult.getResult().get(0).getFiles());
         }
+        return studyResult;
+
     }
 
     @Override
@@ -247,9 +246,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+
         if (parameters.containsKey("alias")) {
             rename(studyId, parameters.getString("alias"), sessionId);
 
@@ -278,9 +276,9 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String sessionUserId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
-        if (!authorizationManager.getStudyACL(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
-            throw new CatalogDBException("Permission denied. Can't write in project");
-        }
+        //User can't write/modify the study
+        authorizationManager.checkStudyPermission(studyId, sessionUserId, StudyPermission.MANAGE_SAMPLES);
+
 
         // Both users must bu updated
         userDBAdaptor.updateUserLastActivity(sessionUserId);
