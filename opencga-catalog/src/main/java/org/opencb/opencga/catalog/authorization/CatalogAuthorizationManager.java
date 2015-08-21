@@ -85,9 +85,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
             return;
         }
+        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+            return;
+        }
 
         Group group = getGroupBelonging(studyId, userId);
-
         if (group == null) {
             throw CatalogAuthorizationException.denny(userId, message, "Study", studyId, null);
         }
@@ -115,9 +117,82 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException {
+        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+            return;
+        }
+        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+            return;
+        }
+
+        Acl fileAcl = resolveFileAcl(fileId, userId, studyId);
+
+
+        final boolean auth;
+        switch (permission) {
+            case READ:
+                auth = fileAcl.isRead();
+                break;
+            case WRITE:
+                auth = fileAcl.isWrite();
+                break;
+            case DELETE:
+                auth = fileAcl.isDelete();
+                break;
+            default:
+                auth = false;
+                break;
+        }
+        if (!auth) {
+            throw CatalogAuthorizationException.denny(userId, permission.toString(), "File", studyId, null);
+        }
+
+    }
+
+    public Acl resolveFileAcl(int fileId, String userId, int studyId) throws CatalogException {
+        Group group = getGroupBelonging(studyId, userId);
+        if (group == null) {
+            return new Acl(userId, false, false, false, false);
+        }
+
+        Acl studyAcl = getStudyACL(userId, group);
+        Acl fileAcl = null;
+
+        File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
+        List<String> paths = FileManager.getParentPaths(file.getPath());
+        Map<String, Map<String, Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, Acl.USER_OTHERS_ID)).first();
+
+        for (int i = paths.size() - 1; i >= 0; i--) {
+            String path = paths.get(i);
+            if (pathAclMap.containsKey(path)) {
+                //Get first the user AclEntry
+                fileAcl = pathAclMap.get(path).get(userId);
+                //If missing, get Others AclEntry
+                if (fileAcl == null) {
+                    fileAcl = pathAclMap.get(path).get(Acl.USER_OTHERS_ID);
+                }
+                if (fileAcl != null) {
+                    break;
+                }
+            }
+        }
+
+        if (fileAcl == null) {
+            fileAcl = studyAcl;
+        }
+        return fileAcl;
+    }
+
+    private Acl getStudyACL(String userId, Group group) {
+        return new Acl(userId, group.getPermissions().isRead(), group.getPermissions().isWrite(), false, group.getPermissions().isDelete());
+    }
+
+    @Override
     public Acl getStudyACL(String userId, int studyId) throws CatalogException {
-        int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
-        return getStudyACL(userId, studyId, getProjectACL(userId, projectId));
+        return getStudyACL(userId, getGroupBelonging(studyId, userId));
+//        int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
+//        return getStudyACL(userId, studyId, getProjectACL(userId, projectId));
     }
 
     @Override
@@ -140,7 +215,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return new Acl(userId, true, true, true, true);
         }
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        return getStudyACL(userId, studyId);
+        return getFileACL(userId, fileId, getStudyACL(userId, studyId));
     }
 
     @Override
@@ -149,10 +224,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl fileAcl = getFileACL(userId, fileId);
-        if (!fileAcl.isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "File", fileId, null);
-        }
+        checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userId, StudyPermission.MANAGE_STUDY);
 
         return fileDBAdaptor.setFileAcl(fileId, acl);
     }
@@ -337,20 +409,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
             List<String> paths = FileManager.getParentPaths(file.getPath());
 //            QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
-            Map<String, List<Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, Acl.USER_OTHERS_ID)).first();
+            Map<String, Map<String, Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, Acl.USER_OTHERS_ID)).first();
 
             for (int i = paths.size() - 1; i >= 0; i--) {
                 String path = paths.get(i);
                 if (pathAclMap.containsKey(path)) {
-                    for (Acl acl : pathAclMap.get(path)) {
-                        if (acl.getUserId().equals(userId)) {
-                            fileAcl = acl;
-                            break;
-                        } else if (acl.getUserId().equals(Acl.USER_OTHERS_ID)) {
-                            fileAcl = acl;
-                        }
-                    }
+                    //Get first the user AclEntry
+                    fileAcl = pathAclMap.get(path).get(userId);
+                    //If missing, get Others AclEntry
                     if (fileAcl == null) {
+                        fileAcl = pathAclMap.get(path).get(Acl.USER_OTHERS_ID);
+                    }
+                    if (fileAcl != null) {
                         break;
                     }
                 }

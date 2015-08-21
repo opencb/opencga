@@ -833,23 +833,26 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Map<String, List<Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
+    public QueryResult<Map<String, Map<String, Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
 
         long startTime = startQuery();
         DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in", filePaths)));
-        DBObject unwind = new BasicDBObject("$unwind", "acl");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.user", new BasicDBObject("$in", userIds)));
+        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
 
         QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(aggregate);
-        Map<String, List<Acl>> pathAclMap = new HashMap<>();
+        Map<String, Map<String, Acl>> pathAclMap = new HashMap<>();
         for (File file : files) {
+            Acl acl = file.getAcl().get(0);
             if (pathAclMap.containsKey(file.getPath())) {
-                pathAclMap.get(file.getPath()).add(file.getAcl().get(0));
+                pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
             } else {
-                pathAclMap.put(file.getPath(), file.getAcl());
+                HashMap<String, Acl> map = new HashMap<>();
+                map.put(acl.getUserId(), acl);
+                pathAclMap.put(file.getPath(), map);
             }
         }
 //        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));

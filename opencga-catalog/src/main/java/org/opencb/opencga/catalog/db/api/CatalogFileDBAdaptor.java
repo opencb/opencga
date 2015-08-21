@@ -122,7 +122,7 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, List<Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
+    QueryResult<Map<String, Map<String, Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
 
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
