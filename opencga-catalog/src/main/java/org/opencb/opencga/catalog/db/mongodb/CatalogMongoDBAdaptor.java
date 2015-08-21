@@ -35,6 +35,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -457,6 +458,76 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         return getStudyAcl(studyId, userId);
     }
+
+    @Override
+    public QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        BasicDBObject query = new BasicDBObject(_ID, studyId);
+        BasicDBObject groupQuery = new BasicDBObject();
+        if (userId != null) {
+            groupQuery.put("userIds", userId);
+        }
+        if (groupId != null) {
+            groupQuery.put("id", groupId);
+        }
+        BasicDBObject project = new BasicDBObject("groups", new BasicDBObject("$elemMatch", groupQuery));
+
+        QueryResult<DBObject> queryResult = studyCollection.find(query, project, options);
+        List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
+        List<Group> groups = new ArrayList<>(1);
+        for (Study study : studies) {
+            if (study.getGroups() != null) {
+                groups.addAll(study.getGroups());
+            }
+        }
+
+        return endQuery("getGroup", startTime, groups);
+    }
+
+    boolean groupExists(int studyId, String groupId) throws CatalogDBException{
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        return studyCollection.count(query).first() == 1;
+    }
+
+    @Override
+    public QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
+        }
+
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
+
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getN() != 1) {
+            throw new CatalogDBException("Unable to add member to group " + groupId);
+        }
+
+        return endQuery("addMemberToGroup", startTime, getGroup(studyId, null, groupId, null));
+    }
+
+    @Override
+    public QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
+        }
+
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getN() != 1) {
+            throw new CatalogDBException("Unable to remove member to group " + groupId);
+        }
+
+        return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));    }
 
 
     /**

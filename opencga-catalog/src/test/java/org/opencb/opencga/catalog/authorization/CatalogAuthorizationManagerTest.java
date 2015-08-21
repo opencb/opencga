@@ -10,14 +10,17 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -71,11 +74,69 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.shareStudy(s1, new Acl(user2, true, true, true, true), user1SessionId);
         catalogManager.shareFile(subFolder, new Acl(user2, true, true, true, true), user1SessionId);
 
+
     }
 
     @After
     public void after() throws Exception {
         catalogManager.close();
+    }
+
+    @Test
+    public void addMemberToGroup() throws CatalogException {
+        catalogManager.addMemberToGroup(s1, "admin", user3, user1SessionId);
+        Map<String, Group> groups = getGroupMap();
+        assertTrue(groups.get("admin").getUserIds().contains(user3));
+    }
+
+    @Test
+    public void addMemberToGroupExistingNoPermission() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.addMemberToGroup(s1, "admin", user3, user3SessionId);
+    }
+
+    @Test
+    public void addMemberToGroupInOtherGroup() throws CatalogException {
+        catalogManager.addMemberToGroup(s1, "admin", user3, user1SessionId);
+        thrown.expect(CatalogException.class);
+        catalogManager.addMemberToGroup(s1, "members", user3, user1SessionId);
+    }
+
+    @Test
+    public void addMemberToTheBelongingGroup() throws CatalogException {
+        catalogManager.addMemberToGroup(s1, "admin", user3, user1SessionId);
+        thrown.expect(CatalogException.class);
+        catalogManager.addMemberToGroup(s1, "admin", user3, user1SessionId);
+    }
+
+    @Test
+    public void addMemberToNonExistingGroup() throws CatalogException {
+        thrown.expect(CatalogDBException.class);
+        catalogManager.addMemberToGroup(s1, "NO_GROUP", user3, user1SessionId);
+    }
+
+    @Test
+    public void removeMemberFromGroup() throws CatalogException {
+        catalogManager.removeMemberFromGroup(s1, "admin", user1, user1SessionId);
+        assertFalse(getGroupMap().get("admin").getUserIds().contains(user1));
+    }
+
+    @Test
+    public void removeMemberFromGroupNoPermission() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.removeMemberFromGroup(s1, "admin", user1, user3SessionId);
+    }
+
+    @Test
+    public void removeMemberFromNonExistingGroup() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        catalogManager.removeMemberFromGroup(s1, "NO_GROUP", user1, user1SessionId);
+    }
+
+    @Test
+    public void removeMemberFromNonBelongingGroup() throws CatalogException {
+        thrown.expect(CatalogException.class);
+        catalogManager.removeMemberFromGroup(s1, "member", user1, user1SessionId);
     }
 
     @Test
@@ -111,5 +172,8 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.getFile(data, user3SessionId);
     }
 
+    public Map<String, Group> getGroupMap() throws CatalogException {
+        return catalogManager.getStudy(s1, user1SessionId).first().getGroups().stream().collect(Collectors.toMap(Group::getId, f -> f));
+    }
 
 }

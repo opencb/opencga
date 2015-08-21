@@ -206,6 +206,42 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
+    @Override
+    public Group getGroupBelonging(int studyId, String userId) throws CatalogException {
+        QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, userId, null, null);
+        return queryResult.getNumResults() == 0 ? null : queryResult.first();
+    }
+
+    @Override
+    public QueryResult<Group> addMember(int studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Group groupBelonging = getGroupBelonging(studyId, userId);
+        if (groupBelonging == null || !groupBelonging.getPermissions().isStudyManager()) {
+            throw CatalogAuthorizationException.denny(userId, "Change group", "Study", studyId, null);
+        }
+        Group groupFromUserToAdd = getGroupBelonging(studyId, userIdToAdd);
+        if (groupFromUserToAdd != null) {
+            throw new CatalogException("User \"" + userIdToAdd + "\" already belongs to group " + groupFromUserToAdd.getId());
+        }
+
+        return studyDBAdaptor.addMemberToGroup(studyId, groupId, userIdToAdd);
+    }
+
+    @Override
+    public QueryResult<Group> removeMember(int studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Group groupBelonging = getGroupBelonging(studyId, userId);
+        if (groupBelonging == null || !groupBelonging.getPermissions().isStudyManager()) {
+            throw CatalogAuthorizationException.denny(userId, "Change group", "Study", studyId, null);
+        }
+        Group groupFromUserToRemove = getGroupBelonging(studyId, userIdToRemove);
+        if (groupFromUserToRemove == null || !groupFromUserToRemove.getId().equals(groupId)) {
+            throw new CatalogException("User \"" + userIdToRemove + "\" does not belongs to group " + groupId);
+        }
+
+        return studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
+    }
+
     private Acl mergeAcl(String userId, Acl acl1, Acl acl2) {
         return new Acl(
                 userId,

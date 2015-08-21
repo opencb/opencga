@@ -460,6 +460,14 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setStudyACL(studyId, acl, sessionId);
     }
 
+    public QueryResult addMemberToGroup(int studyId, String groupId, String userId, String sessionId) throws CatalogException {
+        return authorizationManager.addMember(studyId, groupId, userId, sessionId);
+    }
+
+    public QueryResult removeMemberFromGroup(int studyId, String groupId, String userId, String sessionId) throws CatalogException {
+        return authorizationManager.removeMember(studyId, groupId, userId, sessionId);
+    }
+
     /**
      * File methods
      * ***************************

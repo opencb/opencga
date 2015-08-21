@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
@@ -47,5 +48,9 @@ public interface CatalogStudyDBAdaptor {
 
     QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogDBException;
 
+    QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+
+    QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
 }

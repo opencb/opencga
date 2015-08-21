@@ -40,8 +40,14 @@ public interface AuthorizationManager {
 
     static List<Group> getDefaultGroups(Collection<String> adminUsers) {
         return Arrays.asList(
-                new Group("admin", new ArrayList<>(adminUsers), new GroupPermissions(true, true, true, true, true, true)),
-                new Group("dataManager", Collections.emptyList(), new GroupPermissions(true, true, true, true, true, false)),
-                new Group("members", Collections.emptyList(), new GroupPermissions(true, false, false, false, false, false)));
+                new Group("admin", new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true)),
+                new Group("dataManager", Collections.emptyList(), new StudyPermissions(true, true, true, true, true, false)),
+                new Group("members", Collections.emptyList(), new StudyPermissions(true, false, false, false, false, false)));
     }
+
+    Group getGroupBelonging(int studyId, String userId) throws CatalogException;
+//    Group createGroup(int studyId, String groupId, GroupPermissions groupPermissions, String sessionId) throws CatalogException;
+//    void deleteGroup(int studyId, String groupId, String sessionId) throws CatalogException;
+    QueryResult<Group> addMember(int studyId, String groupId, String userId, String sessionId) throws CatalogException;
+    QueryResult<Group> removeMember(int studyId, String groupId, String userId, String sessionId) throws CatalogException;
 }

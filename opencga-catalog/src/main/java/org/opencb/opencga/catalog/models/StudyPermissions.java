@@ -5,7 +5,7 @@ package org.opencb.opencga.catalog.models;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class GroupPermissions {
+public class StudyPermissions {
 
     /**
      * Define the default permission for read resources
@@ -45,10 +45,10 @@ public class GroupPermissions {
      */
     private boolean studyManager;
 
-    public GroupPermissions() {
+    public StudyPermissions() {
     }
 
-    public GroupPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean managerSamples, boolean studyManager) {
+    public StudyPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean managerSamples, boolean studyManager) {
         this.launchJobs = launchJobs;
         this.studyManager = studyManager;
         this.managerSamples = managerSamples;
@@ -73,16 +73,16 @@ public class GroupPermissions {
         return launchJobs;
     }
 
-    public GroupPermissions setLaunchJobs(boolean launchJobs) {
+    public StudyPermissions setLaunchJobs(boolean launchJobs) {
         this.launchJobs = launchJobs;
         return this;
     }
 
-    public boolean isstudyManager() {
+    public boolean isStudyManager() {
         return studyManager;
     }
 
-    public GroupPermissions setstudyManager(boolean studyManager) {
+    public StudyPermissions setStudyManager(boolean studyManager) {
         this.studyManager = studyManager;
         return this;
     }
@@ -91,7 +91,7 @@ public class GroupPermissions {
         return managerSamples;
     }
 
-    public GroupPermissions setManagerSamples(boolean managerSamples) {
+    public StudyPermissions setManagerSamples(boolean managerSamples) {
         this.managerSamples = managerSamples;
         return this;
     }
@@ -100,7 +100,7 @@ public class GroupPermissions {
         return read;
     }
 
-    public GroupPermissions setRead(boolean read) {
+    public StudyPermissions setRead(boolean read) {
         this.read = read;
         return this;
     }
@@ -109,7 +109,7 @@ public class GroupPermissions {
         return write;
     }
 
-    public GroupPermissions setWrite(boolean write) {
+    public StudyPermissions setWrite(boolean write) {
         this.write = write;
         return this;
     }
@@ -118,7 +118,7 @@ public class GroupPermissions {
         return delete;
     }
 
-    public GroupPermissions setDelete(boolean delete) {
+    public StudyPermissions setDelete(boolean delete) {
         this.delete = delete;
         return this;
     }
