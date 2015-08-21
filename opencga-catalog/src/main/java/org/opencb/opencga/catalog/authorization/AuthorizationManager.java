@@ -7,7 +7,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -37,4 +37,11 @@ public interface AuthorizationManager {
     void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException;
 
     void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogException;
+
+    static List<Group> getDefaultGroups(Collection<String> adminUsers) {
+        return Arrays.asList(
+                new Group("admin", new ArrayList<>(adminUsers), new GroupPermissions(true, true, true, true, true, true)),
+                new Group("dataManager", Collections.emptyList(), new GroupPermissions(true, true, true, true, true, false)),
+                new Group("members", Collections.emptyList(), new GroupPermissions(true, false, false, false, false, false)));
+    }
 }

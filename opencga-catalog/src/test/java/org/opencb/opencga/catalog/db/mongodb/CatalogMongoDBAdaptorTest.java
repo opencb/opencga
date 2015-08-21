@@ -118,7 +118,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, "active", "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<Acl>emptyList(),
-                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", Arrays.asList(new Acl("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
+                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null, Arrays.asList(new Acl("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
                                                 Arrays.asList(
                                                         new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, null, "", File.Status.READY, 1000),
                                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, null, "", File.Status.READY, 1000)

@@ -149,7 +149,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
                 new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 
