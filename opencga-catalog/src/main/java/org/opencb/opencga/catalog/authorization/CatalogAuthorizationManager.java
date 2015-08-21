@@ -4,6 +4,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
@@ -11,6 +12,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -245,31 +247,60 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * Use StudyACL for all files.
      */
     public Acl getFileACL(String userId, int fileId, Acl studyAcl) throws CatalogException {
-        return studyAcl;
+        return __getFileAcl(userId, fileDBAdaptor.getStudyIdByFileId(fileId), fileId, studyAcl);
     }
 
     //TODO: Check folder ACLs
-    private Acl __getFileAcl(String userId, int fileId, Acl studyAcl) throws CatalogException {
-        Acl fileAcl;
+    private final QueryOptions fileIncludeQueryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
+
+    private Acl __getFileAcl(String userId, int studyId, int fileId, Acl studyAcl) throws CatalogException {
+        Acl fileAcl = null;
         boolean sameOwner = fileDBAdaptor.getFileOwnerId(fileId).equals(userId);
 
         if (sameOwner) {
             fileAcl = new Acl(userId, true, true, true, true);
         } else {
-            QueryResult<Acl> result = fileDBAdaptor.getFileAcl(fileId, userId);
-            if (!result.getResult().isEmpty()) {
-                fileAcl = result.getResult().get(0);
-            } else {
-                QueryResult<Acl> resultAll = fileDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    fileAcl = resultAll.getResult().get(0);
-                } else {
-                    //fileAcl = new Acl(userId, false, false, false, false);
-                    fileAcl = studyAcl;
+            File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
+            List<String> paths = FileManager.getParentPaths(file.getPath());
+//            QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
+            Map<String, List<Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, Acl.USER_OTHERS_ID)).first();
+
+            for (int i = paths.size() - 1; i >= 0; i--) {
+                String path = paths.get(i);
+                if (pathAclMap.containsKey(path)) {
+                    for (Acl acl : pathAclMap.get(path)) {
+                        if (acl.getUserId().equals(userId)) {
+                            fileAcl = acl;
+                            break;
+                        } else if (acl.getUserId().equals(Acl.USER_OTHERS_ID)) {
+                            fileAcl = acl;
+                        }
+                    }
+                    if (fileAcl == null) {
+                        break;
+                    }
                 }
             }
+//            for (String path : paths) {
+//                if (pathAclMap.containsKey(path)) {
+//                    mergeAcl(userId, )
+//                }
+//            }
+//
+//            if (!result.getResult().isEmpty()) {
+//                fileAcl = result.getResult().get(0);
+//            } else {
+//                QueryResult<Acl> resultAll = fileDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
+//                if (!resultAll.getResult().isEmpty()) {
+//                    fileAcl = resultAll.getResult().get(0);
+//                } else {
+//                    //fileAcl = new Acl(userId, false, false, false, false);
+//                    fileAcl = studyAcl;
+//                }
+//            }
         }
-        return mergeAcl(userId, fileAcl, studyAcl);
+        return fileAcl == null ? studyAcl : fileAcl;
+//        return mergeAcl(userId, fileAcl, studyAcl);
     }
 
 }

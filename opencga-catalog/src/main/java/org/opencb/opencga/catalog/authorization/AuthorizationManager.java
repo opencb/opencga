@@ -14,23 +14,23 @@ import java.util.List;
  */
 public interface AuthorizationManager {
 
-    public User.Role getUserRole(String userId) throws CatalogException;
+    User.Role getUserRole(String userId) throws CatalogException;
 
-    public Acl getProjectACL(String userId, int projectId) throws CatalogException;
+    Acl getProjectACL(String userId, int projectId) throws CatalogException;
 
-    public QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException;
 
-    public Acl getStudyACL(String userId, int studyId) throws CatalogException;
+    Acl getStudyACL(String userId, int studyId) throws CatalogException;
 
-    public QueryResult setStudyACL(int studyId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setStudyACL(int studyId, Acl acl, String sessionId) throws CatalogException;
 
-    public Acl getFileACL(String userId, int fileId) throws CatalogException;
+    Acl getFileACL(String userId, int fileId) throws CatalogException;
 
-    public QueryResult setFileACL(int fileId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setFileACL(int fileId, Acl acl, String sessionId) throws CatalogException;
 
-    public Acl getSampleACL(String userId, int sampleId) throws CatalogException;
+    Acl getSampleACL(String userId, int sampleId) throws CatalogException;
 
-    public QueryResult setSampleACL(int sampleId, Acl acl, String sessionId);
+    QueryResult setSampleACL(int sampleId, Acl acl, String sessionId);
 
     void filterProjects(String userId, List<Project> projects) throws CatalogException;
 

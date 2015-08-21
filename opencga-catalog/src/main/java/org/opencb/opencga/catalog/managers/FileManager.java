@@ -175,25 +175,26 @@ public class FileManager extends AbstractManager implements IFileManager {
         return getParents(rootFirst, options, filePath, getStudyId(file.getId()));
     }
 
-    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
+    public static List<String> getParentPaths(String filePath) {
         String path = "";
-        List<String> paths = new LinkedList<>();
+        List<String> paths = new ArrayList<>(10);
         paths.add("");  //Add root
         for (String f : filePath.split("/")) {
             paths.add(path = path + f + "/");
         }
+        return paths;
+    }
 
-        if (!paths.isEmpty()) {
-            QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
-            query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
-            QueryResult<File> result = fileDBAdaptor.getAllFiles(
-                    query,
-                    options);
-            result.getResult().sort(rootFirst? rootFirstComparator : rootLastComparator);
-            return result;
-        } else {
-            return new QueryResult<>();
-        }
+    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
+        List<String> paths = getParentPaths(filePath);
+
+        QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
+        query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
+        QueryResult<File> result = fileDBAdaptor.getAllFiles(
+                query,
+                options);
+        result.getResult().sort(rootFirst ? rootFirstComparator : rootLastComparator);
+        return result;
     }
 
     @Override
@@ -381,7 +382,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getFileACL(userId, id).isRead()) {
-            throw new CatalogException("Permission denied. User can't read file");
+            throw CatalogAuthorizationException.cantRead(userId, "File", id, null);
         }
 
         return fileDBAdaptor.getFile(id, options);

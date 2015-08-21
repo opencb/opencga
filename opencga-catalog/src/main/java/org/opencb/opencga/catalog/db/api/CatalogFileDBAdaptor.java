@@ -9,6 +9,9 @@ import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -118,6 +121,8 @@ public interface CatalogFileDBAdaptor {
      */
 
     QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
+
+    QueryResult<Map<String, List<Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
 
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 

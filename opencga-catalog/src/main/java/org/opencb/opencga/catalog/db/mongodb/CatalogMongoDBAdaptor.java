@@ -35,6 +35,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addCompQueryFilter;
@@ -758,6 +759,31 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
         List<Acl> acl = parseFile(queryResult).getAcl();
         return endQuery("get file acl", startTime, acl);
+    }
+
+    @Override
+    public QueryResult<Map<String, List<Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
+
+        long startTime = startQuery();
+        DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in", filePaths)));
+        DBObject unwind = new BasicDBObject("$unwind", "acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.user", new BasicDBObject("$in", userIds)));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
+
+        QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+
+        List<File> files = parseFiles(aggregate);
+        Map<String, List<Acl>> pathAclMap = new HashMap<>();
+        for (File file : files) {
+            if (pathAclMap.containsKey(file.getPath())) {
+                pathAclMap.get(file.getPath()).add(file.getAcl().get(0));
+            } else {
+                pathAclMap.put(file.getPath(), file.getAcl());
+            }
+        }
+//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
+
+        return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
     }
 
     @Override

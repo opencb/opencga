@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -111,7 +112,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
             }
             return projectResult;
         } else {
-            throw new CatalogDBException("Permission denied. Can't read project.");
+            throw CatalogAuthorizationException.cantRead(userId, "Project", projectId, null);
         }
     }
 

@@ -620,10 +620,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    /**
-     * TODO: Set per-file ACL
-     */
-    private QueryResult shareFile(int fileId, Acl acl, String sessionId)
+    public QueryResult shareFile(int fileId, Acl acl, String sessionId)
             throws CatalogException {
         return authorizationManager.setFileACL(fileId, acl, sessionId);
     }

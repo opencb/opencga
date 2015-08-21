@@ -215,7 +215,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
             }
             return studyResult;
         } else {
-            throw new CatalogDBException("Permission denied. Can't read this study");
+            throw CatalogAuthorizationException.cantRead(userId, "Study", studyId, null);
         }
     }
 
