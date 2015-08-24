@@ -10,10 +10,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -41,7 +38,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public Acl getProjectACL(String userId, int projectId) throws CatalogException {
         Acl projectAcl;
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return new Acl(userId, true, true, true, true);
         }
         boolean sameOwner = userDBAdaptor.getProjectOwnerId(projectId).equals(userId);
@@ -85,10 +82,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException {
-        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+        if (isOwner(studyId, userId)) {
             return;
         }
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return;
         }
 
@@ -124,11 +121,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException {
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return;
         }
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+        if (isOwner(studyId, userId)) {
             return;
         }
 
@@ -158,11 +155,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException {
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return;
         }
         int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+        if (isOwner(studyId, userId)) {
             return;
         }
 
@@ -254,7 +251,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public Acl getFileACL(String userId, int fileId) throws CatalogException {
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return new Acl(userId, true, true, true, true);
         }
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
@@ -305,6 +302,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
+        if (isAdmin(userId)) {
+            return;
+        }
         Iterator<Project> projectIt = projects.iterator();
         while (projectIt.hasNext()) {
             Project p = projectIt.next();
@@ -320,6 +320,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException {
+        if (isAdmin(userId)) {
+            return;
+        }
         Iterator<Study> studyIt = studies.iterator();
         while (studyIt.hasNext()) {
             Study s = studyIt.next();
@@ -352,13 +355,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterSamples(String userId, Acl studyAcl, List<Sample> samples) throws CatalogException {
+    public void filterSamples(String userId, int studyId, List<Sample> samples) throws CatalogException {
         if (samples == null || samples.isEmpty()) {
             return;
         }
-        if (studyAcl == null) {
-            studyAcl = getStudyACL(userId, sampleDBAdaptor.getStudyIdBySampleId(samples.get(0).getId()));
+        if (isAdmin(userId) || isOwner(studyId, userId)) {
+            return;
         }
+        Acl studyAcl = getStudyACL(userId, studyId);
         Iterator<Sample> sampleIterator = samples.iterator();
         while (sampleIterator.hasNext()) {
             Sample sample = sampleIterator.next();
@@ -371,6 +375,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterJobs(String userId, List<Job> jobs) throws CatalogException {
+        if (isAdmin(userId)) {
+            return;
+        }
         job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
             if (job.getOutput() == null || job.getInput() == null) {
@@ -386,6 +393,34 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
                     iterator.remove();
                     break job_loop;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException {
+        if (isAdmin(userId) || isOwner(studyId, userId)) {
+            return;
+        }
+        Acl studyAcl;
+        studyAcl = getStudyACL(userId, studyId);
+
+        Map<Integer, Acl> sampleAclMap = new HashMap<>();
+
+        for (Iterator<Cohort> iterator = cohorts.iterator(); iterator.hasNext(); ) {
+            Cohort cohort = iterator.next();
+            for (Integer sampleId : cohort.getSamples()) {
+                Acl sampleACL;
+                if (sampleAclMap.containsKey(sampleId)) {
+                    sampleACL = sampleAclMap.get(sampleId);
+                } else {
+                    sampleACL = getSampleACL(userId, sampleId, studyAcl);
+                    sampleAclMap.put(sampleId, sampleACL);
+                }
+                if (!sampleACL.isRead()) {
+                    iterator.remove();  //Remove cohort.
+                    break;              //Stop checking cohort
                 }
             }
         }
@@ -413,11 +448,26 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkReadJob(String userId, Job job) throws CatalogException {
-        for (Integer fileId : job.getOutput()) {
-            checkFilePermission(fileId, userId, CatalogPermission.READ);
+        try {
+            for (Integer fileId : job.getOutput()) {
+                checkFilePermission(fileId, userId, CatalogPermission.READ);
+            }
+            for (Integer fileId : job.getInput()) {
+                checkFilePermission(fileId, userId, CatalogPermission.READ);
+            }
+        } catch (CatalogAuthorizationException e) {
+            throw CatalogAuthorizationException.cantRead(userId, "Job", job.getId(), job.getName());
         }
-        for (Integer fileId : job.getInput()) {
-            checkFilePermission(fileId, userId, CatalogPermission.READ);
+    }
+
+    @Override
+    public void checkReadCohort(String userId, Cohort cohort) throws CatalogException {
+        try {
+            for (Integer sampleId : cohort.getSamples()) {
+                checkSamplePermission(sampleId, userId, CatalogPermission.READ);
+            }
+        } catch (CatalogAuthorizationException e) {
+            throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohort.getId(), cohort.getName());
         }
     }
 
@@ -466,7 +516,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     public Acl getStudyACL(String userId, int studyId, Acl projectAcl) throws CatalogException {
         Acl studyAcl;
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        if (isAdmin(userId)) {
             return new Acl(userId, true, true, true, true);
         }
         boolean sameOwner = studyDBAdaptor.getStudyOwnerId(studyId).equals(userId);
@@ -495,6 +545,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      */
     public Acl getFileACL(String userId, int fileId, Acl studyAcl) throws CatalogException {
         return __getFileAcl(userId, fileDBAdaptor.getStudyIdByFileId(fileId), fileId, studyAcl);
+    }
+
+    private boolean isOwner(int studyId, String userId) throws CatalogDBException {
+        return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
+    }
+
+    private boolean isAdmin(String userId) throws CatalogException {
+        return getUserRole(userId).equals(User.Role.ADMIN);
     }
 
     //TODO: Check folder ACLs

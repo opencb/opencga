@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
@@ -152,7 +151,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         query.put(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId);
         QueryResult<Sample> queryResult = sampleDBAdaptor.getAllSamples(query);
 
-        authorizationManager.filterSamples(userId, null, queryResult.getResult());
+        authorizationManager.filterSamples(userId, studyId, queryResult.getResult());
+        queryResult.setNumResults(queryResult.getResult().size());
 
         return queryResult;
     }
@@ -275,22 +275,31 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-        //TODO: Filter cohorts
-        return sampleDBAdaptor.getCohort(cohortId);
+
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.getCohort(cohortId);
+        authorizationManager.checkReadCohort(userId, queryResult.first());
+
+        return queryResult;
 
     }
 
     @Override
     public QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-        //TODO: Filter Cohorts
-        return sampleDBAdaptor.getAllCohorts(studyId, options);
+
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.getAllCohorts(studyId, options);
+        authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
+        queryResult.setNumResults(queryResult.getResult().size());
+        return queryResult;
     }
 
     @Override
@@ -305,6 +314,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         if (!sampleIds.isEmpty() && readAll(studyId, new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), sampleIds), null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         return sampleDBAdaptor.createCohort(studyId, cohort);
     }

@@ -143,6 +143,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         query.put("studyId", studyId);
         QueryResult<Job> queryResult = readAll(query, options, sessionId);
         authorizationManager.filterJobs(userId, queryResult.getResult());
+        queryResult.setNumResults(queryResult.getResult().size());
+
         return queryResult;
     }
 
@@ -164,6 +166,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
         QueryResult<Job> queryResult = jobDBAdaptor.getAllJobs(query, options);
         authorizationManager.filterJobs(userId, queryResult.getResult());
+        queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
 

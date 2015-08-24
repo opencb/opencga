@@ -12,13 +12,11 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Acl;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -373,6 +371,13 @@ public class CatalogAuthorizationManagerTest {
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));
         assertFalse(sampleMap.containsKey(smp3));
+    }
+
+    @Test
+    public void readCohort() throws CatalogException {
+        int all = catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first().getId();
+        assertEquals(1, catalogManager.getAllCohorts(s1, null, ownerSessionId).getNumResults());
+        assertEquals(0, catalogManager.getAllCohorts(s1, null, memberSessionId).getNumResults());
     }
 
     /////////// Aux methods

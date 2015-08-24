@@ -27,6 +27,8 @@ public interface AuthorizationManager {
 
     void checkReadJob(String userId, Job job) throws CatalogException;
 
+    void checkReadCohort(String userId, Cohort cohort) throws CatalogException;
+
     User.Role getUserRole(String userId) throws CatalogException;
 
     @Deprecated
@@ -85,13 +87,14 @@ public interface AuthorizationManager {
      * Removes from the list the samples that the user can not read.
      *
      * @param userId   UserId
-     * @param studyAcl Study ACL
      * @param samples  Samples list
      * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
-    void filterSamples(String userId, Acl studyAcl, List<Sample> samples) throws CatalogException;
+    void filterSamples(String userId, int studyId, List<Sample> samples) throws CatalogException;
 
     void filterJobs(String userId, List<Job> jobs) throws CatalogException;
+
+    void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException;
 
     /*--------------------------*/
     // Group management methods
