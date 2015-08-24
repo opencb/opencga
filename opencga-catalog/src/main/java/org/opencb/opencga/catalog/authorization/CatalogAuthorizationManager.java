@@ -270,6 +270,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(userId, "userId");
+
+        checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+
+        return fileDBAdaptor.unsetFileAcl(fileId, userId);
+    }
+
+    @Override
     public Acl getSampleACL(String userId, int sampleId) throws CatalogException {
         return getSampleACL(userId, sampleId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
     }
@@ -298,6 +308,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
 
         return sampleDBAdaptor.setSampleAcl(sampleId, acl);
+    }
+
+    @Override
+    public QueryResult unsetSampleACL(int sampleId, String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(userId, "userId");
+
+        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+
+        return sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
     }
 
     @Override

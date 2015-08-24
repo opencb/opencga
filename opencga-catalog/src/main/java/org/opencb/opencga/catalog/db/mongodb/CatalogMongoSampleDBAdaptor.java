@@ -241,6 +241,20 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("setSampleAcl", startTime, queryResult);
     }
 
+    @Override
+    public QueryResult unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject(_ID, sampleId);;
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+
+        QueryResult queryResult = sampleCollection.update(query, update, null);
+
+        return endQuery("unsetSampleAcl", startTime);
+
+    }
+
 
     @Override
     public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {

@@ -126,6 +126,8 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
 
+    QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException;
+
     /**
      * Dataset methods
      * ***************************

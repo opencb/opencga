@@ -219,6 +219,14 @@ public class CatalogAuthorizationManagerTest {
     }
 
     @Test
+    public void readExplicitlyUnsharedFile() throws CatalogException {
+        catalogManager.getFile(data_d1, memberSessionId);
+        catalogManager.unshareFile(data_d1, memberUser, ownerSessionId);
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getFile(data_d1, memberSessionId);
+    }
+
+    @Test
     public void readInheritedSharedFile() throws CatalogException {
         catalogManager.getFile(data_d1_d2, memberSessionId);
     }
@@ -308,6 +316,14 @@ public class CatalogAuthorizationManagerTest {
 
     @Test
     public void readSampleExplicitShared() throws CatalogException {
+        catalogManager.getSample(smp1, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleExplicitUnshared() throws CatalogException {
+        catalogManager.getSample(smp1, null, memberSessionId);
+        catalogManager.unshareSample(smp1, memberUser, ownerSessionId);
+        thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSample(smp1, null, memberSessionId);
     }
 

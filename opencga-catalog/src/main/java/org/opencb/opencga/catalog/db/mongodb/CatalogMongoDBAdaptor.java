@@ -870,19 +870,31 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         List<Acl> aclList = getFileAcl(fileId, userId).getResult();
-        DBObject match;
-        DBObject updateOperation;
+        DBObject query;
+        DBObject update;
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
-            match = new BasicDBObject(_ID, fileId);
-            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+            query = new BasicDBObject(_ID, fileId);
+            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
         } else {    // there is already another ACL: overwrite
-            match = BasicDBObjectBuilder
+            query = BasicDBObjectBuilder
                     .start(_ID, fileId)
                     .append("acl.userId", userId).get();
-            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
-        QueryResult update = fileCollection.update(match, updateOperation, null);
-        return endQuery("set file acl", startTime);
+        QueryResult queryResult = fileCollection.update(query, update, null);
+        return endQuery("setFileAcl", startTime);
+    }
+
+    @Override
+    public QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject(_ID, fileId);;
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+
+        QueryResult queryResult = fileCollection.update(query, update, null);
+
+        return endQuery("unsetFileAcl", startTime);
     }
 
     public QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException {

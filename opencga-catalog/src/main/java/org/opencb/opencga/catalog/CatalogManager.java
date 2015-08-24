@@ -456,10 +456,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.update(studyId, parameters, null, sessionId);
     }
 
-    public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
-        return authorizationManager.setStudyACL(studyId, acl, sessionId);
-    }
-
     public QueryResult addMemberToGroup(int studyId, String groupId, String userId, String sessionId) throws CatalogException {
         return authorizationManager.addMember(studyId, groupId, userId, sessionId);
     }
@@ -633,6 +629,11 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setFileACL(fileId, acl, sessionId);
     }
 
+    public QueryResult unshareFile(int fileId, String userId, String sessionId)
+            throws CatalogException {
+        return authorizationManager.unsetFileACL(fileId, userId, sessionId);
+    }
+
     /*Require role admin*/
     public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -779,6 +780,11 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult shareSample(int sampleId, Acl acl, String sessionId)
             throws CatalogException {
         return authorizationManager.setSampleACL(sampleId, acl, sessionId);
+    }
+
+    public QueryResult unshareSample(int sampleId, String userId, String sessionId)
+            throws CatalogException {
+        return authorizationManager.unsetSampleACL(sampleId, userId, sessionId);
     }
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
