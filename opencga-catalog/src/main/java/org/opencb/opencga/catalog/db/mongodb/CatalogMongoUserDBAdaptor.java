@@ -53,6 +53,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
     }
 
     @Override
+    public void checkUserExists(String userId) throws CatalogDBException {
+        checkUserExist(userId, userCollection);
+    }
+
+    @Override
     public QueryResult<User> createUser(String userId, String userName, String email, String password,
                                         String organization, QueryOptions options) throws CatalogDBException {
         checkParameter(userId, "userId");

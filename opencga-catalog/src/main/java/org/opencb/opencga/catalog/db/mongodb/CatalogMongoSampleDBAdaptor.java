@@ -199,6 +199,49 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
     }
 
+    public QueryResult<Acl> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+
+        DBObject query = new BasicDBObject(_ID, sampleId);
+        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
+
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);
+        Sample sample = parseObject(queryResult, Sample.class);
+        if (queryResult.getNumResults() == 0 || sample == null) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
+
+        return endQuery("get file acl", startTime, sample.getAcl());
+    }
+
+    @Override
+    public QueryResult setSampleAcl(int sampleId, Acl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        String userId = acl.getUserId();
+        DBObject query;
+        DBObject newAclObject = getDbObject(acl, "ACL");
+        DBObject update;
+
+        List<Acl> aclList = getSampleAcl(sampleId, userId).getResult();
+        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
+            query = new BasicDBObject(_ID, sampleId);
+            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            query = BasicDBObjectBuilder
+                    .start(_ID, sampleId)
+                    .append("acl.userId", userId).get();
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+
+        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+
+        return endQuery("setSampleAcl", startTime, queryResult);
+    }
+
+
     @Override
     public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
         long startTime = startQuery();

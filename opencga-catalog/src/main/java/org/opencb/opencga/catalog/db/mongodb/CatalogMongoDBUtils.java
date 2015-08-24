@@ -37,6 +37,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
+
 /**
  * Created by imedina on 21/11/14.
  */
@@ -78,12 +80,15 @@ class CatalogMongoDBUtils {
         return result.getResult().get(0).getInt(field);
     }
 
-    static void checkUserExist(String userId, boolean exists, MongoDBCollection UserMongoDBCollection) throws CatalogDBException {
+    static void checkUserExist(String userId, MongoDBCollection userCollection) throws CatalogDBException {
         if (userId == null) {
             throw new CatalogDBException("userId param is null");
         }
         if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
+        }
+        if (userCollection.count(new BasicDBObject(_ID, userId)).first().equals(Long.valueOf(0))) {
+            throw CatalogDBException.idNotFound("User", userId);
         }
 
     }

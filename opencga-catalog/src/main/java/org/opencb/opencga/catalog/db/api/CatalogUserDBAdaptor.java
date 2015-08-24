@@ -22,6 +22,8 @@ public interface CatalogUserDBAdaptor {
 
     boolean userExists(String userId);
 
+    void checkUserExists(String userId) throws CatalogDBException;
+
     QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
     throws CatalogDBException;
 

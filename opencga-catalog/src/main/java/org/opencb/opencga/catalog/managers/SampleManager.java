@@ -124,7 +124,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        Sample sample = new Sample(-1, name, source, -1, description, Collections.<AnnotationSet>emptyList(),
+        Sample sample = new Sample(-1, name, source, -1, description, Collections.<Acl>emptyList(), Collections.<AnnotationSet>emptyList(),
                 attributes);
 
         return sampleDBAdaptor.createSample(studyId, sample, options);

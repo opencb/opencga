@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.authorization;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -153,6 +154,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     }
 
+    @Override
+    public void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException {
+
+    }
+
     public Acl resolveFileAcl(int fileId, String userId, int studyId) throws CatalogException {
         Group group = getGroupBelonging(studyId, userId);
         if (group == null) {
@@ -238,7 +244,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) {
+    public QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) throws CatalogException {
+//        ParamUtils.checkObj(acl, "acl");
+//        ParamUtils.checkParameter(sessionId, "sessionId");
+//
+//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
+//
+//
+//        return sampleDBAdaptor.setSampleAcl(sampleId, acl);
         throw new UnsupportedOperationException("Unimplemented");
     }
 

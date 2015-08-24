@@ -821,12 +821,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 .start("acl",
                         new BasicDBObject("$elemMatch",
                                 new BasicDBObject("userId", userId)))
-                .append("_id", false)
+                .append(_ID, false)
                 .get();
 
         QueryResult queryResult = fileCollection.find(new BasicDBObject(_ID, fileId), projection, null);
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("getFileAcl: There is no file with fileId = " + fileId);
+            throw CatalogDBException.idNotFound("File", fileId);
         }
         List<Acl> acl = parseFile(queryResult).getAcl();
         return endQuery("get file acl", startTime, acl);
@@ -864,9 +864,8 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
-        if (!userDBAdaptor.userExists(userId)) {
-            throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
-        }
+
+        this.getCatalogUserDBAdaptor().checkUserExists(userId);
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 

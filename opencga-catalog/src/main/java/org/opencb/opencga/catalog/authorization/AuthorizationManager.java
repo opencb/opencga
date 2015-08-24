@@ -4,6 +4,7 @@ package org.opencb.opencga.catalog.authorization;
 //import java.security.acl.Acl;
 
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -19,6 +20,8 @@ public interface AuthorizationManager {
     void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException;
 
     void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException;
+
+    void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException;
 
     User.Role getUserRole(String userId) throws CatalogException;
 
@@ -41,7 +44,7 @@ public interface AuthorizationManager {
     @Deprecated
     Acl getSampleACL(String userId, int sampleId) throws CatalogException;
 
-    QueryResult setSampleACL(int sampleId, Acl acl, String sessionId);
+    QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.
