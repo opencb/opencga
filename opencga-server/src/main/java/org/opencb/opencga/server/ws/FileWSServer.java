@@ -30,10 +30,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
@@ -786,6 +784,30 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             int fileId = catalogManager.getFileId(fileIdStr);
             QueryResult queryResult = catalogManager.modifyFile(fileId, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{fileId}/share")
+    @ApiOperation(value = "Share file with other user", position = 16)
+    public Response share(@PathParam(value = "fileId") String fileIdStr,
+                          @ApiParam(value = "User you want to share the file with", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
+                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
+                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
+                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
+                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
+        try {
+            int fileId = catalogManager.getFileId(fileIdStr);
+            QueryResult queryResult;
+            if (unshare) {
+                queryResult = catalogManager.unshareFile(fileId, userId, sessionId);
+            } else {
+                queryResult = catalogManager.shareFile(fileId, new Acl(userId, read, write, false, delete), sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
