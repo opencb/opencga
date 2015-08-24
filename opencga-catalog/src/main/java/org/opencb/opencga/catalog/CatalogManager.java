@@ -776,6 +776,11 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
 
+    public QueryResult shareSample(int sampleId, Acl acl, String sessionId)
+            throws CatalogException {
+        return authorizationManager.setSampleACL(sampleId, acl, sessionId);
+    }
+
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,

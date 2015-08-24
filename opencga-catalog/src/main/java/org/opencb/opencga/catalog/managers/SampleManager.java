@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -51,10 +52,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't modify study");
-        }
+        authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
 
         QueryResult<VariableSet> variableSetResult = sampleDBAdaptor.getVariableSet(variableSetId, null);
         if (variableSetResult.getResult().isEmpty()) {
@@ -135,11 +133,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
+        authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.READ);
 
         return sampleDBAdaptor.getSample(sampleId, options);
     }
@@ -151,13 +146,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
         query.putAll(options);
         query.put(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId);
-        return sampleDBAdaptor.getAllSamples(query);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.getAllSamples(query);
+
+        authorizationManager.filterSamples(userId, null, queryResult.getResult());
+
+        return queryResult;
     }
 
     @Override
@@ -167,31 +164,28 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> update(Integer id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Sample> update(Integer sampleId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. User " + userId + " can't read study");
-        }
+        authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
+
         options.putAll(parameters);
-        return sampleDBAdaptor.modifySample(id, options);
+        return sampleDBAdaptor.modifySample(sampleId, options);
 
     }
 
     @Override
-    public QueryResult<Sample> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(id, "sampleId");
+    public QueryResult<Sample> delete(Integer sampleId, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(sampleId, "sampleId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = sampleDBAdaptor.getStudyIdBySampleId(id);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
-        return sampleDBAdaptor.deleteSample(id);
+
+        authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.DELETE);
+
+        return sampleDBAdaptor.deleteSample(sampleId);
     }
 
     /*

@@ -5,6 +5,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
@@ -423,12 +424,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                     throw new CatalogDBException("Permission denied. StudyId or Admin role required");
             }
         } else {
-            if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-                throw new CatalogException("Permission denied. User " + userId + " can't read data from the study " + studyId);
-            }
-            query.put("studyId", studyId);
+            authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+            query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
         }
-        return fileDBAdaptor.getAllFiles(query, options);
+        QueryResult<File> queryResult = fileDBAdaptor.getAllFiles(query, options);
+        authorizationManager.filterFiles(userId, null, queryResult.getResult());
+        return queryResult;
     }
 
     @Override
@@ -656,9 +657,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+
         for (Integer fileId : files) {
             if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
                 throw new CatalogException("Can't create a dataset with files from different files.");
@@ -676,13 +676,14 @@ public class FileManager extends AbstractManager implements IFileManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = fileDBAdaptor.getStudyIdByDatasetId(dataSetId);
 
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw CatalogAuthorizationException.cantRead(userId, "DataSet", dataSetId, null);
+        QueryResult<Dataset> queryResult = fileDBAdaptor.getDataset(dataSetId, options);
+
+        for (Integer fileId : queryResult.first().getFiles()) {
+            authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
         }
 
-        return fileDBAdaptor.getDataset(dataSetId, options);
+        return queryResult;
     }
 
     @Override

@@ -46,10 +46,7 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw new CatalogException("Permission denied. Can't read job");
-        }
+        authorizationManager.checkReadJob(userId, jobId);
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
@@ -94,6 +91,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(commandLine, "commandLine");
         description = ParamUtils.defaultString(description, "");
         status = ParamUtils.defaultObject(status, Job.Status.PREPARED);
+        inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Integer>emptyList());
+        outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Integer>emptyList());
 
         // FIXME check inputFiles? is a null conceptually valid?
 
@@ -160,12 +159,12 @@ public class JobManager extends AbstractManager implements IJobManager {
                 throw new CatalogException("Permission denied. Can't get jobs without specify an StudyId");
             } else {
                 int studyId = query.getInt("studyId");
-                if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-                    throw new CatalogException("Permission denied. Can't get jobs");
-                }
+                authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
             }
         }
-        return jobDBAdaptor.getAllJobs(query, options);
+        QueryResult<Job> queryResult = jobDBAdaptor.getAllJobs(query, options);
+        authorizationManager.filterJobs(userId, queryResult.getResult());
+        return queryResult;
     }
 
     @Override

@@ -22,12 +22,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     final CatalogUserDBAdaptor userDBAdaptor;
     final CatalogStudyDBAdaptor studyDBAdaptor;
     final CatalogFileDBAdaptor fileDBAdaptor;
+    final CatalogJobDBAdaptor jobDBAdaptor;
     final CatalogSampleDBAdaptor sampleDBAdaptor;
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory) {
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
     }
 
@@ -122,11 +124,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException {
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+        if (getUserRole(userId).equals(User.Role.ADMIN)) {
             return;
         }
-        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
             return;
         }
 
@@ -149,13 +151,41 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 break;
         }
         if (!auth) {
-            throw CatalogAuthorizationException.denny(userId, permission.toString(), "File", studyId, null);
+            throw CatalogAuthorizationException.denny(userId, permission.toString(), "File", fileId, null);
         }
 
     }
 
     @Override
     public void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException {
+        if (getUserRole(userId).equals(User.Role.ADMIN)) {
+            return;
+        }
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        if (userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId)) {
+            return;
+        }
+
+        Acl sampleAcl = getSampleACL(userId, sampleId, studyId);
+
+        final boolean auth;
+        switch (permission) {
+            case READ:
+                auth = sampleAcl.isRead();
+                break;
+            case WRITE:
+                auth = sampleAcl.isWrite();
+                break;
+            case DELETE:
+                auth = sampleAcl.isDelete();
+                break;
+            default:
+                auth = false;
+                break;
+        }
+        if (!auth) {
+            throw CatalogAuthorizationException.denny(userId, permission.toString(), "Sample", sampleId, null);
+        }
 
     }
 
@@ -194,7 +224,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private Acl getStudyACL(String userId, Group group) {
-        return new Acl(userId, group.getPermissions().isRead(), group.getPermissions().isWrite(), false, group.getPermissions().isDelete());
+        if (group == null) {
+            return new Acl(userId, false, false, false, false);
+        } else {
+            return new Acl(userId, group.getPermissions().isRead(), group.getPermissions().isWrite(), false, group.getPermissions().isDelete());
+        }
     }
 
     @Override
@@ -240,20 +274,33 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public Acl getSampleACL(String userId, int sampleId) throws CatalogException {
-        return getStudyACL(userId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
+        return getSampleACL(userId, sampleId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
+    }
+
+    public Acl getSampleACL(String userId, int sampleId, int studyId) throws CatalogException {
+        return getSampleACL(userId, sampleId, getStudyACL(userId, studyId));
+    }
+
+    public Acl getSampleACL(String userId, int sampleId, Acl studyACL) throws CatalogException {
+        QueryResult<Acl> queryResult = sampleDBAdaptor.getSampleAcl(sampleId, userId);
+        Acl sampleAcl;
+        if (queryResult.getNumResults() == 0) {
+            sampleAcl = studyACL;
+        } else {
+            sampleAcl = queryResult.first();
+        }
+        return sampleAcl;
     }
 
     @Override
     public QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) throws CatalogException {
-//        ParamUtils.checkObj(acl, "acl");
-//        ParamUtils.checkParameter(sessionId, "sessionId");
-//
-//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-//        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
-//
-//
-//        return sampleDBAdaptor.setSampleAcl(sampleId, acl);
-        throw new UnsupportedOperationException("Unimplemented");
+        ParamUtils.checkObj(acl, "acl");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
+
+        return sampleDBAdaptor.setSampleAcl(sampleId, acl);
     }
 
     @Override
@@ -305,9 +352,30 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void filterSamples(String userId, Acl studyAcl, List<Sample> samples) throws CatalogException {
+        if (samples == null || samples.isEmpty()) {
+            return;
+        }
+        if (studyAcl == null) {
+            studyAcl = getStudyACL(userId, sampleDBAdaptor.getStudyIdBySampleId(samples.get(0).getId()));
+        }
+        Iterator<Sample> sampleIterator = samples.iterator();
+        while (sampleIterator.hasNext()) {
+            Sample sample = sampleIterator.next();
+            Acl sampleACL = getSampleACL(userId, sample.getId(), studyAcl);
+            if (!sampleACL.isRead()) {
+                sampleIterator.remove();
+            }
+        }
+    }
+
+    @Override
     public void filterJobs(String userId, List<Job> jobs) throws CatalogException {
         job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
+            if (job.getOutput() == null || job.getInput() == null) {
+                job = readJob(job.getId());
+            }
             for (Integer fileId : job.getOutput()) {
                 if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
                     iterator.remove();
@@ -321,6 +389,26 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 }
             }
         }
+    }
+
+    /**
+     * Read job information needed to check if can be read or not.
+     *
+     * @return Job : { id, input, output, outDirId }
+     */
+    private Job readJob(int jobId) throws CatalogDBException {
+        return jobDBAdaptor.getJob(jobId, new QueryOptions("include",
+                Arrays.asList("projects.studies.jobs.id",
+                        "projects.studies.jobs.input",
+                        "projects.studies.jobs.output",
+                        "projects.studies.jobs.outDirId")
+                )
+        ).first();
+    }
+
+    @Override
+    public void checkReadJob(String userId, int jobId) throws CatalogException {
+        checkReadJob(userId, readJob(jobId));
     }
 
     @Override

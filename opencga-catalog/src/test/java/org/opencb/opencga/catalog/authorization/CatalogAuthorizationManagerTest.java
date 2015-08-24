@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Acl;
 import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.InputStream;
@@ -31,12 +32,14 @@ import static org.junit.Assert.*;
  */
 public class CatalogAuthorizationManagerTest {
 
-    private final String ownerUser = "user1";
-    private final String memberUser = "user2";
-    private final String externalUser = "user3";
+    private final String ownerUser = "owner";
+    private final String studyAdminUser = "studyAdmin";
+    private final String memberUser = "member";
+    private final String externalUser = "external";
     private final String password = "1234";
     private CatalogManager catalogManager;
     private String ownerSessionId;
+    private String studyAdminSessionId;
     private String memberSessionId;
     private String externalSessionId;
     private int p1;
@@ -49,6 +52,9 @@ public class CatalogAuthorizationManagerTest {
     private int data_d1_d2;
     private int data_d1_d2_d3;
     private int data_d1_d2_d3_d4;
+    private int smp1;
+    private int smp2;
+    private int smp3;
 
     @Before
     public void before () throws Exception {
@@ -61,10 +67,12 @@ public class CatalogAuthorizationManagerTest {
         catalogManager = new CatalogManager(properties);
 
         catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null);
+        catalogManager.createUser(studyAdminUser, studyAdminUser, "email@ccc.ccc", password, "ASDF", null);
         catalogManager.createUser(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null);
         catalogManager.createUser(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null);
 
         ownerSessionId = catalogManager.login(ownerUser, password, "localhost").first().get("sessionId").toString();
+        studyAdminSessionId = catalogManager.login(studyAdminUser, password, "localhost").first().get("sessionId").toString();
         memberSessionId = catalogManager.login(memberUser, password, "localhost").first().get("sessionId").toString();
         externalSessionId = catalogManager.login(externalUser, password, "localhost").first().get("sessionId").toString();
 
@@ -78,10 +86,17 @@ public class CatalogAuthorizationManagerTest {
 
         catalogManager.shareProject(p1, new Acl(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
+        catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser, ownerSessionId);
 
         catalogManager.shareFile(data_d1, new Acl(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3, new Acl(memberUser, false, false, false, false), ownerSessionId);
 
+        smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
+        smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
+        smp3 = catalogManager.createSample(s1, "smp3", null, null, null, null, ownerSessionId).first().getId();
+        catalogManager.shareSample(smp1, new Acl(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp3, new Acl(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp2, new Acl(studyAdminUser, false, false, false, false), ownerSessionId);
 
     }
 
@@ -278,6 +293,87 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.createFolder(s1, Paths.get("data/my_folder/"), false, null, externalSessionId);
     }
 
+    /*--------------------------*/
+    // Read Samples
+    /*--------------------------*/
+
+    @Test
+    public void readSampleOwnerUser() throws CatalogException {
+        catalogManager.getSample(smp1, null, ownerSessionId);
+        catalogManager.getSample(smp2, null, ownerSessionId);
+        catalogManager.getSample(smp3, null, ownerSessionId);
+
+        //Owner always have access
+        catalogManager.shareSample(smp1, new Acl(ownerUser, false, false, false, false), ownerSessionId);
+        catalogManager.getSample(smp1, null, ownerSessionId);
+    }
+
+    @Test
+    public void readSampleExplicitShared() throws CatalogException {
+        catalogManager.getSample(smp1, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleNonShared() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getSample(smp2, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleExplicitForbidden() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getSample(smp3, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleExternalUser() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getSample(smp2, null, externalSessionId);
+    }
+
+    @Test
+    public void readSampleAdminUser() throws CatalogException {
+        catalogManager.getSample(smp1, null, studyAdminSessionId);
+        catalogManager.getSample(smp3, null, studyAdminSessionId);
+    }
+
+    @Test
+    public void readSampleForbiddenForSampleManagerUser() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getSample(smp2, null, studyAdminSessionId);
+    }
+
+    @Test
+    public void shareSampleBySampleManagerUser() throws CatalogException {
+        catalogManager.shareSample(smp2, new Acl(studyAdminUser, true, true, true, true), studyAdminSessionId);
+        catalogManager.getSample(smp2, null, studyAdminSessionId);
+    }
+
+    @Test
+    public void readAllSamplesOwner() throws CatalogException {
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), ownerSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+
+        assertTrue(sampleMap.containsKey(smp1));
+        assertTrue(sampleMap.containsKey(smp2));
+        assertTrue(sampleMap.containsKey(smp3));
+    }
+    @Test
+    public void readAllSamplesAdmin() throws CatalogException {
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdminSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+
+        assertTrue(sampleMap.containsKey(smp1));
+        assertFalse(sampleMap.containsKey(smp2));
+        assertTrue(sampleMap.containsKey(smp3));
+    }
+
+    @Test
+    public void readAllSamplesMember() throws CatalogException {
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), memberSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+
+        assertTrue(sampleMap.containsKey(smp1));
+        assertFalse(sampleMap.containsKey(smp2));
+        assertFalse(sampleMap.containsKey(smp3));
+    }
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {
