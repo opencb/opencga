@@ -36,45 +36,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    @Deprecated
-    public AclEntry getProjectACL(String userId, int projectId) throws CatalogException {
-        AclEntry projectAcl;
-        if (isAdmin(userId)) {
-            return new AclEntry(userId, true, true, true, true);
-        }
-        boolean sameOwner = userDBAdaptor.getProjectOwnerId(projectId).equals(userId);
-
-        if (sameOwner) {
-            projectAcl = new AclEntry(userId, true, true, true, true);
-        } else {
-            QueryResult<AclEntry> result = userDBAdaptor.getProjectAcl(projectId, userId);
-            if (!result.getResult().isEmpty()) {
-                projectAcl = result.getResult().get(0);
-            } else {
-                QueryResult<AclEntry> resultAll = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    projectAcl = resultAll.getResult().get(0);
-                } else {
-                    projectAcl = new AclEntry(userId, false, false, false, false);
-                }
-            }
-        }
-        return projectAcl;
-    }
-
-    @Override
-    @Deprecated
-    public QueryResult setProjectACL(int projectId, AclEntry acl, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(acl, "acl");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
-
-        return userDBAdaptor.setProjectAcl(projectId, acl);
-    }
-
-    @Override
     public void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException {
         if (!isAdmin(userId) && !userDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
             throw CatalogAuthorizationException.denny(userId, permission.toString(), "Project", projectId, null);
@@ -272,31 +233,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    @Deprecated
-    public QueryResult setStudyACL(int studyId, AclEntry acl, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(acl, "acl");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        AclEntry studyACL = getStudyACL(userId, studyId);
-        if (!studyACL.isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
-
-        return studyDBAdaptor.setStudyAcl(studyId, acl);
-    }
-
-    @Override
-    @Deprecated
-    public AclEntry getFileACL(String userId, int fileId) throws CatalogException {
-        if (isAdmin(userId)) {
-            return new AclEntry(userId, true, true, true, true);
-        }
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        return getFileACL(userId, fileId, getStudyACL(userId, studyId));
-    }
-
-    @Override
     public QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException {
         ParamUtils.checkObj(acl, "acl");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -315,29 +251,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
 
         return fileDBAdaptor.unsetFileAcl(fileId, userId);
-    }
-
-    @Override
-    @Deprecated
-    public AclEntry getSampleACL(String userId, int sampleId) throws CatalogException {
-        return getSampleACL(userId, sampleId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
-    }
-
-    @Deprecated
-    private AclEntry getSampleACL(String userId, int sampleId, int studyId) throws CatalogException {
-        return getSampleACL(userId, sampleId, getStudyACL(userId, studyId));
-    }
-
-    @Deprecated
-    private AclEntry getSampleACL(String userId, int sampleId, AclEntry studyACL) throws CatalogException {
-        QueryResult<AclEntry> queryResult = sampleDBAdaptor.getSampleAcl(sampleId, userId);
-        AclEntry sampleAcl;
-        if (queryResult.getNumResults() == 0) {
-            sampleAcl = studyACL;
-        } else {
-            sampleAcl = queryResult.first();
-        }
-        return sampleAcl;
     }
 
     @Override
@@ -587,52 +500,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
     }
 
-    @Deprecated
-    private AclEntry mergeAcl(String userId, AclEntry acl1, AclEntry acl2) {
-        return new AclEntry(
-                userId,
-                acl1.isRead() && acl2.isRead(),
-                acl1.isWrite() && acl2.isWrite(),
-                acl1.isExecute() && acl2.isExecute(),
-                acl1.isDelete() && acl2.isDelete()
-        );
-    }
-
-
-    @Deprecated
-    private AclEntry getStudyACL(String userId, int studyId, AclEntry projectAcl) throws CatalogException {
-        AclEntry studyAcl;
-        if (isAdmin(userId)) {
-            return new AclEntry(userId, true, true, true, true);
-        }
-        boolean sameOwner = studyDBAdaptor.getStudyOwnerId(studyId).equals(userId);
-
-        if (sameOwner) {
-            studyAcl = new AclEntry(userId, true, true, true, true);
-        } else {
-            QueryResult<AclEntry> result = studyDBAdaptor.getStudyAcl(studyId, userId);
-            if (!result.getResult().isEmpty()) {
-                studyAcl = result.getResult().get(0);
-            } else {
-                QueryResult<AclEntry> resultAll = studyDBAdaptor.getStudyAcl(studyId, AclEntry.USER_OTHERS_ID);
-                if (!resultAll.getResult().isEmpty()) {
-                    studyAcl = resultAll.getResult().get(0);
-                } else {
-                    //studyAcl = new Acl(userId, false, false, false, false);
-                    studyAcl = projectAcl;
-                }
-            }
-        }
-        return mergeAcl(userId, projectAcl, studyAcl);
-    }
 
     /**
      * Use StudyACL for all files.
      */
-    @Deprecated
-    public AclEntry getFileACL(String userId, int fileId, AclEntry studyAcl) throws CatalogException {
-        return __getFileAcl(userId, fileDBAdaptor.getStudyIdByFileId(fileId), fileId, studyAcl);
-    }
 
     private boolean isOwner(int studyId, String userId) throws CatalogDBException {
         return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
@@ -644,53 +515,5 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     //TODO: Check folder ACLs
     private final QueryOptions fileIncludeQueryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
-
-    @Deprecated
-    private AclEntry __getFileAcl(String userId, int studyId, int fileId, AclEntry studyAcl) throws CatalogException {
-        AclEntry fileAcl = null;
-        boolean sameOwner = fileDBAdaptor.getFileOwnerId(fileId).equals(userId);
-
-        if (sameOwner) {
-            fileAcl = new AclEntry(userId, true, true, true, true);
-        } else {
-            File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
-            List<String> paths = FileManager.getParentPaths(file.getPath());
-            Map<String, Map<String, AclEntry>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, AclEntry.USER_OTHERS_ID)).first();
-
-            for (int i = paths.size() - 1; i >= 0; i--) {
-                String path = paths.get(i);
-                if (pathAclMap.containsKey(path)) {
-                    //Get first the user AclEntry
-                    fileAcl = pathAclMap.get(path).get(userId);
-                    //If missing, get Others AclEntry
-                    if (fileAcl == null) {
-                        fileAcl = pathAclMap.get(path).get(AclEntry.USER_OTHERS_ID);
-                    }
-                    if (fileAcl != null) {
-                        break;
-                    }
-                }
-            }
-//            for (String path : paths) {
-//                if (pathAclMap.containsKey(path)) {
-//                    mergeAcl(userId, )
-//                }
-//            }
-//
-//            if (!result.getResult().isEmpty()) {
-//                fileAcl = result.getResult().get(0);
-//            } else {
-//                QueryResult<Acl> resultAll = fileDBAdaptor.getFileAcl(fileId, Acl.USER_OTHERS_ID);
-//                if (!resultAll.getResult().isEmpty()) {
-//                    fileAcl = resultAll.getResult().get(0);
-//                } else {
-//                    //fileAcl = new Acl(userId, false, false, false, false);
-//                    fileAcl = studyAcl;
-//                }
-//            }
-        }
-        return fileAcl == null ? studyAcl : fileAcl;
-//        return mergeAcl(userId, fileAcl, studyAcl);
-    }
 
 }

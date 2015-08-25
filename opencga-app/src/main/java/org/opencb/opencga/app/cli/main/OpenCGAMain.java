@@ -281,15 +281,15 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "share": {
-                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-
-                        int projectId = catalogManager.getProjectId(c.id);
-                        QueryResult result = catalogManager.shareProject(projectId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(createOutput(c.cOpt, result, null));
-
-                        break;
-                    }
+//                    case "share": {
+//                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
+//
+//                        int projectId = catalogManager.getProjectId(c.id);
+//                        QueryResult result = catalogManager.shareProject(projectId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
+//                        System.out.println(createOutput(c.cOpt, result, null));
+//
+//                        break;
+//                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -429,15 +429,15 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "share": {
-                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-
-                        int studyId = catalogManager.getStudyId(c.id);
-                        QueryResult result = catalogManager.shareProject(studyId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(createOutput(c.cOpt, result, null));
-
-                        break;
-                    }
+//                    case "share": {
+//                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
+//
+//                        int studyId = catalogManager.getStudyId(c.id);
+//                        QueryResult result = catalogManager.shareProject(studyId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
+//                        System.out.println(createOutput(c.cOpt, result, null));
+//
+//                        break;
+//                    }
                     default:
                         optionsParser.printUsage();
                         break;

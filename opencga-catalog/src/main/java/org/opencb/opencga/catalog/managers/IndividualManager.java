@@ -91,6 +91,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
             throw CatalogAuthorizationException.cantRead(userId, "Study", studyId, null);
         }
+        //TODO: FilterIndividuals
 
         return individualDBAdaptor.getAllIndividuals(studyId, options);
     }

@@ -118,7 +118,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, "active", "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<AclEntry>emptyList(),
-                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null, Arrays.asList(new AclEntry("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
+                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null, Collections.<Experiment>emptyList(),
                                                 Arrays.asList(
                                                         new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, null, "", File.Status.READY, 1000),
                                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, null, "", File.Status.READY, 1000)
@@ -428,10 +428,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId2 = catalogUserDBAdaptor.getProjectId(user1.getId(), "P2");
 
         Study s = new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null);
-        LinkedList<AclEntry> acl = new LinkedList<>();
-        acl.push(new AclEntry("jcoll", false, true, true, true));
-        acl.push(new AclEntry("jmmut", false, false, true, false));
-        s.setAcl(acl);
         System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));
         System.out.println(catalogDBAdaptor.createStudy(projectId2, s, null));
         s = new Study("Phase 3", "ph3", Study.Type.CASE_CONTROL, "", "", null);
@@ -566,34 +562,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         assertFalse("ModifyStudy must NO modify the alias ", unexpectedNewAlias.equals(study.getAlias()));
         assertFalse(modifiedParams.containsKey("alias"));
-    }
-
-    @Test
-    public void getStudyAclTest() throws CatalogDBException {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        List<AclEntry> jmmut = catalogDBAdaptor.getStudyAcl(studyId, "jmmut").getResult();
-        assertTrue(!jmmut.isEmpty());
-        System.out.println(jmmut.get(0));
-        List<AclEntry> noUser = catalogDBAdaptor.getStudyAcl(studyId, "noUser").getResult();
-        assertTrue(noUser.isEmpty());
-    }
-
-    @Test
-    public void setStudyAclTest() throws CatalogDBException {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        System.out.println(studyId);
-
-        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        catalogDBAdaptor.setStudyAcl(studyId, granted);
-        granted.setUserId("imedina");
-        catalogDBAdaptor.setStudyAcl(studyId, granted);
-        try {
-            granted.setUserId("noUser");
-            catalogDBAdaptor.setStudyAcl(studyId, granted);
-            fail("error: expected exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
     }
 
     /**

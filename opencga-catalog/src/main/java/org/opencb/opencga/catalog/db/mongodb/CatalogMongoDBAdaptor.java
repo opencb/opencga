@@ -425,39 +425,6 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<AclEntry> getStudyAcl(int studyId, String userId) throws CatalogDBException {
-        long startTime = startQuery();
-        BasicDBObject query = new BasicDBObject(_ID, studyId);
-        BasicDBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
-        QueryResult<DBObject> dbObjectQueryResult = studyCollection.find(query, projection, null);
-        List<Study> studies = parseStudies(dbObjectQueryResult);
-        if(studies.isEmpty()) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        } else {
-            List<AclEntry> acl = studies.get(0).getAcl();
-            return endQuery("getStudyAcl", startTime, acl);
-        }
-    }
-
-    @Override
-    public QueryResult setStudyAcl(int studyId, AclEntry newAcl) throws CatalogDBException {
-        String userId = newAcl.getUserId();
-        if (!userDBAdaptor.userExists(userId)) {
-            throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
-        }
-
-        DBObject newAclObject = getDbObject(newAcl, "ACL");
-
-        BasicDBObject query = new BasicDBObject(_ID, studyId);
-        BasicDBObject pull = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", newAcl.getUserId())));
-        BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-        studyCollection.update(query, pull, null);
-        studyCollection.update(query, push, null);
-
-        return getStudyAcl(studyId, userId);
-    }
-
-    @Override
     public QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 

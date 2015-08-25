@@ -127,13 +127,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         LinkedList<File> files = new LinkedList<>();
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
-        LinkedList<AclEntry> acls = new LinkedList<>();
 
-        /* Add default ACL */
-        if (!creatorId.equals(projectOwnerId)) {
-            //Add full permissions for the creator if he is not the owner
-            acls.add(new AclEntry(creatorId, true, true, true, true));
-        }
 
         //Copy generic permissions from the project.
 
@@ -150,7 +144,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
                 new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 

@@ -89,7 +89,6 @@ public class CatalogAuthorizationManagerTest {
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
 
-        catalogManager.shareProject(p1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
 
@@ -193,13 +192,13 @@ public class CatalogAuthorizationManagerTest {
 
     @Test
     public void readProject() throws CatalogException {
-        catalogManager.getProject(p1, null, memberSessionId);
+        catalogManager.getProject(p1, null, ownerSessionId);
     }
 
     @Test
     public void readProjectDenny() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getProject(p1, null, externalSessionId);
+        catalogManager.getProject(p1, null, memberSessionId);
     }
 
     /*--------------------------*/

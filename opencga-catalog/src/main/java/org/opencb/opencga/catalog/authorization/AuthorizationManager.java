@@ -1,8 +1,6 @@
 package org.opencb.opencga.catalog.authorization;
 
 
-//import java.security.acl.Acl;
-
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -33,26 +31,11 @@ public interface AuthorizationManager {
     User.Role getUserRole(String userId) throws CatalogException;
 
     @Deprecated
-    AclEntry getProjectACL(String userId, int projectId) throws CatalogException;
-
-    @Deprecated
-    QueryResult setProjectACL(int projectId, AclEntry acl, String sessionId) throws CatalogException;
-
-    @Deprecated
     AclEntry getStudyACL(String userId, int studyId) throws CatalogException;
-
-    @Deprecated
-    QueryResult setStudyACL(int studyId, AclEntry acl, String sessionId) throws CatalogException;
-
-    @Deprecated
-    AclEntry getFileACL(String userId, int fileId) throws CatalogException;
 
     QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException;
 
     QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException;
-
-    @Deprecated
-    AclEntry getSampleACL(String userId, int sampleId) throws CatalogException;
 
     QueryResult setSampleACL(int sampleId, AclEntry acl, String sessionId) throws CatalogException;
 
