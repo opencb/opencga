@@ -40,7 +40,7 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
         VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
 
         CellBaseClient cellBaseClient;
-        cellBaseClient = new CellBaseClient("wwwdev.ebi.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+        cellBaseClient = new CellBaseClient("bioinfodev.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
 //        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
 
         CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);

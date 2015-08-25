@@ -23,7 +23,7 @@
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
         <version>0.7-dev</version>
-        <relativePath>..</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-catalog</artifactId>
