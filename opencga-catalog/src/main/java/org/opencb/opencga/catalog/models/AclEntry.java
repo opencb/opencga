@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.models;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Acl {
+public class AclEntry {
 
     public static final String USER_OTHERS_ID = "*";
     private String userId;
@@ -30,10 +30,10 @@ public class Acl {
     private boolean delete;
 
 
-    public Acl() {
+    public AclEntry() {
     }
 
-    public Acl(String userId, boolean read, boolean write, boolean execute, boolean delete) {
+    public AclEntry(String userId, boolean read, boolean write, boolean execute, boolean delete) {
         this.userId = userId;
         this.read = read;
         this.write = write;
@@ -55,9 +55,9 @@ public class Acl {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Acl)) return false;
+        if (!(o instanceof AclEntry)) return false;
 
-        Acl acl = (Acl) o;
+        AclEntry acl = (AclEntry) o;
 
         if (delete != acl.delete) return false;
         if (execute != acl.execute) return false;

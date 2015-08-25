@@ -34,6 +34,7 @@ import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
@@ -362,7 +363,7 @@ public class CatalogManagerTest extends GenericTest {
         try {
             catalogManager.modifyProject(projectId, options, sessionIdUser2);
             fail("Expected 'Permission denied' exception");
-        } catch (CatalogDBException e){
+        } catch (CatalogAuthorizationException e){
             System.out.println(e);
         }
 

@@ -46,7 +46,7 @@ public class OptionsParser {
     final CohortCommands cohortCommands;
     final SampleCommands sampleCommands;
 
-    public final CommandShareResource commandShareResource;
+//    public final CommandShareResource commandShareResource;
 
 
     public OptionsParser(boolean interactive) {
@@ -56,7 +56,7 @@ public class OptionsParser {
 
         commonOptions = new CommonOptions();
         userAndPasswordOptions = new UserAndPasswordOptions();
-        commandShareResource = new CommandShareResource();
+//        commandShareResource = new CommandShareResource();
 
         userCommands = new UserCommands(jcommander);
         projectCommands = new ProjectCommands(jcommander);
@@ -413,7 +413,7 @@ public class OptionsParser {
             studies.addCommand(checkCommand = new CheckCommand());
             studies.addCommand(statusCommand = new StatusCommand());
             studies.addCommand(this.annotationCommand = new AnnotationCommand());
-            studies.addCommand(commandShareResource);
+//            studies.addCommand(commandShareResource);
         }
 
         abstract class BaseStudyCommand {

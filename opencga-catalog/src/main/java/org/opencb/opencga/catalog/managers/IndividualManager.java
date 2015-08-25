@@ -5,6 +5,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -49,9 +51,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         family = ParamUtils.defaultObject(family, "");
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantWrite(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
         return individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, null), options);
     }
@@ -63,11 +63,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw CatalogAuthorizationException.cantRead(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.READ);
 
         return individualDBAdaptor.getIndividual(individualId, options);
     }
@@ -89,11 +86,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isRead()) {
-            throw CatalogAuthorizationException.cantRead(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        return individualDBAdaptor.getAllIndividuals(studyId, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.getAllIndividuals(studyId, options);
+        authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
+        queryResult.setNumResults(queryResult.getResult().size());
+        return queryResult;
     }
 
     @Override
@@ -105,9 +103,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkIndividualPermission(studyId, userId, CatalogPermission.WRITE);
+
 
         options.putAll(parameters);//FIXME: Use separated params and options, or merge
         return individualDBAdaptor.modifyIndividual(individualId, options);
@@ -122,9 +119,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isDelete()) {
-            throw CatalogAuthorizationException.cantModify(userId, "Study", studyId, null);
-        }
+        authorizationManager.checkIndividualPermission(studyId, userId, CatalogPermission.DELETE);
+
 
         return individualDBAdaptor.deleteIndividual(individualId, options);
     }

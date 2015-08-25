@@ -199,6 +199,81 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
     }
 
+    public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        int studyId = getStudyIdBySampleId(sampleId);
+        checkAclUserId(dbAdaptorFactory, userId, studyId);
+
+        DBObject query = new BasicDBObject(_ID, sampleId);
+        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
+
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);
+        Sample sample = parseObject(queryResult, Sample.class);
+        if (queryResult.getNumResults() == 0 || sample == null) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
+
+        return endQuery("get file acl", startTime, sample.getAcl());
+    }
+
+    @Override
+    public QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
+
+        long startTime = startQuery();
+        DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
+        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
+
+        QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        List<Sample> sampleList = parseSamples(aggregate);
+
+        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId, s -> s));
+
+        return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
+    }
+
+    @Override
+    public QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        String userId = acl.getUserId();
+        DBObject query;
+        DBObject newAclObject = getDbObject(acl, "ACL");
+        DBObject update;
+
+        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
+        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
+            query = new BasicDBObject(_ID, sampleId);
+            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            query = BasicDBObjectBuilder
+                    .start(_ID, sampleId)
+                    .append("acl.userId", userId).get();
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+
+        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+
+        return endQuery("setSampleAcl", startTime, queryResult);
+    }
+
+    @Override
+    public QueryResult unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject(_ID, sampleId);;
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+
+        QueryResult queryResult = sampleCollection.update(query, update, null);
+
+        return endQuery("unsetSampleAcl", startTime);
+
+    }
+
+
     @Override
     public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
         long startTime = startQuery();

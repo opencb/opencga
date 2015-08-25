@@ -365,10 +365,6 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.update(projectId, parameters, null, sessionId);//TODO: Add query options
     }
 
-    public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
-        return authorizationManager.setProjectACL(projectId, acl, sessionId);
-    }
-
     /**
      * Study methods
      * ***************************
@@ -456,8 +452,12 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.update(studyId, parameters, null, sessionId);
     }
 
-    public QueryResult shareStudy(int studyId, Acl acl, String sessionId) throws CatalogException {
-        return authorizationManager.setStudyACL(studyId, acl, sessionId);
+    public QueryResult addMemberToGroup(int studyId, String groupId, String userId, String sessionId) throws CatalogException {
+        return authorizationManager.addMember(studyId, groupId, userId, sessionId);
+    }
+
+    public QueryResult removeMemberFromGroup(int studyId, String groupId, String userId, String sessionId) throws CatalogException {
+        return authorizationManager.removeMember(studyId, groupId, userId, sessionId);
     }
 
     /**
@@ -620,12 +620,14 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    /**
-     * TODO: Set per-file ACL
-     */
-    private QueryResult shareFile(int fileId, Acl acl, String sessionId)
+    public QueryResult shareFile(int fileId, AclEntry acl, String sessionId)
             throws CatalogException {
         return authorizationManager.setFileACL(fileId, acl, sessionId);
+    }
+
+    public QueryResult unshareFile(int fileId, String userId, String sessionId)
+            throws CatalogException {
+        return authorizationManager.unsetFileACL(fileId, userId, sessionId);
     }
 
     /*Require role admin*/
@@ -769,6 +771,16 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
+    }
+
+    public QueryResult shareSample(int sampleId, AclEntry acl, String sessionId)
+            throws CatalogException {
+        return authorizationManager.setSampleACL(sampleId, acl, sessionId);
+    }
+
+    public QueryResult unshareSample(int sampleId, String userId, String sessionId)
+            throws CatalogException {
+        return authorizationManager.unsetSampleACL(sampleId, userId, sessionId);
     }
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,

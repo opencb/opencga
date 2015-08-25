@@ -425,37 +425,74 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Acl> getStudyAcl(int studyId, String userId) throws CatalogDBException {
+    public QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+
         BasicDBObject query = new BasicDBObject(_ID, studyId);
-        BasicDBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
-        QueryResult<DBObject> dbObjectQueryResult = studyCollection.find(query, projection, null);
-        List<Study> studies = parseStudies(dbObjectQueryResult);
-        if(studies.isEmpty()) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        } else {
-            List<Acl> acl = studies.get(0).getAcl();
-            return endQuery("getStudyAcl", startTime, acl);
+        BasicDBObject groupQuery = new BasicDBObject();
+        if (userId != null) {
+            groupQuery.put("userIds", userId);
         }
+        if (groupId != null) {
+            groupQuery.put("id", groupId);
+        }
+        BasicDBObject project = new BasicDBObject("groups", new BasicDBObject("$elemMatch", groupQuery));
+
+        QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+        List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
+        List<Group> groups = new ArrayList<>(1);
+        for (Study study : studies) {
+            if (study.getGroups() != null) {
+                groups.addAll(study.getGroups());
+            }
+        }
+
+        return endQuery("getGroup", startTime, groups);
+    }
+
+    boolean groupExists(int studyId, String groupId) throws CatalogDBException{
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        return studyCollection.count(query).first() == 1;
     }
 
     @Override
-    public QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogDBException {
-        String userId = newAcl.getUserId();
-        if (!userDBAdaptor.userExists(userId)) {
-            throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
+    public QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-        DBObject newAclObject = getDbObject(newAcl, "ACL");
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId);
-        BasicDBObject pull = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", newAcl.getUserId())));
-        BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-        studyCollection.update(query, pull, null);
-        studyCollection.update(query, push, null);
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
 
-        return getStudyAcl(studyId, userId);
+        if (queryResult.first().getN() != 1) {
+            throw new CatalogDBException("Unable to add member to group " + groupId);
+        }
+
+        return endQuery("addMemberToGroup", startTime, getGroup(studyId, null, groupId, null));
     }
+
+    @Override
+    public QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
+        }
+
+        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getN() != 1) {
+            throw new CatalogDBException("Unable to remove member to group " + groupId);
+        }
+
+        return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));    }
 
 
     /**
@@ -743,47 +780,86 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
     @Override
-    public QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
                         new BasicDBObject("$elemMatch",
                                 new BasicDBObject("userId", userId)))
-                .append("_id", false)
+                .append(_ID, false)
                 .get();
 
         QueryResult queryResult = fileCollection.find(new BasicDBObject(_ID, fileId), projection, null);
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("getFileAcl: There is no file with fileId = " + fileId);
+            throw CatalogDBException.idNotFound("File", fileId);
         }
-        List<Acl> acl = parseFile(queryResult).getAcl();
+        List<AclEntry> acl = parseFile(queryResult).getAcl();
         return endQuery("get file acl", startTime, acl);
     }
 
     @Override
-    public QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException {
+    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
+
+        long startTime = startQuery();
+        DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in", filePaths)));
+        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
+
+        QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+
+        List<File> files = parseFiles(aggregate);
+        Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
+        for (File file : files) {
+            AclEntry acl = file.getAcl().get(0);
+            if (pathAclMap.containsKey(file.getPath())) {
+                pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
+            } else {
+                HashMap<String, AclEntry> map = new HashMap<>();
+                map.put(acl.getUserId(), acl);
+                pathAclMap.put(file.getPath(), map);
+            }
+        }
+//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
+
+        return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
+    }
+
+    @Override
+    public QueryResult setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
-        if (!userDBAdaptor.userExists(userId)) {
-            throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
-        }
+
+        checkAclUserId(this, userId, getStudyIdByFileId(fileId));
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 
-        List<Acl> aclList = getFileAcl(fileId, userId).getResult();
-        DBObject match;
-        DBObject updateOperation;
+        List<AclEntry> aclList = getFileAcl(fileId, userId).getResult();
+        DBObject query;
+        DBObject update;
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
-            match = new BasicDBObject(_ID, fileId);
-            updateOperation = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+            query = new BasicDBObject(_ID, fileId);
+            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
         } else {    // there is already another ACL: overwrite
-            match = BasicDBObjectBuilder
+            query = BasicDBObjectBuilder
                     .start(_ID, fileId)
                     .append("acl.userId", userId).get();
-            updateOperation = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
-        QueryResult update = fileCollection.update(match, updateOperation, null);
-        return endQuery("set file acl", startTime);
+        QueryResult queryResult = fileCollection.update(query, update, null);
+        return endQuery("setFileAcl", startTime);
+    }
+
+    @Override
+    public QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject(_ID, fileId);;
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+
+        QueryResult queryResult = fileCollection.update(query, update, null);
+
+        return endQuery("unsetFileAcl", startTime);
     }
 
     public QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException {

@@ -35,7 +35,7 @@ public class Project {
     private String lastActivity;
     private long diskUsage;
 
-    private List<Acl> acl;      // roles?
+    private List<AclEntry> acl;
     private List<Study> studies;
 
     private Map<File.Bioformat, DataStore> dataStores;
@@ -46,16 +46,16 @@ public class Project {
 
     public Project(String name, String alias, String description, String status, String organization) {
         this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
-                new LinkedList<Acl>(), new LinkedList<Study>(), new HashMap<String, Object>());
+                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }
     public Project(String name, String alias, String creationDate, String description, String status,
                    String lastActivity, long diskUsage, String organization) {
         this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
-                new LinkedList<Acl>(), new LinkedList<Study>(), new HashMap<String, Object>());
+                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }
 
     public Project(int id, String name, String alias, String creationDate, String description, String organization,
-                   String status, String lastActivity, long diskUsage, List<Acl> acl, List<Study> studies,
+                   String status, String lastActivity, long diskUsage, List<AclEntry> acl, List<Study> studies,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -154,11 +154,11 @@ public class Project {
         this.diskUsage = diskUsage;
     }
 
-    public List<Acl> getAcl() {
+    public List<AclEntry> getAcl() {
         return acl;
     }
 
-    public void setAcl(List<Acl> acl) {
+    public void setAcl(List<AclEntry> acl) {
         this.acl = acl;
     }
 

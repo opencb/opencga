@@ -27,6 +27,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
@@ -36,6 +37,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
 
 /**
  * Created by imedina on 21/11/14.
@@ -78,14 +81,31 @@ class CatalogMongoDBUtils {
         return result.getResult().get(0).getInt(field);
     }
 
-    static void checkUserExist(String userId, boolean exists, MongoDBCollection UserMongoDBCollection) throws CatalogDBException {
+    static void checkUserExist(String userId, MongoDBCollection userCollection) throws CatalogDBException {
         if (userId == null) {
             throw new CatalogDBException("userId param is null");
         }
         if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
         }
+        if (userCollection.count(new BasicDBObject(_ID, userId)).first().equals(Long.valueOf(0))) {
+            throw CatalogDBException.idNotFound("User", userId);
+        }
 
+    }
+
+    public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, int studyId) throws CatalogDBException {
+        if (userId.equals(AclEntry.USER_OTHERS_ID)) {
+
+        } else if (userId.startsWith("@")) {
+            String groupId = userId.substring(1);
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+            if (queryResult.getNumResults() == 0) {
+                throw CatalogDBException.idNotFound("Group", groupId);
+            }
+        } else {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+        }
     }
 
 

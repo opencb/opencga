@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -48,5 +48,5 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
                                      String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Study> share(int studyId, Acl acl) throws CatalogException;
+    QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
 }
