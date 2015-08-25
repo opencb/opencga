@@ -6,6 +6,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -108,6 +109,14 @@ public interface CatalogSampleDBAdaptor {
     QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
+
+    QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException;
+
+    QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
+
+    QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
+
+    QueryResult unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 
     QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException;
 

@@ -29,6 +29,7 @@ public class Sample {
     private int individualId;
     private String description;
 
+    private List<AclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -37,16 +38,17 @@ public class Sample {
     }
 
     public Sample(int id, String name, String source, int individualId, String description) {
-        this(id, name, source, individualId, description, new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
     }
 
     public Sample(int id, String name, String source, int individualId, String description,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individualId = individualId;
         this.description = description;
+        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -59,6 +61,7 @@ public class Sample {
                 ", source='" + source + '\'' +
                 ", individualId=" + individualId +
                 ", description='" + description + '\'' +
+                ", acl=" + acl +
                 ", annotationSets=" + annotationSets +
                 ", attributes=" + attributes +
                 '}';
@@ -68,55 +71,71 @@ public class Sample {
         return id;
     }
 
-    public void setId(int id) {
+    public Sample setId(int id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Sample setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getSource() {
         return source;
     }
 
-    public void setSource(String source) {
+    public Sample setSource(String source) {
         this.source = source;
+        return this;
     }
 
     public int getIndividualId() {
         return individualId;
     }
 
-    public void setIndividualId(int individualId) {
+    public Sample setIndividualId(int individualId) {
         this.individualId = individualId;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Sample setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public List<AclEntry> getAcl() {
+        return acl;
+    }
+
+    public Sample setAcl(List<AclEntry> acl) {
+        this.acl = acl;
+        return this;
     }
 
     public List<AnnotationSet> getAnnotationSets() {
         return annotationSets;
     }
 
-    public void setAnnotationSets(List<AnnotationSet> annotationSets) {
+    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Sample setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }

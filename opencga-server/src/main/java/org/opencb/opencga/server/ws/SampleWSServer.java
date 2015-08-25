@@ -19,10 +19,8 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -185,8 +183,31 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{sampleId}/share")
+    @ApiOperation(value = "Update some sample attributes using GET method", position = 7)
+    public Response share(@PathParam(value = "sampleId") int sampleId,
+                          @ApiParam(value = "User you want to share the sample with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
+                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
+                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
+                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
+                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
+        try {
+            QueryResult queryResult;
+            if (unshare) {
+                queryResult = catalogManager.unshareSample(sampleId, userId, sessionId);
+            } else {
+                queryResult = catalogManager.shareSample(sampleId, new AclEntry(userId, read, write, false, delete), sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{sampleId}/delete")
-    @ApiOperation(value = "Delete a sample", position = 7)
+    @ApiOperation(value = "Delete a sample", position = 8)
     public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
         try {
             QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
