@@ -794,7 +794,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/share")
     @ApiOperation(value = "Share file with other user", position = 16)
     public Response share(@PathParam(value = "fileId") String fileIdStr,
-                          @ApiParam(value = "User you want to share the file with", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
                           @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
                           @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
                           @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,

@@ -40,9 +40,6 @@ public interface AuthorizationManager {
 
     User.Role getUserRole(String userId) throws CatalogException;
 
-    @Deprecated
-    AclEntry getStudyACL(String userId, int studyId) throws CatalogException;
-
     QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException;
 
     QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException;

@@ -256,12 +256,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    @Deprecated
-    public AclEntry getStudyACL(String userId, int studyId) throws CatalogException {
-        return getStudyACL(userId, getGroupBelonging(studyId, userId));
-    }
-
-    @Override
     public QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException {
         ParamUtils.checkObj(acl, "acl");
         ParamUtils.checkParameter(sessionId, "sessionId");

@@ -186,7 +186,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/share")
     @ApiOperation(value = "Update some sample attributes using GET method", position = 7)
     public Response share(@PathParam(value = "sampleId") int sampleId,
-                          @ApiParam(value = "User you want to share the sample with", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+                          @ApiParam(value = "User you want to share the sample with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
                           @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
                           @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
                           @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
