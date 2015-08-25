@@ -15,6 +15,8 @@ import org.opencb.opencga.catalog.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Properties;
+
 import static org.opencb.opencga.catalog.audit.AuditRecord.*;
 
 /**
@@ -28,18 +30,21 @@ public class CatalogAuditManager implements AuditManager {
     final private CatalogAuditDBAdaptor auditDBAdaptor;
     final private CatalogUserDBAdaptor userDBAdaptor;
     final private AuthorizationManager authorizationManager;
+    final private Properties catalogProperties;
 
-    public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor, AuthorizationManager authorizationManager) {
+    public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor,
+                               AuthorizationManager authorizationManager, Properties catalogProperties) {
         this.auditDBAdaptor = auditDBAdaptor;
         this.userDBAdaptor = userDBAdaptor;
         this.authorizationManager = authorizationManager;
+        this.catalogProperties = catalogProperties;
     }
 
     @Override
     public AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
         AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.CREATE, null, toObjectMap(object), System.currentTimeMillis(), userId, description, attributes);
-        logger.info("Creation {}", auditRecord);
+        logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
@@ -53,7 +58,7 @@ public class CatalogAuditManager implements AuditManager {
     public AuditRecord recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
             throws CatalogException {
         AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.UPDATE, null, update, System.currentTimeMillis(), userId, description, attributes);
-        logger.info("Update {}", auditRecord);
+        logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
@@ -61,7 +66,7 @@ public class CatalogAuditManager implements AuditManager {
     public AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
         AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.DELETE, toObjectMap(object), null, System.currentTimeMillis(), userId, description, attributes);
-        logger.info("Deletion {}", auditRecord);
+        logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
@@ -69,7 +74,7 @@ public class CatalogAuditManager implements AuditManager {
     public AuditRecord recordAction(Resource resource, String action, Object id, String userId, ObjectMap before, ObjectMap after, String description, ObjectMap attributes)
             throws CatalogException {
         AuditRecord auditRecord = new AuditRecord(id, resource, action, before, after, System.currentTimeMillis(), userId, description, attributes);
-        logger.info("{} {}", action, auditRecord);
+        logger.debug("{}", action, auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 

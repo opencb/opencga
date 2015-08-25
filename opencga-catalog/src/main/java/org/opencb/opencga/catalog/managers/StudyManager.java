@@ -3,6 +3,8 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
@@ -10,7 +12,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -32,9 +33,10 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
 
     public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                        AuditManager auditManager,
                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -163,9 +165,11 @@ public class StudyManager extends AbstractManager implements IStudyManager{
             }
         }
 
-        studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
+        study = studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri)).first();
+        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
         int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
-        fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri));
+        rootFile = fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri)).first();
+        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
         userDBAdaptor.updateUserLastActivity(projectOwnerId);
         return result;
@@ -256,29 +260,30 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<ObjectMap> result = studyDBAdaptor.modifyStudy(studyId, parameters);
-        return new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(),
-                result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(),
-                read(studyId, options, sessionId).getResult());
+        QueryResult<Study> result = studyDBAdaptor.modifyStudy(studyId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
+        return result;
     }
 
     private QueryResult rename(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String sessionUserId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
         //User can't write/modify the study
-        authorizationManager.checkStudyPermission(studyId, sessionUserId, StudyPermission.MANAGE_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
 
         // Both users must bu updated
-        userDBAdaptor.updateUserLastActivity(sessionUserId);
+        userDBAdaptor.updateUserLastActivity(userId);
         userDBAdaptor.updateUserLastActivity(studyOwnerId);
         //TODO get all shared users to updateUserLastActivity
 
-        return studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
+        return queryResult;
 
     }
 

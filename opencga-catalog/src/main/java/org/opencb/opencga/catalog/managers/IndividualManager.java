@@ -3,12 +3,13 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
@@ -27,9 +28,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
 
     public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                             AuditManager auditManager,
                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 
@@ -53,7 +55,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        return individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, null), options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, null), options);
+        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -107,7 +111,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
 
         options.putAll(parameters);//FIXME: Use separated params and options, or merge
-        return individualDBAdaptor.modifyIndividual(individualId, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.modifyIndividual(individualId, options);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
+        return queryResult;
 
     }
 
@@ -122,6 +128,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkIndividualPermission(studyId, userId, CatalogPermission.DELETE);
 
 
-        return individualDBAdaptor.deleteIndividual(individualId, options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.deleteIndividual(individualId, options);
+        auditManager.recordCreation(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
+        return queryResult;
     }
 }

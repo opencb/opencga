@@ -5,12 +5,10 @@
 
 #set -v
 
-if [ ! $OPENCGA_HOME ]
-then
-    export OPENCGA_HOME=/opt/opencga
-fi
-export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
 
+PRGDIR=`dirname "$0"`
+BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
+OPENCGA_BIN=$BASEDIR'/bin/opencga.sh'
 
 export user=admin
 export password=admin

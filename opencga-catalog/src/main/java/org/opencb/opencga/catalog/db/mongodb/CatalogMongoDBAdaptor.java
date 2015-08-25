@@ -349,7 +349,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Study> modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -380,7 +380,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
-        return endQuery("Modify study", startTime, Collections.singletonList(new ObjectMap(studyParameters)));
+        return endQuery("Modify study", startTime, getStudy(studyId, null));
     }
 
     /**
@@ -590,7 +590,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
         List<File> files = parseFiles(queryResult);
 
         return endQuery("Get all files", startTime, files);
@@ -632,7 +632,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         Map<String, Object> fileParameters = new HashMap<>();
@@ -682,7 +682,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        return endQuery("Modify file", startTime);
+        return endQuery("Modify file", startTime, getFile(fileId, null));
     }
 
 
@@ -859,15 +859,16 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
+        QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
         DBObject query = new BasicDBObject(_ID, fileId);;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
 
         QueryResult queryResult = fileCollection.update(query, update, null);
 
-        return endQuery("unsetFileAcl", startTime);
+        return endQuery("unsetFileAcl", startTime, fileAcl);
     }
 
     public QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException {
@@ -1111,7 +1112,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 throw CatalogDBException.idNotFound("Job", jobId);
             }
         }
-        return endQuery("Modify job", startTime);
+        return endQuery("Modify job", startTime, getJob(jobId, null));
     }
 
     @Override

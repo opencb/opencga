@@ -3,6 +3,8 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
@@ -29,9 +31,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
 
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                         AuditManager auditManager,
                          CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                          Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 
@@ -73,7 +76,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }
 
-        return sampleDBAdaptor.annotateSample(sampleId, annotationSet);
+        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()), "annotate", null);
+        return queryResult;
     }
 
     @Override
@@ -84,9 +89,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
-
-        return null;
+        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()), "deleteAnnotation", null);
+        return queryResult;
     }
 
     @Override
@@ -124,7 +129,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         Sample sample = new Sample(-1, name, source, -1, description, Collections.<AclEntry>emptyList(), Collections.<AnnotationSet>emptyList(),
                 attributes);
 
-        return sampleDBAdaptor.createSample(studyId, sample, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.createSample(studyId, sample, options);
+        auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -174,7 +181,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
 
         options.putAll(parameters);
-        return sampleDBAdaptor.modifySample(sampleId, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.modifySample(sampleId, options);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, parameters, null, null);
+        return queryResult;
 
     }
 
@@ -185,7 +194,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.DELETE);
 
-        return sampleDBAdaptor.deleteSample(sampleId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.deleteSample(sampleId);
+        auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     /*
@@ -235,7 +246,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
-        return sampleDBAdaptor.createVariableSet(studyId, variableSet);
+        QueryResult<VariableSet> queryResult = sampleDBAdaptor.createVariableSet(studyId, variableSet);
+        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -258,7 +271,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSetId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-        return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
+        QueryResult<VariableSet> queryResult = sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
+        auditManager.recordDeletion(AuditRecord.Resource.variableSet, variableSetId, userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
 
@@ -317,7 +332,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
-        return sampleDBAdaptor.createCohort(studyId, cohort);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.createCohort(studyId, cohort);
+        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new ObjectMap());
+        return queryResult;
     }
 
     @Override
@@ -340,7 +357,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-        return sampleDBAdaptor.modifyCohort(cohortId, params);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.modifyCohort(cohortId, params);
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, params, null, null);
+        return queryResult;
     }
 
     @Override
@@ -350,8 +369,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        return sampleDBAdaptor.deleteCohort(cohortId, options);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.deleteCohort(cohortId, options);
+        auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
+        return queryResult;
     }
-
-
 }

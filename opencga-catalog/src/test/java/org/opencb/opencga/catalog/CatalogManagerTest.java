@@ -1544,6 +1544,18 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateCohortAlreadyExisting() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
+
+
+        thrown.expect(CatalogDBException.class);
+        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
+    }
+
+    @Test
     public void testUpdateCohort() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 

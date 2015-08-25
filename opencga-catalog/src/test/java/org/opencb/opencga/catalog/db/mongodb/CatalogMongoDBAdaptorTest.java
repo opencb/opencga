@@ -545,23 +545,22 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         objectMap.put("attributes", new ObjectMap(newAttributes).toJson());
         objectMap.put("alias", unexpectedNewAlias);
-        QueryResult<ObjectMap> queryResult = catalogDBAdaptor.modifyStudy(studyId, objectMap);
-        ObjectMap modifiedParams = queryResult.first();
+        QueryResult<Study> queryResult = catalogDBAdaptor.modifyStudy(studyId, objectMap);
+        Study modifiedStudy = queryResult.first();
 
         Study study = catalogDBAdaptor.getStudy(studyId, null).first();
+        assertEquals(study.toString(), modifiedStudy.toString());
 
-        assertTrue(modifiedParams.containsKey("attributes.Value"));
-        assertTrue(modifiedParams.containsKey("attributes.Value2"));
-        assertTrue(modifiedParams.containsKey("attributes.Value3"));
+        assertTrue(modifiedStudy.getAttributes().containsKey("Value"));
+        assertTrue(modifiedStudy.getAttributes().containsKey("Value2"));
+        assertTrue(modifiedStudy.getAttributes().containsKey("Value3"));
         for (Map.Entry<String, Object> entry : newAttributes.entrySet()) {
             assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
         assertEquals(newName, study.getName());
-        assertTrue(modifiedParams.containsKey("name"));
 
         assertFalse("ModifyStudy must NO modify the alias ", unexpectedNewAlias.equals(study.getAlias()));
-        assertFalse(modifiedParams.containsKey("alias"));
     }
 
     /**
