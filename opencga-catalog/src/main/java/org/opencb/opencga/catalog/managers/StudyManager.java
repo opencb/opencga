@@ -4,6 +4,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -110,9 +111,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
 
         /* Check project permissions */
-        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw CatalogAuthorizationException.denny(userId, "create", "Project", projectId, null);
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
         if (!creatorId.equals(userId)) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
@@ -212,7 +212,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
         if (!studyResult.getResult().isEmpty()) {
-            authorizationManager.filterFiles(userId, null, studyResult.getResult().get(0).getFiles());
+            authorizationManager.filterFiles(userId, studyId, studyResult.getResult().get(0).getFiles());
         }
         return studyResult;
 
@@ -227,14 +227,11 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
-        AclEntry projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (!projectAcl.isRead()) {
-            throw new CatalogDBException("Permission denied. Can't read project");
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
 
         QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(projectId, options);
         List<Study> studies = allStudies.getResult();
-        authorizationManager.filterStudies(userId, projectAcl, studies);
+        authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
         allStudies.setNumResults(studies.size());
 

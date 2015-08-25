@@ -14,6 +14,8 @@ import java.util.*;
  */
 public interface AuthorizationManager {
 
+    void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException;
+
     void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException;
 
     void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException;
@@ -71,21 +73,20 @@ public interface AuthorizationManager {
      * From the remaining studies, filters the files.
      *
      * @param userId     UserId
-     * @param projectAcl Project ACL
      * @param studies    Studies list
      * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
-    void filterStudies(String userId, AclEntry projectAcl, List<Study> studies) throws CatalogException;
+    void filterStudies(String userId, List<Study> studies) throws CatalogException;
 
     /**
      * Removes from the list the files that the user can not read.
      *
      * @param userId   UserId
-     * @param studyAcl Study ACL
+     * @param studyId  StudyId
      * @param files    Files list
      * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
-    void filterFiles(String userId, AclEntry studyAcl, List<File> files) throws CatalogException;
+    void filterFiles(String userId, int studyId, List<File> files) throws CatalogException;
 
     /**
      * Removes from the list the samples that the user can not read.

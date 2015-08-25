@@ -428,7 +428,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
         }
         QueryResult<File> queryResult = fileDBAdaptor.getAllFiles(query, options);
-        authorizationManager.filterFiles(userId, null, queryResult.getResult());
+        authorizationManager.filterFiles(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
 
         return queryResult;

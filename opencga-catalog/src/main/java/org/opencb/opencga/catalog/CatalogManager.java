@@ -365,6 +365,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.update(projectId, parameters, null, sessionId);//TODO: Add query options
     }
 
+    @Deprecated
     public QueryResult shareProject(int projectId, AclEntry acl, String sessionId) throws CatalogException {
         return authorizationManager.setProjectACL(projectId, acl, sessionId);
     }
