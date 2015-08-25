@@ -8,7 +8,7 @@ import org.opencb.datastore.core.ObjectMap;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AuditRecord {
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, variableSet}
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, tool, variableSet}
 //    public enum Status {running, done, fail}
 
     private Object id;
@@ -16,6 +16,9 @@ public class AuditRecord {
     private String action;
     private ObjectMap before;
     private ObjectMap after;
+    /**
+     * Time in milliseconds
+     */
     private long timeStamp;
     private String userId;
     private String description;
