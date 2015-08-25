@@ -31,13 +31,15 @@ import static org.junit.Assert.*;
 public class CatalogAuthorizationManagerTest {
 
     private final String ownerUser = "owner";
-    private final String studyAdminUser = "studyAdmin";
+    private final String studyAdminUser1 = "studyAdmin1";
+    private final String studyAdminUser2 = "studyAdmin2";
     private final String memberUser = "member";
     private final String externalUser = "external";
     private final String password = "1234";
     private CatalogManager catalogManager;
     private String ownerSessionId;
-    private String studyAdminSessionId;
+    private String studyAdmin1SessionId;
+    private String studyAdmin2SessionId;
     private String memberSessionId;
     private String externalSessionId;
     private int p1;
@@ -45,14 +47,17 @@ public class CatalogAuthorizationManagerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private int data;
-    private int data_d1;
-    private int data_d1_d2;
-    private int data_d1_d2_d3;
-    private int data_d1_d2_d3_d4;
-    private int smp1;
-    private int smp2;
-    private int smp3;
+    private int data;                 //
+    private int data_d1;              // Shared with member, Forbidden for @admins, Shared with studyAdmin1
+    private int data_d1_d2;           // Forbidden for @admins
+    private int data_d1_d2_d3;        // Forbidden for member
+    private int data_d1_d2_d3_d4;     // Shared for @admins
+    private int smp1;   // Shared with member
+    private int smp2;   // Shared with studyAdmin1
+    private int smp3;   // Shared with member
+    private int smp4;   // Shared with @members
+    private int smp6;   // Shared with *
+    private int smp5;   // Shared with @members, forbidden for memberUse
 
     @Before
     public void before () throws Exception {
@@ -65,12 +70,14 @@ public class CatalogAuthorizationManagerTest {
         catalogManager = new CatalogManager(properties);
 
         catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null);
-        catalogManager.createUser(studyAdminUser, studyAdminUser, "email@ccc.ccc", password, "ASDF", null);
+        catalogManager.createUser(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null);
+        catalogManager.createUser(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", password, "ASDF", null);
         catalogManager.createUser(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null);
         catalogManager.createUser(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null);
 
         ownerSessionId = catalogManager.login(ownerUser, password, "localhost").first().get("sessionId").toString();
-        studyAdminSessionId = catalogManager.login(studyAdminUser, password, "localhost").first().get("sessionId").toString();
+        studyAdmin1SessionId = catalogManager.login(studyAdminUser1, password, "localhost").first().get("sessionId").toString();
+        studyAdmin2SessionId = catalogManager.login(studyAdminUser2, password, "localhost").first().get("sessionId").toString();
         memberSessionId = catalogManager.login(memberUser, password, "localhost").first().get("sessionId").toString();
         externalSessionId = catalogManager.login(externalUser, password, "localhost").first().get("sessionId").toString();
 
@@ -84,17 +91,29 @@ public class CatalogAuthorizationManagerTest {
 
         catalogManager.shareProject(p1, new Acl(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
-        catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser, ownerSessionId);
+        catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
 
         catalogManager.shareFile(data_d1, new Acl(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1, new Acl("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1, new Acl(studyAdminUser1, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2, new Acl("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3, new Acl(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3_d4, new Acl("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
         smp3 = catalogManager.createSample(s1, "smp3", null, null, null, null, ownerSessionId).first().getId();
+        smp4 = catalogManager.createSample(s1, "smp4", null, null, null, null, ownerSessionId).first().getId();
+        smp5 = catalogManager.createSample(s1, "smp5", null, null, null, null, ownerSessionId).first().getId();
+        smp6 = catalogManager.createSample(s1, "smp6", null, null, null, null, ownerSessionId).first().getId();
+
         catalogManager.shareSample(smp1, new Acl(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.shareSample(smp3, new Acl(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp2, new Acl(studyAdminUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp2, new Acl(studyAdminUser1, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp4, new Acl("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp5, new Acl("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp5, new Acl(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp6, new Acl(Acl.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
 
     }
 
@@ -255,6 +274,24 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.getFile(data, externalSessionId);
     }
 
+    @Test
+    public void readFileSharedForGroup() throws CatalogException {
+        catalogManager.getFile(data_d1_d2_d3_d4, studyAdmin1SessionId);
+    }
+
+    @Test
+    public void readFileForbiddenForGroup() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getFile(data_d1_d2, studyAdmin1SessionId);
+    }
+
+    @Test
+    public void readFileForbiddenForGroupSharedWithUser() throws CatalogException {
+        catalogManager.getFile(data_d1, studyAdmin1SessionId);
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getFile(data_d1, studyAdmin2SessionId);
+    }
+
     /*--------------------------*/
     // Create file
     /*--------------------------*/
@@ -347,20 +384,36 @@ public class CatalogAuthorizationManagerTest {
 
     @Test
     public void readSampleAdminUser() throws CatalogException {
-        catalogManager.getSample(smp1, null, studyAdminSessionId);
-        catalogManager.getSample(smp3, null, studyAdminSessionId);
+        catalogManager.getSample(smp1, null, studyAdmin1SessionId);
+        catalogManager.getSample(smp3, null, studyAdmin1SessionId);
     }
 
     @Test
     public void readSampleForbiddenForSampleManagerUser() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.getSample(smp2, null, studyAdminSessionId);
+        catalogManager.getSample(smp2, null, studyAdmin1SessionId);
+    }
+
+    @Test
+    public void readSampleSharedForGroup() throws CatalogException {
+        catalogManager.getSample(smp4, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleSharedForOthers() throws CatalogException {
+        catalogManager.getSample(smp6, null, memberSessionId);
+    }
+
+    @Test
+    public void readSampleSharedForBelongingGroupForbiddenForUser() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getSample(smp5, null, memberSessionId);
     }
 
     @Test
     public void shareSampleBySampleManagerUser() throws CatalogException {
-        catalogManager.shareSample(smp2, new Acl(studyAdminUser, true, true, true, true), studyAdminSessionId);
-        catalogManager.getSample(smp2, null, studyAdminSessionId);
+        catalogManager.shareSample(smp2, new Acl(studyAdminUser1, true, true, true, true), studyAdmin1SessionId);
+        catalogManager.getSample(smp2, null, studyAdmin1SessionId);
     }
 
     @Test
@@ -373,7 +426,7 @@ public class CatalogAuthorizationManagerTest {
     }
     @Test
     public void readAllSamplesAdmin() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdminSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdmin1SessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));

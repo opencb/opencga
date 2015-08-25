@@ -865,7 +865,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
-        this.getCatalogUserDBAdaptor().checkUserExists(userId);
+//        this.getCatalogUserDBAdaptor().checkUserExists(userId);
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 

@@ -202,7 +202,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     public QueryResult<Acl> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
-        dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+//        dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
 
         DBObject query = new BasicDBObject(_ID, sampleId);
         DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
@@ -214,6 +214,23 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         }
 
         return endQuery("get file acl", startTime, sample.getAcl());
+    }
+
+    @Override
+    public QueryResult<Map<String, Acl>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
+
+        long startTime = startQuery();
+        DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
+        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
+
+        QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        List<Sample> sampleList = parseSamples(aggregate);
+
+        Map<String, Acl> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(Acl::getUserId, s -> s));
+
+        return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
     }
 
     @Override

@@ -36,6 +36,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public Acl getProjectACL(String userId, int projectId) throws CatalogException {
         Acl projectAcl;
         if (isAdmin(userId)) {
@@ -62,6 +63,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException {
         ParamUtils.checkObj(acl, "acl");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -129,7 +131,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        Acl fileAcl = resolveFileAcl(fileId, userId, studyId);
+        Acl fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId));
 
 
         final boolean auth;
@@ -163,7 +165,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        Acl sampleAcl = getSampleACL(userId, sampleId, studyId);
+        Acl sampleAcl = resolveSampleAcl(sampleId, userId, getGroupBelonging(studyId, userId));
 
         final boolean auth;
         switch (permission) {
@@ -186,27 +188,31 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     }
 
-    public Acl resolveFileAcl(int fileId, String userId, int studyId) throws CatalogException {
-        Group group = getGroupBelonging(studyId, userId);
+    private Acl resolveFileAcl(int fileId, String userId, int studyId, Group group) throws CatalogException {
         if (group == null) {
             return new Acl(userId, false, false, false, false);
         }
 
+        String groupId = "@" + group.getId();
         Acl studyAcl = getStudyACL(userId, group);
         Acl fileAcl = null;
 
         File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
         List<String> paths = FileManager.getParentPaths(file.getPath());
-        Map<String, Map<String, Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()), Arrays.asList(userId, Acl.USER_OTHERS_ID)).first();
+        Map<String, Map<String, Acl>> pathAclMap = fileDBAdaptor.getFilesAcl(studyId, FileManager.getParentPaths(file.getPath()),
+                Arrays.asList(userId, groupId, Acl.USER_OTHERS_ID)).first();
 
         for (int i = paths.size() - 1; i >= 0; i--) {
             String path = paths.get(i);
             if (pathAclMap.containsKey(path)) {
+                Map<String, Acl> aclMap = pathAclMap.get(path);
                 //Get first the user AclEntry
-                fileAcl = pathAclMap.get(path).get(userId);
-                //If missing, get Others AclEntry
-                if (fileAcl == null) {
-                    fileAcl = pathAclMap.get(path).get(Acl.USER_OTHERS_ID);
+                if (aclMap.containsKey(userId)) {
+                    fileAcl = aclMap.get(userId);
+                } else if (aclMap.containsKey(groupId)) {
+                    fileAcl = aclMap.get(groupId);
+                } else if (aclMap.containsKey(Acl.USER_OTHERS_ID)) {
+                    fileAcl = aclMap.get(Acl.USER_OTHERS_ID);
                 }
                 if (fileAcl != null) {
                     break;
@@ -218,6 +224,33 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             fileAcl = studyAcl;
         }
         return fileAcl;
+    }
+
+    /**
+     * Resolves the permissions between a sample and a user.
+     * Returns the most specific matching ACL following the next sequence:
+     * user > group > others > study
+     *
+     * @param group     User belonging group.
+     * @throws CatalogException
+     */
+    private Acl resolveSampleAcl(int sampleId, String userId, Group group) throws CatalogException {
+        if (group == null) {
+            return new Acl(userId, false, false, false, false);
+        }
+
+        String groupId = "@" + group.getId();
+        Map<String, Acl> userAclMap = sampleDBAdaptor.getSampleAcl(sampleId, Arrays.asList(userId, groupId, Acl.USER_OTHERS_ID)).first();
+
+        if (userAclMap.containsKey(userId)) {
+            return userAclMap.get(userId);
+        } else if (userAclMap.containsKey(groupId)) {
+            return userAclMap.get(groupId);
+        } else if (userAclMap.containsKey(Acl.USER_OTHERS_ID)) {
+            return userAclMap.get(Acl.USER_OTHERS_ID);
+        } else {
+            return getStudyACL(userId, group);
+        }
     }
 
     private Acl getStudyACL(String userId, Group group) {
@@ -250,6 +283,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public Acl getFileACL(String userId, int fileId) throws CatalogException {
         if (isAdmin(userId)) {
             return new Acl(userId, true, true, true, true);
@@ -280,15 +314,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public Acl getSampleACL(String userId, int sampleId) throws CatalogException {
         return getSampleACL(userId, sampleId, sampleDBAdaptor.getStudyIdBySampleId(sampleId));
     }
 
-    public Acl getSampleACL(String userId, int sampleId, int studyId) throws CatalogException {
+    @Deprecated
+    private Acl getSampleACL(String userId, int sampleId, int studyId) throws CatalogException {
         return getSampleACL(userId, sampleId, getStudyACL(userId, studyId));
     }
 
-    public Acl getSampleACL(String userId, int sampleId, Acl studyACL) throws CatalogException {
+    @Deprecated
+    private Acl getSampleACL(String userId, int sampleId, Acl studyACL) throws CatalogException {
         QueryResult<Acl> queryResult = sampleDBAdaptor.getSampleAcl(sampleId, userId);
         Acl sampleAcl;
         if (queryResult.getNumResults() == 0) {
@@ -382,11 +419,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isAdmin(userId) || isOwner(studyId, userId)) {
             return;
         }
-        Acl studyAcl = getStudyACL(userId, studyId);
+        Group group = getGroupBelonging(studyId, userId);
+
         Iterator<Sample> sampleIterator = samples.iterator();
         while (sampleIterator.hasNext()) {
             Sample sample = sampleIterator.next();
-            Acl sampleACL = getSampleACL(userId, sample.getId(), studyAcl);
+            Acl sampleACL = resolveSampleAcl(sample.getId(), userId, group);
             if (!sampleACL.isRead()) {
                 sampleIterator.remove();
             }
@@ -400,17 +438,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
+            int studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+            Group group = getGroupBelonging(studyId, userId);
             if (job.getOutput() == null || job.getInput() == null) {
                 job = readJob(job.getId());
             }
             for (Integer fileId : job.getOutput()) {
-                if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
+                if (!resolveFileAcl(fileId, userId, studyId, group).isRead()) {
                     iterator.remove();
                     break job_loop;
                 }
             }
             for (Integer fileId : job.getInput()) {
-                if (!resolveFileAcl(fileId, userId, fileDBAdaptor.getStudyIdByFileId(fileId)).isRead()) {
+                if (!resolveFileAcl(fileId, userId, studyId, group).isRead()) {
                     iterator.remove();
                     break job_loop;
                 }
@@ -423,8 +463,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isAdmin(userId) || isOwner(studyId, userId)) {
             return;
         }
-        Acl studyAcl;
-        studyAcl = getStudyACL(userId, studyId);
+        Group group = getGroupBelonging(studyId, userId);
 
         Map<Integer, Acl> sampleAclMap = new HashMap<>();
 
@@ -435,7 +474,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 if (sampleAclMap.containsKey(sampleId)) {
                     sampleACL = sampleAclMap.get(sampleId);
                 } else {
-                    sampleACL = getSampleACL(userId, sampleId, studyAcl);
+                    sampleACL = resolveSampleAcl(sampleId, userId, group);
                     sampleAclMap.put(sampleId, sampleACL);
                 }
                 if (!sampleACL.isRead()) {
@@ -523,6 +562,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
     }
 
+    @Deprecated
     private Acl mergeAcl(String userId, Acl acl1, Acl acl2) {
         return new Acl(
                 userId,
@@ -534,7 +574,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
 
-    public Acl getStudyACL(String userId, int studyId, Acl projectAcl) throws CatalogException {
+    private Acl getStudyACL(String userId, int studyId, Acl projectAcl) throws CatalogException {
         Acl studyAcl;
         if (isAdmin(userId)) {
             return new Acl(userId, true, true, true, true);
@@ -563,6 +603,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     /**
      * Use StudyACL for all files.
      */
+    @Deprecated
     public Acl getFileACL(String userId, int fileId, Acl studyAcl) throws CatalogException {
         return __getFileAcl(userId, fileDBAdaptor.getStudyIdByFileId(fileId), fileId, studyAcl);
     }
@@ -578,6 +619,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     //TODO: Check folder ACLs
     private final QueryOptions fileIncludeQueryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
 
+    @Deprecated
     private Acl __getFileAcl(String userId, int studyId, int fileId, Acl studyAcl) throws CatalogException {
         Acl fileAcl = null;
         boolean sameOwner = fileDBAdaptor.getFileOwnerId(fileId).equals(userId);
