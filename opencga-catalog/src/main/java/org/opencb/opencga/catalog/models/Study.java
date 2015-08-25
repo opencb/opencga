@@ -39,6 +39,7 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
+    @Deprecated
     private List<AclEntry> acl;
     private List<Experiment> experiments;
 
@@ -240,10 +241,12 @@ public class Study {
         return this;
     }
 
+    @Deprecated
     public List<AclEntry> getAcl() {
         return acl;
     }
 
+    @Deprecated
     public void setAcl(List<AclEntry> acl) {
         this.acl = acl;
     }

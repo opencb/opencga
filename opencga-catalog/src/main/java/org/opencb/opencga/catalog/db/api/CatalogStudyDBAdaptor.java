@@ -44,8 +44,10 @@ public interface CatalogStudyDBAdaptor {
 
     String getStudyOwnerId(int studyId) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> getStudyAcl(int projectId, String userId) throws CatalogDBException;
 
+    @Deprecated
     QueryResult setStudyAcl(int studyId, AclEntry newAcl) throws CatalogDBException;
 
     QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
