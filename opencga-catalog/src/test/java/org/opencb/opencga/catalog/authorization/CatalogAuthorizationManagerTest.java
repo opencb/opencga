@@ -89,16 +89,16 @@ public class CatalogAuthorizationManagerTest {
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
 
-        catalogManager.shareProject(p1, new Acl(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareProject(p1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
 
-        catalogManager.shareFile(data_d1, new Acl(memberUser, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1, new Acl("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
-        catalogManager.shareFile(data_d1, new Acl(studyAdminUser1, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2, new Acl("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3, new Acl(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3_d4, new Acl("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
@@ -107,13 +107,13 @@ public class CatalogAuthorizationManagerTest {
         smp5 = catalogManager.createSample(s1, "smp5", null, null, null, null, ownerSessionId).first().getId();
         smp6 = catalogManager.createSample(s1, "smp6", null, null, null, null, ownerSessionId).first().getId();
 
-        catalogManager.shareSample(smp1, new Acl(memberUser, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp3, new Acl(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp2, new Acl(studyAdminUser1, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp4, new Acl("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp5, new Acl("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp5, new Acl(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp6, new Acl(Acl.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp2, new AclEntry(studyAdminUser1, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp4, new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp5, new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(smp5, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp6, new AclEntry(AclEntry.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
 
     }
 
@@ -347,7 +347,7 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.getSample(smp3, null, ownerSessionId);
 
         //Owner always have access
-        catalogManager.shareSample(smp1, new Acl(ownerUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(smp1, new AclEntry(ownerUser, false, false, false, false), ownerSessionId);
         catalogManager.getSample(smp1, null, ownerSessionId);
     }
 
@@ -412,7 +412,7 @@ public class CatalogAuthorizationManagerTest {
 
     @Test
     public void shareSampleBySampleManagerUser() throws CatalogException {
-        catalogManager.shareSample(smp2, new Acl(studyAdminUser1, true, true, true, true), studyAdmin1SessionId);
+        catalogManager.shareSample(smp2, new AclEntry(studyAdminUser1, true, true, true, true), studyAdmin1SessionId);
         catalogManager.getSample(smp2, null, studyAdmin1SessionId);
     }
 

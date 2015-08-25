@@ -19,10 +19,8 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -199,7 +197,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             if (unshare) {
                 queryResult = catalogManager.unshareSample(sampleId, userId, sessionId);
             } else {
-                queryResult = catalogManager.shareSample(sampleId, new Acl(userId, read, write, false, delete), sessionId);
+                queryResult = catalogManager.shareSample(sampleId, new AclEntry(userId, read, write, false, delete), sessionId);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {

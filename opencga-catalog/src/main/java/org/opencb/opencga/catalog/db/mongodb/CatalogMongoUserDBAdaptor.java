@@ -7,7 +7,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -589,11 +588,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         }
     }
 
-    public Acl getFullProjectAcl(int projectId, String userId) throws CatalogDBException {
+    public AclEntry getFullProjectAcl(int projectId, String userId) throws CatalogDBException {
         QueryResult<Project> project = getProject(projectId, null);
         if (project.getNumResults() != 0) {
-            List<Acl> acl = project.getResult().get(0).getAcl();
-            for (Acl acl1 : acl) {
+            List<AclEntry> acl = project.getResult().get(0).getAcl();
+            for (AclEntry acl1 : acl) {
                 if (userId.equals(acl1.getUserId())) {
                     return acl1;
                 }
@@ -611,7 +610,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
      * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
      */
     @Override
-    public QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
         DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
@@ -632,17 +631,17 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         operations.add(match3);
         QueryResult aggregate = userCollection.aggregate(operations, null);
 
-        List<Acl> acls = new LinkedList<>();
+        List<AclEntry> acls = new LinkedList<>();
         if (aggregate.getNumResults() != 0) {
             DBObject aclObject = (DBObject) ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
-            Acl acl = parseObject(aclObject, Acl.class);
+            AclEntry acl = parseObject(aclObject, AclEntry.class);
             acls.add(acl);
         }
         return endQuery("get project ACL", startTime, acls);
     }
 
     @Override
-    public QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogDBException {
+    public QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
         if (!userExists(userId)) {
@@ -651,7 +650,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 
-        List<Acl> projectAcls = getProjectAcl(projectId, userId).getResult();
+        List<AclEntry> projectAcls = getProjectAcl(projectId, userId).getResult();
         DBObject query = new BasicDBObject("projects.id", projectId);
         BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
         if (!projectAcls.isEmpty()) {  // ensure that there is no acl for that user in that project. pull

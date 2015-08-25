@@ -117,8 +117,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, "active", "", 1222, 122222,
-                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<Acl>emptyList(),
-                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null, Arrays.asList(new Acl("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
+                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections.<AclEntry>emptyList(),
+                                Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null, Arrays.asList(new AclEntry("jmmut", true, true, true, true)), Collections.<Experiment>emptyList(),
                                                 Arrays.asList(
                                                         new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, null, "", File.Status.READY, 1000),
                                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, null, "", File.Status.READY, 1000)
@@ -291,9 +291,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void createProjectTest() throws CatalogDBException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
-        LinkedList<Acl> acl = new LinkedList<>();
-        acl.push(new Acl(user1.getId(), true, false, true, true));
-        acl.push(new Acl(user2.getId(), false, true, true, true));
+        LinkedList<AclEntry> acl = new LinkedList<>();
+        acl.push(new AclEntry(user1.getId(), true, false, true, true));
+        acl.push(new AclEntry(user2.getId(), false, true, true, true));
         p.setAcl(acl);
         System.out.println(catalogUserDBAdaptor.createProject(user1.getId(), p, null));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
@@ -389,7 +389,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void projectAclTest() throws CatalogDBException {
         int projectId = user3.getProjects().get(0).getId();
-        List<Acl> acls = catalogUserDBAdaptor.getProjectAcl(projectId, user3.getId()).getResult();
+        List<AclEntry> acls = catalogUserDBAdaptor.getProjectAcl(projectId, user3.getId()).getResult();
         assertTrue(acls.isEmpty());
         acls = catalogUserDBAdaptor.getProjectAcl(projectId, user2.getId()).getResult();
         assertTrue(acls.isEmpty());
@@ -397,15 +397,15 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(acls.isEmpty());
 
 
-        Acl granted = new Acl("jmmut", true, true, true, false);
+        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
         System.out.println(catalogUserDBAdaptor.setProjectAcl(projectId, granted));  // overwrites
-        Acl jmmut = catalogUserDBAdaptor.getProjectAcl(projectId, "jmmut").first();
+        AclEntry jmmut = catalogUserDBAdaptor.getProjectAcl(projectId, "jmmut").first();
         System.out.println(jmmut);
         assertTrue(jmmut.equals(granted));
 
         granted.setUserId("imedina");
         System.out.println(catalogUserDBAdaptor.setProjectAcl(projectId, granted));  // just pushes
-        Acl imedina = catalogUserDBAdaptor.getProjectAcl(projectId, "imedina").first();
+        AclEntry imedina = catalogUserDBAdaptor.getProjectAcl(projectId, "imedina").first();
         System.out.println(imedina);
         assertTrue(imedina.equals(granted));
         try {
@@ -428,9 +428,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId2 = catalogUserDBAdaptor.getProjectId(user1.getId(), "P2");
 
         Study s = new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null);
-        LinkedList<Acl> acl = new LinkedList<>();
-        acl.push(new Acl("jcoll", false, true, true, true));
-        acl.push(new Acl("jmmut", false, false, true, false));
+        LinkedList<AclEntry> acl = new LinkedList<>();
+        acl.push(new AclEntry("jcoll", false, true, true, true));
+        acl.push(new AclEntry("jmmut", false, false, true, false));
         s.setAcl(acl);
         System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));
         System.out.println(catalogDBAdaptor.createStudy(projectId2, s, null));
@@ -571,10 +571,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getStudyAclTest() throws CatalogDBException {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        List<Acl> jmmut = catalogDBAdaptor.getStudyAcl(studyId, "jmmut").getResult();
+        List<AclEntry> jmmut = catalogDBAdaptor.getStudyAcl(studyId, "jmmut").getResult();
         assertTrue(!jmmut.isEmpty());
         System.out.println(jmmut.get(0));
-        List<Acl> noUser = catalogDBAdaptor.getStudyAcl(studyId, "noUser").getResult();
+        List<AclEntry> noUser = catalogDBAdaptor.getStudyAcl(studyId, "noUser").getResult();
         assertTrue(noUser.isEmpty());
     }
 
@@ -583,7 +583,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         System.out.println(studyId);
 
-        Acl granted = new Acl("jmmut", true, true, true, false);
+        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
         catalogDBAdaptor.setStudyAcl(studyId, granted);
         granted.setUserId("imedina");
         catalogDBAdaptor.setStudyAcl(studyId, granted);
@@ -606,9 +606,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
-        LinkedList<Acl> acl = new LinkedList<>();
-        acl.push(new Acl("jcoll", true, true, true, true));
-        acl.push(new Acl("jmmut", false, false, true, true));
+        LinkedList<AclEntry> acl = new LinkedList<>();
+        acl.push(new AclEntry("jcoll", true, true, true, true));
+        acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcl(acl);
         System.out.println(catalogDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime(), "", File.Status.STAGE, 1000);
@@ -741,7 +741,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int fileId = catalogDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
 
-        Acl granted = new Acl("jmmut", true, true, true, false);
+        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
         catalogDBAdaptor.setFileAcl(fileId, granted);
         granted.setUserId("imedina");
         catalogDBAdaptor.setFileAcl(fileId, granted);
@@ -753,10 +753,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
             System.out.println("correct exception: " + e);
         }
 
-        List<Acl> jmmut = catalogDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
+        List<AclEntry> jmmut = catalogDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
         assertTrue(!jmmut.isEmpty());
         System.out.println(jmmut.get(0));
-        List<Acl> jcoll = catalogDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
+        List<AclEntry> jcoll = catalogDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
         assertTrue(jcoll.isEmpty());
     }
 

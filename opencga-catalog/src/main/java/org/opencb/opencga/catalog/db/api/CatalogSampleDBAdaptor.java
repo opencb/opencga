@@ -110,11 +110,11 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<Acl> getSampleAcl(int sampleId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, Acl>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
+    QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
 
-    QueryResult setSampleAcl(int sampleId, Acl acl) throws CatalogDBException;
+    QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
 
     QueryResult unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 

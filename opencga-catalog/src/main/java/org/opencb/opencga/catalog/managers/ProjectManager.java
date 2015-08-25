@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -73,7 +73,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
 
         /* Add default ACL */
         //Add generic permissions to the project.
-        project.getAcl().add(new Acl(Acl.USER_OTHERS_ID, false, false, false, false));
+        project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
 
         QueryResult<Project> result = userDBAdaptor.createProject(ownerId, project, options);
         project = result.getResult().get(0);
@@ -104,7 +104,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
+        AclEntry projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (projectAcl.isRead()) {
             QueryResult<Project> projectResult = userDBAdaptor.getProject(projectId, options);
             if (!projectResult.getResult().isEmpty()) {
@@ -168,7 +168,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
+        AclEntry projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (projectAcl.isWrite()) {
             userDBAdaptor.updateUserLastActivity(ownerId);
             return userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);

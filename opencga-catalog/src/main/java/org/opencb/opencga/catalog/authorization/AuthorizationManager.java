@@ -4,7 +4,6 @@ package org.opencb.opencga.catalog.authorization;
 //import java.security.acl.Acl;
 
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -32,28 +31,28 @@ public interface AuthorizationManager {
     User.Role getUserRole(String userId) throws CatalogException;
 
     @Deprecated
-    Acl getProjectACL(String userId, int projectId) throws CatalogException;
+    AclEntry getProjectACL(String userId, int projectId) throws CatalogException;
 
     @Deprecated
-    QueryResult setProjectACL(int projectId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setProjectACL(int projectId, AclEntry acl, String sessionId) throws CatalogException;
 
     @Deprecated
-    Acl getStudyACL(String userId, int studyId) throws CatalogException;
+    AclEntry getStudyACL(String userId, int studyId) throws CatalogException;
 
     @Deprecated
-    QueryResult setStudyACL(int studyId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setStudyACL(int studyId, AclEntry acl, String sessionId) throws CatalogException;
 
     @Deprecated
-    Acl getFileACL(String userId, int fileId) throws CatalogException;
+    AclEntry getFileACL(String userId, int fileId) throws CatalogException;
 
-    QueryResult setFileACL(int fileId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException;
 
     QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException;
 
     @Deprecated
-    Acl getSampleACL(String userId, int sampleId) throws CatalogException;
+    AclEntry getSampleACL(String userId, int sampleId) throws CatalogException;
 
-    QueryResult setSampleACL(int sampleId, Acl acl, String sessionId) throws CatalogException;
+    QueryResult setSampleACL(int sampleId, AclEntry acl, String sessionId) throws CatalogException;
 
     QueryResult unsetSampleACL(int sampleId, String userId, String sessionId) throws CatalogException;
 
@@ -76,7 +75,7 @@ public interface AuthorizationManager {
      * @param studies    Studies list
      * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
-    void filterStudies(String userId, Acl projectAcl, List<Study> studies) throws CatalogException;
+    void filterStudies(String userId, AclEntry projectAcl, List<Study> studies) throws CatalogException;
 
     /**
      * Removes from the list the files that the user can not read.
@@ -86,7 +85,7 @@ public interface AuthorizationManager {
      * @param files    Files list
      * @throws org.opencb.opencga.catalog.exceptions.CatalogException
      */
-    void filterFiles(String userId, Acl studyAcl, List<File> files) throws CatalogException;
+    void filterFiles(String userId, AclEntry studyAcl, List<File> files) throws CatalogException;
 
     /**
      * Removes from the list the samples that the user can not read.

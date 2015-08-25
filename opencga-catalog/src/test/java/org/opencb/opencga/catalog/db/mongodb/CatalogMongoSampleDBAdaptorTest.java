@@ -6,13 +6,12 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -34,10 +33,10 @@ public class CatalogMongoSampleDBAdaptorTest {
     private User user3;
     private Sample s1;
     private Sample s2;
-    private Acl acl_s1_user1;
-    private Acl acl_s1_user2;
-    private Acl acl_s2_user1;
-    private Acl acl_s2_user2;
+    private AclEntry acl_s1_user1;
+    private AclEntry acl_s1_user2;
+    private AclEntry acl_s2_user1;
+    private AclEntry acl_s2_user2;
 
     @Before
     public void before () throws IOException, CatalogDBException {
@@ -51,14 +50,14 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        acl_s1_user1 = new Acl(user1.getId(), false, false, false, false);
-        acl_s1_user2 = new Acl(user2.getId(), true, true, true, true);
+        acl_s1_user1 = new AclEntry(user1.getId(), false, false, false, false);
+        acl_s1_user2 = new AclEntry(user2.getId(), true, true, true, true);
         s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(
                 acl_s1_user1,
                 acl_s1_user2
         ), null, null), null).first();
-        acl_s2_user1 = new Acl(user1.getId(), false, false, false, false);
-        acl_s2_user2 = new Acl(user2.getId(), true, true, true, true);
+        acl_s2_user1 = new AclEntry(user1.getId(), false, false, false, false);
+        acl_s2_user2 = new AclEntry(user2.getId(), true, true, true, true);
         s2 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s2", "", -1, "", Arrays.asList(
                 acl_s2_user1,
                 acl_s2_user2
@@ -73,7 +72,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAcl() throws Exception {
-        Acl acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
+        AclEntry acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
         assertNotNull(acl);
         assertEquals(acl_s1_user1, acl);
 
@@ -90,16 +89,16 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAclFromUserWithoutAcl() throws Exception {
-        QueryResult<Acl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
+        QueryResult<AclEntry> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
         assertTrue(sampleAcl.getResult().isEmpty());
     }
 
     @Test
     public void setSampleAclNew() throws Exception {
-        Acl acl_s1_user3 = new Acl(user3.getId(), false, false, false, false);
+        AclEntry acl_s1_user3 = new AclEntry(user3.getId(), false, false, false, false);
 
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
-        QueryResult<Acl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
+        QueryResult<AclEntry> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
         assertFalse(sampleAcl.getResult().isEmpty());
         assertEquals(acl_s1_user3, sampleAcl.first());
     }
@@ -109,7 +108,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         assertEquals(acl_s1_user2, catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first());
 
-        Acl newAcl = new Acl(user2.getId(), false, true, false, true);
+        AclEntry newAcl = new AclEntry(user2.getId(), false, true, false, true);
         assertTrue(!acl_s1_user2.equals(newAcl));
 
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl);

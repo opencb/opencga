@@ -3,8 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Acl;
-import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -120,11 +119,11 @@ public interface CatalogFileDBAdaptor {
      * ***************************
      */
 
-    QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, Map<String, Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
+    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
 
-    QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException;
+    QueryResult setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException;
 
     QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException;
 

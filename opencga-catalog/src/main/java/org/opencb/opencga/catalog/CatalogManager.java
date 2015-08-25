@@ -365,7 +365,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.update(projectId, parameters, null, sessionId);//TODO: Add query options
     }
 
-    public QueryResult shareProject(int projectId, Acl acl, String sessionId) throws CatalogException {
+    public QueryResult shareProject(int projectId, AclEntry acl, String sessionId) throws CatalogException {
         return authorizationManager.setProjectACL(projectId, acl, sessionId);
     }
 
@@ -624,7 +624,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    public QueryResult shareFile(int fileId, Acl acl, String sessionId)
+    public QueryResult shareFile(int fileId, AclEntry acl, String sessionId)
             throws CatalogException {
         return authorizationManager.setFileACL(fileId, acl, sessionId);
     }
@@ -777,7 +777,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
 
-    public QueryResult shareSample(int sampleId, Acl acl, String sessionId)
+    public QueryResult shareSample(int sampleId, AclEntry acl, String sessionId)
             throws CatalogException {
         return authorizationManager.setSampleACL(sampleId, acl, sessionId);
     }

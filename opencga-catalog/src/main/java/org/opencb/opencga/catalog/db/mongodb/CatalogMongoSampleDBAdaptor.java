@@ -199,7 +199,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
     }
 
-    public QueryResult<Acl> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
 //        dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
@@ -217,7 +217,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     }
 
     @Override
-    public QueryResult<Map<String, Acl>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
+    public QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
 
         long startTime = startQuery();
         DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
@@ -228,13 +228,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
-        Map<String, Acl> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(Acl::getUserId, s -> s));
+        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId, s -> s));
 
         return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
     }
 
     @Override
-    public QueryResult setSampleAcl(int sampleId, Acl acl) throws CatalogDBException {
+    public QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
 
         String userId = acl.getUserId();
@@ -242,7 +242,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         DBObject newAclObject = getDbObject(acl, "ACL");
         DBObject update;
 
-        List<Acl> aclList = getSampleAcl(sampleId, userId).getResult();
+        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
             query = new BasicDBObject(_ID, sampleId);
             update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));

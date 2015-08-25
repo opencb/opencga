@@ -35,8 +35,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addCompQueryFilter;
@@ -427,7 +425,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult<Acl> getStudyAcl(int studyId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getStudyAcl(int studyId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         BasicDBObject query = new BasicDBObject(_ID, studyId);
         BasicDBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
@@ -436,13 +434,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if(studies.isEmpty()) {
             throw CatalogDBException.idNotFound("Study", studyId);
         } else {
-            List<Acl> acl = studies.get(0).getAcl();
+            List<AclEntry> acl = studies.get(0).getAcl();
             return endQuery("getStudyAcl", startTime, acl);
         }
     }
 
     @Override
-    public QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogDBException {
+    public QueryResult setStudyAcl(int studyId, AclEntry newAcl) throws CatalogDBException {
         String userId = newAcl.getUserId();
         if (!userDBAdaptor.userExists(userId)) {
             throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
@@ -815,7 +813,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
      * query: db.file.find({id:2}, {acl:{$elemMatch:{userId:"jcoll"}}, studyId:1})
      */
     @Override
-    public QueryResult<Acl> getFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         DBObject projection = BasicDBObjectBuilder
                 .start("acl",
@@ -828,12 +826,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if (queryResult.getNumResults() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        List<Acl> acl = parseFile(queryResult).getAcl();
+        List<AclEntry> acl = parseFile(queryResult).getAcl();
         return endQuery("get file acl", startTime, acl);
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, Acl>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
+    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException {
 
         long startTime = startQuery();
         DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in", filePaths)));
@@ -844,13 +842,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(aggregate);
-        Map<String, Map<String, Acl>> pathAclMap = new HashMap<>();
+        Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
         for (File file : files) {
-            Acl acl = file.getAcl().get(0);
+            AclEntry acl = file.getAcl().get(0);
             if (pathAclMap.containsKey(file.getPath())) {
                 pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
             } else {
-                HashMap<String, Acl> map = new HashMap<>();
+                HashMap<String, AclEntry> map = new HashMap<>();
                 map.put(acl.getUserId(), acl);
                 pathAclMap.put(file.getPath(), map);
             }
@@ -861,7 +859,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult setFileAcl(int fileId, Acl newAcl) throws CatalogDBException {
+    public QueryResult setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
@@ -869,7 +867,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 
-        List<Acl> aclList = getFileAcl(fileId, userId).getResult();
+        List<AclEntry> aclList = getFileAcl(fileId, userId).getResult();
         DBObject query;
         DBObject update;
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push

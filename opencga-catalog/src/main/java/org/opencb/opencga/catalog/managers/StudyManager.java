@@ -127,17 +127,17 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         LinkedList<File> files = new LinkedList<>();
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
-        LinkedList<Acl> acls = new LinkedList<>();
+        LinkedList<AclEntry> acls = new LinkedList<>();
 
         /* Add default ACL */
         if (!creatorId.equals(projectOwnerId)) {
             //Add full permissions for the creator if he is not the owner
-            acls.add(new Acl(creatorId, true, true, true, true));
+            acls.add(new AclEntry(creatorId, true, true, true, true));
         }
 
         //Copy generic permissions from the project.
 
-        QueryResult<Acl> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
+        QueryResult<AclEntry> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
         if (!aclQueryResult.getResult().isEmpty()) {
             //study.getAcl().add(aclQueryResult.getResult().get(0));
         } else {
@@ -178,7 +178,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     }
 
     @Override
-    public QueryResult<Study> share(int studyId, Acl acl) throws CatalogException {
+    public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -227,7 +227,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
+        AclEntry projectAcl = authorizationManager.getProjectACL(userId, projectId);
         if (!projectAcl.isRead()) {
             throw new CatalogDBException("Permission denied. Can't read project");
         }

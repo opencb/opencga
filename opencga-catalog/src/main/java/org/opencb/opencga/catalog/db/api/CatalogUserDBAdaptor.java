@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
@@ -79,8 +79,8 @@ public interface CatalogUserDBAdaptor {
 
     String getProjectOwnerId(int projectId) throws CatalogDBException;
 
-    QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
 
-    QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogDBException;
+    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
 
 }

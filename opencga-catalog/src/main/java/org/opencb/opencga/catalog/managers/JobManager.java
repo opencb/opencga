@@ -236,9 +236,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        List<Acl> acl = Arrays.asList(new Acl(userId, true, true, true, true));
+        List<AclEntry> acl = Arrays.asList(new AclEntry(userId, true, true, true, true));
         if (openTool) {
-            acl.add(new Acl(Acl.USER_OTHERS_ID, true, false, true, false));
+            acl.add(new AclEntry(AclEntry.USER_OTHERS_ID, true, false, true, false));
         }
 
         String name = Paths.get(path).getFileName().toString();

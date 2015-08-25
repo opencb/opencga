@@ -39,7 +39,7 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
-    private List<Acl> acl;
+    private List<AclEntry> acl;
     private List<Experiment> experiments;
 
     private List<File> files;
@@ -76,13 +76,13 @@ public class Study {
 
     public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
-                null, new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
+                null, new ArrayList<AclEntry>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
                 new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(),
                 uri, new HashMap<File.Bioformat, DataStore>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
-                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Group> groups, List<Acl> acl,
+                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Group> groups, List<AclEntry> acl,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
                  List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
@@ -240,11 +240,11 @@ public class Study {
         return this;
     }
 
-    public List<Acl> getAcl() {
+    public List<AclEntry> getAcl() {
         return acl;
     }
 
-    public void setAcl(List<Acl> acl) {
+    public void setAcl(List<AclEntry> acl) {
         this.acl = acl;
     }
 

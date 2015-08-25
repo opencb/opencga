@@ -29,7 +29,7 @@ public class Sample {
     private int individualId;
     private String description;
 
-    private List<Acl> acl;
+    private List<AclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -38,11 +38,11 @@ public class Sample {
     }
 
     public Sample(int id, String name, String source, int individualId, String description) {
-        this(id, name, source, individualId, description, Collections.<Acl>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
     }
 
     public Sample(int id, String name, String source, int individualId, String description,
-                  List<Acl> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -112,11 +112,11 @@ public class Sample {
         return this;
     }
 
-    public List<Acl> getAcl() {
+    public List<AclEntry> getAcl() {
         return acl;
     }
 
-    public Sample setAcl(List<Acl> acl) {
+    public Sample setAcl(List<AclEntry> acl) {
         this.acl = acl;
         return this;
     }

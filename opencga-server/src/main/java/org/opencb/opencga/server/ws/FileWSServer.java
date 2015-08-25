@@ -806,7 +806,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (unshare) {
                 queryResult = catalogManager.unshareFile(fileId, userId, sessionId);
             } else {
-                queryResult = catalogManager.shareFile(fileId, new Acl(userId, read, write, false, delete), sessionId);
+                queryResult = catalogManager.shareFile(fileId, new AclEntry(userId, read, write, false, delete), sessionId);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
