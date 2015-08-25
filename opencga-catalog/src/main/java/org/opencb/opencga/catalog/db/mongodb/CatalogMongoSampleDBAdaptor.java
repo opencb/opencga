@@ -202,7 +202,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
-//        dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+        int studyId = getStudyIdBySampleId(sampleId);
+        checkAclUserId(dbAdaptorFactory, userId, studyId);
 
         DBObject query = new BasicDBObject(_ID, sampleId);
         DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));

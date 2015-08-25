@@ -438,7 +438,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
         BasicDBObject project = new BasicDBObject("groups", new BasicDBObject("$elemMatch", groupQuery));
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, project, options);
+        QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>(1);
         for (Study study : studies) {
@@ -830,7 +830,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
-//        this.getCatalogUserDBAdaptor().checkUserExists(userId);
+        checkAclUserId(this, userId, getStudyIdByFileId(fileId));
 
         DBObject newAclObject = getDbObject(newAcl, "ACL");
 
