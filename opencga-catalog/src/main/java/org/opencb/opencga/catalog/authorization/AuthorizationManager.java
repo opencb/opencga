@@ -22,6 +22,16 @@ public interface AuthorizationManager {
 
     void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException;
 
+    /**
+     * Can read to an individual if:
+     *    a) User is SAMPLE_MANAGER, role:ADMIN or studyOwner
+     *    b) User can read some related sample
+     * Any other permission require to be SAMPLE_MANAGER, role:ADMIN or studyOwner
+     *
+     * @throws CatalogException
+     */
+    void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException;
+
     void checkReadJob(String userId, int jobId) throws CatalogException;
 
     void checkReadJob(String userId, Job job) throws CatalogException;
@@ -83,6 +93,8 @@ public interface AuthorizationManager {
     void filterJobs(String userId, List<Job> jobs) throws CatalogException;
 
     void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException;
+
+    void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException;
 
     /*--------------------------*/
     // Group management methods

@@ -16,18 +16,20 @@ import java.util.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
-    final CatalogUserDBAdaptor userDBAdaptor;
-    final CatalogStudyDBAdaptor studyDBAdaptor;
-    final CatalogFileDBAdaptor fileDBAdaptor;
-    final CatalogJobDBAdaptor jobDBAdaptor;
-    final CatalogSampleDBAdaptor sampleDBAdaptor;
+    private final CatalogUserDBAdaptor userDBAdaptor;
+    private final CatalogStudyDBAdaptor studyDBAdaptor;
+    private final CatalogFileDBAdaptor fileDBAdaptor;
+    private final CatalogJobDBAdaptor jobDBAdaptor;
+    private final CatalogSampleDBAdaptor sampleDBAdaptor;
+    private final CatalogIndividualDBAdaptor individualDBAdaptor;
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory) {
-        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
-        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
-        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
-        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
-        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
+        fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
+        sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
 
     @Override
@@ -122,11 +124,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException {
-        if (isAdmin(userId)) {
-            return;
-        }
         int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (isOwner(studyId, userId)) {
+        if (isAdmin(userId) || isOwner(studyId, userId)) {
             return;
         }
 
@@ -151,6 +150,36 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw CatalogAuthorizationException.denny(userId, permission.toString(), "Sample", sampleId, null);
         }
 
+    }
+
+    @Override
+    public void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException {
+        int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        if (isAdmin(userId) || isOwner(studyId, userId)) {  //User admin or owner
+            return;
+        }
+
+        final boolean auth;
+        Group group = getGroupBelonging(studyId, userId);
+        if (group == null) {    //User not in study
+            auth = false;
+        } else if (group.getPermissions().isManagerSamples()) {
+            auth = true;
+        } else {
+            switch (permission) {
+                case READ:
+                    List<Sample> samples = sampleDBAdaptor.getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.individualId.toString(), individualId)).getResult();
+                    filterSamples(userId, studyId, samples, group);
+                    auth = !samples.isEmpty();
+                    break;
+                default:
+                    auth = false;
+                    break;
+            }
+        }
+        if (!auth) {
+            throw CatalogAuthorizationException.denny(userId, permission.toString(), "Individual", individualId, null);
+        }
     }
 
     private AclEntry resolveFileAcl(int fileId, String userId, int studyId, Group group) throws CatalogException {
@@ -318,6 +347,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             filterSamples(userId, study.getId(), study.getSamples(), group);
             filterJobs(userId, study.getJobs());
             filterCohorts(userId, study.getId(), study.getCohorts());
+            filterIndividuals(userId, study.getId(), study.getIndividuals());
         }
     }
 
@@ -419,6 +449,25 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     iterator.remove();  //Remove cohort.
                     break;              //Stop checking cohort
                 }
+            }
+        }
+    }
+
+    @Override
+    public void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException {
+        if (individuals == null || individuals.isEmpty()) {
+            return;
+        }
+        if (isAdmin(userId) || isOwner(studyId, userId)) {
+            return;
+        }
+
+        for (Iterator<Individual> iterator = individuals.iterator(); iterator.hasNext(); ) {
+            Individual individual = iterator.next();
+            try {
+                checkIndividualPermission(individual.getId(), userId, CatalogPermission.READ);
+            } catch (CatalogAuthorizationException e) {
+                iterator.remove();
             }
         }
     }

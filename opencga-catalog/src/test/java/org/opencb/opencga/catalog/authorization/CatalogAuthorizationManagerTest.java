@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -58,6 +59,8 @@ public class CatalogAuthorizationManagerTest {
     private int smp4;   // Shared with @members
     private int smp6;   // Shared with *
     private int smp5;   // Shared with @members, forbidden for memberUse
+    private int ind1;
+    private int ind2;
 
     @Before
     public void before () throws Exception {
@@ -105,6 +108,12 @@ public class CatalogAuthorizationManagerTest {
         smp4 = catalogManager.createSample(s1, "smp4", null, null, null, null, ownerSessionId).first().getId();
         smp5 = catalogManager.createSample(s1, "smp5", null, null, null, null, ownerSessionId).first().getId();
         smp6 = catalogManager.createSample(s1, "smp6", null, null, null, null, ownerSessionId).first().getId();
+        catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first().getId();
+        ind1 = catalogManager.createIndividual(s1, "ind1", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();
+        ind2 = catalogManager.createIndividual(s1, "ind2", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();
+        catalogManager.modifySample(smp1, new QueryOptions("individualId", ind1), ownerSessionId);
+        catalogManager.modifySample(smp2, new QueryOptions("individualId", ind1), ownerSessionId);
+        catalogManager.modifySample(smp2, new QueryOptions("individualId", ind2), ownerSessionId);
 
         catalogManager.shareSample(smp1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
         catalogManager.shareSample(smp3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
@@ -443,10 +452,37 @@ public class CatalogAuthorizationManagerTest {
 
     @Test
     public void readCohort() throws CatalogException {
-        int all = catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first().getId();
         assertEquals(1, catalogManager.getAllCohorts(s1, null, ownerSessionId).getNumResults());
         assertEquals(0, catalogManager.getAllCohorts(s1, null, memberSessionId).getNumResults());
     }
+
+    /*--------------------------*/
+    // Read Individuals
+    /*--------------------------*/
+
+    @Test
+    public void readIndividualByReadingSomeSample() throws CatalogException {
+        catalogManager.getIndividual(ind1, null, memberSessionId);
+    }
+
+    @Test
+    public void readIndividualForbidden() throws CatalogException {
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getIndividual(ind2, null, memberSessionId);
+    }
+
+    @Test
+    public void readIndividualStudyManager() throws CatalogException {
+        catalogManager.getIndividual(ind2, null, studyAdmin1SessionId);
+    }
+
+    @Test
+    public void readAllIndividuals() throws CatalogException {
+        assertEquals(2, catalogManager.getAllIndividuals(s1, null, ownerSessionId).getNumResults());
+        assertEquals(2, catalogManager.getAllIndividuals(s1, null, studyAdmin1SessionId).getNumResults());
+        assertEquals(1, catalogManager.getAllIndividuals(s1, null, memberSessionId).getNumResults());
+    }
+
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {
