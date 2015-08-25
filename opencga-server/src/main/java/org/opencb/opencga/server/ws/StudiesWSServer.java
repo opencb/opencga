@@ -461,11 +461,40 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some study attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
+    public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups")
+    @ApiOperation(value = "Modify group members", position = 9)
+    public Response groups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
+                           @ApiParam(value = "User to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUser") String addUser,
+                           @ApiParam(value = "User to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUser") String removeUser) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            List<QueryResult> queryResults = new LinkedList<>();
+            if (!addUser.isEmpty() && !removeUser.isEmpty()) {
+                return createErrorResponse("groups", "Must specify only one user to add or remove from one group");
+            }
+            if (!addUser.isEmpty()) {
+                queryResults.add(catalogManager.addMemberToGroup(studyId, groupId, addUser, sessionId));
+            }
+            if (!removeUser.isEmpty()) {
+                queryResults.add(catalogManager.removeMemberFromGroup(studyId, groupId, removeUser, sessionId));
+            }
+            if (queryResults.isEmpty()) {
+                return createErrorResponse("groups", "Must specify a user to add or remove from one group");
+            }
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

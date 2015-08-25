@@ -4,6 +4,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
@@ -109,9 +111,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
 
         /* Check project permissions */
-        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw CatalogAuthorizationException.denny(userId, "create", "Project", projectId, null);
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
         if (!creatorId.equals(userId)) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
@@ -126,17 +127,11 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         LinkedList<File> files = new LinkedList<>();
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
-        LinkedList<Acl> acls = new LinkedList<>();
 
-        /* Add default ACL */
-        if (!creatorId.equals(projectOwnerId)) {
-            //Add full permissions for the creator if he is not the owner
-            acls.add(new Acl(creatorId, true, true, true, true));
-        }
 
         //Copy generic permissions from the project.
 
-        QueryResult<Acl> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
+        QueryResult<AclEntry> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
         if (!aclQueryResult.getResult().isEmpty()) {
             //study.getAcl().add(aclQueryResult.getResult().get(0));
         } else {
@@ -149,7 +144,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
                 new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 
@@ -177,7 +172,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     }
 
     @Override
-    public QueryResult<Study> share(int studyId, Acl acl) throws CatalogException {
+    public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -207,16 +202,14 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (studyAcl.isRead()) {
-            QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
-            if (!studyResult.getResult().isEmpty()) {
-                authorizationManager.filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
-            }
-            return studyResult;
-        } else {
-            throw new CatalogDBException("Permission denied. Can't read this study");
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
+        if (!studyResult.getResult().isEmpty()) {
+            authorizationManager.filterFiles(userId, studyId, studyResult.getResult().get(0).getFiles());
         }
+        return studyResult;
+
     }
 
     @Override
@@ -228,15 +221,14 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (!projectAcl.isRead()) {
-            throw new CatalogDBException("Permission denied. Can't read project");
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
 
         QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(projectId, options);
         List<Study> studies = allStudies.getResult();
-        authorizationManager.filterStudies(userId, projectAcl, studies);
+        authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
+        allStudies.setNumResults(studies.size());
+
 
         return allStudies;
     }
@@ -247,9 +239,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+
         if (parameters.containsKey("alias")) {
             rename(studyId, parameters.getString("alias"), sessionId);
 
@@ -278,9 +269,9 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String sessionUserId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
-        if (!authorizationManager.getStudyACL(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
-            throw new CatalogDBException("Permission denied. Can't write in project");
-        }
+        //User can't write/modify the study
+        authorizationManager.checkStudyPermission(studyId, sessionUserId, StudyPermission.MANAGE_SAMPLES);
+
 
         // Both users must bu updated
         userDBAdaptor.updateUserLastActivity(sessionUserId);

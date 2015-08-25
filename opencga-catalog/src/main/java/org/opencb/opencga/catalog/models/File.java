@@ -70,7 +70,7 @@ public class File {
      * This field values -1 when file has been uploaded.
      */
     private int jobId;
-    private List<Acl> acl;
+    private List<AclEntry> acl;
 
     private Index index;
 
@@ -179,20 +179,20 @@ public class File {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String description, Status status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, Status status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<Acl>(), new HashMap<String, Object>(),
+                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, Status status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<Acl> acl, Map<String, Object> stats,
+                List<Integer> sampleIds, int jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -371,11 +371,11 @@ public class File {
         this.jobId = jobId;
     }
 
-    public List<Acl> getAcl() {
+    public List<AclEntry> getAcl() {
         return acl;
     }
 
-    public void setAcl(List<Acl> acl) {
+    public void setAcl(List<AclEntry> acl) {
         this.acl = acl;
     }
 

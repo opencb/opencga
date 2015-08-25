@@ -4,12 +4,14 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -72,7 +74,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
 
         /* Add default ACL */
         //Add generic permissions to the project.
-        project.getAcl().add(new Acl(Acl.USER_OTHERS_ID, false, false, false, false));
+        project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
 
         QueryResult<Project> result = userDBAdaptor.createProject(ownerId, project, options);
         project = result.getResult().get(0);
@@ -103,16 +105,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (projectAcl.isRead()) {
-            QueryResult<Project> projectResult = userDBAdaptor.getProject(projectId, options);
-            if (!projectResult.getResult().isEmpty()) {
-                authorizationManager.filterStudies(userId, projectAcl, projectResult.getResult().get(0).getStudies());
-            }
-            return projectResult;
-        } else {
-            throw new CatalogDBException("Permission denied. Can't read project.");
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+        QueryResult<Project> projectResult = userDBAdaptor.getProject(projectId, options);
+        if (!projectResult.getResult().isEmpty()) {
+            authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
         }
+        return projectResult;
     }
 
     @Override
@@ -141,9 +139,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
-        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) {
-            throw new CatalogDBException("User '" + userId + "' can't modify the project " + projectId);
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
         if (parameters.containsKey("alias")) {
             rename(projectId, parameters.getString("alias"), sessionId);
 
@@ -167,13 +164,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (projectAcl.isWrite()) {
-            userDBAdaptor.updateUserLastActivity(ownerId);
-            return userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
-        } else {
-            throw new CatalogDBException("Permission denied. Can't rename project");
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
+        userDBAdaptor.updateUserLastActivity(ownerId);
+        return userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
     }
 
     @Override

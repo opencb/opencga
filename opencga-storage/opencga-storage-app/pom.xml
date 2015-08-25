@@ -31,9 +31,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <build.dir>build</build.dir>
-        <app.name>opencga-storage</app.name>
-        <service.name>opencga-storage-server</service.name>
+        <build.dir>${project.basedir}/../build</build.dir>
     </properties>
 
     <dependencies>
@@ -57,7 +55,7 @@
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
-            <version>2.16</version>
+            <version>2.17</version>
         </dependency>
     </dependencies>
 
@@ -69,7 +67,7 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${basedir}/build/conf</targetPath>
+                <targetPath>${project.basedir}/target/conf</targetPath>
             </resource>
         </resources>
 
@@ -77,7 +75,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.9</version>
+                <version>1.10</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -90,25 +88,18 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <assembleDirectory>${build.dir}</assembleDirectory>
+                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.cli.OpenCGAStorageMain</mainClass>
-                            <name>${app.name}-old.sh</name>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
-                        <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
-                            <name>${app.name}.sh</name>
+                            <name>opencga-storage.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
                         </program>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>
-                            <name>${service.name}.sh</name>
+                            <name>opencga-storage-server.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -118,18 +109,20 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
+                <version>1.8</version>
                 <executions>
                     <execution>
                         <id>clean-libs</id>
                         <phase>clean</phase>
                         <configuration>
                             <target>
-                                <echo>Cleaning libs folder at ${build.dir}</echo>
+                                <echo>Preparing ${build.dir} folder</echo>
                                 <exec executable="rm">
                                     <arg value="-rf"/>
-                                    <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/bin"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
                             </target>
@@ -143,16 +136,19 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Adding execution permission</echo>
-                                <exec executable="chmod">
-                                    <arg value="+x"/>
-                                    <arg value="${build.dir}/bin/${app.name}.sh"/>
-                                    <arg value="${build.dir}/bin/${service.name}.sh"/>
+                                <echo>Copying to ${build.dir}</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/target/appassembler/libs"/>
+                                    <arg value="${project.basedir}/target/conf"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
+
                                 <echo>Coping configuration file</echo>
                                 <exec executable="cp">
-                                    <arg value="${pom.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
-                                    <arg value="${build.dir}/conf/"/>
+                                    <arg value="${project.basedir}/../opencga-storage-core/target/classes/${storage.configuration.file}"/>
+                                    <arg value="${build.dir}/conf"/>
                                 </exec>
                             </target>
                         </configuration>

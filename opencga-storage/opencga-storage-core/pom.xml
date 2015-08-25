@@ -76,11 +76,6 @@
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
-                        <!--<configuration>-->
-                        <!--<includes>-->
-                        <!--<include>**/org/opencb/opencga/storage/core/*</include>-->
-                        <!--</includes>-->
-                        <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>
