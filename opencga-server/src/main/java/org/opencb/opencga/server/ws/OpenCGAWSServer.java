@@ -127,13 +127,15 @@ public class OpenCGAWSServer {
 //        }
 
         try {
-            Properties properties = new Properties();
-            InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
-            properties.load(is);
-            String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
-            System.out.println("OpenCGA home set to: " + openCGAHome);
             if(Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
+                Properties properties = new Properties();
+                InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+                properties.load(is);
+                String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
+                System.out.println("OpenCGA home set to: " + openCGAHome);
                 Config.setOpenCGAHome(openCGAHome);
+            } else {
+                System.out.println("OpenCGA home set to: " + Config.getOpenCGAHome());
             }
         } catch (IOException e) {
             System.out.println("Error loading properties:\n" + e.getMessage());
