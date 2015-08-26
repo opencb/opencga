@@ -15,6 +15,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -22,7 +23,10 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.app.StorageMain;
+import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -30,9 +34,14 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -65,14 +74,14 @@ public class VariantStorageTest {
 
     @Before
     public void before () throws Exception {
-        catalogPropertiesFile = getResourceUri("catalog.properties").getPath();
-        Properties properties = new Properties();
-        properties.load(CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
+        Path opencgaHome = AnalysisStorageTestUtil.isolateOpenCGA();
 
-        CatalogManagerTest.clearCatalog(properties);
+        catalogPropertiesFile = opencgaHome.resolve("conf").resolve("catalog.properties").toString();
+        Properties catalogProperties = Config.getCatalogProperties();
+        CatalogManagerTest.clearCatalog(catalogProperties);
         clearDB(dbName);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogProperties);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -246,21 +255,7 @@ public class VariantStorageTest {
      * Call directly to the OpenCGAStorageMain
      */
     private Job runStorageJob(Job storageJob, String sessionId) throws AnalysisExecutionException, IOException, CatalogException {
-        return runStorageJob(catalogManager, storageJob, logger, sessionId);
+        return AnalysisStorageTestUtil.runStorageJob(catalogManager, storageJob, logger, sessionId);
     }
 
-    public static Job runStorageJob(CatalogManager catalogManager, Job storageJob, Logger logger, String sessionId) throws AnalysisExecutionException, IOException, CatalogException {
-        logger.info("==========================================");
-        logger.info("Executing opencga-storage");
-        logger.info("==========================================");
-        String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
-        StorageMain.Main(Arrays.copyOfRange(args, 1, args.length));
-        logger.info("==========================================");
-        logger.info("Finish opencga-storage");
-        logger.info("==========================================");
-
-        storageJob.setCommandLine("echo 'Executing fake CLI :' " + storageJob.getCommandLine());
-        AnalysisJobExecutor.execute(catalogManager, storageJob, sessionId);
-        return catalogManager.getJob(storageJob.getId(), null, sessionId).first();
-    }
 }
