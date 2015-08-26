@@ -95,7 +95,7 @@ public class SimpleThreadRunner {
         executorService.shutdown();
         try {
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             logger.error(ExceptionUtils.getExceptionString(e));
         }
 
@@ -147,6 +147,8 @@ public class SimpleThreadRunner {
                 readBlockingQueue.put(POISON_PILL);
             } catch (InterruptedException e) {
                 logger.error(ExceptionUtils.getExceptionString(e));
+            } catch (Exception e) {
+                logger.error("UNEXPECTED ENDING of a reader thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
             }
         }
     }
@@ -256,6 +258,8 @@ public class SimpleThreadRunner {
                     batch = getBatch();
                 } catch (InterruptedException e) {
                     logger.error(ExceptionUtils.getExceptionString(e));
+                } catch (Exception e) {
+                    logger.error("UNEXPECTED ENDING of a writer thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
                 }
             }
             logger.debug("write: timeWriting = " + timeWriting / -1000000000.0 + "s");
