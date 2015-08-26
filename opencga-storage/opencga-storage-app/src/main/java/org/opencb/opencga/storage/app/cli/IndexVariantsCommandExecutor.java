@@ -51,6 +51,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
         super(indexVariantsCommandOptions.logLevel, indexVariantsCommandOptions.verbose,
                 indexVariantsCommandOptions.configFile);
 
+        this.logFile = indexVariantsCommandOptions.logFile;
         this.indexVariantsCommandOptions = indexVariantsCommandOptions;
     }
     @Override

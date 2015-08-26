@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.List;
 public abstract class CommandExecutor {
 
     protected String logLevel;
+    protected String logFile;
     protected boolean verbose;
     protected String configFile;
 
@@ -60,6 +63,10 @@ public abstract class CommandExecutor {
          */
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
 
+        if (verbose) {
+            logLevel = "debug";
+        }
+
         if(logLevel != null && !logLevel.isEmpty()) {
             // We must call to this method
             configureDefaultLog(logLevel);
@@ -82,23 +89,18 @@ public abstract class CommandExecutor {
         ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
         stderr.setThreshold(Level.toLevel(logLevel));
 
-//        if (false) {
-//            RollingFileAppender file = (RollingFileAppender) rootLogger.getAppender("file");
-//            try {
-//                file.setFile("/tmp/aaaaa.log", true, false, 8 * 1024);
-//                file.setThreshold(Level.toLevel("DEBUG"));
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//                rootLogger.removeAppender("file");
-//            }
-//        } else {
-//            rootLogger.removeAppender("file");
-//        }
-
         logger = LoggerFactory.getLogger(this.getClass().toString());
         this.logLevel = logLevel;
     }
 
+
+    public String getLogFile() {
+        return logFile;
+    }
+
+    public void setLogFile(String logFile) {
+        this.logFile = logFile;
+    }
 
     public boolean isVerbose() {
         return verbose;
@@ -127,12 +129,53 @@ public abstract class CommandExecutor {
      * @throws IOException
      */
     public void loadStorageConfiguration() throws IOException {
-        if(this.configFile != null) {
-            logger.debug("Loading configuration from '{}'", this.configFile);
+        String loadedConfigurationFile;
+        if (this.configFile != null) {
+            loadedConfigurationFile = this.configFile;
             this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
-        }else {
-            this.configuration = StorageConfiguration.load();
+        } else {
+            // We load configuration file either from app home folder or from the JAR
+            Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+            if (appHome != null && Files.exists(path)) {
+                loadedConfigurationFile = appHome + "/conf/storage-configuration.yml";
+                this.configuration = StorageConfiguration
+                        .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
+            } else {
+                loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml").toString();
+                this.configuration =  StorageConfiguration
+                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+            }
         }
+
+        // logLevel parameter has preference in CLI over configuration file
+        if (this.logLevel == null || this.logLevel.isEmpty()) {
+            this.logLevel = this.configuration.getLogLevel();
+            configureDefaultLog(this.configuration.getLogLevel());
+        } else {
+            if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
+                this.configuration.setLogLevel(this.logLevel);
+                configureDefaultLog(this.configuration.getLogLevel());
+            }
+        }
+
+        // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
+        if (this.logFile != null && !this.logFile.isEmpty()) {
+            this.configuration.setLogFile(logFile);
+        }
+        // If user has set up a logFile we redirect logs to it
+        if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
+            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+
+            // If a log file is used then console log is removed
+            rootLogger.removeAppender("stderr");
+
+            // Creating a RollingFileAppender to output the log
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"), this.configuration.getLogFile(), true);
+            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
+            rootLogger.addAppender(rollingFileAppender);
+        }
+
+        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
     @Deprecated

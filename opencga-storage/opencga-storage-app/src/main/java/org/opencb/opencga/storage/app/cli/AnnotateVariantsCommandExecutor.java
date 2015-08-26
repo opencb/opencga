@@ -42,6 +42,7 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         super(annotateVariantsCommandOptions.logLevel, annotateVariantsCommandOptions.verbose,
                 annotateVariantsCommandOptions.configFile);
 
+        this.logFile = annotateVariantsCommandOptions.logFile;
         this.annotateVariantsCommandOptions = annotateVariantsCommandOptions;
     }
 

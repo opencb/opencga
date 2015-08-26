@@ -45,6 +45,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
         super(statsVariantsCommandOptions.logLevel, statsVariantsCommandOptions.verbose,
                 statsVariantsCommandOptions.configFile);
 
+        this.logFile = statsVariantsCommandOptions.logFile;
         this.statsVariantsCommandOptions = statsVariantsCommandOptions;
     }
 
