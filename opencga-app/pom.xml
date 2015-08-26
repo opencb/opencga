@@ -164,9 +164,6 @@
                                     <arg value="-rf"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
-                                <exec executable="mkdir">
-                                    <arg value="${build.dir}"/>
-                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -178,6 +175,15 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
+                                <echo>Preparing ${build.dir} folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
