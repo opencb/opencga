@@ -61,7 +61,7 @@ public class FileWSServerTest {
 
     @BeforeClass
     static public void initServer() throws Exception {
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         serverTestUtils = new WSServerTestUtils();
         serverTestUtils.initServer();
     }

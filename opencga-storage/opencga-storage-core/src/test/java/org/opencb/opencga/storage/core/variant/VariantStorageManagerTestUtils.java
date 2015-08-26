@@ -47,7 +47,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
 
     @BeforeClass
     public static void _beforeClass() throws Exception {
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         Path rootDir = getTmpRootDir();
         if (rootDir.toFile().exists()) {
             IOUtils.deleteDirectory(rootDir);

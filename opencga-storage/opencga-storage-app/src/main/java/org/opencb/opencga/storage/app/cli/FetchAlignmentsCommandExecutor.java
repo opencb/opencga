@@ -42,6 +42,7 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
         super(queryAlignmentsCommandOptions.logLevel, queryAlignmentsCommandOptions.verbose,
                 queryAlignmentsCommandOptions.configFile);
 
+        this.logFile = queryAlignmentsCommandOptions.logFile;
         this.queryAlignmentsCommandOptions = queryAlignmentsCommandOptions;
     }
 

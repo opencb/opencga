@@ -62,6 +62,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         super(queryVariantsCommandOptions.logLevel, queryVariantsCommandOptions.verbose,
                 queryVariantsCommandOptions.configFile);
 
+        this.logFile = queryVariantsCommandOptions.logFile;
         this.queryVariantsCommandOptions = queryVariantsCommandOptions;
     }
 
