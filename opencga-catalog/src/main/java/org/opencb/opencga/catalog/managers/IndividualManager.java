@@ -103,7 +103,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkIndividualPermission(studyId, userId, CatalogPermission.WRITE);
+        authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.WRITE);
 
 
         options.putAll(parameters);//FIXME: Use separated params and options, or merge
@@ -119,7 +119,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkIndividualPermission(studyId, userId, CatalogPermission.DELETE);
+        authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.DELETE);
 
 
         return individualDBAdaptor.deleteIndividual(individualId, options);
