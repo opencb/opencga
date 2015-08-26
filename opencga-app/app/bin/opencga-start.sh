@@ -7,4 +7,4 @@ OPENCGA_DAEMON_BIN=$BASEDIR'/bin/opencga-daemon.sh'
 mkdir -p $BASEDIR/log
 export OPENCGA_HOME=$BASEDIR
 
-exec $OPENCGA_DAEMON_BIN $@ &>> $BASEDIR/log/daemon.log &
+exec $OPENCGA_DAEMON_BIN $@ &>> $BASEDIR/logs/daemon.log &

@@ -89,6 +89,7 @@
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <!--<extraJvmArguments>-Dlog4j.configuration=file:conf/log4j.properties</extraJvmArguments>-->
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>

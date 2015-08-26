@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app.cli;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.*;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public abstract class CommandExecutor {
 
         if(logLevel != null && !logLevel.isEmpty()) {
             // We must call to this method
-            setLogLevel(logLevel);
+            configureDefaultLog(logLevel);
         }
     }
 
@@ -71,10 +72,29 @@ public abstract class CommandExecutor {
         return logLevel;
     }
 
-    public void setLogLevel(String logLevel) {
+    public void configureDefaultLog(String logLevel) {
         // This small hack allow to configure the appropriate Logger level from the command line, this is done
         // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        rootLogger.setLevel(Level.toLevel(logLevel));
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
+//        if (false) {
+//            RollingFileAppender file = (RollingFileAppender) rootLogger.getAppender("file");
+//            try {
+//                file.setFile("/tmp/aaaaa.log", true, false, 8 * 1024);
+//                file.setThreshold(Level.toLevel("DEBUG"));
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                rootLogger.removeAppender("file");
+//            }
+//        } else {
+//            rootLogger.removeAppender("file");
+//        }
+
         logger = LoggerFactory.getLogger(this.getClass().toString());
         this.logLevel = logLevel;
     }
