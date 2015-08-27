@@ -50,8 +50,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/{version}")
@@ -127,13 +129,15 @@ public class OpenCGAWSServer {
 //        }
 
         try {
-            Properties properties = new Properties();
-            InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
-            properties.load(is);
-            String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
-            System.out.println("OpenCGA home set to: " + openCGAHome);
             if(Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
+                Properties properties = new Properties();
+                InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
+                properties.load(is);
+                String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
+                System.out.println("OpenCGA home set to: " + openCGAHome);
                 Config.setOpenCGAHome(openCGAHome);
+            } else {
+                System.out.println("OpenCGA home set to: " + Config.getOpenCGAHome());
             }
         } catch (IOException e) {
             System.out.println("Error loading properties:\n" + e.getMessage());
@@ -149,7 +153,7 @@ public class OpenCGAWSServer {
 //        }
 
         try {
-            StorageConfiguration storageConfiguration = StorageConfiguration.load();
+            StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "storage-configuration.yml").toFile()));
             storageConfiguration.setStudyMetadataManager(CatalogStudyConfigurationManager.class.getName());
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {

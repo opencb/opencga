@@ -354,6 +354,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (files == null || files.isEmpty()) {
             return;
         }
+        if (isAdmin(userId) || isOwner(studyId, userId)) {
+            return;
+        }
 
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {

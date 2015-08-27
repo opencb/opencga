@@ -735,7 +735,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.containsKey(VariantQueryParams.SIFT.key())) {
-                System.out.println(query.getString(VariantQueryParams.SIFT.key()));
+//                System.out.println(query.getString(VariantQueryParams.SIFT.key()));
                 addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
@@ -843,7 +843,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
                 String[] sampleGenotypesArray = sampleGenotypesCSV.split(AND);
-                System.out.println("sampleGenotypesArray = " + Arrays.toString(sampleGenotypesArray));
+//                System.out.println("sampleGenotypesArray = " + Arrays.toString(sampleGenotypesArray));
 
                 for (String sampleGenotypes : sampleGenotypesArray) {
                     String[] sampleGenotype = sampleGenotypes.split(IS);
@@ -884,7 +884,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Find = " + builder.get());
+        logger.info("Find = " + builder.get());
         return builder;
     }
 

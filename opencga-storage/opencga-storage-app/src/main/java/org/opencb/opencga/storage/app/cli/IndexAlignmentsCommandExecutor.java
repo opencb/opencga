@@ -43,6 +43,7 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
         super(indexAlignmentsCommandOptions.logLevel, indexAlignmentsCommandOptions.verbose,
                 indexAlignmentsCommandOptions.configFile);
 
+        this.logFile = indexAlignmentsCommandOptions.logFile;
         this.indexAlignmentsCommandOptions = indexAlignmentsCommandOptions;
     }
 

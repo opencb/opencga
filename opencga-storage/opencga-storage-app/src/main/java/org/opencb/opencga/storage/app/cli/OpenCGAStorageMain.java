@@ -875,7 +875,7 @@ public class OpenCGAStorageMain {
     private static void setLogLevel(String logLevel) {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     }
 

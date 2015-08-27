@@ -71,6 +71,7 @@ public class StorageConfiguration {
 
     private String defaultStorageEngineId;
     private String logLevel;
+    private String logFile;
     private String studyMetadataManager;
 
 //    private String include;
@@ -96,6 +97,7 @@ public class StorageConfiguration {
      * if not exists then loads JAR storage-configuration.yml
      * @throws IOException
      */
+    @Deprecated
     public static StorageConfiguration load() throws IOException {
         String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
         Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
@@ -224,6 +226,14 @@ public class StorageConfiguration {
 
     public void setLogLevel(String logLevel) {
         this.logLevel = logLevel;
+    }
+
+    public String getLogFile() {
+        return logFile;
+    }
+
+    public void setLogFile(String logFile) {
+        this.logFile = logFile;
     }
 
 //    public String getInclude() {
