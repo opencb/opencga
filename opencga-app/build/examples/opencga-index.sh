@@ -5,10 +5,9 @@
 
 #set -v
 
-if [ ! $OPENCGA_HOME ]
-then
-    export OPENCGA_HOME=/opt/opencga
-fi
+
+PRGDIR=`dirname "$0"`
+export OPENCGA_HOME=`cd "$PRGDIR/.." >/dev/null; pwd`
 export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
 
 
