@@ -80,7 +80,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
             options.putAll(statsVariantsCommandOptions.params);
         }
 
-        Map<String, Set<String>> cohorts = null;
+        Map<String, Set<String>> cohorts = new LinkedHashMap<>();
         if (statsVariantsCommandOptions.cohort != null && !statsVariantsCommandOptions.cohort.isEmpty()) {
             cohorts = new LinkedHashMap<>(statsVariantsCommandOptions.cohort.size());
             for (Map.Entry<String, String> entry : statsVariantsCommandOptions.cohort.entrySet()) {
@@ -136,13 +136,15 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
 
         try {
 
-            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
+            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
 
             QueryOptions queryOptions = new QueryOptions(options);
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, 
+                        studyConfiguration, queryOptions);
             }
 
             if (doLoad) {

@@ -53,12 +53,29 @@ public class VariantStatisticsCalculator {
         this.skippedFiles = skippedFiles;
     }
 
-    public VariantAggregatedStatsCalculator getAggregatedCalculator() {
-        return aggregatedCalculator;
-    }
-
-    public void setAggregatedCalculator(VariantAggregatedStatsCalculator aggregatedCalculator) {
-        this.aggregatedCalculator = aggregatedCalculator;
+    /**
+     * if the study is aggregated i.e. it doesn't have sample data, call this before calculate. It is not needed if the 
+     * study does have samples.
+     * @param aggregation see org.opencb.biodata.models.variant.VariantSource.Aggregation
+     * @param tagmap nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
+     */
+    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap) {
+        aggregatedCalculator = null;
+        this.aggregation = aggregation;
+        switch (this.aggregation) {
+            case NONE:
+                aggregatedCalculator = null;
+                break;
+            case BASIC:
+                aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
+                break;
+            case EVS:
+                aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
+                break;
+            case EXAC:
+                aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
+                break;
+        }
     }
 
     /**
@@ -88,24 +105,9 @@ public class VariantStatisticsCalculator {
      * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
      */
     public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId, String fileId
-            , Map<String, Set<String>> samples, VariantSource.Aggregation aggregation, Properties infoTagmap) {
+            , Map<String, Set<String>> samples) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
-        aggregatedCalculator = null;
-        this.aggregation = aggregation;
-        switch (this.aggregation) {
-            case NONE:
-                aggregatedCalculator = null;
-                break;
-            case BASIC:
-                aggregatedCalculator = new VariantAggregatedStatsCalculator(infoTagmap);
-                break;
-            case EVS:
-                aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(infoTagmap);
-                break;
-            case EXAC:
-                aggregatedCalculator = new VariantAggregatedExacStatsCalculator(infoTagmap);
-                break;
-        }
+        
         for (Variant variant : variants) {
             VariantSourceEntry file = null;
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
@@ -118,6 +120,7 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
+            
             if (VariantSource.Aggregation.NONE.equals(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
@@ -129,8 +132,7 @@ public class VariantStatisticsCalculator {
 
                     }
                 }
-            }
-            if (aggregatedCalculator != null) { // another way to say that (!VariantSource.Aggregation.NONE.equals(aggregation))
+            } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation.NONE.equals(aggregation))
                 aggregatedCalculator.calculate(variant, file);
             }
 //            if (overwrite || file.getStats() == null) {

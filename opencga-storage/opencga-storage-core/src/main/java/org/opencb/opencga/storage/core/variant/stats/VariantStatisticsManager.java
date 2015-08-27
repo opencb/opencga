@@ -176,6 +176,7 @@ public class VariantStatisticsManager {
         private ObjectWriter variantsWriter;
         private VariantSourceStats variantSourceStats;
         private Properties tagmap;
+        private VariantStatisticsCalculator variantStatisticsCalculator;
 
         public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples,
                                        StudyConfiguration studyConfiguration, String fileId,
@@ -188,6 +189,8 @@ public class VariantStatisticsManager {
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
+            variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
+            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
         }
 
         @Override
@@ -196,9 +199,8 @@ public class VariantStatisticsManager {
             List<String> strings = new ArrayList<>(variants.size());
             boolean defaultCohortAbsent = false;
 
-            VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
-                    studyConfiguration.getStudyName(), null/*fileId*/, samples, studyConfiguration.getAggregation(), tagmap);
+                    studyConfiguration.getStudyName(), null/*fileId*/, samples);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
