@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.apache.log4j.*;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -36,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.core.common.networks.Layout;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -48,12 +50,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 
 @Path("/{version}")
@@ -109,28 +112,10 @@ public class OpenCGAWSServer {
     protected static StorageManagerFactory storageManagerFactory;
 
     static {
-        logger = LoggerFactory.getLogger("org.opencb.opencga.server.ws.OpenCGAWSServer");
-        logger.info("Static block, creating OpenCGAWSServer, this log must appear only once");
-//        InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("catalog.properties");
-//        properties = new Properties();
-//        try {
-//            properties.load(is);
-//            System.out.println("catalog.properties");
-//            System.out.println(CatalogManager.CATALOG_DB_HOSTS + " " + properties.getProperty(CatalogManager.CATALOG_DB_HOSTS));
-//            System.out.println(CatalogManager.CATALOG_DB_DATABASE + " " + properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-//            System.out.println(CatalogManager.CATALOG_DB_USER + " " + properties.getProperty(CatalogManager.CATALOG_DB_USER));
-//            System.out.println(CatalogManager.CATALOG_DB_PASSWORD + " " + properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD));
-//            System.out.println(CatalogManager.CATALOG_MAIN_ROOTDIR + " " + properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
-//
-//        } catch (IOException e) {
-//            System.out.println("Error loading properties");
-//            System.out.println(e.getMessage());
-//            e.printStackTrace();
-//        }
 
+        Properties properties = new Properties();
         try {
             if(Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
-                Properties properties = new Properties();
                 InputStream is = OpenCGAWSServer.class.getClassLoader().getResourceAsStream("application.properties");
                 properties.load(is);
                 String openCGAHome = properties.getProperty("OPENCGA.INSTALLATION.DIR", Config.getOpenCGAHome());
@@ -144,6 +129,27 @@ public class OpenCGAWSServer {
             e.printStackTrace();
         }
 
+        try {
+            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+            java.nio.file.Path logs = Paths.get(Config.getOpenCGAHome(), "logs");
+            //Files.createDirectory(logs);
+            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n");
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logs.resolve("server.log").toString(), true);
+            rollingFileAppender.setThreshold(Level.TRACE);
+            rollingFileAppender.setMaxFileSize("10MB");
+            rollingFileAppender.setMaxBackupIndex(10);
+            rootLogger.setLevel(Level.TRACE);
+            rootLogger.addAppender(rollingFileAppender);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        logger = LoggerFactory.getLogger("org.opencb.opencga.server.ws.OpenCGAWSServer");
+        logger.info("========================================================================");
+        logger.info("| Starting OpenCGA-server, creating OpenCGAWSServer");
+        logger.info("| This log must appear only once.");
+        logger.info("|  * OpenCGA home set to: " + Config.getOpenCGAHome());
+
 //        if (!openCGAHome.isEmpty() && Paths.get(openCGAHome).toFile().exists()) {
 //            System.out.println("Using \"openCGAHome\" from the properties file");
 //            Config.setOpenCGAHome(openCGAHome);
@@ -153,18 +159,21 @@ public class OpenCGAWSServer {
 //        }
 
         try {
+            logger.info("|  * Reading StorageConfiguration");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "storage-configuration.yml").toFile()));
             storageConfiguration.setStudyMetadataManager(CatalogStudyConfigurationManager.class.getName());
+            logger.info("|  * Initializing StorageManagerFactory");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error reading storage-configuration.yml file", e);
         }
 
         try {
+            logger.info("|  * Initializing CatalogManager");
+            logger.info("========================================================================");
             catalogManager = new CatalogManager(Config.getCatalogProperties());
         } catch (CatalogException e) {
-            System.out.println("ERROR when creating CatalogManager: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error while creating CatalogManager", e);
         }
 
         jsonObjectMapper = new ObjectMapper();
@@ -243,7 +252,7 @@ public class OpenCGAWSServer {
                 .filter(entry -> !queryOptions.containsKey(entry.getKey()))
                 .filter(entry -> !entry.getKey().equals("sid"))
                 .forEach(entry -> {
-                    logger.debug("Adding '{}' to queryOptions object", entry);
+//                    logger.debug("Adding '{}' to queryOptions object", entry);
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
 
@@ -252,7 +261,7 @@ public class OpenCGAWSServer {
         }
 
         try {
-            System.out.println("queryOptions = \n" + jsonObjectWriter.writeValueAsString(queryOptions));
+            logger.info("URL: {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(), jsonObjectWriter.writeValueAsString(queryOptions));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
