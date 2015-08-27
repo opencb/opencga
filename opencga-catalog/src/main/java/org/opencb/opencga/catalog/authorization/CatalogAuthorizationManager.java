@@ -32,13 +32,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
 
-    Map<Integer, AuthContext> authContextMap = new HashMap<>();
-    class AuthContext {
+    static class StudyAuthenticationContext {
 
-//        Map<String, Integer> pathFileIdMap;
-//        Map<Integer, Map<String, AclEntry>> fileAclMap;
+        public StudyAuthenticationContext(int studyId) {
+            this.studyId = studyId;
+            pathUserAclMap = new HashMap<>();
+        }
 
-        Map<String, Map<String, AclEntry>> pathUserAclMap = new HashMap<>();
+        final int studyId;
+        /**
+         * Map<Path, Map<UserId, AclEntry>>
+         */
+        final Map<String, Map<String, AclEntry>> pathUserAclMap;
     }
 
     @Override
@@ -107,7 +112,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        AclEntry fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId), new AuthContext());
+        AclEntry fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId), new StudyAuthenticationContext(studyId));
 
 
         final boolean auth;
@@ -191,14 +196,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    private AclEntry resolveFileAcl(int fileId, String userId, int studyId, Group group, AuthContext authContext) throws CatalogException {
+    private AclEntry resolveFileAcl(int fileId, String userId, int studyId, Group group, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (group == null) {
             return new AclEntry(userId, false, false, false, false);
         }
-
-//        if (authContext == null) {
-//            authContext = new AuthContext();
-//        }
 
         String groupId = "@" + group.getId();
         AclEntry studyAcl = getStudyACL(userId, group);
@@ -206,7 +207,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
         List<String> paths = FileManager.getParentPaths(file.getPath());
-        Map<String, Map<String, AclEntry>> pathAclMap = getFileAclEntries(authContext, userId, studyId, groupId, file);
+        Map<String, Map<String, AclEntry>> pathAclMap = getFileAclEntries(studyAuthenticationContext, userId, studyId, groupId, file);
 
         for (int i = paths.size() - 1; i >= 0; i--) {
             String path = paths.get(i);
@@ -232,20 +233,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return fileAcl;
     }
 
-    private Map<String, Map<String, AclEntry>> getFileAclEntries(AuthContext authContext, String userId, int studyId, String groupId, File file) throws CatalogDBException {
-        return getFileAclEntries(authContext, userId, studyId, groupId, FileManager.getParentPaths(file.getPath()));
+    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId, int studyId, String groupId, File file) throws CatalogDBException {
+        return getFileAclEntries(studyAuthenticationContext, userId, studyId, groupId, FileManager.getParentPaths(file.getPath()));
     }
 
-    private Map<String, Map<String, AclEntry>> getFileAclEntries(AuthContext _authContext, String userId, int studyId, String groupId, List<String> paths) throws CatalogDBException {
-        AuthContext authContext = authContextMap.get(studyId);
-        if (authContext == null) {
-            authContext = new AuthContext();
-            authContextMap.put(studyId, authContext);
-        }
+    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId, int studyId, String groupId, List<String> paths) throws CatalogDBException {
+//        AuthContext authContext = authContextMap.get(studyId);
+//        if (authContext == null) {
+//            authContext = new AuthContext();
+//            authContextMap.put(studyId, authContext);
+//        }
         for (Iterator<String> iterator = paths.iterator(); iterator.hasNext(); ) {
             String path = iterator.next();
-            if (authContext.pathUserAclMap.containsKey(path)) {
-                Map<String, AclEntry> userAclMap = authContext.pathUserAclMap.get(path);
+            if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
+                Map<String, AclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
                 if (userAclMap.containsKey(userId) && userAclMap.containsKey(groupId) && userAclMap.containsKey(AclEntry.USER_OTHERS_ID)) {
                     iterator.remove();
                 }
@@ -265,10 +266,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 stringAclEntryMap.putIfAbsent(groupId, null);
                 stringAclEntryMap.putIfAbsent(AclEntry.USER_OTHERS_ID, null);
 
-                if (authContext.pathUserAclMap.containsKey(path)) {
-                    authContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
+                if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
+                    studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
                 } else {
-                    authContext.pathUserAclMap.put(path, stringAclEntryMap);
+                    studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
                 }
             }
             for (Map.Entry<String, Map<String, AclEntry>> entry : map.entrySet()) {
@@ -276,7 +277,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return authContext.pathUserAclMap;
+        return studyAuthenticationContext.pathUserAclMap;
     }
 
     /**
@@ -394,12 +395,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 studyIt.remove();
                 break;
             }
-            AuthContext authContext = new AuthContext();
+            StudyAuthenticationContext studyAuthenticationContext = new StudyAuthenticationContext(study.getId());
             Group group = getGroupBelonging(study.getId(), userId);
             List<File> files = study.getFiles();
-            filterFiles(userId, study.getId(), files, group, authContext);
+            filterFiles(userId, study.getId(), files, group, studyAuthenticationContext);
             filterSamples(userId, study.getId(), study.getSamples(), group);
-            filterJobs(userId, study.getJobs(), authContext);
+            filterJobs(userId, study.getJobs(), studyAuthenticationContext);
             filterCohorts(userId, study.getId(), study.getCohorts());
             filterIndividuals(userId, study.getId(), study.getIndividuals());
         }
@@ -407,10 +408,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterFiles(String userId, int studyId, List<File> files) throws CatalogException {
-        filterFiles(userId, studyId, files, getGroupBelonging(studyId, userId), new AuthContext());
+        filterFiles(userId, studyId, files, getGroupBelonging(studyId, userId), new StudyAuthenticationContext(studyId));
     }
 
-    private void filterFiles(String userId, int studyId, List<File> files, Group group, AuthContext authContext) throws CatalogException {
+    private void filterFiles(String userId, int studyId, List<File> files, Group group, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (files == null || files.isEmpty()) {
             return;
         }
@@ -423,12 +424,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             paths.addAll(FileManager.getParentPaths(file.getPath()));
         }
         System.out.println("Querying for " + paths.size() + " paths to the authContext");
-        getFileAclEntries(authContext, userId, studyId, "@" + group.getId(), new ArrayList<>(paths));
+        getFileAclEntries(studyAuthenticationContext, userId, studyId, "@" + group.getId(), new ArrayList<>(paths));
 
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {
             File file = fileIt.next();
-            if (!resolveFileAcl(file.getId(), userId, studyId, group, authContext).isRead()) {
+            if (!resolveFileAcl(file.getId(), userId, studyId, group, studyAuthenticationContext).isRead()) {
                 fileIt.remove();
             }
         }
@@ -459,31 +460,44 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterJobs(String userId, List<Job> jobs) throws CatalogException {
-        filterJobs(userId, jobs, new AuthContext());
+        filterJobs(userId, jobs, null);
     }
 
-    public void filterJobs(String userId, List<Job> jobs, AuthContext authContext) throws CatalogException {
+    public void filterJobs(String userId, List<Job> jobs, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
         if (isAdmin(userId)) {
             return;
         }
+        Map<Integer, StudyAuthenticationContext> studyAuthContextMap = new HashMap<>();
+        if (studyAuthenticationContext != null) {
+            studyAuthContextMap.put(studyAuthenticationContext.studyId, studyAuthenticationContext);
+        }
+
         job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
-            int studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+            int studyId;
+            StudyAuthenticationContext specificStudyAuthenticationContext;
+            if (studyAuthenticationContext == null) {
+                studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+                specificStudyAuthenticationContext = studyAuthContextMap.getOrDefault(studyId, new StudyAuthenticationContext(studyId));
+            } else {
+                specificStudyAuthenticationContext = studyAuthenticationContext;
+                studyId = studyAuthenticationContext.studyId;
+            }
             Group group = getGroupBelonging(studyId, userId);
             if (job.getOutput() == null || job.getInput() == null) {
                 job = readJob(job.getId());
             }
             for (Integer fileId : job.getOutput()) {
-                if (!resolveFileAcl(fileId, userId, studyId, group, authContext).isRead()) {
+                if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
                     break job_loop;
                 }
             }
             for (Integer fileId : job.getInput()) {
-                if (!resolveFileAcl(fileId, userId, studyId, group, authContext).isRead()) {
+                if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
                     break job_loop;
                 }

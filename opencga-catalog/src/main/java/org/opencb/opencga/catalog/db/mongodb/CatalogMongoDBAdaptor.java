@@ -808,22 +808,27 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
 
-        QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
-        List<File> files = parseFiles(aggregate);
+//        QueryResult<DBObject> result = fileCollection.find(new BasicDBObject("path", new BasicDBObject("$in", filePaths))
+//                .append(_STUDY_ID, studyId), new BasicDBObject("acl", true), null);
+
+        List<File> files = parseFiles(result);
         Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
         for (File file : files) {
-            AclEntry acl = file.getAcl().get(0);
-            if (pathAclMap.containsKey(file.getPath())) {
-                pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
-            } else {
-                HashMap<String, AclEntry> map = new HashMap<>();
-                map.put(acl.getUserId(), acl);
-                pathAclMap.put(file.getPath(), map);
+//            AclEntry acl = file.getAcl().get(0);
+            for (AclEntry acl : file.getAcl()) {
+                if (pathAclMap.containsKey(file.getPath())) {
+                    pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
+                } else {
+                    HashMap<String, AclEntry> map = new HashMap<>();
+                    map.put(acl.getUserId(), acl);
+                    pathAclMap.put(file.getPath(), map);
+                }
             }
         }
 //        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
-
+        logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
         return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
     }
 
@@ -932,8 +937,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 return null;
             }
         }, queryOptions);
-        logger.debug("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null? "" : queryOptions.toJson(), queryResult.getDbTime());
-
+        logger.info("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
 //        List<File> files = parseFiles(queryResult);
 
         return endQuery("Search File", startTime, queryResult);
