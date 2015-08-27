@@ -63,108 +63,6 @@ public class VariantStatisticsManager {
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
     }
 
-    /**
-     * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
-     *
-     * @param variantDBAdaptor to obtain the Variants
-     * @param output where to write the VariantStats
-     * @param cohorts cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
-     * @param options filters to the query, batch size, number of threads to use...
-     *
-     * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
-     * @throws IOException
-     */
-    public URI legacyCreateStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts, StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
-
-        /** Open output streams **/
-        Path fileVariantsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
-        OutputStream outputVariantsStream = getOutputStream(fileVariantsPath, options);
-//        PrintWriter printWriter = new PrintWriter(getOutputStream(fileVariantsPath, options));
-
-        Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
-        OutputStream outputSourceStream = getOutputStream(fileSourcePath, options);
-
-        /** Initialize Json serializer **/
-        ObjectWriter variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
-        ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
-
-        /** Variables for statistics **/
-        int batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 1000); // future optimization, threads, etc
-        boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
-        List<Variant> variantBatch = new ArrayList<>(batchSize);
-        int retrievedVariants = 0;
-        String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());   //TODO: Change to int defaultValue
-        String studyName = studyConfiguration.getStudyName();
-//        VariantSource variantSource = options.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);   // TODO Is this retrievable from the adaptor?
-        VariantSourceStats variantSourceStats = new VariantSourceStats(fileId, studyName);
-
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyName));
-        query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId)); // query just the asked file
-
-
-        VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-        boolean defaultCohortAbsent = false;
-
-        logger.info("starting stats calculation");
-        long start = System.currentTimeMillis();
-
-        Iterator<Variant> iterator = obtainIterator(variantDBAdaptor, query, options);
-        while (iterator.hasNext()) {
-            Variant variant = iterator.next();
-            retrievedVariants++;
-            variantBatch.add(variant);
-//            variantBatch.add(filterSample(variant, samples));
-
-            if (variantBatch.size() == batchSize) {
-                List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyName, fileId, cohorts);
-
-                for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
-                    outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
-                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
-                        defaultCohortAbsent = true;
-                    }
-                }
-
-                // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
-                if (!defaultCohortAbsent) {
-                    variantSourceStats.updateFileStats(variantBatch);
-                    variantSourceStats.updateSampleStats(variantBatch, null);  // TODO test
-                }
-                logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
-                variantBatch.clear();
-            }
-        }
-
-        if (variantBatch.size() != 0) {
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variantBatch, studyName, fileId, cohorts);
-            for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
-                outputVariantsStream.write(variantsWriter.writeValueAsBytes(variantStatsWrapper));
-                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
-                        defaultCohortAbsent = true;
-                    }
-            }
-
-            if (!defaultCohortAbsent) {
-                variantSourceStats.updateFileStats(variantBatch);
-                variantSourceStats.updateSampleStats(variantBatch, null);  // TODO test
-            }
-            logger.info("stats created up to position {}:{}", variantBatch.get(variantBatch.size()-1).getChromosome(), variantBatch.get(variantBatch.size()-1).getStart());
-            variantBatch.clear();
-        }
-        logger.info("finishing stats calculation, time: {}ms", System.currentTimeMillis() - start);
-        if (variantStatisticsCalculator.getSkippedFiles() != 0) {
-            logger.warn("the sources in {} (of {}) variants were not found, and therefore couldn't run its stats", variantStatisticsCalculator.getSkippedFiles(), retrievedVariants);
-            logger.info("note: maybe the file-id and study-id were not correct?");
-        }
-        if (variantStatisticsCalculator.getSkippedFiles() == retrievedVariants) {
-            throw new IllegalArgumentException("given fileId and studyId were not found in any variant. Nothing to write.");
-        }
-        outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
-        outputVariantsStream.close();
-        outputSourceStream.close();
-        return output;
-    }
     private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
         logger.info("will write stats to {}", filePath);
@@ -206,11 +104,13 @@ public class VariantStatisticsManager {
         int numTasks = 6;
         int batchSize = 100;  // future optimization, threads, etc
         boolean overwrite = false;
+        Properties tagmap = null;
 //        String fileId;
         if(options != null) { //Parse query options
             batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), batchSize);
             numTasks = options.getInt(VariantStorageManager.Options.LOAD_THREADS.key(), numTasks);
             overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), overwrite);
+            tagmap = options.get(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class);
 //            fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
         } else {
             logger.error("missing required fileId in QueryOptions");
@@ -238,7 +138,8 @@ public class VariantStatisticsManager {
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/, variantSourceStats));
+            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,
+                    variantSourceStats, tagmap));
         }
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
@@ -274,10 +175,11 @@ public class VariantStatisticsManager {
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
         private VariantSourceStats variantSourceStats;
+        private Properties tagmap;
 
         public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples,
                                        StudyConfiguration studyConfiguration, String fileId,
-                                       VariantSourceStats variantSourceStats) {
+                                       VariantSourceStats variantSourceStats, Properties tagmap) {
             this.overwrite = overwrite;
             this.samples = samples;
             this.studyConfiguration = studyConfiguration;
@@ -285,6 +187,7 @@ public class VariantStatisticsManager {
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
+            this.tagmap = tagmap;
         }
 
         @Override
@@ -294,7 +197,8 @@ public class VariantStatisticsManager {
             boolean defaultCohortAbsent = false;
 
             VariantStatisticsCalculator variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants, studyConfiguration.getStudyName(), null/*fileId*/, samples);
+            List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
+                    studyConfiguration.getStudyName(), null/*fileId*/, samples, studyConfiguration.getAggregation(), tagmap);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {

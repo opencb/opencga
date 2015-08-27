@@ -226,20 +226,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory;
         if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            switch (aggregation) {
-                default:
-                case NONE:
-                    factory = new VariantVcfFactory();
-                    break;
-                case BASIC:
-                    factory = new VariantAggregatedVcfFactory();
-                    break;
-                case EVS:
-                    factory = new VariantVcfEVSFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
-                    break;
-                case EXAC:
-                    factory = new VariantVcfExacFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
-                    break;
+            if (VariantSource.Aggregation.NONE.equals(aggregation)) {
+                factory = new VariantVcfFactory();
+            } else {
+                factory = new VariantAggregatedVcfFactory();
             }
         } else {
             throw new StorageManagerException("Variants input file format not supported");

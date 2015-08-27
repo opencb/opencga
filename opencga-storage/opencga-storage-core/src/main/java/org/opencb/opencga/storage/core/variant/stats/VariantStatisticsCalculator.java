@@ -20,6 +20,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedEVSStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedExacStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 
 import java.util.*;
 
@@ -29,6 +33,8 @@ import java.util.*;
 public class VariantStatisticsCalculator {
     private int skippedFiles;
     private boolean overwrite;
+    private VariantAggregatedStatsCalculator aggregatedCalculator;
+    private VariantSource.Aggregation aggregation;
 
     public VariantStatisticsCalculator() {
         this(false);
@@ -45,6 +51,14 @@ public class VariantStatisticsCalculator {
 
     public void setSkippedFiles(int skippedFiles) {
         this.skippedFiles = skippedFiles;
+    }
+
+    public VariantAggregatedStatsCalculator getAggregatedCalculator() {
+        return aggregatedCalculator;
+    }
+
+    public void setAggregatedCalculator(VariantAggregatedStatsCalculator aggregatedCalculator) {
+        this.aggregatedCalculator = aggregatedCalculator;
     }
 
     /**
@@ -74,9 +88,24 @@ public class VariantStatisticsCalculator {
      * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
      */
     public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId, String fileId
-            , Map<String, Set<String>> samples) {
+            , Map<String, Set<String>> samples, VariantSource.Aggregation aggregation, Properties infoTagmap) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
-
+        aggregatedCalculator = null;
+        this.aggregation = aggregation;
+        switch (this.aggregation) {
+            case NONE:
+                aggregatedCalculator = null;
+                break;
+            case BASIC:
+                aggregatedCalculator = new VariantAggregatedStatsCalculator(infoTagmap);
+                break;
+            case EVS:
+                aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(infoTagmap);
+                break;
+            case EXAC:
+                aggregatedCalculator = new VariantAggregatedExacStatsCalculator(infoTagmap);
+                break;
+        }
         for (Variant variant : variants) {
             VariantSourceEntry file = null;
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
@@ -89,16 +118,20 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
-            if (samples != null) {
+            if (VariantSource.Aggregation.NONE.equals(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
-                        VariantStats variantStats = new VariantStats(variant);
 
                         Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
-                        file.getCohortStats().put(cohort.getKey()
-                                , variantStats.calculate(samplesData, file.getAttributes(), null));
+                        VariantStats variantStats = new VariantStats(variant);
+                        VariantStatsCalculator.calculate(samplesData, file.getAttributes(), null, variantStats);
+                        file.getCohortStats().put(cohort.getKey(), variantStats);
+
                     }
                 }
+            }
+            if (aggregatedCalculator != null) { // another way to say that (!VariantSource.Aggregation.NONE.equals(aggregation))
+                aggregatedCalculator.calculate(variant, file);
             }
 //            if (overwrite || file.getStats() == null) {
 //                VariantStats allVariantStats = new VariantStats(variant);

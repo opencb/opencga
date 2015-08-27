@@ -28,6 +28,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -86,6 +88,18 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
                     samples = new ArrayList<>();
                 }
                 cohorts.put(entry.getKey(), new HashSet<>(samples));
+            }
+        }
+
+        options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
+
+        if (statsVariantsCommandOptions.aggregationMappingFile != null) {
+            Properties aggregationMappingProperties = new Properties();
+            try {
+                aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
+                options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+            } catch (FileNotFoundException e) {
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions.aggregationMappingFile);
             }
         }
 
