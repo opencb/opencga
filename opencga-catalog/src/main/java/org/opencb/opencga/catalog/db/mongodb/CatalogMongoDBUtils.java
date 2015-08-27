@@ -175,7 +175,7 @@ class CatalogMongoDBUtils {
         }
     }
 
-    private static <T> ObjectReader getObjectReader(Class<T> tClass) {
+    public static <T> ObjectReader getObjectReader(Class<T> tClass) {
         if (!jsonReaderMap.containsKey(tClass)) {
             jsonReaderMap.put(tClass, jsonObjectMapper.reader(tClass));
         }

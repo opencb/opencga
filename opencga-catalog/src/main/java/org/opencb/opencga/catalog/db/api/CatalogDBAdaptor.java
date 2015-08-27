@@ -83,7 +83,8 @@ public abstract class CatalogDBAdaptor {
             throws CatalogDBException {
         long end = System.currentTimeMillis();
         result.setId(queryId);
-        result.setDbTime((int)(end-startTime));
+        result.setDbTime((int) (end - startTime));
+        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults());
         if(result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()){
             throw new CatalogDBException(result.getErrorMsg());
         }
@@ -99,6 +100,7 @@ public abstract class CatalogDBAdaptor {
         int numResults = result.size();
         QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
                 warnMessage, errorMessage, result);
+        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults());
         if(errorMessage != null && !errorMessage.isEmpty()){
             throw new CatalogDBException(queryResult.getErrorMsg());
         }

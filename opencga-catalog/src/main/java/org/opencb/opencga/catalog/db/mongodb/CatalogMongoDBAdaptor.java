@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.*;
+import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -31,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -582,7 +584,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> queryResult = fileCollection.find( new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
+        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
         List<File> files = parseFiles(queryResult);
 
         return endQuery("Get all files", startTime, files);
@@ -806,22 +808,27 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
 
-        QueryResult<DBObject> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
-        List<File> files = parseFiles(aggregate);
+//        QueryResult<DBObject> result = fileCollection.find(new BasicDBObject("path", new BasicDBObject("$in", filePaths))
+//                .append(_STUDY_ID, studyId), new BasicDBObject("acl", true), null);
+
+        List<File> files = parseFiles(result);
         Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
         for (File file : files) {
-            AclEntry acl = file.getAcl().get(0);
-            if (pathAclMap.containsKey(file.getPath())) {
-                pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
-            } else {
-                HashMap<String, AclEntry> map = new HashMap<>();
-                map.put(acl.getUserId(), acl);
-                pathAclMap.put(file.getPath(), map);
+//            AclEntry acl = file.getAcl().get(0);
+            for (AclEntry acl : file.getAcl()) {
+                if (pathAclMap.containsKey(file.getPath())) {
+                    pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
+                } else {
+                    HashMap<String, AclEntry> map = new HashMap<>();
+                    map.put(acl.getUserId(), acl);
+                    pathAclMap.put(file.getPath(), map);
+                }
             }
         }
 //        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
-
+        logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
         return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
     }
 
@@ -912,13 +919,28 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        BasicDBObject andQuery = new BasicDBObject("$and", mongoQueryList);
-        logger.debug("File search query : {}", andQuery);
-        QueryResult<DBObject> queryResult = fileCollection.find(andQuery, filterOptions(options, FILTER_ROUTE_FILES));
+        BasicDBObject mongoQuery = new BasicDBObject("$and", mongoQueryList);
+        QueryOptions queryOptions = filterOptions(options, FILTER_ROUTE_FILES);
+//        QueryResult<DBObject> queryResult = fileCollection.find(mongoQuery, null, File.class, queryOptions);
+        QueryResult<File> queryResult = fileCollection.find(mongoQuery, null, new ComplexTypeConverter<File, DBObject>() {
+            @Override
+            public File convertToDataModelType(DBObject object) {
+                try {
+                    return getObjectReader(File.class).readValue(restoreDotsInKeys(object).toString());
+                } catch (IOException e) {
+                    return null;
+                }
+            }
 
-        List<File> files = parseFiles(queryResult);
+            @Override
+            public DBObject convertToStorageType(File object) {
+                return null;
+            }
+        }, queryOptions);
+        logger.info("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
+//        List<File> files = parseFiles(queryResult);
 
-        return endQuery("Search File", startTime, files);
+        return endQuery("Search File", startTime, queryResult);
     }
 
     @Override
