@@ -28,6 +28,7 @@ storageEngines:
     options:
       database.name: "opencga"
       collection.variants: "variants"
+      collection.studies: "studies"
       include.stats: false
       annotator: cellbase_rest
       species: "hsapiens"

@@ -42,6 +42,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
+    public static final String ORI_FIELD = "_ori";
 
     private VariantStorageManager.IncludeSrc includeSrc;
     private Set<Integer> returnedFiles;
@@ -146,6 +147,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                         }
                     }
                 }
+                if (fileObject.containsField(ORI_FIELD)) {
+                    DBObject _ori = (DBObject) fileObject.get(ORI_FIELD);
+                    String ori = _ori.get("s") + ":" + _ori.get("i");
+                    file.addAttribute(fileId_ + "ori", ori);
+                }
             }
         }
 
@@ -236,6 +242,12 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                     } else {
                         continue;
                     }
+                } else if (entry.getKey().equals("ori")) {
+                    int indexOf = stringValue.lastIndexOf(":");
+                    fileObject.append(ORI_FIELD,
+                            new BasicDBObject("s", stringValue.substring(0, indexOf))
+                                    .append("i", Integer.parseInt(stringValue.substring(indexOf + 1))));
+                    continue;
                 } else {
                     try {
                         value = Double.parseDouble(stringValue);

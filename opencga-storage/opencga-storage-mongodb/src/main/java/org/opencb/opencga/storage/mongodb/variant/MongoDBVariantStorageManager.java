@@ -79,6 +79,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String AUTHENTICATION_DB     = "authentication.db";
     public static final String COLLECTION_VARIANTS   = "collection.variants";
     public static final String COLLECTION_FILES      = "collection.files";
+    public static final String COLLECTION_STUDIES    = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
 
@@ -356,7 +357,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             return super.buildStudyConfigurationManager(options);
         } else {
             String dbName = options == null? null : options.getString(Options.DB_NAME.key());
-            String collectionName = options == null? null : options.getString(COLLECTION_FILES, "files");
+            String collectionName = options == null? null : options.getString(COLLECTION_STUDIES, "studies");
             try {
                 return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
