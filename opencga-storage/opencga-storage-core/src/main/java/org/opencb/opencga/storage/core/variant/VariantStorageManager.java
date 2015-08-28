@@ -162,6 +162,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
             studyConfiguration = new StudyConfiguration(variantOptions.getInt(Options.STUDY_ID.key), variantOptions.getString(Options.STUDY_NAME.key));
+            studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
             variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
         }
         String fileName = Paths.get(input.getPath()).getFileName().toString();
