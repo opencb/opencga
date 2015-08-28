@@ -1212,23 +1212,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         switch(op) {
             case "<":
-                builder.and(key).lessThan(Float.parseFloat(obj));
+                builder.and(key).lessThan(Double.parseDouble(obj));
                 break;
             case "<=":
-                builder.and(key).lessThanEquals(Float.parseFloat(obj));
+                builder.and(key).lessThanEquals(Double.parseDouble(obj));
                 break;
             case ">":
-                builder.and(key).greaterThan(Float.parseFloat(obj));
+                builder.and(key).greaterThan(Double.parseDouble(obj));
                 break;
             case ">=":
-                builder.and(key).greaterThanEquals(Float.parseFloat(obj));
+                builder.and(key).greaterThanEquals(Double.parseDouble(obj));
                 break;
             case "=":
             case "==":
-                builder.and(key).is(Float.parseFloat(obj));
+                builder.and(key).is(Double.parseDouble(obj));
                 break;
             case "!=":
-                builder.and(key).notEquals(Float.parseFloat(obj));
+                builder.and(key).notEquals(Double.parseDouble(obj));
                 break;
             case "~=":
                 builder.and(key).regex(Pattern.compile(obj));
