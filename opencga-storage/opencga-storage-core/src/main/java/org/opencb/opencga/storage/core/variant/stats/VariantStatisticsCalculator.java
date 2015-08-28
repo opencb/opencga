@@ -58,22 +58,36 @@ public class VariantStatisticsCalculator {
      * study does have samples.
      * @param aggregation see org.opencb.biodata.models.variant.VariantSource.Aggregation
      * @param tagmap nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
+     * @param cohorts nullable, set of cohort names that appear as prefixes in the variant attributes
      */
-    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap) {
+    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap, Set<String> cohorts) {
         aggregatedCalculator = null;
         this.aggregation = aggregation;
+        boolean usingTagMap = tagmap != null;
         switch (this.aggregation) {
             case NONE:
                 aggregatedCalculator = null;
                 break;
             case BASIC:
-                aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
+                if (usingTagMap) {
+                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
+                } else {
+                    aggregatedCalculator = new VariantAggregatedStatsCalculator(cohorts);
+                }
                 break;
             case EVS:
-                aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
+                if (usingTagMap) {
+                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
+                } else {
+                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(cohorts);
+                }
                 break;
             case EXAC:
-                aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
+                if (usingTagMap) {
+                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
+                } else {
+                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(cohorts);
+                }
                 break;
         }
     }

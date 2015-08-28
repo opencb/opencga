@@ -221,7 +221,10 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     private int getCohortId(int studyId, String cohortName) {
-        return getStudyConfiguration(studyId).getCohortIds().get(cohortName);
+        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+        Map<String, Integer> cohortIds = studyConfiguration.getCohortIds();
+        Integer integer = cohortIds.get(cohortName);
+        return integer;
     }
 
     private StudyConfiguration getStudyConfiguration(int studyId) {

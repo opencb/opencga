@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -190,7 +191,7 @@ public class VariantStatisticsManager {
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
             variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
+            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap, samples.keySet());
         }
 
         @Override
@@ -323,6 +324,10 @@ public class VariantStatisticsManager {
      *
      * Do not update the "calculatedStats" array. Just check that the provided cohorts are not calculated or invalid.
      *
+     * new requirements:
+     * * an empty cohort is not an error if the study is aggregated
+     * * there may be several empty cohorts, not just the ALL, because there may be several aggregated files with different sets of hidden samples.
+     *
      * @return CohortIdList
      */
     List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
@@ -335,18 +340,16 @@ public class VariantStatisticsManager {
             Set<String> samples = entry.getValue();
             final int cohortId;
 
+
+            // get a valid cohortId
             if (cohortIds == null || cohortIds.isEmpty()) {
                 if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
                     cohortId = studyConfiguration.getCohortIds().get(cohortName);
                 } else {
                     //Auto-generate cohortId. Max CohortId + 1
-                    int maxCohortId = 0;
-                    for (int cid : studyConfiguration.getCohortIds().values()) {
-                        if (cid > maxCohortId) {
-                            maxCohortId = cid;
-                        }
-                    }
-                    cohortId = maxCohortId + 1;
+                    cohortId = studyConfiguration.getCohortIds().size() > 0?
+                            Collections.max(studyConfiguration.getCohortIds().values()) +1
+                            : 0;    // if there are no cohorts and we are creating the first
                 }
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
@@ -356,6 +359,7 @@ public class VariantStatisticsManager {
                 cohortId = cohortIds.get(entry.getKey());
             }
 
+            // check that the cohortId-cohortName is consistent with StudyConfiguration
             if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
                 if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
                     //ERROR Duplicated cohortName
@@ -369,10 +373,12 @@ public class VariantStatisticsManager {
             }
 
             Set<Integer> sampleIds;
-            if (samples == null || samples.isEmpty()) {
+            if (samples == null) {
                 //There are not provided samples for this cohort. Take samples from StudyConfiguration
                 sampleIds = studyConfiguration.getCohorts().get(cohortId);
-                if (sampleIds == null || sampleIds.isEmpty()) { //ERROR: StudyConfiguration does not have samples for this cohort.
+                if (sampleIds == null || (sampleIds.isEmpty()
+                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
+                    //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
                     throw new IOException("Cohort \"" + cohortName + "\" is empty");
                 }
                 samples = new HashSet<>();
@@ -381,6 +387,12 @@ public class VariantStatisticsManager {
                     samples.add(idSamples.get(sampleId));
                 }
                 cohorts.put(cohortName, samples);
+            } else if (samples.isEmpty()) {
+                if (VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation())) {  // if no aggregated study
+                    throw new IOException("Cohort \"" + cohortName + "\" is empty");
+                } else {
+                    sampleIds = Collections.EMPTY_SET;
+                }
             } else {
                 sampleIds = new HashSet<>(samples.size());
                 for (String sample : samples) {
@@ -398,7 +410,7 @@ public class VariantStatisticsManager {
                     if (!studyConfiguration.getInvalidStats().contains(cohortId)) {
                         //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
                         throw new IOException("Different samples in cohort " + cohortName + ":" + cohortId + ". " +
-                                "Samples in the StudyConfiguratin: " + studyConfiguration.getCohorts().get(cohortId).size() + ". " +
+                                "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". " +
                                 "Samples provided " + samples.size() + ". Invalidate stats to continue.");
                     }
                 }
