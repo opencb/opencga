@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+@Deprecated
 public class Config {
 
     public static final String ACCOUNT_PROPERTIES = "account.properties";
