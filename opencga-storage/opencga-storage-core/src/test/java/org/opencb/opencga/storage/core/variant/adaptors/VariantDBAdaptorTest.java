@@ -27,8 +27,11 @@ import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -64,6 +67,34 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     .append(VariantStorageManager.Options.ANNOTATE.key(), true);
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
+
+            VariantStatisticsManager vsm = new VariantStatisticsManager();
+
+            QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
+            options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+            Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
+
+            /** Create cohorts **/
+            HashSet<String> cohort1 = new HashSet<>();
+            cohort1.add(iterator.next());
+            cohort1.add(iterator.next());
+
+            HashSet<String> cohort2 = new HashSet<>();
+            cohort2.add(iterator.next());
+            cohort2.add(iterator.next());
+
+            Map<String, Set<String>> cohorts = new HashMap<>();
+            Map<String, Integer> cohortIds = new HashMap<>();
+            cohorts.put("cohort1", cohort1);
+            cohorts.put("cohort2", cohort2);
+            cohortIds.put("cohort1", 10);
+            cohortIds.put("cohort2", 11);
+
+            //Calculate stats
+            dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+            URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
+            vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
@@ -298,6 +329,37 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         }
     }
 
+    @Test
+    public void testGetAllVariants_maf() throws Exception {
+
+        QueryResult<Variant> queryResult;
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2"), new QueryOptions("limit", 1));
+        System.out.println("queryResult.getNumTotalResults() = " + queryResult.getNumTotalResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:all>0.2"), new QueryOptions("limit", 1));
+        assertEquals(625, queryResult.getNumTotalResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2"), new QueryOptions("limit", 1));
+        assertEquals(749, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:10>0.2"), new QueryOptions("limit", 1));
+        assertEquals(749, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:10>0.2"), new QueryOptions("limit", 1));
+        assertEquals(749, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), new QueryOptions("limit", 1));
+        assertEquals(749, queryResult.getNumTotalResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2"), new QueryOptions("limit", 1));
+        assertEquals(691, queryResult.getNumTotalResults());
+
+    }
+
+    @Test
+    public void testGetAllVariants_missingAllele() throws Exception {
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:all>4"), new QueryOptions("limit", 1));
+        assertEquals(9, queryResult.getNumTotalResults());
+
+    }
 /*
     @Test
     public void testGetAllVariants() {
