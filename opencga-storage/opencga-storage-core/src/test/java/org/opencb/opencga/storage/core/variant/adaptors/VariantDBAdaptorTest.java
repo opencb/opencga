@@ -22,6 +22,7 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.models.variation.PopulationFrequency;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -336,8 +337,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2"), new QueryOptions("limit", 1));
         System.out.println("queryResult.getNumTotalResults() = " + queryResult.getNumTotalResults());
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:all>0.2"), new QueryOptions("limit", 1));
-        assertEquals(625, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:all>0.2"), null);
+        assertEquals(625, queryResult.getNumResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("all").getMaf() > 0.2));
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2"), new QueryOptions("limit", 1));
         assertEquals(749, queryResult.getNumTotalResults());
@@ -345,19 +348,42 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(749, queryResult.getNumTotalResults());
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:10>0.2"), new QueryOptions("limit", 1));
         assertEquals(749, queryResult.getNumTotalResults());
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), new QueryOptions("limit", 1));
-        assertEquals(749, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), null);
+        assertEquals(749, queryResult.getNumResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("cohort1").getMaf() > 0.2));
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2"), new QueryOptions("limit", 1));
         assertEquals(691, queryResult.getNumTotalResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2));
+
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2,1000g:cohort2<=0.2"), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2;1000g:cohort2<=0.2"), null);
+        assertEquals(0, queryResult.getNumTotalResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2;1000g:cohort1<0.2"), null);
+        assertEquals(75, queryResult.getNumResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2 && map.get("cohort1").getMaf() < 0.2));
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2,1000g:cohort1<0.2"), null);
+        assertEquals(866, queryResult.getNumResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2 || map.get("cohort1").getMaf() < 0.2));
+
 
     }
 
     @Test
     public void testGetAllVariants_missingAllele() throws Exception {
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:all>4"), new QueryOptions("limit", 1));
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:all>4"), null);
         assertEquals(9, queryResult.getNumTotalResults());
+        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+                .forEach(map -> assertTrue(map.get("all").getMissingAlleles() > 4));
 
     }
 /*

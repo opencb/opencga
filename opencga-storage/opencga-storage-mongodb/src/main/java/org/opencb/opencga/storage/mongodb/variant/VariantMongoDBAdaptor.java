@@ -663,7 +663,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.getString(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
-//                List<String> ids = query.getAsStringList(VariantQueryParams.ID.key());
                 String ids = query.getString(VariantQueryParams.ID.key());
                 addQueryStringFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
@@ -676,10 +675,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addQueryStringFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
-//                List<String> xrefs = query.getAsStringList(VariantQueryParams.GENE.key());
-//                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
             }
 
             if (query.containsKey(VariantQueryParams.REFERENCE.key()) && query.getString(VariantQueryParams.REFERENCE.key()) != null) {
@@ -706,11 +701,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String xrefs = query.getString(VariantQueryParams.GENE.key());
                 addQueryStringFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
-//                List<String> xrefs = query.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
-//                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
+                        DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())) {
@@ -719,24 +710,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addQueryIntegerFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
-//                List<String> cts = new ArrayList<>(query.getAsStringList(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()));
-//                List<Integer> ctsInteger = new ArrayList<>(cts.size());
-//                for (Iterator<String> iterator = cts.iterator(); iterator.hasNext(); ) {
-//                    String ct = iterator.next();
-//                    if (ct.startsWith("SO:")) {
-//                        ct = ct.substring(3);
-//                    }
-//                    try {
-//                        ctsInteger.add(Integer.parseInt(ct));
-//                    } catch (NumberFormatException e) {
-//                        logger.error("Error parsing integer ", e);
-//                        iterator.remove();  //Remove the malformed query params.
-//                    }
-//                }
-//                query.put(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cts);
-//                addQueryListFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
-//                        DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, ctsInteger, builder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
@@ -747,15 +720,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.containsKey(VariantQueryParams.POLYPHEN.key())) {
-                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                addCompListQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, query.getString(VariantQueryParams.POLYPHEN.key()), builder);
             }
 
             if (query.containsKey(VariantQueryParams.SIFT.key())) {
-//                System.out.println(query.getString(VariantQueryParams.SIFT.key()));
-                addCompQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                addCompListQueryFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SIFT_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, query.getString(VariantQueryParams.SIFT.key()), builder);
@@ -763,7 +735,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey(VariantQueryParams.PROTEIN_SUBSTITUTION.key())) {
                 String value = query.getString(VariantQueryParams.PROTEIN_SUBSTITUTION.key());
-//                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.PROTEIN_SUBSTITUTION.key()));
                 addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder);
@@ -771,14 +742,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey(VariantQueryParams.CONSERVATION.key())) {
                 String value = query.getString(VariantQueryParams.CONSERVATION.key());
-//                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.CONSERVATION.key()));
                 addScoreFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, value, builder);
             }
 
             if (query.containsKey(VariantQueryParams.ALTERNATE_FREQUENCY.key())) {
                 String value = query.getString(VariantQueryParams.ALTERNATE_FREQUENCY.key());
-//                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.ALTERNATE_FREQUENCY.key()));
                 addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                                 DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, value, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
@@ -786,7 +755,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey(VariantQueryParams.REFERENCE_FREQUENCY.key())) {
                 String value = query.getString(VariantQueryParams.REFERENCE_FREQUENCY.key());
-//                List<String> list = new ArrayList<>(query.getAsStringList(VariantQueryParams.REFERENCE_FREQUENCY.key()));
                 addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                                 DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
@@ -797,19 +765,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             /** STATS PARAMS **/
 
             if (query.get(VariantQueryParams.STATS_MAF.key()) != null && !query.getString(VariantQueryParams.STATS_MAF.key()).isEmpty()) {
-                addStatsFilter(DBObjectToVariantStatsConverter.MAF_FIELD, query.getString(VariantQueryParams.STATS_MAF.key()), builder);
+                addStatsFilterList(DBObjectToVariantStatsConverter.MAF_FIELD, query.getString(VariantQueryParams.STATS_MAF.key()), builder);
             }
 
             if (query.get(VariantQueryParams.STATS_MGF.key()) != null && !query.getString(VariantQueryParams.STATS_MGF.key()).isEmpty()) {
-                addStatsFilter(DBObjectToVariantStatsConverter.MGF_FIELD, query.getString(VariantQueryParams.STATS_MGF.key()), builder);
+                addStatsFilterList(DBObjectToVariantStatsConverter.MGF_FIELD, query.getString(VariantQueryParams.STATS_MGF.key()), builder);
             }
 
             if (query.get(VariantQueryParams.MISSING_ALLELES.key()) != null && !query.getString(VariantQueryParams.MISSING_ALLELES.key()).isEmpty()) {
-                addStatsFilter(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, query.getString(VariantQueryParams.MISSING_ALLELES.key()), builder);
+                addStatsFilterList(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, query.getString(VariantQueryParams.MISSING_ALLELES.key()), builder);
             }
 
             if (query.get(VariantQueryParams.MISSING_GENOTYPES.key()) != null && !query.getString(VariantQueryParams.MISSING_GENOTYPES.key()).isEmpty()) {
-                addStatsFilter(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder);
+                addStatsFilterList(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder);
             }
 
             if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
@@ -1281,34 +1249,37 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    private String objectToString(Object objectValue) {
-        String value;
-        if (objectValue instanceof String) {
-            value = ((String) objectValue);
-        } else if (objectValue instanceof List) {
-            value = ((List<Object>) objectValue).stream().map(String::valueOf).collect(Collectors.joining(","));
-        } else {
-            value = String.valueOf(objectValue);
-        }
-        return value;
-    }
+    /**
+     * Accepts a list of comparative filters separated with "," or ";" with the expression:
+     *      {OPERATION}{VALUE}
+     * Where the accepted operations are:
+     *      <, <=, >, >=, =, ==, !=, ~=
+     *
+     *
+     * @param key
+     * @param value
+     * @param builder
+     * @return
+     */
+    private QueryBuilder addCompListQueryFilter(String key, String value, QueryBuilder builder) {
 
-    @Deprecated
-    private QueryBuilder addQueryListFilter(String key, List<?> values, QueryBuilder builder, QueryOperation op) {
-        if (values != null)
-            if (values.size() == 1) {
-                if(op == QueryOperation.AND) {
-                    builder.and(key).is(values.get(0));
-                } else {
-                    builder.or(QueryBuilder.start(key).is(values.get(0)).get());
-                }
-            } else if (!values.isEmpty()) {
-                if(op == QueryOperation.AND) {
-                    builder.and(key).in(values);
-                } else {
-                    builder.or(QueryBuilder.start(key).in(values).get());
-                }
-            }
+        QueryOperation op = checkOperator(value);
+        List<String> values = splitValue(value, op);
+
+        QueryBuilder compBuilder;
+        if (op == QueryOperation.OR) {
+            compBuilder = QueryBuilder.start();
+        } else {
+            compBuilder = builder;
+        }
+
+        for (String elem : values) {
+            addCompQueryFilter(key, elem, compBuilder);
+        }
+
+        if (op == QueryOperation.OR) {
+            builder.or(compBuilder.get());
+        }
         return builder;
     }
 
@@ -1344,11 +1315,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    @Deprecated
-    private QueryBuilder addScoreFilter(String key, List<String> list, QueryBuilder builder) {
-        return addScoreFilter(key, list.stream().collect(Collectors.joining(",")), builder);
-    }
-
+    /**
+     * Accepts a list of filters separated with "," or ";" with the expression:
+     *      {SCORE}{OPERATION}{VALUE}
+     *
+     * @param key                   ProteinScore schema field
+     * @param value                 Value to parse
+     * @param builder               QueryBuilder
+     * @return                      QueryBuilder
+     */
     private QueryBuilder addScoreFilter(String key, String value, QueryBuilder builder) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
@@ -1376,25 +1351,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    private List<String> splitValue(String value, QueryOperation operation) {
-        List<String> list;
-        if (operation == null) {
-            list = Collections.singletonList(value);
-        } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(AND));
-        } else {
-            list = Arrays.asList(value.split(OR));
-        }
-        return list;
-    }
-
-    @Deprecated
-    private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, List<String> list, QueryBuilder builder) {
-        return addFrequencyFilter(key, alleleFrequencyField, list.stream().collect(Collectors.joining(OR)), builder);
-    }
-
     /**
-     * Accepts filters with the expresion:
+     * Accepts a list of filters separated with "," or ";" with the expression:
      *      {STUDY}:{POPULATION}{OPERATION}{VALUE}
      *
      * @param key                   PopulationFrequency schema field
@@ -1410,8 +1368,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         list = splitValue(value, operation);
 
         List<DBObject> dbObjects = new ArrayList<>();
-        for (Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
-            String elem = iterator.next();
+        for (String elem : list) {
             String[] split = elem.split(IS);
             if (split.length != 2) {
                 logger.error("Bad population frequency filter: " + elem);
@@ -1440,14 +1397,42 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
+     * Accepts filters separated with "," or ";" with the expression:
+     *      {STUDY}:{COHORT}{OPERATION}{VALUE}
+     *
+     * @param key           Stats field to filter
+     * @param values        Values to parse
+     * @param builder       QueryBuilder
+     */
+    private void addStatsFilterList(String key, String values, QueryBuilder builder) {
+
+        QueryOperation op = checkOperator(values);
+        List<String> valuesList = splitValue(values, op);
+
+        List<DBObject> statsQueries = new LinkedList<>();
+
+        for (String value : valuesList) {
+            statsQueries.add(addStatsFilter(key, value, new QueryBuilder()).get());
+        }
+
+        if (!statsQueries.isEmpty()) {
+            if (op == QueryOperation.OR) {
+                builder.or(statsQueries.toArray(new DBObject[statsQueries.size()]));
+            } else {
+                builder.and(statsQueries.toArray(new DBObject[statsQueries.size()]));
+            }
+        }
+    }
+
+    /**
      * Accepts filters with the expresion:
      *      {STUDY}:{COHORT}{OPERATION}{VALUE}
      *
-     * @param key
-     * @param value
-     * @param builder
+     * @param key           Stats field to filter
+     * @param value         Value to parse
+     * @param builder       QueryBuilder
      */
-    private void addStatsFilter(String key, String value, QueryBuilder builder) {
+    private QueryBuilder addStatsFilter(String key, String value, QueryBuilder builder) {
         if (value.contains(":")) {
             String[] studyValue = value.split(":");
             String[] cohortValue = splitKeyValue(studyValue[1]);
@@ -1468,7 +1453,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 cohortId = studyConfiguration.getCohortIds().get(cohort);
             }
 //            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-
 //            int studyId = studyConfiguration.getStudyId();
 //            int cohortId = studyConfiguration.getCohortIds().get(cohort);
 
@@ -1480,6 +1464,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         } else {
             addCompQueryFilter(DBObjectToVariantConverter.STATS_FIELD + "." + key, value, builder);
         }
+        return builder;
     }
 
     /**
@@ -1530,6 +1515,55 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             builder.or(objects);
         }
         return builder;
+    }
+
+    /*
+        Query util methods
+     */
+
+    /**
+     * Parses the string to integer number.
+     *
+     * Returns null if the string was not an integer.
+     */
+    private Integer parseInteger(String string) {
+        Integer integer;
+        try {
+            integer = Integer.parseInt(string);
+        } catch (NumberFormatException ignored) {
+            integer = null;
+        }
+        return integer;
+    }
+
+    /**
+     * Get the object as an integer. If it's a list, will be returned as a CSV
+     */
+    private String objectToString(Object objectValue) {
+        String value;
+        if (objectValue instanceof String) {
+            value = ((String) objectValue);
+        } else if (objectValue instanceof List) {
+            value = ((List<Object>) objectValue).stream().map(String::valueOf).collect(Collectors.joining(","));
+        } else {
+            value = String.valueOf(objectValue);
+        }
+        return value;
+    }
+
+    /**
+     * Splits the string with the specified operation.
+     */
+    private List<String> splitValue(String value, QueryOperation operation) {
+        List<String> list;
+        if (operation == null) {
+            list = Collections.singletonList(value);
+        } else if (operation == QueryOperation.AND) {
+            list = Arrays.asList(value.split(AND));
+        } else {
+            list = Arrays.asList(value.split(OR));
+        }
+        return list;
     }
 
     /**
@@ -1946,6 +1980,36 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.debug("Projection: {}", projection);
         return projection;
+    }
+
+
+    @Deprecated
+    private QueryBuilder addQueryListFilter(String key, List<?> values, QueryBuilder builder, QueryOperation op) {
+        if (values != null)
+            if (values.size() == 1) {
+                if(op == QueryOperation.AND) {
+                    builder.and(key).is(values.get(0));
+                } else {
+                    builder.or(QueryBuilder.start(key).is(values.get(0)).get());
+                }
+            } else if (!values.isEmpty()) {
+                if(op == QueryOperation.AND) {
+                    builder.and(key).in(values);
+                } else {
+                    builder.or(QueryBuilder.start(key).in(values).get());
+                }
+            }
+        return builder;
+    }
+
+    @Deprecated
+    private QueryBuilder addScoreFilter(String key, List<String> list, QueryBuilder builder) {
+        return addScoreFilter(key, list.stream().collect(Collectors.joining(OR)), builder);
+    }
+
+    @Deprecated
+    private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, List<String> list, QueryBuilder builder) {
+        return addFrequencyFilter(key, alleleFrequencyField, list.stream().collect(Collectors.joining(OR)), builder);
     }
 
     @Override
