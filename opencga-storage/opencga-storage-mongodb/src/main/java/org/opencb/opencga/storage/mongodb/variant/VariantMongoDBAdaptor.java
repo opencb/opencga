@@ -826,13 +826,28 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder studyBuilder = QueryBuilder.start();
 
             if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
-                List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), null);
-                addQueryListFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds, studyBuilder, QueryOperation.AND);
+                String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
+
+                this.<Integer>addQueryFilter(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, value, builder, QueryOperation.AND, studyName -> {
+                    try {
+                        return Integer.parseInt(studyName);
+                    } catch (NumberFormatException e) {
+                        QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, null);
+                        if (result.getResult().isEmpty()) {
+                            throw new IllegalStateException("Study " + studyName + " not found");
+                        }
+                        return result.first().getStudyId();
+                    }
+                });
+
+                String studyIds = getStudyIds(Arrays.asList(value.split(",|;")), null).stream().map(Object::toString).collect(Collectors.joining(","));
+                this.addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds, studyBuilder, QueryOperation.AND);
+
             }
 
             if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
-                addQueryListFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                        query.getAsIntegerList(VariantQueryParams.FILES.key()), studyBuilder, QueryOperation.AND);
+                addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                        objectToString(query.get(VariantQueryParams.FILES.key())), studyBuilder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
@@ -979,6 +994,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 studiesIds.add(((Integer) studyObj));
             } else {
                 String studyName = studyObj.toString();
+                if (studyName.startsWith("!")) { //Skip negated studies
+                    continue;
+                }
                 try {
                     studiesIds.add(Integer.parseInt(studyName));
                 } catch (NumberFormatException e) {
@@ -1153,7 +1171,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
         studyConfigurationManager.setDefaultQueryOptions(options);
-        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
 
         DBObjectToSamplesConverter samplesConverter;
         if (studyIds.isEmpty()) {
@@ -1205,35 +1223,74 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private <T> QueryBuilder addQueryFilter(String key, String value, final QueryBuilder builder, QueryOperation op, Function<String, T> map) {
-        QueryOperation operation = checkOperator(value);
 
-        Function<String[], List<?>> toList = array -> {
-            ArrayList<T> list = new ArrayList<>(array.length);
-            for (String elem : array) {
-                list.add(map.apply(elem));
-            }
-            return list;
-        };
+        QueryOperation operation = checkOperator(value);
 
         QueryBuilder _builder;
         if (op == QueryOperation.OR) {
-            _builder = QueryBuilder.start(key);
+            _builder = QueryBuilder.start();
         } else {
-            _builder = builder.and(key);
+            _builder = builder;
         }
 
         if (operation == null) {
-            _builder.is(map.apply(value));
+            if (value.startsWith("!")) {
+                _builder.and(key).notEquals(map.apply(value.substring(1)));
+            } else {
+                _builder.and(key).is(map.apply(value));
+            }
         } else if (operation == QueryOperation.OR) {
-            _builder.in(toList.apply(value.split(OR)));
+            String[] array = value.split(OR);
+            List<T> list = new ArrayList<>(array.length);
+            for (String elem : array) {
+                if (elem.startsWith("!")) {
+                    throw new IllegalArgumentException("Unable to use negate (!) operator in OR sequences (<it_1>(,<it_n>)*)");
+                } else {
+                    list.add(map.apply(elem));
+                }
+            }
+            _builder.and(key).in(list);
         } else {
-            _builder.all(toList.apply(value.split(AND)));
+            //Split in two lists: positive and negative
+            String[] array = value.split(AND);
+            List<T> listIs = new ArrayList<>(array.length);
+            List<T> listNotIs = new ArrayList<>(array.length);
+
+            for (String elem : array) {
+                if (elem.startsWith("!")) {
+                    listNotIs.add(map.apply(elem.substring(1)));
+                } else {
+                    listIs.add(map.apply(elem));
+                }
+            }
+
+            if (!listIs.isEmpty()) {    //Can not use method "is" because it will be overwritten with the "notEquals" or "notIn" method
+                _builder.and(key).all(listIs);
+            }
+            if (listNotIs.size() == 1) {
+                _builder.and(key).notEquals(listNotIs.get(0));
+            } else if (listNotIs.size() > 1) {
+                _builder.and(key).notIn(listNotIs);
+            }
+
         }
 
         if (op == QueryOperation.OR) {
             builder.or(_builder.get());
         }
         return builder;
+    }
+
+    private String objectToString(Object objectValue) {
+        String value;
+        if (objectValue instanceof String) {
+            value = ((String) objectValue);
+        } else if (objectValue instanceof List) {
+            value = ((List<Object>) objectValue).stream().map(String::valueOf).collect(Collectors.joining(","));
+        } else {
+            value = String.valueOf(objectValue);
+        }
+        return value;
     }
 
     @Deprecated

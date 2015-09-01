@@ -56,14 +56,17 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
                     .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
                     .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
                     .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+            //Study1
             runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfiguration1, options.append(VariantStorageManager.Options.FILE_ID.key(), file1));
             assertEquals(500, studyConfiguration1.getCohorts().get(studyConfiguration1.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT)).size());
             runDefaultETL(getResourceUri("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfiguration1, options.append(VariantStorageManager.Options.FILE_ID.key(), file2));
             assertEquals(1000, studyConfiguration1.getCohorts().get(studyConfiguration1.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT)).size());
+            //Study2
             runDefaultETL(getResourceUri("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfiguration2, options.append(VariantStorageManager.Options.FILE_ID.key(), file3));
             assertEquals(500, studyConfiguration2.getCohorts().get(studyConfiguration2.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT)).size());
             runDefaultETL(getResourceUri("1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfiguration2, options.append(VariantStorageManager.Options.FILE_ID.key(), file4));
             assertEquals(1000, studyConfiguration2.getCohorts().get(studyConfiguration2.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT)).size());
+            //Study3
             runDefaultETL(getResourceUri("2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfiguration3, options.append(VariantStorageManager.Options.FILE_ID.key(), file5));
             assertEquals(504, studyConfiguration3.getCohorts().get(studyConfiguration3.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT)).size());
 
@@ -195,7 +198,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     }
 
     @Test
-    public void testGetAllVariants_filterStudies2_3() {
+    public void testGetAllVariants_filterStudies2_OR_3() {
         List<String> studyIds = Arrays.asList(
                 studyConfiguration2.getStudyName(),
                 studyConfiguration3.getStudyName());
@@ -209,6 +212,38 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
             List<String> returnedStudyIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toList());
             assertTrue(returnedStudyIds.contains(studyConfiguration2.getStudyName())
                     || returnedStudyIds.contains(studyConfiguration3.getStudyName()));
+        }
+    }
+
+    @Test
+    public void testGetAllVariants_filterStudies2_AND_3() {
+        String studyIds = studyConfiguration2.getStudyName() + ";" + studyConfiguration3.getStudyName();
+        query.append(STUDIES.key(), studyIds);
+        queryResult = dbAdaptor.get(query, options);
+
+        assertEquals(3301, queryResult.getNumResults());
+        assertEquals(3301, queryResult.getNumTotalResults());
+
+        for (Variant variant : queryResult.getResult()) {
+            List<String> returnedStudyIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toList());
+            assertTrue(returnedStudyIds.contains(studyConfiguration2.getStudyName())
+                    && returnedStudyIds.contains(studyConfiguration3.getStudyName()));
+        }
+    }
+
+    @Test
+    public void testGetAllVariants_filterStudies2_not_3() {
+        String studyIds = studyConfiguration2.getStudyName() + ";!" + studyConfiguration3.getStudyName();
+        query.append(STUDIES.key(), studyIds);
+        queryResult = dbAdaptor.get(query, options);
+
+        System.out.println(queryResult.getNumResults());
+        assertEquals(3293, queryResult.getNumResults());
+        assertEquals(3293, queryResult.getNumTotalResults());
+
+        for (Variant variant : queryResult.getResult()) {
+            List<String> returnedStudyIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toList());
+            assertTrue(returnedStudyIds.contains(studyConfiguration2.getStudyName()) && !returnedStudyIds.contains(studyConfiguration3.getStudyName()));
         }
     }
 
