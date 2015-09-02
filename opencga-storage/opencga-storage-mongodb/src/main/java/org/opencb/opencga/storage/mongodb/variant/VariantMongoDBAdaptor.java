@@ -637,14 +637,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private QueryBuilder parseQuery(Query query, QueryBuilder builder) {
         if (query != null) {
 
-            if (query.containsKey("sort")) {
-                if (query.getBoolean("sort")) {
-                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
-                } else {
-                    query.remove("sort");
-                }
-            }
-
             /** VARIANT PARAMS **/
 
             if (query.containsKey(VariantQueryParams.REGION.key()) && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
@@ -894,6 +886,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if(options == null) {
             options = new QueryOptions();
         }
+
+        if (options.containsKey("sort")) {
+            if (options.getBoolean("sort")) {
+                options.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
+            } else {
+                options.remove("sort");
+            }
+        }
+
         List<String> includeList = options.getAsStringList("include");
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
