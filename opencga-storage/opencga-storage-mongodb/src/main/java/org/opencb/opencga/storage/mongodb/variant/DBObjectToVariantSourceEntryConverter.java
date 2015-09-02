@@ -142,7 +142,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                                 }
                             }
                         } else {
-                            file.addAttribute(fileId_ + entry.getKey(), entry.getValue().toString());
+                            file.addAttribute(fileId_ + entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
                         }
                     }
                 }
@@ -218,8 +218,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             BasicDBObject attrs = null;
             for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
                 String stringValue = entry.getValue();
+                String key = entry.getKey().replace(".", DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;
-                if (entry.getKey().equals("src")) {
+                if (key.equals("src")) {
                     if (includeSrc) {
                         try {
                             value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
@@ -229,7 +230,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                     } else {
                         continue;
                     }
-                } else if (entry.getKey().equals("ori")) {
+                } else if (key.equals("ori")) {
                     int indexOf = stringValue.lastIndexOf(":");
                     fileObject.append(ORI_FIELD,
                             new BasicDBObject("s", stringValue.substring(0, indexOf))
@@ -252,9 +253,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 }
 
                 if (attrs == null) {
-                    attrs = new BasicDBObject(entry.getKey(), value);
+                    attrs = new BasicDBObject(key, value);
                 } else {
-                    attrs.append(entry.getKey(), value);
+                    attrs.append(key, value);
                 }
             }
 

@@ -53,6 +53,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         file = new VariantSourceEntry(fileId.toString(), studyId.toString());
         file.addAttribute("QUAL", "0.01");
         file.addAttribute("AN", "2.0");
+        file.addAttribute("do.we.accept.attribute.with.dots?", "yes");
         file.setFormat("GT");
         
         Map<String, String> na001 = new HashMap<>();
@@ -72,8 +73,12 @@ public class DBObjectToVariantSourceEntryConverterTest {
         mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId);
 
         BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, fileId);
+        String dot = DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS;
         mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
-                new BasicDBObject("QUAL", 0.01).append("AN", 2.0));
+                new BasicDBObject("QUAL", 0.01)
+                        .append("AN", 2.0)
+                        .append("do" + dot + "we" + dot + "accept" + dot + "attribute" + dot + "with" + dot + "dots?", "yes")
+        );
 //        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
         mongoStudy.append(DBObjectToVariantSourceEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
 

@@ -12,6 +12,8 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Index;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,11 +27,16 @@ public class VariantFetcher {
     private final OpenCGAWSServer wsServer;
     private final CatalogManager catalogManager;
     private final StorageManagerFactory storageManagerFactory;
+    private final Logger logger;
+
+    public static final int LIMIT_DEFAULT = 1000;
+    public static final int LIMIT_MAX = 5000;
 
     public VariantFetcher(OpenCGAWSServer wsServer) {
         this.wsServer = wsServer;
         catalogManager = OpenCGAWSServer.catalogManager;
         storageManagerFactory = OpenCGAWSServer.storageManagerFactory;
+        logger = LoggerFactory.getLogger(VariantFetcher.class);
     }
 
     public QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId)
@@ -66,36 +73,40 @@ public class VariantFetcher {
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
 
-        Query query = getVariantQuery(wsServer.queryOptions);
+        QueryOptions queryOptions = wsServer.queryOptions;
+        int limit = queryOptions.getInt("limit", -1);
+        if (limit > LIMIT_MAX) {
+            logger.info("Unable to return more than {} variants. Change limit from {} to {}", LIMIT_MAX, limit, LIMIT_MAX);
+        }
+        queryOptions.put("limit", (limit > 0) ? Math.min(limit, LIMIT_MAX) : LIMIT_DEFAULT);
+
+        Query query = getVariantQuery(queryOptions);
 
         if (fileIdNum != null) {
             query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIdNum);
         }
-        System.out.println("queryVariants = " + query.toJson());
+
+
+        logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
         dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, wsServer.sessionId));
 
-        List<Region> regions = Region.parseRegions(regionStr);
-
-        long size = 0;
-        if (regions == null) {
-            regions = Collections.emptyList();
-        }
-        for (Region region : regions) {
-            size += region.getEnd() - region.getStart();
-        }
-        if (size > 1_000_000) {
-            OpenCGAWSServer.logger.warn("Really big query");
-        }
-        if (histogram) {
-            if (regions.size() != 1) {
-                throw new IllegalArgumentException("Unable to calculate histogram with " + regions.size() + " regions.");
-            }
-            result = dbAdaptor.getFrequency(query, regions.get(0), interval);
-        } else if (!groupBy.isEmpty()) {
-            result = dbAdaptor.groupBy(query, groupBy, wsServer.queryOptions);
+        String[] regions;
+        if (regionStr != null) {
+            regions = regionStr.split(",");
         } else {
-            result = dbAdaptor.get(query, wsServer.queryOptions);
+            regions = new String[0];
+        }
+
+        if (histogram) {
+            if (regions.length != 1) {
+                throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
+            }
+            result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
+        } else if (!groupBy.isEmpty()) {
+            result = dbAdaptor.groupBy(query, groupBy, queryOptions);
+        } else {
+            result = dbAdaptor.get(query, queryOptions);
         }
         return result;
     }

@@ -22,16 +22,15 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variation.PopulationFrequency;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -87,11 +86,37 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_frequency() {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.REFERENCE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(55, queryResult.getNumResults());
+        assertEquals(43, queryResult.getNumResults());
+        assertEquals(0, filterPopulation(map -> !(map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05)));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"ESP_6500:African_American>0.05");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(673, queryResult.getNumResults());
+        assertEquals(677, queryResult.getNumResults());
+        assertEquals(0, filterPopulation(map -> !(map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05)));
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(139, queryResult.getNumResults());
+        assertEquals(0, filterPopulation(map -> !(map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"ESP_6500:African_American>0.05;1000GENOMES_phase_1:AFR<=0.05");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(22, queryResult.getNumResults());
+        assertEquals(0, filterPopulation(map -> !(map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05 && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"ESP_6500:African_American>0.05,1000GENOMES_phase_1:AFR<=0.05");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(794, queryResult.getNumResults());
+        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05
+                || map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
+
+    }
+
+    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
+        return queryResult.getResult().stream()
+                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream().collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPop(), p -> p)))
+                .filter(predicate)
+                .count();
     }
 
     @Test
@@ -107,6 +132,31 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
+    }
+
+    @Test
+    public void testGetAllVariants_ct() {
+        Query query;
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566");
+        queryResult = dbAdaptor.get(query, null);
+        assertEquals(911, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "1566");
+        queryResult = dbAdaptor.get(query, null);
+        assertEquals(911, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566,SO:0001583");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(947, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "1566,SO:0001583");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(947, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566;SO:0001583");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(396, queryResult.getNumResults());
     }
 
     @Test
