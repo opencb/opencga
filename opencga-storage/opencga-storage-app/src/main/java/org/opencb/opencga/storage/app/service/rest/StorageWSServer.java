@@ -39,7 +39,7 @@ import java.util.List;
  * Created by jacobo on 23/10/14.
  */
 //@Path("/")
-public class DaemonServlet {
+public class StorageWSServer {
 
     private static final ObjectMapper jsonObjectMapper;
     private static final ObjectWriter jsonObjectWriter;
@@ -65,13 +65,13 @@ public class DaemonServlet {
     @QueryParam("metadata")
     protected Boolean metadata;
 
-    public DaemonServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public StorageWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
         this.params = uriInfo.getQueryParameters();
 //        logger.debug(uriInfo.getRequestUri().toString());
-        this.queryOptions = new QueryOptions();
+        this.queryOptions = new QueryOptions(params, true);
         this.sessionIp = httpServletRequest.getRemoteAddr();
     }
 
