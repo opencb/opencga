@@ -652,7 +652,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             /** VARIANT PARAMS **/
 
-            if (query.containsKey(VariantQueryParams.REGION.key()) && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
+            if (query.get(VariantQueryParams.REGION.key()) != null && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
                 List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
                 for (String reg : stringList) {
@@ -662,7 +662,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getRegionFilter(regions, builder);
             }
 
-            if (query.getString(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
+            if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
                 String ids = query.getString(VariantQueryParams.ID.key());
                 addQueryStringFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
@@ -792,7 +792,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             /** STUDIES **/
             QueryBuilder studyBuilder = QueryBuilder.start();
-
+            final StudyConfiguration defaultStudyConfiguration;
             if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs("studies", String.class).get(0).isEmpty()) {
                 String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
 
@@ -802,34 +802,51 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     } catch (NumberFormatException e) {
                         QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, null);
                         if (result.getResult().isEmpty()) {
-                            throw new IllegalStateException("Study " + studyName + " not found");
+                            throw new IllegalArgumentException("Study " + studyName + " not found");
                         }
                         return result.first().getStudyId();
                     }
                 });
 
-                String studyIds = getStudyIds(Arrays.asList(value.split(",|;")), null).stream().map(Object::toString).collect(Collectors.joining(","));
-                this.addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIds, studyBuilder, QueryOperation.AND);
+                List<Integer> studyIds = getStudyIds(Arrays.asList(value.split(",|;")), null);
+                if (studyIds.size() == 1) {
+                    defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
+                } else {
+                    defaultStudyConfiguration = null;
+                }
+                String studyIdsCsv = studyIds.stream().map(Object::toString).collect(Collectors.joining(","));
+                this.addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIdsCsv, studyBuilder, QueryOperation.AND);
 
+            } else {
+                defaultStudyConfiguration = null;
             }
 
             if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
-                addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
-                        objectToString(query.get(VariantQueryParams.FILES.key())), studyBuilder, QueryOperation.AND);
+                addQueryFilter(DBObjectToVariantSourceEntryConverter.FILES_FIELD + "." + DBObjectToVariantSourceEntryConverter.FILEID_FIELD,
+                        objectToString(query.get(VariantQueryParams.FILES.key())), studyBuilder, QueryOperation.AND, file -> {
+                            if (file.contains(":")) {
+                                String[] studyFile = file.split(":");
+                                QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyFile[0], null);
+                                if (queryResult.getResult().isEmpty()) {
+                                    throw new IllegalArgumentException("Study " + studyFile[0] + " not found");
+                                }
+                                return queryResult.first().getFileIds().get(studyFile[1]);
+                            } else {
+                                try {
+                                    return Integer.parseInt(file);
+                                } catch (NumberFormatException e) {
+                                    if (defaultStudyConfiguration != null) {
+                                        return defaultStudyConfiguration.getFileIds().get(file);
+                                    } else {
+                                        throw new IllegalArgumentException("Unknown file \"" + file + "\". Please, specify the study belonging.");
+                                    }
+                                }
+                            }
+                        });
             }
 
             if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
                 String sampleGenotypesCSV = query.getString(VariantQueryParams.GENOTYPE.key());
-
-//                String AND = ",";
-//                String OR = ";";
-//                String IS = ":";
-
-//                String AND = "AND";
-//                String OR = "OR";
-//                String IS = ":";
-
-
 
                 // we may need to know the study type
 //                studyConfigurationManager.getStudyConfiguration(1, null).getResult().get(0).
@@ -840,30 +857,57 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
                 for (String sampleGenotypes : sampleGenotypesArray) {
                     String[] sampleGenotype = sampleGenotypes.split(IS);
-                    if(sampleGenotype.length != 2) {
-                        continue;
+                    if(sampleGenotype.length != 2 && sampleGenotype.length != 3) {
+                        throw new IllegalArgumentException("Malformed genotype query \"" + sampleGenotypes + "\". Expected [<study>:]<sample>:<genotype>[,<genotype>]*");
                     }
-                    int sample = Integer.parseInt(sampleGenotype[0]);
-                    String[] genotypes = sampleGenotype[1].split(OR);
+
+                    int sampleId;
+                    final String genotypes;
+                    if (sampleGenotype.length == 3) {  //Expect to be as <study>:<sample>
+                        String study = sampleGenotype[0];
+                        String sample = sampleGenotype[1];
+                        genotypes = sampleGenotype[2];
+                        QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(study, null);
+                        if (queryResult.getResult().isEmpty()) {
+                            throw new IllegalArgumentException("Study " + study + " not found");
+                        }
+                        sampleId = queryResult.first().getSampleIds().get(sample);
+                    } else {
+                        String sample = sampleGenotype[0];
+                        genotypes = sampleGenotype[1];
+                        try {
+                            sampleId = Integer.parseInt(sample);
+                        } catch (NumberFormatException e) {
+                            if (defaultStudyConfiguration != null) {
+                                sampleId = defaultStudyConfiguration.getSampleIds().get(sample);
+                            } else {
+                                //Unable to identify that sample!
+                                throw new IllegalArgumentException("Unknown sample \"" + sample + "\". Please, specify the study belonging");
+                            }
+                        }
+                    }
+
+
+                    String[] genotypesArray = genotypes.split(OR);
                     QueryBuilder genotypesBuilder = QueryBuilder.start();
-                    for (String genotype : genotypes) {
+                    for (String genotype : genotypesArray) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
                             QueryBuilder andBuilder = QueryBuilder.start();
                             if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
                             } else {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {
                             String s = DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." +
                                     DBObjectToSamplesConverter.genotypeToStorageType(genotype);
                             //or [ {"samp.0|0" : { $elemMatch : { $eq : <sampleId> } } } ]
-                            genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample))));
+                            genotypesBuilder.or(new BasicDBObject(s, new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId))));
                         }
                     }
                     studyBuilder.and(genotypesBuilder.get());
@@ -1149,7 +1193,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             for (Integer studyId : studyIds) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
                 if (queryResult.getResult().isEmpty()) {
-                    throw new IllegalStateException("iterator(): couldn't find studyConfiguration for StudyId '" + studyId + "'");
+                    throw new IllegalArgumentException("Couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
                     studyConfigurations.add(queryResult.first());
                 }

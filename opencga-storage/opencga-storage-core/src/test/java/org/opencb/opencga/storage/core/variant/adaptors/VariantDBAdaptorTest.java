@@ -250,6 +250,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(282, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
+        query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), STUDY_NAME + ":NA19600:1|1");
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), "NA19600:1|1").append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
+        queryResult = dbAdaptor.get(query, new QueryOptions());
+        assertEquals(282, queryResult.getNumTotalResults());
+        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+
 
         //get for each genotype. Should return all variants
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":0|0,0|1,1|0,1|1,./.");
@@ -278,6 +288,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertEquals("1|1", vse.getSampleData("NA19600", "GT"));
             assertTrue(Arrays.asList("0|0", "1|0").contains(vse.getSampleData("NA19685", "GT")));
         }));
+    }
+
+    @Test
+    public void testGetAllVariants_genotypes_wrong_values() {
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), "NA19600:1|1");
+        thrown.expect(IllegalArgumentException.class);
+        queryResult = dbAdaptor.get(query, new QueryOptions());
     }
 
     @Test
