@@ -871,6 +871,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         if (queryResult.getResult().isEmpty()) {
                             throw new IllegalArgumentException("Study " + study + " not found");
                         }
+                        if (!queryResult.first().getSampleIds().containsKey(sample)) {
+                            throw new IllegalArgumentException("Sample " + sample + " not found");
+                        }
                         sampleId = queryResult.first().getSampleIds().get(sample);
                     } else {
                         String sample = sampleGenotype[0];
@@ -879,6 +882,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             sampleId = Integer.parseInt(sample);
                         } catch (NumberFormatException e) {
                             if (defaultStudyConfiguration != null) {
+                                if (!defaultStudyConfiguration.getSampleIds().containsKey(sample)) {
+                                    throw new IllegalArgumentException("Sample " + sample + " not found");
+                                }
                                 sampleId = defaultStudyConfiguration.getSampleIds().get(sample);
                             } else {
                                 //Unable to identify that sample!

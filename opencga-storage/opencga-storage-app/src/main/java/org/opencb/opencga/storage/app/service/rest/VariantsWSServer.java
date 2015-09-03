@@ -78,6 +78,7 @@ public class VariantsWSServer extends StorageWSServer {
                     query.put(acceptedValue.key(), queryOptions.get(acceptedValue.key()));
                 }
             }
+            queryOptions.add("query", query);
 //            for (String acceptedValue : Arrays.asList("merge", "exclude", "include", "skip", "limit")) {
 //                addQueryParam(queryOptions, acceptedValue);
 //            }
