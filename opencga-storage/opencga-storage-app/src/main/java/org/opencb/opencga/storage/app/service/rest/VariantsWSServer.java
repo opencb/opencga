@@ -49,22 +49,16 @@ public class VariantsWSServer extends StorageWSServer {
     }
 
     @GET
-    @Path("/{fileId}/fetch")
+    @Path("/fetch")
     @Produces("application/json")
-    public Response fetch(@PathParam("fileId") @DefaultValue("") String fileId,
-                          @QueryParam("storageEngine") String storageEngine,
+    public Response fetch(@QueryParam("storageEngine") String storageEngine,
                           @QueryParam("dbName") String dbName,
-                          @QueryParam("region") @DefaultValue("") String regionsCVS,
-                          @QueryParam("sessionId") String sessionId,
-
-                          @QueryParam("view_as_pairs") @DefaultValue("false") boolean view_as_pairs,
-                          @QueryParam("include_coverage") @DefaultValue("true") boolean include_coverage,
-                          @QueryParam("process_differences") @DefaultValue("true") boolean process_differences,
-                          @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                          @DefaultValue("2000") @QueryParam("histogram_interval") int interval
+                          @QueryParam("region") String regionsCVS,
+                          @QueryParam("histogram") @DefaultValue("false") boolean histogram,
+                          @QueryParam("histogram_interval") @DefaultValue("2000") int interval
     ) {
         try {
-            QueryResult queryResult = VariantFetcher.getVariants(storageEngine, dbName, fileId, histogram, interval, queryOptions);
+            QueryResult queryResult = VariantFetcher.getVariants(storageEngine, dbName, histogram, interval, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,18 +68,19 @@ public class VariantsWSServer extends StorageWSServer {
 
     public static class VariantFetcher {
 
-        public static QueryResult getVariants(String storageEngine, String dbName, String fileId, boolean histogram, int interval, QueryOptions queryOptions)
+        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions queryOptions)
                 throws StorageManagerException, ClassNotFoundException, IllegalAccessException, InstantiationException {
             VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
             Query query = new Query();
             for (VariantQueryParams acceptedValue : VariantQueryParams.values()) {
-                query.put(acceptedValue.key(), queryOptions.get(acceptedValue.key()));
+                if (queryOptions.get(acceptedValue.key()) != null) {
+                    query.put(acceptedValue.key(), queryOptions.get(acceptedValue.key()));
+                }
             }
 //            for (String acceptedValue : Arrays.asList("merge", "exclude", "include", "skip", "limit")) {
 //                addQueryParam(queryOptions, acceptedValue);
 //            }
-            query.put(VariantQueryParams.FILES.key(), Collections.singletonList(fileId));
 
             if (queryOptions.getInt("limit", Integer.MAX_VALUE) > LIMIT_MAX) {
                 queryOptions.put("limit", Math.max(queryOptions.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));

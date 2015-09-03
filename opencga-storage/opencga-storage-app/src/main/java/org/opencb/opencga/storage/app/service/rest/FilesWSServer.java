@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -80,7 +81,8 @@ public class FilesWSServer extends StorageWSServer {
         try {
             switch (bioformat) {
                 case "vcf":
-                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, fileId, histogram, interval, queryOptions));
+                    queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
+                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval, queryOptions));
                 case "bam":
                     AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
                     ObjectMap params = new ObjectMap();
