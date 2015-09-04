@@ -208,9 +208,27 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult distinct(Query query, String field) {
+        String documentPath;
+        switch (field) {
+            case "gene":
+            default:
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD;
+                break;
+            case "ensemblGene":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                break;
+            case "ensemblTranscript":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD;
+                break;
+            case "ct":
+            case "consequence_type":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                break;
+        }
+
         QueryBuilder qb = QueryBuilder.start();
         parseQuery(query, qb);
-        return variantsCollection.distinct(field, qb.get());
+        return variantsCollection.distinct(documentPath, qb.get());
     }
 
     @Override
@@ -642,14 +660,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private QueryBuilder parseQuery(Query query, QueryBuilder builder) {
         if (query != null) {
 
-            if (query.containsKey("sort")) {
-                if (query.getBoolean("sort")) {
-                    query.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
-                } else {
-                    query.remove("sort");
-                }
-            }
-
             /** VARIANT PARAMS **/
 
             if (query.get(VariantQueryParams.REGION.key()) != null && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
@@ -908,14 +918,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     for (String genotype : genotypesArray) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
                             QueryBuilder andBuilder = QueryBuilder.start();
-                            if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
-                            } else {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
+                            List<String> otherGenotypes = Arrays.asList(
+                                    "0/1", "1/0", "1/1", "-1/-1",
+                                    "0|1", "1|0", "1|1", "-1|-1",
+                                    "0|2", "2|0", "2|1", "1|2", "2|2",
+                                    "0/2", "2/0", "2/1", "1/2", "2/2",
+                                    DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+                            for (String otherGenotype : otherGenotypes) {
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + otherGenotype, new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sampleId)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {
@@ -946,6 +956,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if(options == null) {
             options = new QueryOptions();
         }
+
+        if (options.containsKey("sort")) {
+            if (options.getBoolean("sort")) {
+                options.put("sort", new BasicDBObject(DBObjectToVariantConverter.CHROMOSOME_FIELD, 1).append(DBObjectToVariantConverter.START_FIELD, 1));
+            } else {
+                options.remove("sort");
+            }
+        }
+
         List<String> includeList = options.getAsStringList("include");
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
