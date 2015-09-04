@@ -818,7 +818,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 this.addQueryIntegerFilter(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyIdsCsv, studyBuilder, QueryOperation.AND);
 
             } else {
-                defaultStudyConfiguration = null;
+                List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                if (studyNames != null && studyNames.size() == 1) {
+                    defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyNames.get(0), null).first();
+                } else {
+                    defaultStudyConfiguration = null;
+                }
             }
 
             if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs("files", String.class).get(0).isEmpty()) {
@@ -838,7 +843,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                     if (defaultStudyConfiguration != null) {
                                         return defaultStudyConfiguration.getFileIds().get(file);
                                     } else {
-                                        throw new IllegalArgumentException("Unknown file \"" + file + "\". Please, specify the study belonging.");
+                                        List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                                        throw new IllegalArgumentException("Unknown file \"" + file + "\". Please, specify the study belonging."
+                                                + (studyNames == null ? "" : " Available studies: " + studyNames) );
                                     }
                                 }
                             }
@@ -888,7 +895,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                 sampleId = defaultStudyConfiguration.getSampleIds().get(sample);
                             } else {
                                 //Unable to identify that sample!
-                                throw new IllegalArgumentException("Unknown sample \"" + sample + "\". Please, specify the study belonging");
+                                List<String> studyNames = studyConfigurationManager.getStudyNames(null);
+                                throw new IllegalArgumentException("Unknown sample \"" + sample + "\". Please, specify the study belonging."
+                                                + (studyNames == null ? "" : " Available studies: " + studyNames) );
                             }
                         }
                     }
@@ -1210,7 +1219,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
         if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
-            samplesConverter.setReturnedSamples(new HashSet<>(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())));
+            //Remove the studyName, if any
+            samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
+                    .stream().map(s -> s.contains(":")? s.split(":")[1] : s).collect(Collectors.toSet()));
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 false,

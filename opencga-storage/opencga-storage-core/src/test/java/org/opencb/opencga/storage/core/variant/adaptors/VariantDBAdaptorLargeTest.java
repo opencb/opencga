@@ -174,7 +174,15 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     public void testGetAllVariants_filterStudy_returnedStudiesEmpty() {
         query.append(STUDIES.key(), -1);
 
-        thrown.expect(IllegalStateException.class); //StudyNotFound exception
+        thrown.expect(IllegalArgumentException.class); //StudyNotFound exception
+        queryResult = dbAdaptor.get(query, options);
+    }
+
+    @Test
+    public void testGetAllVariants_filterStudy_unknownStudy() {
+        query.append(GENOTYPE.key(), "HG00258:1/1");
+
+        thrown.expect(IllegalArgumentException.class); //Unspecified study exception
         queryResult = dbAdaptor.get(query, options);
     }
 
