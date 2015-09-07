@@ -18,7 +18,8 @@ cellbase:
     - ""
     user: ""
     password: ""
-  preferred: "remote"    ## This accept two values: 'local' and 'remote' to fetch data
+    options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+  preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port. Only authorized hosts are allowed to query data.
