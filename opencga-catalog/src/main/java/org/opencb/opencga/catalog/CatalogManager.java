@@ -22,6 +22,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
@@ -371,7 +372,7 @@ public class CatalogManager implements AutoCloseable {
      */
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
-            throws CatalogException, IOException {
+            throws CatalogException {
         return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null, sessionId);
     }
 
@@ -402,7 +403,7 @@ public class CatalogManager implements AutoCloseable {
                                           String cipher, String uriScheme, URI uri,
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
+            throws CatalogException {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
@@ -420,9 +421,14 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.read(studyId, options, sessionId);
     }
 
-    public QueryResult<Study> getAllStudies(int projectId, QueryOptions options, String sessionId)
+    public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(new QueryOptions("projectId", projectId), options, sessionId);
+        return studyManager.readAll(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options, sessionId);
+    }
+
+    public QueryResult<Study> getAllStudies(QueryOptions options, String sessionId)
+            throws CatalogException {
+        return studyManager.readAll(options, options, sessionId);
     }
 
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)

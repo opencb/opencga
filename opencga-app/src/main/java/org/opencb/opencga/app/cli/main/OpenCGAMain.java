@@ -1061,7 +1061,7 @@ public class OpenCGAMain {
 
     private StringBuilder listStudies(int projectId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
-            List<Study> studies = catalogManager.getAllStudies(projectId,
+            List<Study> studies = catalogManager.getAllStudiesInProject(projectId,
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
                     sessionId).getResult();
 

@@ -372,7 +372,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 checkProjectPermission(p.getId(), userId, CatalogPermission.READ);
             } catch (CatalogAuthorizationException e) {
                 projectIt.remove();
-                break;
+                continue;
             }
             filterStudies(userId, p.getStudies());
         }
@@ -393,7 +393,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 checkStudyPermission(study.getId(), userId, StudyPermission.READ_STUDY);
             } catch (CatalogAuthorizationException e) {
                 studyIt.remove();
-                break;
+                continue;
             }
             StudyAuthenticationContext studyAuthenticationContext = new StudyAuthenticationContext(study.getId());
             Group group = getGroupBelonging(study.getId(), userId);
@@ -493,13 +493,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (Integer fileId : job.getOutput()) {
                 if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
-                    break job_loop;
+                    continue job_loop;
                 }
             }
             for (Integer fileId : job.getInput()) {
                 if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
-                    break job_loop;
+                    continue job_loop;
                 }
             }
         }

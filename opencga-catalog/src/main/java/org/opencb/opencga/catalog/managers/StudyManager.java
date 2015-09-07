@@ -11,7 +11,6 @@ import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -216,20 +215,18 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     @Override
     public QueryResult<Study> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        int projectId = query.getInt("projectId", -1);
-        ParamUtils.checkId(projectId, "ProjectId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
+        query.putAll(options);
 
-        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
-
-        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(projectId, options);
+        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(query);
         List<Study> studies = allStudies.getResult();
+
         authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
         allStudies.setNumResults(studies.size());
-
 
         return allStudies;
     }

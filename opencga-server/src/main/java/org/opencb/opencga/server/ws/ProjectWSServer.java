@@ -91,7 +91,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             String[] projectIdArray = projectIdsStr.split(",");
             List<QueryResult> results = new LinkedList<>();
             for (String id : projectIdArray) {
-                results.add(catalogManager.getAllStudies(Integer.parseInt(id), queryOptions, sessionId));
+                results.add(catalogManager.getAllStudiesInProject(Integer.parseInt(id), queryOptions, sessionId));
             }
             return createOkResponse(results);
         } catch (Exception e) {

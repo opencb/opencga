@@ -15,11 +15,24 @@ import org.opencb.opencga.catalog.models.VariableSet;
 public interface CatalogStudyDBAdaptor {
 
     enum StudyFilterOptions implements CatalogDBAdaptor.FilterOption {
-
+        id(Type.NUMERICAL, ""),
+        projectId(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        alias(Type.TEXT, ""),
+        type(Type.TEXT, ""),
+        creatorId(Type.TEXT, ""),
+        creationDate(Type.TEXT, ""),
+        status(Type.TEXT, "")
         ;
 
         StudyFilterOptions(String key, Type type, String description) {
             this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+
+        StudyFilterOptions(Type type, String description) {
+            this._key = name();
             this._description = description;
             this._type = type;
         }
@@ -45,7 +58,9 @@ public interface CatalogStudyDBAdaptor {
 
     void checkStudyId(int studyId) throws CatalogDBException;
 
-    QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
 

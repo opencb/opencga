@@ -479,11 +479,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getAllStudiesTest() throws CatalogDBException {
         int projectId = user3.getProjects().get(0).getId();
-        QueryResult<Study> allStudies = catalogStudyDBAdaptor.getAllStudies(projectId, null);
+        QueryResult<Study> allStudies = catalogStudyDBAdaptor.getAllStudiesInProject(projectId, null);
         assertTrue(allStudies.getNumResults() != 0);
         System.out.println(allStudies);
         try {
-            System.out.println(catalogStudyDBAdaptor.getAllStudies(-100, null));
+            System.out.println(catalogStudyDBAdaptor.getAllStudiesInProject(-100, null));
             fail("Expected \"bad project id\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);

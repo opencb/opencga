@@ -132,22 +132,61 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
     }
 
+
     @Override
-    public QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if(!dbAdaptorFactory.getCatalogUserDBAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
+        return endQuery("getAllSudiesInProject", startTime, getAllStudies(options == null ?
+                new QueryOptions(StudyFilterOptions.projectId.toString(), projectId) :
+                options.append(StudyFilterOptions.projectId.toString(), projectId)));
+    }
 
-        DBObject query = new BasicDBObject(_PROJECT_ID, projectId);
+    public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
+        List<DBObject> mongoQueryList = new LinkedList<>();
+
+        for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                StudyFilterOptions option = StudyFilterOptions.valueOf(key);
+                switch (option) {
+                    case id:
+                        addCompQueryFilter(option, option.name(), queryOptions, _ID, mongoQueryList);
+                        break;
+                    case projectId:
+                        addCompQueryFilter(option, option.name(), queryOptions, _PROJECT_ID, mongoQueryList);
+                        break;
+                    default:
+                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option, entry.getKey(), queryOptions, queryKey, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
+
+        DBObject mongoQuery = new BasicDBObject();
+
+        if (!mongoQueryList.isEmpty()) {
+            mongoQuery.put("$and", mongoQueryList);
+        }
+
+        QueryResult<DBObject> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
 
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
-            joinFields(study.getId(), study, options);
+            joinFields(study.getId(), study, queryOptions);
         }
-        return endQuery("Get all studies", startTime, studies);
+
+        return endQuery("getAllStudies", startTime, studies);
     }
 
     @Override
@@ -543,7 +582,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             return;
         }
         if (options.getBoolean("includeStudies")) {
-            project.setStudies(getAllStudies(project.getId(), options).getResult());
+            project.setStudies(getAllStudiesInProject(project.getId(), options).getResult());
         }
     }
 
