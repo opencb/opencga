@@ -138,7 +138,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             }
         }
 
-        BasicDBObject mongoQuery = new BasicDBObject("$and", mongoQueryList);
+        BasicDBObject mongoQuery = new BasicDBObject();
+        if (!mongoQueryList.isEmpty()) {
+            mongoQuery.put("$and", mongoQueryList);
+        }
         if (!annotationSetFilter.isEmpty()) {
             mongoQuery.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
         }

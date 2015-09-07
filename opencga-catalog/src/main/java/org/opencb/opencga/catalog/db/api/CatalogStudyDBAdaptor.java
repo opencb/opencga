@@ -14,6 +14,26 @@ import org.opencb.opencga.catalog.models.VariableSet;
  */
 public interface CatalogStudyDBAdaptor {
 
+    enum StudyFilterOptions implements CatalogDBAdaptor.FilterOption {
+
+        ;
+
+        StudyFilterOptions(String key, Type type, String description) {
+            this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+
+        @Override public String getKey() {return _key;}
+        @Override public String getDescription() {return _description;}
+        @Override public Type getType() {return _type;}
+    }
+
+
     /**
      * Study methods
      * ***************************
