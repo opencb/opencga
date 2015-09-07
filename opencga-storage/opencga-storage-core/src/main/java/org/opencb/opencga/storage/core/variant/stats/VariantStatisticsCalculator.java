@@ -63,31 +63,18 @@ public class VariantStatisticsCalculator {
     public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap, Set<String> cohorts) {
         aggregatedCalculator = null;
         this.aggregation = aggregation;
-        boolean usingTagMap = tagmap != null;
         switch (this.aggregation) {
             case NONE:
                 aggregatedCalculator = null;
                 break;
             case BASIC:
-                if (usingTagMap) {
-                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
-                } else {
-                    aggregatedCalculator = new VariantAggregatedStatsCalculator(cohorts);
-                }
+                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap, cohorts);
                 break;
             case EVS:
-                if (usingTagMap) {
-                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
-                } else {
-                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(cohorts);
-                }
+                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap, cohorts);
                 break;
             case EXAC:
-                if (usingTagMap) {
-                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
-                } else {
-                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(cohorts);
-                }
+                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap, cohorts);
                 break;
         }
     }

@@ -185,9 +185,12 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
             variantStats = variantStatsEntry.getValue();
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, getCohortId(studyId, variantStatsEntry.getKey()));
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
-            cohortsStatsList.add(variantStatsDBObject);
+            Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
+            if (cohortId != null) {
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, (int)cohortId);
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
+                cohortsStatsList.add(variantStatsDBObject);
+            }
         }
         return cohortsStatsList;
     }
@@ -220,7 +223,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         }
     }
 
-    private int getCohortId(int studyId, String cohortName) {
+    private Integer getCohortId(int studyId, String cohortName) {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
         Map<String, Integer> cohortIds = studyConfiguration.getCohortIds();
         Integer integer = cohortIds.get(cohortName);
