@@ -7,10 +7,10 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -215,20 +215,19 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     @Override
     public QueryResult<Study> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        int projectId = query.getInt("projectId", -1);
-        ParamUtils.checkId(projectId, "ProjectId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
+        query.putAll(options);
 
-        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
-
-        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(projectId, options);
+        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(query);
         List<Study> studies = allStudies.getResult();
+
         authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
         allStudies.setNumResults(studies.size());
-
+        allStudies.setNumTotalResults(studies.size());
 
         return allStudies;
     }
@@ -287,4 +286,81 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public QueryResult<Study> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
+
+
+
+    /*
+     * Variables Methods
+     */
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      List<Variable> variables, String sessionId)
+            throws CatalogException {
+
+        ParamUtils.checkObj(variables, "Variables List");
+        Set<Variable> variablesSet = new HashSet<>(variables);
+        if (variables.size() != variablesSet.size()) {
+            throw new CatalogException("Error. Repeated variables");
+        }
+        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
+    }
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      Set<Variable> variables, String sessionId)
+            throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkObj(variables, "Variables Set");
+        unique = ParamUtils.defaultObject(unique, true);
+        description = ParamUtils.defaultString(description, "");
+        attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
+
+        for (Variable variable : variables) {
+            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkObj(variable.getType(), "variable Type");
+            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
+            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
+            variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
+            variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
+            variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
+//            variable.setRank(defaultString(variable.getDescription(), ""));
+        }
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
+        CatalogAnnotationsValidator.checkVariableSet(variableSet);
+
+        return studyDBAdaptor.createVariableSet(studyId, variableSet);
+    }
+
+    @Override
+    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSet);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        return studyDBAdaptor.getVariableSet(variableSet, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        return studyDBAdaptor.getAllVariableSets(studyId, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+        return studyDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
+    }
+
+
 }

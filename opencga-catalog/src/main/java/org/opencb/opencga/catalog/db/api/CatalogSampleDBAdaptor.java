@@ -143,19 +143,5 @@ public interface CatalogSampleDBAdaptor {
 
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
-    /**
-     * VariableSet Methods
-     * ***************************
-     */
-
-    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
-
-    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
-
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
-
-    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 
 }
