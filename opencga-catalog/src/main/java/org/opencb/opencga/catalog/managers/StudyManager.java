@@ -227,6 +227,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
         allStudies.setNumResults(studies.size());
+        allStudies.setNumTotalResults(studies.size());
 
         return allStudies;
     }
