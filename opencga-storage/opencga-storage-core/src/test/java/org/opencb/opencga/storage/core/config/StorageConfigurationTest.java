@@ -21,6 +21,8 @@ import org.opencb.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -76,7 +78,8 @@ public class StorageConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml").openStream());
+        System.out.println("storageConfiguration = " + storageConfiguration);
     }
 
 
