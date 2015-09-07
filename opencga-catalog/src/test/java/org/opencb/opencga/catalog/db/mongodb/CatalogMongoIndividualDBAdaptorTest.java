@@ -111,16 +111,16 @@ public class CatalogMongoIndividualDBAdaptorTest {
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_6", -1, -1, "Family3", Individual.Gender.FEMALE, "", null, new Individual.Population(), Collections.emptyList(), null), null);
 
         QueryResult<Individual> result;
-        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.name.toString(), "~ind_[1-3]"));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.name.toString(), "~ind_[1-3]").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.gender.toString(), Individual.Gender.FEMALE));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.gender.toString(), Individual.Gender.FEMALE).append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.family.toString(), "Family2"));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.family.toString(), "Family2").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.fatherId.toString(), ">0"));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.fatherId.toString(), ">0").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
         assertEquals(1, result.getNumResults());
     }
 

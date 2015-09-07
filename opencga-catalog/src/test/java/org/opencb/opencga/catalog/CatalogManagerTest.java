@@ -33,6 +33,7 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -1598,6 +1599,44 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getCohort(myCohort.getId(), null, sessionIdUser);
     }
 
+
+    /**
+     * Individual methods
+     * ***************************
+     */
+
+    @Test
+    public void testAnnotateIndividual() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+        VariableSet variableSet = study.getVariableSets().get(0);
+
+        int individualId1 = catalogManager.createIndividual(studyId, "INDIVIDUAL_1", "", -1, -1, null, new QueryOptions(), sessionIdUser).first().getId();
+        int individualId2 = catalogManager.createIndividual(studyId, "INDIVIDUAL_2", "", -1, -1, null, new QueryOptions(), sessionIdUser).first().getId();
+        int individualId3 = catalogManager.createIndividual(studyId, "INDIVIDUAL_3", "", -1, -1, null, new QueryOptions(), sessionIdUser).first().getId();
+
+        catalogManager.annotateIndividual(individualId1, "annot1", variableSet.getId(), new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
+        catalogManager.annotateIndividual(individualId2, "annot1", variableSet.getId(), new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true), null, sessionIdUser);
+        catalogManager.annotateIndividual(individualId3, "annot1", variableSet.getId(), new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
+
+        List<String> individuals;
+        individuals = catalogManager.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".NAME", "~^INDIVIDUAL_"), sessionIdUser)
+                .getResult().stream().map(Individual::getName).collect(Collectors.toList());
+        assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
+
+        individuals = catalogManager.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".AGE", ">10"), sessionIdUser)
+                .getResult().stream().map(Individual::getName).collect(Collectors.toList());
+        assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
+
+        individuals = catalogManager.getAllIndividuals(studyId, new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".AGE", ">10")
+                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".PHEN", "CASE"), sessionIdUser)
+                .getResult().stream().map(Individual::getName).collect(Collectors.toList());
+        assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
+
+    }
 
     /*                    */
     /* Test util methods  */

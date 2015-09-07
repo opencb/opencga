@@ -615,6 +615,15 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             msg += "]";
             throw new CatalogDBException(msg);
         }
+        QueryResult<Individual> individuals = getCatalogIndividualDBAdaptor().getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSetId));
+        if (samples.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
+            for (Individual individual : individuals.getResult()) {
+                msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
     }
 
 

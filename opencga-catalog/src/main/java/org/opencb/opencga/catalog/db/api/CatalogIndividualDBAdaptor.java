@@ -22,6 +22,11 @@ public interface CatalogIndividualDBAdaptor {
         race(Type.TEXT, ""),
         species(Type.TEXT, ""),
         population(Type.TEXT, ""),
+
+        variableSetId(Type.NUMERICAL, ""),
+        annotationSetId(Type.NUMERICAL, ""),
+        annotation(Type.TEXT, ""),
+
         attributes("attributes", Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),
         battributes("attributes", Type.BOOLEAN, ""),
@@ -69,7 +74,7 @@ public interface CatalogIndividualDBAdaptor {
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
