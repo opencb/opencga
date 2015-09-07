@@ -33,34 +33,37 @@ public class CellBaseConfiguration {
      */
     private String version;
 
+    private DatabaseCredentials database;
+
     /**
-     * options parameter defines database-specific parameters
+     * This can be 'remote' or 'local'
      */
-//    private Map<String, String> options;
+    private String preferred;
 
     private static final String CELLBASE_HOST= "http://bioinfo.hpc.cam.ac.uk/cellbase/webservices/rest/";
     private static final String CELLBASE_VERSION= "latest";
 
     public CellBaseConfiguration () {
-        this(Arrays.asList(CELLBASE_HOST), CELLBASE_VERSION, new HashMap<>());
+        this(Arrays.asList(CELLBASE_HOST), CELLBASE_VERSION, new DatabaseCredentials());
     }
 
-    public CellBaseConfiguration(List<String> hosts, String version, Map<String, String> options) {
+    public CellBaseConfiguration(List<String> hosts, String version, DatabaseCredentials database) {
         this.hosts = hosts;
         this.version = version;
-//        this.options = options;
-    }
+        this.database = database;
 
+        this.preferred = "local";
+    }
 
     @Override
     public String toString() {
         return "CellBaseConfiguration{" +
                 "hosts=" + hosts +
                 ", version='" + version + '\'' +
-//                ", options=" + options +
+                ", database=" + database +
+                ", preferred='" + preferred + '\'' +
                 '}';
     }
-
 
     public List<String> getHosts() {
         return hosts;
@@ -78,12 +81,20 @@ public class CellBaseConfiguration {
         this.version = version;
     }
 
-//    public Map<String, String> getOptions() {
-//        return options;
-//    }
-//
-//    public void setOptions(Map<String, String> options) {
-//        this.options = options;
-//    }
+    public DatabaseCredentials getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(DatabaseCredentials database) {
+        this.database = database;
+    }
+
+    public String getPreferred() {
+        return preferred;
+    }
+
+    public void setPreferred(String preferred) {
+        this.preferred = preferred;
+    }
 
 }

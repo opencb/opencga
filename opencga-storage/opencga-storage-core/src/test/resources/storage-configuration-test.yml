@@ -10,20 +10,26 @@ studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  hosts:
+  hosts:      ## 'remote' URL hosts to annotate variants
   - "${OPENCGA.CELLBASE.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
-
+  database:   ## 'local' connection to CellBase MongoDB
+    hosts:
+    - ""
+    user: ""
+    password: ""
+  preferred: "remote"    ## This accept two values: 'local' and 'remote' to fetch data
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
-## is launched in the specified port. Only authorized hosts domains or IPs can query data.
+## is launched in the specified port. Only authorized hosts are allowed to query data.
 server:
   port: 61976
   authorizedHosts: ["localhost"]
 
 ## The following section defines all availables storage engine plugins installed
+## Default plugin is 'mongodb' storage engine
 storageEngines:
-- id: "mongodb"     ## This is the default plugin as you can see above.
-  options: {}
+- id: "mongodb"
+  options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
     manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
     options:
@@ -63,6 +69,8 @@ storageEngines:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
       user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+
+## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"
   options: {}
   alignment:

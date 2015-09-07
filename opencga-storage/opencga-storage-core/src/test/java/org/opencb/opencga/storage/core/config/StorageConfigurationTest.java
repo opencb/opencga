@@ -21,12 +21,7 @@ import org.opencb.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by imedina on 01/05/15.
@@ -53,24 +48,21 @@ public class StorageConfigurationTest {
                 new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
                 options);
 
-//        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
-//                "hbase",
-//                "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager",
-//                "org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager",
-//                new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()),
-//                new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()),
-//                null,
-//                new HashMap<>());
 
-//        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
-//                "hbase", new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password", Collections.emptyMap()));
+
+        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
+        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
 
         storageConfiguration.setDefaultStorageEngineId("mongodb");
+
+        storageConfiguration.setCellbase(cellBaseConfiguration);
+        storageConfiguration.setServer(queryServerConfiguration);
+
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
         try {
-            storageConfiguration.serialize(new FileOutputStream("/tmp/aaa"));
+            storageConfiguration.serialize(new FileOutputStream("/tmp/storage-configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }

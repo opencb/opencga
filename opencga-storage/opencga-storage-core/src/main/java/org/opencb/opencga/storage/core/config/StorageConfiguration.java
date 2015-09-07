@@ -54,6 +54,7 @@ public class StorageConfiguration {
         this.storageEngines = storageEngines;
 
         this.cellbase = new CellBaseConfiguration();
+        this.server = new QueryServerConfiguration();
     }
 
     /**
