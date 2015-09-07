@@ -8,16 +8,21 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
+import org.opencb.opencga.catalog.models.Annotation;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -53,7 +58,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        return individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, null), options);
+        return individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, Collections.emptyList(), null), options);
     }
 
     @Override
@@ -92,6 +97,37 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> annotate(int individualId, String annotationSetId, int variableSetId, Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkObj(annotations, "annotations");
+        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.WRITE);
+
+        VariableSet variableSet = sampleDBAdaptor.getVariableSet(variableSetId, null).first();
+
+        AnnotationSet annotationSet =
+                new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+
+        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
+        }
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.getIndividual(individualId,
+                new QueryOptions("include", Collections.singletonList("annotationSets")));
+
+        List<AnnotationSet> annotationSets = individualQueryResult.getResult().get(0).getAnnotationSets();
+//        if (checkAnnotationSet) {
+        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+//        }
+
+        return individualDBAdaptor.annotateIndividual(individualId, annotationSet);
+
     }
 
     @Override

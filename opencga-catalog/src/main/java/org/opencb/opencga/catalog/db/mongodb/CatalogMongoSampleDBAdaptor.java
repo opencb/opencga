@@ -98,7 +98,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
     @Override
     public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
-        int variableSetId = options.getInt("variableSetId");
+        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
         Map<String, Variable> variableMap = null;
         if (variableSetId > 0) {
             variableMap = getVariableSet(variableSetId, null).first()

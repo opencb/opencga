@@ -41,26 +41,22 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotate(int sampleId, String id, int variableSetId,
+    public QueryResult<AnnotationSet> annotate(int sampleId, String annotationSetId, int variableSetId,
                                                Map<String, Object> annotations, Map<String, Object> attributes,
                                                boolean checkAnnotationSet, String sessionId)
             throws CatalogException{
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
 
-        QueryResult<VariableSet> variableSetResult = sampleDBAdaptor.getVariableSet(variableSetId, null);
-        if (variableSetResult.getResult().isEmpty()) {
-            throw new CatalogException("VariableSet " + variableSetId + " does not exists");
-        }
-        VariableSet variableSet = variableSetResult.getResult().get(0);
+        VariableSet variableSet = sampleDBAdaptor.getVariableSet(variableSetId, null).first();
 
         AnnotationSet annotationSet =
-                new AnnotationSet(id, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+                new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -68,7 +64,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.getSample(sampleId,
                 new QueryOptions("include", Collections.singletonList("annotationSets")));
 
-        List<AnnotationSet> annotationSets = sampleQueryResult.getResult().get(0).getAnnotationSets();
+        List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
         if (checkAnnotationSet) {
             CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }

@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.slf4j.LoggerFactory;
@@ -168,6 +169,27 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         }
 
         return endQuery("Modify individual", startTime, getIndividual(individualId, parameters));
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Long> count = individualCollection.count(
+                new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, individualId));
+        if (count.getResult().get(0) > 0) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        }
+
+        DBObject object = getDbObject(annotationSet, "AnnotationSet");
+
+        DBObject query = new BasicDBObject(_ID, individualId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+
+        QueryResult<WriteResult> queryResult = individualCollection.update(query, update, null);
+
+        return endQuery("", startTime, Collections.singletonList(annotationSet));
     }
 
     @Override
