@@ -3,13 +3,12 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.AclEntry;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
 * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -49,4 +48,24 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
                                      Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
+
+
+    /*---------------------*/
+    /* VariableSet METHODS */
+    /*---------------------*/
+
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
+                                               Map<String, Object> attributes, List<Variable> variables, String sessionId)
+            throws CatalogException;
+
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
+                                               Map<String, Object> attributes, Set<Variable> variables, String sessionId)
+            throws CatalogException;
+
+    QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+
 }

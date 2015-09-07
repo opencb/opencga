@@ -820,29 +820,29 @@ public class CatalogManager implements AutoCloseable {
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
             throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
             throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.readVariableSet(variableSet, options, sessionId);
+        return studyManager.readVariableSet(variableSet, options, sessionId);
     }
 
     public QueryResult<VariableSet> getAllVariableSet(int studyId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.readAllVariableSets(studyId, options, sessionId);
+        return studyManager.readAllVariableSets(studyId, options, sessionId);
     }
 
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
-        return sampleManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+        return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
     }
 
     /**

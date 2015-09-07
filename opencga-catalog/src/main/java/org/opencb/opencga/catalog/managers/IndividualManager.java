@@ -110,7 +110,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.WRITE);
 
-        VariableSet variableSet = sampleDBAdaptor.getVariableSet(variableSetId, null).first();
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
         AnnotationSet annotationSet =
                 new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);

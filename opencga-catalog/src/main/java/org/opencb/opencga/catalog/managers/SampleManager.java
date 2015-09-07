@@ -53,7 +53,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
 
-        VariableSet variableSet = sampleDBAdaptor.getVariableSet(variableSetId, null).first();
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
         AnnotationSet annotationSet =
                 new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
@@ -183,80 +183,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         return sampleDBAdaptor.deleteSample(sampleId);
     }
-
-    /*
-     * Variables Methods
-     */
-
-    @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      List<Variable> variables, String sessionId)
-            throws CatalogException {
-
-        ParamUtils.checkObj(variables, "Variables List");
-        Set<Variable> variablesSet = new HashSet<>(variables);
-        if (variables.size() != variablesSet.size()) {
-            throw new CatalogException("Error. Repeated variables");
-        }
-        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
-    }
-
-    @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
-                                                      String description, Map<String, Object> attributes,
-                                                      Set<Variable> variables, String sessionId)
-            throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(variables, "Variables Set");
-        unique = ParamUtils.defaultObject(unique, true);
-        description = ParamUtils.defaultString(description, "");
-        attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
-
-        for (Variable variable : variables) {
-            ParamUtils.checkParameter(variable.getId(), "variable ID");
-            ParamUtils.checkObj(variable.getType(), "variable Type");
-            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
-            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
-            variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
-            variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
-            variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
-//            variable.setRank(defaultString(variable.getDescription(), ""));
-        }
-
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-
-        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
-        CatalogAnnotationsValidator.checkVariableSet(variableSet);
-
-        return sampleDBAdaptor.createVariableSet(studyId, variableSet);
-    }
-
-    @Override
-    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSet);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-        return sampleDBAdaptor.getVariableSet(variableSet, options);
-    }
-
-    @Override
-    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-        return sampleDBAdaptor.getAllVariableSets(studyId, options);
-    }
-
-    @Override
-    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = sampleDBAdaptor.getStudyIdByVariableSetId(variableSetId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-        return sampleDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
-    }
-
 
     /*
      * Cohort methods

@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.VariableSet;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -49,4 +50,20 @@ public interface CatalogStudyDBAdaptor {
     QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
 
     QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+
+
+    /**
+     * VariableSet Methods
+     * ***************************
+     */
+
+    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
+
+    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+
+    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 }

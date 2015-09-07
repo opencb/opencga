@@ -14,9 +14,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Variable;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -87,6 +90,17 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     @Override
     public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options) throws CatalogDBException {
+        int variableSetId = options.getInt(CatalogSampleDBAdaptor.SampleFilterOption.variableSetId.toString());
+        Map<String, Variable> variableMap = null;
+        if (variableSetId > 0) {
+            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+        }
+        return getAllIndividuals(studyId, options, variableMap);
+    }
+
+
+    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options, Map<String, Variable> variableMap) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();

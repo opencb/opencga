@@ -37,6 +37,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addCompQueryFilter;
@@ -496,6 +497,140 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
         return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));    }
 
+
+    /*
+     * Variables Methods
+     * ***************************
+     */
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Long> count = studyCollection.count(
+                new BasicDBObject("variableSets.name", variableSet.getName()).append("id", studyId));
+        if (count.getResult().get(0) > 0) {
+            throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
+        }
+
+        int variableSetId = getNewAutoIncrementId(metaCollection);
+        variableSet.setId(variableSetId);
+        DBObject object = getDbObject(variableSet, "VariableSet");
+        DBObject query = new BasicDBObject(_ID, studyId);
+        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+
+        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+
+        return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
+    }
+
+    @Override
+    public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
+        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+        DBObject projection = new BasicDBObject(
+                "variableSets",
+                new BasicDBObject(
+                        "$elemMatch",
+                        new BasicDBObject("id", variableSetId)
+                )
+        );
+        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filteredOptions);
+        List<Study> studies = parseStudies(queryResult);
+        if(studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
+        }
+
+        return endQuery("", startTime, studies.get(0).getVariableSets());
+    }
+
+    @Override
+    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DBObject> mongoQueryList = new LinkedList<>();
+
+
+        for (Map.Entry<String, Object> entry : options.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            try {
+                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+                    continue;   //Exclude DataStore options
+                }
+                CatalogSampleDBAdaptor.VariableSetFilterOption option = CatalogSampleDBAdaptor.VariableSetFilterOption.valueOf(key);
+                switch (option) {
+                    case studyId:
+                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
+                        break;
+                    default:
+                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
+                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CatalogDBException(e);
+            }
+        }
+
+        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
+                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
+                new BasicDBObject("$unwind", "$variableSets"),
+                new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
+        ), filterOptions(options, FILTER_ROUTE_STUDIES));
+
+        List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0)).collect(Collectors.toList());
+
+        return endQuery("", startTime, variableSets);
+    }
+
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkVariableSetInUse(variableSetId);
+        int studyId = getStudyIdByVariableSetId(variableSetId);
+        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
+
+        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
+
+        if (update.first().getN() == 0) {
+            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
+        }
+
+        return endQuery("Delete VariableSet", startTime, variableSet);
+
+    }
+
+
+    public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
+        QueryResult<Sample> samples = getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.variableSetId.toString(), variableSetId));
+        if (samples.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
+            for (Sample sample : samples.getResult()) {
+                msg += " { id: " + sample.getId() + ", name: \"" + sample.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+    }
+
+
+    @Override
+    public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {
+        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+
+        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+
+        if (!queryResult.getResult().isEmpty()) {
+            Object id = queryResult.getResult().get(0).get("id");
+            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
+        } else {
+            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
+        }
+    }
 
     /**
      * File methods
