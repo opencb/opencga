@@ -30,10 +30,11 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
 import org.opencb.biodata.formats.alignment.AlignmentConverter;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
@@ -266,7 +267,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
         
         SAMFileReader inputSam = new SAMFileReader(inputBamFile, inputBamIndexFile);
-        inputSam.setValidationStringency(SAMFileReader.ValidationStringency.valueOf("LENIENT"));
+        inputSam.setValidationStringency(SAMFileReader.getDefaultValidationStringency().valueOf("LENIENT"));
 //        System.out.println("hasIndex " + inputSam.hasIndex());
         SAMRecordIterator recordsRegion = inputSam.query(region.getChromosome(), (int) region.getStart(), (int) region.getEnd(), false);
 

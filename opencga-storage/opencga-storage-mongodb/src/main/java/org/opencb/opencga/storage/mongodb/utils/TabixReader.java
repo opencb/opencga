@@ -17,7 +17,7 @@
 /* Contact: Heng Li <hengli@broadinstitute.org> */
 package org.opencb.opencga.storage.mongodb.utils;
 
-import net.sf.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 
 import java.io.File;
 import java.io.IOException;

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import net.sf.samtools.BAMRecord;
+import htsjdk.samtools.BAMRecord;
 
 import java.util.List;
 import java.util.Map;
