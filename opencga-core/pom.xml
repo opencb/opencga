@@ -55,8 +55,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.github.broadinstitute</groupId>
-            <artifactId>picard</artifactId>
+            <groupId>com.github.samtools</groupId>
+            <artifactId>htsjdk</artifactId>
         </dependency>
         <dependency>
             <groupId>org.xerial</groupId>

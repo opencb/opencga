@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.server.ws;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResponse;
@@ -25,11 +23,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
