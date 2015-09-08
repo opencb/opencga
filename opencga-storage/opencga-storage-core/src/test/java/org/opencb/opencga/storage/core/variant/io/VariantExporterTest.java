@@ -135,22 +135,18 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
         Path originalVcf = Paths.get(getResourceUri("filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 
-        Region region = new Region("22", 16000000, 16140000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16140000, 16240000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16240000, 16340000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16340000, 16440000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16440000, 16500000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16500000, 16550000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16550000, 16600000);
-        checkExportedVCF(originalVcf, outputVcf, region);
-        region = new Region("22", 16600000);
-        checkExportedVCF(originalVcf, outputVcf, region);
+        VariantVcfReader variantVcfReader = new VariantVcfReader(new VariantSource(originalVcf.getFileName().toString(), "f", "s", ""), originalVcf.toString());
+        variantVcfReader.open();
+        variantVcfReader.pre();
+
+        Region region = new Region("22", 16000000);
+        int batchSize = 1000;
+        while (checkExportedVCF(originalVcf, variantVcfReader, outputVcf, region, batchSize) != batchSize) {
+            region = new Region("22", region.getEnd());
+        }
+
+        variantVcfReader.post();
+        variantVcfReader.close();
     }
 
     @Ignore
@@ -165,8 +161,21 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }
 
-    public void checkExportedVCF(Path originalVcf, Path exportedVcf, Region region) throws IOException {
-        Map<String, Variant> originalVariants = readVCF(originalVcf, region);
+    public int checkExportedVCF(Path originalVcf, Path exportedVcf, Region region) throws IOException {
+        return checkExportedVCF(originalVcf, null, exportedVcf, region, null);
+    }
+
+    /**
+     *
+     * @return  number of read variants
+     */
+    public int checkExportedVCF(Path originalVcf, VariantVcfReader originalVcfReader, Path exportedVcf, Region region, Integer lim) throws IOException {
+        Map<String, Variant> originalVariants;
+        if (originalVcfReader == null) {
+            originalVariants = readVCF(originalVcf, lim, region);
+        } else {
+            originalVariants = readVCF(originalVcf, lim, region, originalVcfReader);
+        }
         Map<String, Variant> exportedVariants = readVCF(exportedVcf, region);
 
         assertEquals(originalVariants.size(), exportedVariants.size());
@@ -189,6 +198,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
                 assertEquals("For sample '" + sampleName + "' " + originalVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
             }
         }
+        return originalVariants.size();
     }
 
     public Map<String, Variant> readVCF(Path vcfPath, Region region) {
@@ -202,22 +212,35 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         if (region == null) {
             region = new Region();
         }
-        Map<String, Variant> variantMap;
-        variantMap = new LinkedHashMap<>();
         VariantVcfReader variantVcfReader = new VariantVcfReader(new VariantSource(vcfPath.getFileName().toString(), "f", "s", ""), vcfPath.toString());
         variantVcfReader.open();
         variantVcfReader.pre();
 
+        Map<String, Variant> variantMap;
+        variantMap = readVCF(vcfPath, lim, region, variantVcfReader);
+
+        variantVcfReader.post();
+        variantVcfReader.close();
+        return variantMap;
+    }
+
+    public Map<String, Variant> readVCF(Path vcfPath, Integer lim, Region region, VariantVcfReader variantVcfReader) {
+        Map<String, Variant> variantMap;
+        variantMap = new LinkedHashMap<>();
         List<Variant> read;
         int lines = 0;
         int batchSize = 100;
+        int start = Integer.MAX_VALUE;
+        int end = 0;
+        int variantsToRead = lines + batchSize > lim ? lim - lines : batchSize;
         do {
-            int variantsToRead = lines + batchSize > lim ? lim - lines : batchSize;
             System.err.println("Reading " + variantsToRead + " variants from '" + vcfPath.getFileName().toString() + "' line : " + lines + " variants : " + variantMap.size());
             read = variantVcfReader.read(variantsToRead);
             for (Variant variant : read) {
                 lines++;
-                if (variant.getStart() > region.getStart() && variant.getEnd() < region.getEnd()) {
+                if (variant.getStart() >= region.getStart() && variant.getEnd() <= region.getEnd()) {
+                    start = Math.min(start, variant.getStart());
+                    end = Math.max(end, variant.getEnd());
                     variantMap.put(variant.getStart() + "_" + variant.getAlternate(), variant);
                     if (variantMap.size() == lim) {
                         break;
@@ -225,9 +248,10 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
                 }
             }
         } while (!read.isEmpty() && variantMap.size() < lim);
+        region.setStart(start);
+        region.setEnd(end);
+        System.out.println("Read " + variantMap.size() + " variants between " + region.toString());
 
-        variantVcfReader.post();
-        variantVcfReader.close();
         return variantMap;
     }
 
