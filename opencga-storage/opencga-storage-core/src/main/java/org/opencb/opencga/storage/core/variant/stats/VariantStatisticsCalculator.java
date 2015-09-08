@@ -27,6 +27,8 @@ import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 
 import java.util.*;
 
+import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
+
 /**
  * Created by jmmut on 28/01/15.
  */
@@ -58,9 +60,8 @@ public class VariantStatisticsCalculator {
      * study does have samples.
      * @param aggregation see org.opencb.biodata.models.variant.VariantSource.Aggregation
      * @param tagmap nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
-     * @param cohorts nullable, set of cohort names that appear as prefixes in the variant attributes
      */
-    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap, Set<String> cohorts) {
+    public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap) {
         aggregatedCalculator = null;
         this.aggregation = aggregation;
         switch (this.aggregation) {
@@ -68,13 +69,13 @@ public class VariantStatisticsCalculator {
                 aggregatedCalculator = null;
                 break;
             case BASIC:
-                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap, cohorts);
+                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
                 break;
             case EVS:
-                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap, cohorts);
+                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
                 break;
             case EXAC:
-                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap, cohorts);
+                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
                 break;
         }
     }
@@ -122,7 +123,7 @@ public class VariantStatisticsCalculator {
                 continue;
             }
             
-            if (VariantSource.Aggregation.NONE.equals(aggregation) && samples != null) {
+            if (!isAggregated(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
 

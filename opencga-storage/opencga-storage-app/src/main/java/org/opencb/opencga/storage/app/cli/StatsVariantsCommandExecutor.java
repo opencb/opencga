@@ -80,7 +80,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
             options.putAll(statsVariantsCommandOptions.params);
         }
 
-        Map<String, Set<String>> cohorts = new LinkedHashMap<>();
+        Map<String, Set<String>> cohorts = null;
         if (statsVariantsCommandOptions.cohort != null && !statsVariantsCommandOptions.cohort.isEmpty()) {
             cohorts = new LinkedHashMap<>(statsVariantsCommandOptions.cohort.size());
             for (Map.Entry<String, String> entry : statsVariantsCommandOptions.cohort.entrySet()) {

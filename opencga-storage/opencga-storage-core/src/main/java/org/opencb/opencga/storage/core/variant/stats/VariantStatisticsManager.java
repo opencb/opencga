@@ -26,6 +26,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -46,6 +47,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import static org.opencb.biodata.models.variant.VariantSource.Aggregation.*;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -90,6 +93,15 @@ public class VariantStatisticsManager {
     /**
      * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
      *
+     * steps:
+     * 
+     * * gets options like batchsize, overwrite, tagMap...  if(options == null) throws
+     * * if no cohorts provided and the study is aggregated, uses the cohorts in the tagMap if any
+     * * add the cohorts to the studyConfiuration
+     * * checks invalidated stats, and set overwrite=true if needed
+     * * sets up a ParallelTaskRunner: a reader, a writer and tasks
+     * * writes the source stats
+     * 
      * @param variantDBAdaptor to obtain the Variants
      * @param output where to write the VariantStats
      * @param cohorts cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
@@ -116,6 +128,18 @@ public class VariantStatisticsManager {
         } else {
             logger.error("missing required fileId in QueryOptions");
             throw new Exception("createStats: need a fileId to calculate stats from.");
+        }
+
+        // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
+        if (cohorts == null) {
+            if (isAggregated(studyConfiguration.getAggregation())) {
+                cohorts = new LinkedHashMap<>();
+                for (String c : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
+                    cohorts.put(c, Collections.emptySet());
+                }
+            } else {
+                cohorts = new LinkedHashMap<>();
+            }
         }
 
         checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
@@ -191,7 +215,7 @@ public class VariantStatisticsManager {
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;
             variantStatisticsCalculator = new VariantStatisticsCalculator(overwrite);
-            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap, samples.keySet());
+            variantStatisticsCalculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
         }
 
         @Override
