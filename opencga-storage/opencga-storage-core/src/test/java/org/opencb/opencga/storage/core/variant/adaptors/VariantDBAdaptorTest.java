@@ -66,6 +66,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
         }
+        options = new QueryOptions();
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
@@ -87,11 +88,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_frequency() {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.REFERENCE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(55, queryResult.getNumResults());
+        assertEquals(43, queryResult.getNumResults());
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(),"ESP_6500:African_American>0.05");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(673, queryResult.getNumResults());
+        assertEquals(677, queryResult.getNumResults());
     }
 
     @Test
@@ -127,6 +128,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(64, queryResult.getNumResults());
+
+        options.put("sort", true);
+        query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(64, queryResult.getNumResults());
+
+        int lastStart = 0;
+        for (Variant variant : queryResult.getResult()) {
+            assertEquals("1", variant.getChromosome());
+            assertTrue(lastStart <= variant.getStart());
+            lastStart = variant.getStart();
+        }
     }
 
     @Test
