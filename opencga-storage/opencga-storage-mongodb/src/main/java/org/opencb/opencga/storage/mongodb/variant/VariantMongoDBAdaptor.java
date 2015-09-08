@@ -861,18 +861,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     for (String genotype : genotypes) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
                             QueryBuilder andBuilder = QueryBuilder.start();
-                            if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/0", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                            } else {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|0", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                            List<String> otherGenotypes = Arrays.asList(
+                                    "0/1", "1/0", "1/1", "-1/-1",
+                                    "0|1", "1|0", "1|1", "-1|-1",
+                                    "0|2", "2|0", "2|1", "1|2", "2|2",
+                                    "0/2", "2/0", "2/1", "1/2", "2/2",
+                                    DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+                            for (String otherGenotype : otherGenotypes) {
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + otherGenotype, new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {

@@ -718,6 +718,12 @@ public class OptionsParser {
             @Parameter(names = "--load", description = "Run only the load phase")
             boolean load = false;
 
+            @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
+            boolean calculateStats = false;
+
+            @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
+            boolean annotate = false;
+
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
         }

@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -637,6 +638,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), c.calculateStats);
+                        queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
                         logger.debug("logLevel: {}", logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
@@ -1091,6 +1094,8 @@ public class OpenCGAMain {
 
     private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
+            files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
+//            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));
             for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = iterator.next();
 //                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
