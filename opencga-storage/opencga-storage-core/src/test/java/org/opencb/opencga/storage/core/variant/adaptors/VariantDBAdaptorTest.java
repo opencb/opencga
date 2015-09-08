@@ -65,6 +65,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
         }
+        options = new QueryOptions();
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
@@ -177,6 +178,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(64, queryResult.getNumResults());
+
+        options.put("sort", true);
+        query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(64, queryResult.getNumResults());
+
+        int lastStart = 0;
+        for (Variant variant : queryResult.getResult()) {
+            assertEquals("1", variant.getChromosome());
+            assertTrue(lastStart <= variant.getStart());
+            lastStart = variant.getStart();
+        }
     }
 
     @Test

@@ -687,7 +687,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
             return;
         }
         if (options.getBoolean("includeStudies")) {
-            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudies(project.getId(), options).getResult());
+            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudiesInProject(project.getId(), options).getResult());
         }
     }
 }

@@ -33,52 +33,17 @@ import java.util.List;
  */
 public class StorageConfiguration {
 
-//    ## storage-mongodb plugin configuration
-//    #OPENCGA.STORAGE.SEQUENCE.MANAGER    = org.opencb.opencga.storage.mongodb.sequence.MongoDBVariantStorageManager
-//    #OPENCGA.STORAGE.ALIGNMENT.MANAGER   = org.opencb.opencga.storage.hbase.alignment.MongoDBAlignmentStorageManager
-//    #OPENCGA.STORAGE.VARIANT.MANAGER     = org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager
-//    #OPENCGA.STORAGE.CONF                = storage-mongodb.properties
-//
-//    #Variant
-//    OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS  = localhost:27017
-//    OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME  = variants
-//    #OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER  = biouser
-//    #OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS  = biopass
-
-//    OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE         = 100
-//    OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE          = 100
-//    OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS      = 6
-//    OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES = true
-//            #OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE   =
-//
-//    #Alignment
-//    OPENCGA.STORAGE.MONGODB.ALIGNMENT.DB.HOSTS = localhost:27017
-//    OPENCGA.STORAGE.MONGODB.ALIGNMENT.DB.NAME = opencga-storage
-//    #OPENCGA.STORAGE.MONGODB.ALIGNMENT.DB.USER =
-//            #OPENCGA.STORAGE.MONGODB.ALIGNMENT.DB.PASS =
-//    OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.COVERAGE_CHUNK_SIZE = 10000
-//    OPENCGA.STORAGE.ALIGNMENT.TRANSFORM.REGION_SIZE         = 300000
-//
-//    OPENCGA.STORAGE.VARIANT.TRANSFORM.BATCH_SIZE            = 100
-//
-//            #OPENCGA.STORAGE.MONGODB.DB.HOST         = localhost
-//    #OPENCGA.STORAGE.MONGODB.DB.PORT         = 27017
-//            #OPENCGA.STORAGE.MONGODB.DB.USER         =
-//            #OPENCGA.STORAGE.MONGODB.DB.PASSWORD     =
-
-    protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
-
-
     private String defaultStorageEngineId;
     private String logLevel;
     private String logFile;
     private String studyMetadataManager;
 
-//    private String include;
-
     private CellBaseConfiguration cellbase;
+    private QueryServerConfiguration server;
 
     private List<StorageEngineConfiguration> storageEngines;
+
+    protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     public StorageConfiguration() {
         this("", new ArrayList<>());
@@ -88,8 +53,8 @@ public class StorageConfiguration {
         this.defaultStorageEngineId = defaultStorageEngineId;
         this.storageEngines = storageEngines;
 
-//        this.include = "conf.d";
         this.cellbase = new CellBaseConfiguration();
+        this.server = new QueryServerConfiguration();
     }
 
     /**
@@ -205,12 +170,13 @@ public class StorageConfiguration {
         return "StorageConfiguration{" +
                 "defaultStorageEngineId='" + defaultStorageEngineId + '\'' +
                 ", logLevel='" + logLevel + '\'' +
-//                ", include='" + include + '\'' +
+                ", logFile='" + logFile + '\'' +
+                ", studyMetadataManager='" + studyMetadataManager + '\'' +
                 ", cellbase=" + cellbase +
+                ", server=" + server +
                 ", storageEngines=" + storageEngines +
                 '}';
     }
-
 
     public String getDefaultStorageEngineId() {
         return defaultStorageEngineId;
@@ -236,13 +202,13 @@ public class StorageConfiguration {
         this.logFile = logFile;
     }
 
-//    public String getInclude() {
-//        return include;
-//    }
-//
-//    public void setInclude(String include) {
-//        this.include = include;
-//    }
+    public String getStudyMetadataManager() {
+        return studyMetadataManager;
+    }
+
+    public void setStudyMetadataManager(String studyMetadataManager) {
+        this.studyMetadataManager = studyMetadataManager;
+    }
 
     public CellBaseConfiguration getCellbase() {
         return cellbase;
@@ -250,6 +216,14 @@ public class StorageConfiguration {
 
     public void setCellbase(CellBaseConfiguration cellbase) {
         this.cellbase = cellbase;
+    }
+
+    public QueryServerConfiguration getServer() {
+        return server;
+    }
+
+    public void setServer(QueryServerConfiguration server) {
+        this.server = server;
     }
 
     public List<StorageEngineConfiguration> getStorageEngines() {
@@ -260,11 +234,59 @@ public class StorageConfiguration {
         this.storageEngines = storageEngines;
     }
 
-    public String getStudyMetadataManager() {
-        return studyMetadataManager;
-    }
-
-    public void setStudyMetadataManager(String studyMetadataManager) {
-        this.studyMetadataManager = studyMetadataManager;
-    }
+    //    public String getDefaultStorageEngineId() {
+//        return defaultStorageEngineId;
+//    }
+//
+//    public void setDefaultStorageEngineId(String defaultStorageEngineId) {
+//        this.defaultStorageEngineId = defaultStorageEngineId;
+//    }
+//
+//    public String getLogLevel() {
+//        return logLevel;
+//    }
+//
+//    public void setLogLevel(String logLevel) {
+//        this.logLevel = logLevel;
+//    }
+//
+//    public String getLogFile() {
+//        return logFile;
+//    }
+//
+//    public void setLogFile(String logFile) {
+//        this.logFile = logFile;
+//    }
+//
+//    public CellBaseConfiguration getCellbase() {
+//        return cellbase;
+//    }
+//
+//    public void setCellbase(CellBaseConfiguration cellbase) {
+//        this.cellbase = cellbase;
+//    }
+//
+//    public QueryServerConfiguration getServer() {
+//        return server;
+//    }
+//
+//    public void setServer(QueryServerConfiguration server) {
+//        this.server = server;
+//    }
+//
+//    public List<StorageEngineConfiguration> getStorageEngines() {
+//        return storageEngines;
+//    }
+//
+//    public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
+//        this.storageEngines = storageEngines;
+//    }
+//
+//    public String getStudyMetadataManager() {
+//        return studyMetadataManager;
+//    }
+//
+//    public void setStudyMetadataManager(String studyMetadataManager) {
+//        this.studyMetadataManager = studyMetadataManager;
+//    }
 }

@@ -1,17 +1,16 @@
 package org.opencb.opencga.analysis.files;
 
-import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.core.common.IOUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Created by ralonso on 12/03/15.

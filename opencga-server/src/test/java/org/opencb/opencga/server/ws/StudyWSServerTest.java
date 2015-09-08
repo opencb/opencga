@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.server.ws;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;

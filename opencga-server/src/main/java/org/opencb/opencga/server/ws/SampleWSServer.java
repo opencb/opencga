@@ -33,6 +33,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -94,9 +95,16 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/search")
     @ApiOperation(value = "Get sample information", position = 4)
-    public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr) {
+    public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "id", required = true) @QueryParam("id") String id,
+                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                                  @ApiParam(value = "source", required = true) @QueryParam("source") String source,
+                                  @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId,
+                                  @ApiParam(value = "annotationSetId", required = true) @QueryParam("annotationSetId") String annotationSetId,
+                                  @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") String variableSetId,
+                                  @ApiParam(value = "annotation", required = true) @QueryParam("annotation") String annotation
+                                  ) {
         try {
-//            QueryOptions queryOptions = getAllQueryOptions();
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -109,7 +117,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
     public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") int sampleId,
-                                       @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                        @ApiParam(value = "VariableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
                                        Map<String, Object> annotations) {
         try {
@@ -126,19 +134,16 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
     public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
-                                      @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                      @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId) {
         try {
             QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
             if(variableSetResult.getResult().isEmpty()) {
                 return createErrorResponse("sample - annotate", "VariableSet not find.");
             }
-            Map<String, Object> annotations = new HashMap<>();
-            variableSetResult.getResult().get(0).getVariables().stream()
+            Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
                     .filter(variable -> params.containsKey(variable.getId()))
-                    .forEach(variable -> {
-                        annotations.put(variable.getId(), params.getFirst(variable.getId()));
-                    });
+                    .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
             QueryResult<AnnotationSet> queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

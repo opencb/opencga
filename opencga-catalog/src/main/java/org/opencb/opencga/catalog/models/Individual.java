@@ -16,12 +16,22 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Individual {
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
 
     public enum Gender {
         MALE, FEMALE, UNKNOWN
@@ -38,6 +48,8 @@ public class Individual {
     private String race;
     private Species species;
     private Population population;
+
+    private List<AnnotationSet> annotationSets;
 
     // internal class
     public static class Species {
@@ -174,7 +186,7 @@ public class Individual {
     public Individual() {
     }
 
-    public Individual(int id, String name, int fatherId, int motherId, String family, Gender gender, String race, Species species, Population population, Map<String, Object> attributes) {
+    public Individual(int id, String name, int fatherId, int motherId, String family, Gender gender, String race, Species species, Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -184,22 +196,24 @@ public class Individual {
         this.race = race;
         this.species = species;
         this.population = population;
+        this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Individual {" +
-                "\"id\": " + id +
-                ", \"name\": " + '\"' + name + '\"' +
-                ", \"fatherId\": " + fatherId +
-                ", \"motherId\": " + motherId +
-                ", \"family\": " + '\"' + family + '\"' +
-                ", \"gender\": " + gender +
-                ", \"race\": " + '\"' + race + '\"' +
-                ", \"species\": " + species +
-                ", \"population\": " + population +
-                ", \"attributes\": " + attributes +
+        return "Individual{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", fatherId=" + fatherId +
+                ", motherId=" + motherId +
+                ", family='" + family + '\'' +
+                ", gender=" + gender +
+                ", race='" + race + '\'' +
+                ", species=" + species +
+                ", population=" + population +
+                ", annotationSets=" + annotationSets +
+                ", attributes=" + attributes +
                 '}';
     }
 
