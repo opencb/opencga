@@ -135,6 +135,7 @@ public class VariantStatisticsCalculator {
                     }
                 }
             } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation.NONE.equals(aggregation))
+                file.setAttributes(removeAttributePrefix(file.getAttributes()));
                 aggregatedCalculator.calculate(variant, file);
             }
 //            if (overwrite || file.getStats() == null) {
@@ -147,5 +148,22 @@ public class VariantStatisticsCalculator {
                         new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }
         return variantStatsWrappers;
+    }
+    
+    public static Map<String, String> removeAttributePrefix(Map<String, String> attributes) 
+    throws IllegalArgumentException {
+        Map<String, String> newAttributes = new LinkedHashMap<>(attributes.size());
+        Set<String> prefixSet = new LinkedHashSet<>();
+        for (String key : attributes.keySet()) {
+            String[] split = key.split("_", 2);
+            prefixSet.add(split[0]);
+            newAttributes.put(split[1], attributes.get(key));
+        }
+        
+        if (prefixSet.size() > 1) {
+                throw new IllegalArgumentException("attributes should contain only one fileId prefix, and there are: "
+                        + prefixSet.toString());
+        }
+        return newAttributes;
     }
 }
