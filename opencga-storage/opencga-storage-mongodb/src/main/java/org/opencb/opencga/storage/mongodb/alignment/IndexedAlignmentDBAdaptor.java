@@ -16,13 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import com.mongodb.AggregationOutput;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
 import org.opencb.biodata.formats.alignment.AlignmentConverter;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -402,7 +401,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         List<SAMRecord> records = new ArrayList<>();
 
         SAMFileReader inputSam = new SAMFileReader(bamPath.toFile(), baiPath.toFile());
-        inputSam.setValidationStringency(SAMFileReader.ValidationStringency.valueOf("LENIENT"));
+        inputSam.setValidationStringency(SAMFileReader.getDefaultValidationStringency().valueOf("LENIENT"));
         SAMRecordIterator recordsRegion = inputSam.query(region.getChromosome(), (int) region.getStart(), (int) region.getEnd(), false);
 
         SAMRecord record;

@@ -24,8 +24,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import net.sf.samtools.*;
-import net.sf.samtools.SAMRecord.SAMTagAndValue;
+import htsjdk.samtools.*;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
@@ -251,7 +250,7 @@ public class BamManager {
             return null;
         }
         SAMFileReader inputSam = new SAMFileReader(inputBamFile, inputBamIndexFile);
-        inputSam.setValidationStringency(SAMFileReader.ValidationStringency.valueOf("LENIENT"));
+        inputSam.setValidationStringency(SAMFileReader.getDefaultValidationStringency().valueOf("LENIENT"));
         System.out.println("hasIndex " + inputSam.hasIndex());
         SAMRecordIterator recordsRegion = inputSam.query(chromosome, start, end, false);
 
@@ -339,7 +338,7 @@ public class BamManager {
             Boolean condition = (!record.getReadUnmappedFlag());
             if (condition) {
                 attributes = new XObject();
-                for (SAMTagAndValue attr : record.getAttributes()) {
+                for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
                     attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
                 }
 
@@ -718,7 +717,7 @@ public class BamManager {
             if (condition) {
                 attrString = new StringBuilder();
                 attrString.append("{");
-                for (SAMTagAndValue attr : record.getAttributes()) {
+                for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
                     attrString.append("\"" + attr.tag + "\":\""
                             + attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\"") + "\",");
                 }

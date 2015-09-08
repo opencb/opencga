@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
