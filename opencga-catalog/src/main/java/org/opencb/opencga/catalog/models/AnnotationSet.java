@@ -55,6 +55,31 @@ public class AnnotationSet {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AnnotationSet)) return false;
+
+        AnnotationSet that = (AnnotationSet) o;
+
+        if (variableSetId != that.variableSetId) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) return false;
+        if (date != null ? !date.equals(that.date) : that.date != null) return false;
+        return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + variableSetId;
+        result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
+        result = 31 * result + (date != null ? date.hashCode() : 0);
+        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
+        return result;
+    }
+
     public String getId() {
         return id;
     }

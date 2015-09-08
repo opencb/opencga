@@ -36,24 +36,6 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId)
     throws CatalogException;
 
-    /*---------------------*/
-    /* VariableSet METHODS */
-    /*---------------------*/
-
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, List<Variable> variables, String sessionId)
-            throws CatalogException;
-
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, Set<Variable> variables, String sessionId)
-            throws CatalogException;
-
-    QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
-
     /*----------------*/
     /* Cohort METHODS */
     /*----------------*/

@@ -22,6 +22,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
@@ -371,7 +372,7 @@ public class CatalogManager implements AutoCloseable {
      */
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
-            throws CatalogException, IOException {
+            throws CatalogException {
         return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null, sessionId);
     }
 
@@ -402,7 +403,7 @@ public class CatalogManager implements AutoCloseable {
                                           String cipher, String uriScheme, URI uri,
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
+            throws CatalogException {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
@@ -420,9 +421,14 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.read(studyId, options, sessionId);
     }
 
-    public QueryResult<Study> getAllStudies(int projectId, QueryOptions options, String sessionId)
+    public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(new QueryOptions("projectId", projectId), options, sessionId);
+        return studyManager.readAll(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options, sessionId);
+    }
+
+    public QueryResult<Study> getAllStudies(QueryOptions options, String sessionId)
+            throws CatalogException {
+        return studyManager.readAll(options, options, sessionId);
     }
 
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
@@ -790,13 +796,21 @@ public class CatalogManager implements AutoCloseable {
         return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
     }
 
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, String annotationSetId, int variableSetId,
                                                             Map<String, Object> annotations,
                                                             Map<String, Object> attributes,
                                                             boolean checkAnnotationSet,
                                                             String sessionId)
             throws CatalogException {
-        return sampleManager.annotate(sampleId, id, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+        return sampleManager.annotate(sampleId, annotationSetId, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> annotateIndividual(int individualId, String annotationSetId, int variableSetId,
+                                                            Map<String, Object> annotations,
+                                                            Map<String, Object> attributes,
+                                                            String sessionId)
+            throws CatalogException {
+        return individualManager.annotate(individualId, annotationSetId, variableSetId, annotations, attributes, sessionId);
     }
 
     public QueryResult<Sample> deleteSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
@@ -812,29 +826,29 @@ public class CatalogManager implements AutoCloseable {
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
             throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
             throws CatalogException {
-        return sampleManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
+        return studyManager.createVariableSet(studyId, name, unique, description, attributes, variables, sessionId);
     }
 
     public QueryResult<VariableSet> getVariableSet(int variableSet, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.readVariableSet(variableSet, options, sessionId);
+        return studyManager.readVariableSet(variableSet, options, sessionId);
     }
 
     public QueryResult<VariableSet> getAllVariableSet(int studyId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.readAllVariableSets(studyId, options, sessionId);
+        return studyManager.readAllVariableSets(studyId, options, sessionId);
     }
 
     public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
-        return sampleManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+        return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
     }
 
     /**

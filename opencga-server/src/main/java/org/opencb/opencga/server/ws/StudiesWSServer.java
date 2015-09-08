@@ -149,6 +149,27 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "Search studies", position = 3)
+    public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
+                                  @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
+                                  @ApiParam(value = "name") @QueryParam("name") String name,
+                                  @ApiParam(value = "alias") @QueryParam("alias") String alias,
+                                  @ApiParam(value = "type") @QueryParam("type") String type,
+                                  @ApiParam(value = "creatorId") @QueryParam("creatorId") String creatorId,
+                                  @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
+                                  @ApiParam(value = "status") @QueryParam("status") String status
+
+                                  ) {
+        try {
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{studyId}/files")
     @ApiOperation(value = "Study files information", position = 3)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {

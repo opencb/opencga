@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 
 /**
@@ -21,6 +22,11 @@ public interface CatalogIndividualDBAdaptor {
         race(Type.TEXT, ""),
         species(Type.TEXT, ""),
         population(Type.TEXT, ""),
+
+        variableSetId(Type.NUMERICAL, ""),
+        annotationSetId(Type.NUMERICAL, ""),
+        annotation(Type.TEXT, ""),
+
         attributes("attributes", Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),
         battributes("attributes", Type.BOOLEAN, ""),
@@ -68,9 +74,11 @@ public interface CatalogIndividualDBAdaptor {
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet) throws CatalogDBException;
 
     QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 

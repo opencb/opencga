@@ -31,6 +31,7 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -56,6 +57,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     static User user2;
     static User user3;
     CatalogUserDBAdaptor catalogUserDBAdaptor;
+    private CatalogStudyDBAdaptor catalogStudyDBAdaptor;
 
     /**
      * This method is executed one single time beforeClass all the tests. It connects to the MongoDB server.
@@ -89,6 +91,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         catalogDBAdaptor = new CatalogMongoDBAdaptor(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
+        catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         initDefaultCatalogDB();
     }
 
@@ -428,21 +431,21 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId2 = catalogUserDBAdaptor.getProjectId(user1.getId(), "P2");
 
         Study s = new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null);
-        System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));
-        System.out.println(catalogDBAdaptor.createStudy(projectId2, s, null));
+        System.out.println(catalogStudyDBAdaptor.createStudy(projectId, s, null));
+        System.out.println(catalogStudyDBAdaptor.createStudy(projectId2, s, null));
         s = new Study("Phase 3", "ph3", Study.Type.CASE_CONTROL, "", "", null);
-        System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));
+        System.out.println(catalogStudyDBAdaptor.createStudy(projectId, s, null));
         s = new Study("Phase 7", "ph7", Study.Type.CASE_CONTROL, "", "", null);
-        System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));
+        System.out.println(catalogStudyDBAdaptor.createStudy(projectId, s, null));
 
         try {
-            System.out.println(catalogDBAdaptor.createStudy(projectId, s, null));  //Repeated study
+            System.out.println(catalogStudyDBAdaptor.createStudy(projectId, s, null));  //Repeated study
             fail("Expected \"Study alias already exist\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
         try {
-            System.out.println(catalogDBAdaptor.createStudy(-100, s, null));  //ProjectId not exists
+            System.out.println(catalogStudyDBAdaptor.createStudy(-100, s, null));  //ProjectId not exists
             fail("Expected \"bad project id\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -452,21 +455,21 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void deleteStudyTest() throws CatalogDBException {
         int projectId = catalogUserDBAdaptor.getProjectId("jcoll", "P1");
-        Study study = catalogDBAdaptor.createStudy(projectId, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null), null).first();
-        QueryResult<Integer> queryResult = catalogDBAdaptor.deleteStudy(study.getId());
+        Study study = catalogStudyDBAdaptor.createStudy(projectId, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null), null).first();
+        QueryResult<Integer> queryResult = catalogStudyDBAdaptor.deleteStudy(study.getId());
         System.out.println(queryResult);
         assertTrue(queryResult.first() == 1);
 
-        assertTrue(catalogDBAdaptor.getStudyId(projectId, study.getAlias()) == -1);
+        assertTrue(catalogStudyDBAdaptor.getStudyId(projectId, study.getAlias()) == -1);
         try {
-            catalogDBAdaptor.getStudy(study.getId(), null);
+            catalogStudyDBAdaptor.getStudy(study.getId(), null);
             fail("error: Expected \"Study not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
 
         try {
-            QueryResult<Integer> queryResult1 = catalogDBAdaptor.deleteStudy(-1);
+            QueryResult<Integer> queryResult1 = catalogStudyDBAdaptor.deleteStudy(-1);
             fail("error: Expected \"Study not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -476,11 +479,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getAllStudiesTest() throws CatalogDBException {
         int projectId = user3.getProjects().get(0).getId();
-        QueryResult<Study> allStudies = catalogDBAdaptor.getAllStudies(projectId, null);
+        QueryResult<Study> allStudies = catalogStudyDBAdaptor.getAllStudiesInProject(projectId, null);
         assertTrue(allStudies.getNumResults() != 0);
         System.out.println(allStudies);
         try {
-            System.out.println(catalogDBAdaptor.getAllStudies(-100, null));
+            System.out.println(catalogStudyDBAdaptor.getAllStudiesInProject(-100, null));
             fail("Expected \"bad project id\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -490,50 +493,50 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void getStudyTest() throws CatalogDBException, JsonProcessingException {
         int projectId = user3.getProjects().get(0).getId();
-        int studyId = catalogDBAdaptor.getStudyId(projectId, "ph1");
+        int studyId = catalogStudyDBAdaptor.getStudyId(projectId, "ph1");
 
-        Study study = catalogDBAdaptor.getStudy(studyId, null).first();
+        Study study = catalogStudyDBAdaptor.getStudy(studyId, null).first();
         assertNotNull(study);
         assertEquals(studyId, study.getId());
         assertTrue(study.getDiskUsage() != 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage").append("exclude", null)).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage").append("exclude", null)).first();
         assertTrue(study.getDiskUsage() != 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage")).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage")).first();
         assertTrue(study.getDiskUsage() != 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name")).first();
-        assertTrue(study.getDiskUsage() != 0);
-        assertNull(study.getName());
-
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name").append("include", null)).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name")).first();
         assertTrue(study.getDiskUsage() != 0);
         assertNull(study.getName());
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage")).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.name").append("include", null)).first();
+        assertTrue(study.getDiskUsage() != 0);
+        assertNull(study.getName());
+
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage")).first();
         assertTrue(study.getDiskUsage() == 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage").append("include", null)).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("exclude", "projects.studies.diskUsage").append("include", null)).first();
         assertTrue(study.getDiskUsage() == 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id")).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id")).first();
         assertEquals(studyId, study.getId());
         assertTrue(study.getDiskUsage() == 0);
 
-        study = catalogDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id").append("exclude", null)).first();
+        study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.id").append("exclude", null)).first();
         assertEquals(studyId, study.getId());
         assertTrue(study.getDiskUsage() == 0);
 
 
         thrown.expect(CatalogDBException.class);
-        catalogDBAdaptor.getStudy(-100, null);
+        catalogStudyDBAdaptor.getStudy(-100, null);
     }
 
     @Test
     public void modifyStudyTest() throws CatalogDBException {
         int projectId = user3.getProjects().get(0).getId();
-        int studyId = catalogDBAdaptor.getStudyId(projectId, "ph1");
+        int studyId = catalogStudyDBAdaptor.getStudyId(projectId, "ph1");
 
         String newName = "My new name";
         String unexpectedNewAlias = "myNewAlias";
@@ -545,10 +548,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         objectMap.put("attributes", new ObjectMap(newAttributes).toJson());
         objectMap.put("alias", unexpectedNewAlias);
-        QueryResult<ObjectMap> queryResult = catalogDBAdaptor.modifyStudy(studyId, objectMap);
+        QueryResult<ObjectMap> queryResult = catalogStudyDBAdaptor.modifyStudy(studyId, objectMap);
         ObjectMap modifiedParams = queryResult.first();
 
-        Study study = catalogDBAdaptor.getStudy(studyId, null).first();
+        Study study = catalogStudyDBAdaptor.getStudy(studyId, null).first();
 
         assertTrue(modifiedParams.containsKey("attributes.Value"));
         assertTrue(modifiedParams.containsKey("attributes.Value2"));
@@ -625,7 +628,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(files);
         assertTrue(!files.isEmpty());
 
-        studyId = catalogDBAdaptor.getStudyId(catalogUserDBAdaptor.getProjectId("jcoll", "1000G"), "ph7");
+        studyId = catalogStudyDBAdaptor.getStudyId(catalogUserDBAdaptor.getProjectId("jcoll", "1000G"), "ph7");
         allFiles = catalogDBAdaptor.getAllFilesInStudy(studyId, null);
         assertTrue(allFiles.getResult().isEmpty());
     }
@@ -697,7 +700,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         System.out.println(delete);
         assertTrue(delete.first() == 1);
         try {
-            System.out.println(catalogDBAdaptor.deleteFile(catalogDBAdaptor.getFileId(catalogDBAdaptor.getStudyId(catalogUserDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists")));
+            System.out.println(catalogDBAdaptor.deleteFile(catalogDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId(catalogUserDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists")));
             fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
