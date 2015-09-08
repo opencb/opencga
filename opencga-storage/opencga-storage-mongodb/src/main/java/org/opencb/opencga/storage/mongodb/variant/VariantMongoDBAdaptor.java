@@ -208,9 +208,27 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult distinct(Query query, String field) {
+        String documentPath;
+        switch (field) {
+            case "gene":
+            default:
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD;
+                break;
+            case "ensemblGene":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                break;
+            case "ensemblTranscript":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD;
+                break;
+            case "ct":
+            case "consequence_type":
+                documentPath = DBObjectToVariantConverter.ANNOTATION_FIELD + "." + DBObjectToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD + "." + DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                break;
+        }
+
         QueryBuilder qb = QueryBuilder.start();
         parseQuery(query, qb);
-        return variantsCollection.distinct(field, qb.get());
+        return variantsCollection.distinct(documentPath, qb.get());
     }
 
     @Override
@@ -866,14 +884,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     for (String genotype : genotypes) {
                         if ("0/0".equals(genotype) || "0|0".equals(genotype)) {
                             QueryBuilder andBuilder = QueryBuilder.start();
-                            if (genotype.charAt(1) == '/') {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1/1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1/-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                            } else {
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "0|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "1|1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
-                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + "-1|-1", new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
+                            List<String> otherGenotypes = Arrays.asList(
+                                    "0/1", "1/0", "1/1", "-1/-1",
+                                    "0|1", "1|0", "1|1", "-1|-1",
+                                    "0|2", "2|0", "2|1", "1|2", "2|2",
+                                    "0/2", "2/0", "2/1", "1/2", "2/2",
+                                    DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+                            for (String otherGenotype : otherGenotypes) {
+                                andBuilder.and(new BasicDBObject(DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD + "." + otherGenotype, new BasicDBObject("$not", new BasicDBObject("$elemMatch", new BasicDBObject("$eq", sample)))));
                             }
                             genotypesBuilder.or(andBuilder.get());
                         } else {
