@@ -105,7 +105,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
          */
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), statsVariantsCommandOptions.fileId)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), statsVariantsCommandOptions.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();

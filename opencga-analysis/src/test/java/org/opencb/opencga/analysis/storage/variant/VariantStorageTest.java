@@ -47,6 +47,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.opencb.biodata.models.variant.VariantSourceEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
@@ -111,7 +112,7 @@ public class VariantStorageTest {
         runStorageJob(analysisFileIndexer.index(file4.getId(), outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index(file5.getId(), outputId, sessionId, queryOptions).first(), sessionId);
 
-        all = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), "all"), sessionId).first().getId();
+        all = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first().getId();
 
     }
 
@@ -184,7 +185,7 @@ public class VariantStorageTest {
         assertEquals(Cohort.Status.NONE, catalogManager.getCohort(coh5, null, sessionId).first().getStatus());
 
         runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, coh5), sessionId, new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)).first(), sessionId);
-        cohorts.put("all", catalogManager.getCohort(all, null, sessionId).first());
+        cohorts.put(DEFAULT_COHORT, catalogManager.getCohort(all, null, sessionId).first());
         cohorts.put("coh4", catalogManager.getCohort(coh4, null, sessionId).first());
         cohorts.put("coh5", catalogManager.getCohort(coh5, null, sessionId).first());
         checkCalculatedStats(cohorts);

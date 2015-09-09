@@ -786,7 +786,7 @@ public class OpenCGAStorageMain {
          */
         URI outputUri = new URI(c.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), c.fileId)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), c.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
