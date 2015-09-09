@@ -23,13 +23,11 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.exceptions.ShortReferenceSequenceException;
 import org.opencb.biodata.models.feature.Region;
-import org.opencb.commons.containers.map.QueryOptions;
 import org.opencb.commons.run.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
 /**

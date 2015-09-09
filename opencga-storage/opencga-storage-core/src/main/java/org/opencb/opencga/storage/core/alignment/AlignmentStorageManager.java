@@ -24,6 +24,7 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -34,7 +35,6 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataR
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
-import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.slf4j.LoggerFactory;
