@@ -195,7 +195,7 @@
             </properties>
         </profile>
         <profile>
-            <id>STORAGE-HBASE1</id>
+            <id>STORAGE-HADOOP</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -211,7 +211,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>

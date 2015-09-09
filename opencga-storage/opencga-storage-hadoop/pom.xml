@@ -40,9 +40,14 @@
             <artifactId>opencga-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.opencb.hpg</groupId>
+            <artifactId>hpg-bigdata-tools</artifactId>
+            <version>${hpg-bigdata.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-hbase</artifactId>
-            <version>0.2.0</version>
+            <version>${datastore.version}</version>
             <exclusions>
                 <!--<exclusion>-->
                     <!--<groupId>com.sun.jersey</groupId>-->

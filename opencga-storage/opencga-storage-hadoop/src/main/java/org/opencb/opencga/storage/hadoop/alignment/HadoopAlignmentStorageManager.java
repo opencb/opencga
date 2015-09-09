@@ -16,43 +16,131 @@
 
 package org.opencb.opencga.storage.hadoop.alignment;
 
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.hpg.bigdata.tools.converters.mr.Bam2AvroMR;
+import org.opencb.hpg.bigdata.tools.stats.alignment.mr.ReadAlignmentDepthMR;
+import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 16/06/15.
  */
 public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 
+    public static final String STORAGE_ENGINE_ID = "hadoop";
+
+    public HadoopAlignmentStorageManager(StorageConfiguration configuration) {
+        super(STORAGE_ENGINE_ID, configuration);
+        logger = LoggerFactory.getLogger(HadoopAlignmentStorageManager.class);
+    }
+
+    public HadoopAlignmentStorageManager() {
+    }
+
+    @Override
+    public URI extract(URI input, URI ouput) throws StorageManagerException {
+        if (input.getScheme() == null || input.getScheme().isEmpty() || !input.getScheme().equals("hdfs")) {
+            logger.warn("Input file '{}' not in hdfs", input);
+//            throw new StorageManagerException("Input file must be in hdfs");
+        }
+        //TODO: Move file to HDFS if needed
+
+        return super.extract(input, ouput);
+    }
+
+    @Override
+    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException, StorageManagerException {
+
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
+        String codec = options.getString("transform.avro.codec", "deflate");
+        String hpg_bigdata_bin = options.getString("hpg-bigdata.bin", System.getProperty("user.home") + "/appl/hpg-bigdata/build/bin/hpg-bigdata.sh");
+
+
+        codec = codec.equals("gzip") ? "deflate" : codec;
+
+        boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key(), Options.INCLUDE_COVERAGE.<Boolean>defaultValue());
+//        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key(), Options.TRANSFORM_REGION_SIZE.<Integer>defaultValue());
+
+        URI alignmentAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".avro");
+        URI coverageAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".coverage.avro");
+
+        try {
+            logger.info("Transforming file {} -> {} ....", inputUri, alignmentAvroFile);
+            String cli = hpg_bigdata_bin +
+                    " alignment convert " +
+                    " --compression " + codec +
+                    " --input " + inputUri +
+                    " --output " + alignmentAvroFile;
+            System.out.println("cli = " + cli);
+
+            Command command = new Command(cli);
+            command.run();
+            int exitValue = command.getExitValue();
+            if (exitValue != 0) {
+                throw new Exception("Transform cli error: Exit value = " + exitValue);
+            }
+//            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec);
+        } catch (Exception e) {
+            throw new StorageManagerException("Error while transforming file", e);
+        }
+        if (includeCoverage) {
+            try {
+                logger.info("Calculating coverage {} -> {} ....", alignmentAvroFile, coverageAvroFile);
+                String cli = hpg_bigdata_bin +
+                        " alignment depth " +
+                        " --input " + alignmentAvroFile + "/part-r-00000.avro" +
+                        " --output " + coverageAvroFile;
+                System.out.println("cli = " + cli);
+
+                Command command = new Command(cli);
+                command.run();
+                int exitValue = command.getExitValue();
+                if (exitValue != 0) {
+                    throw new Exception("Calculating coverage cli error: Exit value = " + exitValue);
+                }
+
+//                ReadAlignmentDepthMR.run(outputUri.toString(), coverageAvroFile.toString());
+            } catch (Exception e) {
+                throw new StorageManagerException("Error while computing coverage", e);
+            }
+        }
+        return alignmentAvroFile;
+    }
+
     @Override
     public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return null;
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
-        return null;
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return null;
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
     public DataWriter<AlignmentRegion> getDBWriter(String dbName) throws StorageManagerException {
-        return null;
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     @Override
     public AlignmentDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
-        return null;
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
 }

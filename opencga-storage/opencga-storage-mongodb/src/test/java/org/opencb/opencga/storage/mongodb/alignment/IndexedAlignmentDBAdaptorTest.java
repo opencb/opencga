@@ -31,6 +31,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -54,7 +55,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     private Path bamFile;
 
     @Before
-    public void before() throws IOException, FileFormatException {
+    public void before() throws IOException, FileFormatException, StorageManagerException {
         StorageConfiguration storageConfiguration = StorageConfiguration
                 .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         manager = new MongoDBAlignmentStorageManager(storageConfiguration);

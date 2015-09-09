@@ -30,6 +30,7 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
@@ -121,7 +122,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public URI extract(URI input, URI ouput) {
+    public URI extract(URI input, URI ouput) throws StorageManagerException {
         return input;
     }
 
@@ -159,7 +160,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      */
     @Override
     public URI transform(URI inputUri, URI pedigree, URI outputUri)
-            throws IOException, FileFormatException {
+            throws IOException, FileFormatException, StorageManagerException {
 
         Path input = Paths.get(inputUri.getPath());
         FileUtils.checkFile(input);

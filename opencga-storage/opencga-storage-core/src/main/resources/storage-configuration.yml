@@ -76,7 +76,7 @@ storageEngines:
 - id: "hadoop"
   options: {}
   alignment:
-    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager"
     options: {}
     database:
       hosts:
