@@ -512,7 +512,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException {
+    public QueryResult<AclEntry> setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
@@ -532,8 +532,12 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                     .append("acl.userId", userId).get();
             update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
-        QueryResult queryResult = fileCollection.update(query, update, null);
-        return endQuery("setFileAcl", startTime);
+        QueryResult<WriteResult> queryResult = fileCollection.update(query, update, null);
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.idNotFound("File", fileId);
+        }
+
+        return endQuery("setFileAcl", startTime, getFileAcl(fileId, userId));
     }
 
     @Override

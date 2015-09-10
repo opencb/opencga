@@ -26,6 +26,9 @@ public interface CatalogSampleDBAdaptor {
         source(Type.TEXT, ""),
         individualId(Type.NUMERICAL, ""),
 
+        acl(Type.TEXT, ""),
+        bacl("acl", Type.BOOLEAN, ""),
+
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
@@ -114,7 +117,7 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
 
-    QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
+    QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
 
     QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 

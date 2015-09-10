@@ -163,7 +163,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
                                   @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes,
                                   @ApiParam(value = "groups") @QueryParam("groups") String groups,
-                                  @ApiParam(value = "Users un groups") @QueryParam("groups.users") String groups_users
+                                  @ApiParam(value = "Users in group") @QueryParam("groups.users") String groups_users
                                   ) {
         try {
             QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);

@@ -235,7 +235,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     }
 
     @Override
-    public QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
+    public QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
 
         String userId = acl.getUserId();
@@ -255,8 +255,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         }
 
         QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
 
-        return endQuery("setSampleAcl", startTime, queryResult);
+        return endQuery("setSampleAcl", startTime, getSampleAcl(sampleId, userId));
     }
 
     @Override
