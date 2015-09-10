@@ -410,7 +410,11 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
+        int study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser).first().getId();
+
+        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.groups.toString() + ".userIds", "user2"), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
+        catalogManager.addMemberToGroup(study_4, "admins", "user3", sessionIdUser);
+        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.groups.toString() + ".userIds", "user3"), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new QueryOptions(), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));

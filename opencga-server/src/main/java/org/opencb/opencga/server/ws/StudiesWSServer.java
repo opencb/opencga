@@ -158,8 +158,12 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "type") @QueryParam("type") String type,
                                   @ApiParam(value = "creatorId") @QueryParam("creatorId") String creatorId,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
-                                  @ApiParam(value = "status") @QueryParam("status") String status
-
+                                  @ApiParam(value = "status") @QueryParam("status") String status,
+                                  @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
+                                  @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
+                                  @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes,
+                                  @ApiParam(value = "groups") @QueryParam("groups") String groups,
+                                  @ApiParam(value = "Users un groups") @QueryParam("groups.users") String groups_users
                                   ) {
         try {
             QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);
