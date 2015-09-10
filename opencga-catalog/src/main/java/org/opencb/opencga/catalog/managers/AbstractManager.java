@@ -1,5 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -16,6 +18,7 @@ public abstract class AbstractManager {
 
     final protected AuthenticationManager authenticationManager;
     final protected AuthorizationManager authorizationManager;
+    final protected AuditManager auditManager;
     final protected CatalogIOManagerFactory catalogIOManagerFactory;
     final protected Properties catalogProperties;
 
@@ -29,10 +32,11 @@ public abstract class AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                            Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
         this.authenticationManager = authenticationManager;
+        this.auditManager = auditManager;
         this.catalogProperties = catalogProperties;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();

@@ -55,6 +55,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private static final String SAMPLE_COLLECTION = "sample";
     private static final String INDIVIDUAL_COLLECTION = "individual";
     private static final String METADATA_COLLECTION = "metadata";
+    private static final String AUDIT_COLLECTION = "audit";
 
     static final String METADATA_OBJECT_ID = "METADATA";
 
@@ -81,11 +82,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     private MongoDBCollection sampleCollection;
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
+    private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
     private CatalogMongoStudyDBAdaptor studyDBAdaptor;
     private CatalogMongoIndividualDBAdaptor individualDBAdaptor;
     private CatalogMongoSampleDBAdaptor sampleDBAdaptor;
+    private CatalogAuditDBAdaptor auditDBAdaptor;
 
     //    private static final Logger logger = LoggerFactory.getLogger(CatalogMongoDBAdaptor.class);
 
@@ -121,6 +124,9 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         return this;
     }
 
+    @Override
+    public CatalogAuditDBAdaptor getCatalogAuditDbAdaptor() { return auditDBAdaptor; }
+
 
     public CatalogMongoDBAdaptor(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration, String database)
             throws CatalogDBException {
@@ -146,11 +152,13 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         collections.put(SAMPLE_COLLECTION, sampleCollection = db.getCollection(SAMPLE_COLLECTION));
         collections.put(INDIVIDUAL_COLLECTION, individualCollection = db.getCollection(INDIVIDUAL_COLLECTION));
         collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
+        collections.put(AUDIT_COLLECTION, auditCollection = db.getCollection(AUDIT_COLLECTION));
 
         userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);
         studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, metaCollection, studyCollection, fileCollection);
         individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, metaCollection, individualCollection);
         sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, metaCollection, sampleCollection, studyCollection);
+        auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
     }
 
     @Override
@@ -333,7 +341,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         Map<String, Object> fileParameters = new HashMap<>();
@@ -383,7 +391,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             }
         }
 
-        return endQuery("Modify file", startTime);
+        return endQuery("Modify file", startTime, getFile(fileId, null));
     }
 
 
@@ -529,15 +537,16 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
     }
 
     @Override
-    public QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
+        QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
         DBObject query = new BasicDBObject(_ID, fileId);;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
 
         QueryResult queryResult = fileCollection.update(query, update, null);
 
-        return endQuery("unsetFileAcl", startTime);
+        return endQuery("unsetFileAcl", startTime, fileAcl);
     }
 
     public QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException {
@@ -796,7 +805,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 throw CatalogDBException.idNotFound("Job", jobId);
             }
         }
-        return endQuery("Modify job", startTime);
+        return endQuery("Modify job", startTime, getJob(jobId, null));
     }
 
     @Override

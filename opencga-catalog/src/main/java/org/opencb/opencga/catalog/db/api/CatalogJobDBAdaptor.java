@@ -33,7 +33,7 @@ public interface CatalogJobDBAdaptor {
 
     QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
 
-    QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Job> modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
     int getStudyIdByJobId(int jobId) throws CatalogDBException;
 

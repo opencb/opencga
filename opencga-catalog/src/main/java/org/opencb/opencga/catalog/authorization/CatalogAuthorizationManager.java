@@ -1,7 +1,10 @@
 package org.opencb.opencga.catalog.authorization;
 
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -22,8 +25,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CatalogJobDBAdaptor jobDBAdaptor;
     private final CatalogSampleDBAdaptor sampleDBAdaptor;
     private final CatalogIndividualDBAdaptor individualDBAdaptor;
+    private final AuditManager auditManager;
 
-    public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory) {
+    public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
+        this.auditManager = auditManager;
         userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
@@ -323,7 +328,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userId, StudyPermission.MANAGE_STUDY);
 
-        return fileDBAdaptor.setFileAcl(fileId, acl);
+        QueryResult queryResult = fileDBAdaptor.setFileAcl(fileId, acl);
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("adl", acl), "setAcl", null);
+        return queryResult;
     }
 
     @Override
@@ -333,7 +340,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
 
-        return fileDBAdaptor.unsetFileAcl(fileId, userId);
+        QueryResult<AclEntry> queryResult = fileDBAdaptor.unsetFileAcl(fileId, userId);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("adl", queryResult.first()), null, "unsetAcl", null);
+        return queryResult;
     }
 
     @Override
@@ -344,7 +353,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
 
-        return sampleDBAdaptor.setSampleAcl(sampleId, acl);
+        QueryResult queryResult = sampleDBAdaptor.setSampleAcl(sampleId, acl);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("adl", acl), "setAcl", null);
+        return queryResult;
     }
 
     @Override
@@ -354,7 +365,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
 
-        return sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
+        QueryResult<AclEntry> queryResult = sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("adl", queryResult.first()), null, "unsetAcl", null);
+        return queryResult;
     }
 
     @Override
@@ -608,27 +621,35 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<Group> addMember(int studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
 
-        checkStudyPermission(studyId, userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
         Group groupFromUserToAdd = getGroupBelonging(studyId, userIdToAdd);
         if (groupFromUserToAdd != null) {
             throw new CatalogException("User \"" + userIdToAdd + "\" already belongs to group " + groupFromUserToAdd.getId());
         }
 
-        return studyDBAdaptor.addMemberToGroup(studyId, groupId, userIdToAdd);
+        QueryResult<Group> queryResult = studyDBAdaptor.addMemberToGroup(studyId, groupId, userIdToAdd);
+        ObjectMap after = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToAdd)).append("id", groupId));
+        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, null, after, "addMember", null);
+        return queryResult;
     }
 
     @Override
     public QueryResult<Group> removeMember(int studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
 
-        checkStudyPermission(studyId, userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
         Group groupFromUserToRemove = getGroupBelonging(studyId, userIdToRemove);
         if (groupFromUserToRemove == null || !groupFromUserToRemove.getId().equals(groupId)) {
             throw new CatalogException("User \"" + userIdToRemove + "\" does not belongs to group " + groupId);
         }
 
-        return studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
+        QueryResult<Group> queryResult = studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
+        ObjectMap before = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToRemove)).append("id", groupId));
+        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, before, null, "addMember", null);
+        return queryResult;
     }
 
 

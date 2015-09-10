@@ -70,7 +70,7 @@ public interface CatalogStudyDBAdaptor {
 
     void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
-    QueryResult<ObjectMap> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
     QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 

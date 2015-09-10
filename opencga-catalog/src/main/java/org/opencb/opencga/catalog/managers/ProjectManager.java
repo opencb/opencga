@@ -3,9 +3,10 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -27,9 +28,10 @@ import java.util.Properties;
 public class ProjectManager extends AbstractManager implements IProjectManager{
 
     public ProjectManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                          AuditManager auditManager,
                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -61,9 +63,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)
-                && !userIdBySessionId.equals(ownerId)) {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)
+                && !userId.equals(ownerId)) {
             throw new CatalogException("Only the user \"" + ownerId + "\" can create a project with himself as owner");
         }
 
@@ -76,8 +78,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         //Add generic permissions to the project.
         project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
 
-        QueryResult<Project> result = userDBAdaptor.createProject(ownerId, project, options);
-        project = result.getResult().get(0);
+        QueryResult<Project> queryResult = userDBAdaptor.createProject(ownerId, project, options);
+        project = queryResult.getResult().get(0);
 
         try {
             catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
@@ -86,7 +88,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
             userDBAdaptor.deleteProject(project.getId());
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
-        return result;    }
+        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;    }
 
     @Override
     public QueryResult<Project> create(QueryOptions params, String sessionId) throws CatalogException {
@@ -154,7 +157,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
             }
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
-        return userDBAdaptor.modifyProject(projectId, parameters);
+        QueryResult<Project> queryResult = userDBAdaptor.modifyProject(projectId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
+        return queryResult;
     }
 
     public QueryResult rename(int projectId, String newProjectAlias, String sessionId)
@@ -167,7 +172,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
         userDBAdaptor.updateUserLastActivity(ownerId);
-        return userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+        QueryResult queryResult = userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
+        return queryResult;
     }
 
     @Override
