@@ -17,11 +17,6 @@
 package org.opencb.opencga.storage.core.alignment.tasks;
 
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.Alignment.AlignmentDifference;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
@@ -29,6 +24,12 @@ import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.commons.run.Task;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**

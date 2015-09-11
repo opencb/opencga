@@ -560,7 +560,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 logger.debug("about to calculate stats");
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
-                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyId(), fileId) + "." + TimeUtils.getTime());
+                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileId) + "." + TimeUtils.getTime());
 
                 String defaultCohortName = VariantSourceEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
@@ -592,8 +592,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         return true;
     }
 
-    public static String buildFilename(int studyId, int fileId) {
-        return studyId + "_" + fileId;
+    public static String buildFilename(String studyName, int fileId) {
+        return studyName + "_" + fileId;
     }
 
     public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
