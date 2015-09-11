@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.alignment;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SamReaderFactory;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
@@ -424,24 +425,38 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      * @throws IOException
      */
     protected void checkBamFile(InputStream is, String bamFileName) throws IOException {
+        checkBamFile(is, bamFileName, true);
+    }
+
+    /**
+     * Check if the file is a sorted binary bam file.
+     * @param is            Bam InputStream
+     * @param bamFileName   Bam FileName
+     * @param checkSort
+     * @throws IOException
+     */
+    protected void checkBamFile(InputStream is, String bamFileName, boolean checkSort) throws IOException {
         SAMFileReader reader = new SAMFileReader(is);
         boolean binary = reader.isBinary();
-        SAMFileHeader.SortOrder sortOrder = reader.getFileHeader().getSortOrder();
+        SAMFileHeader fileHeader = reader.getFileHeader();
+        SAMFileHeader.SortOrder sortOrder = fileHeader.getSortOrder();
         reader.close();
 
         if (!binary) {
             throw new IOException("Expected binary SAM file. File " + bamFileName + " is not binary.");
         }
 
-        switch (sortOrder) {
-            case coordinate:
-                logger.debug("BAM file '{}' is sorted.", bamFileName);
-                break;
-            case queryname:
-            case unsorted:
-            default:
-                throw new IOException("Expected sorted BAM file. " +
-                        "File " + bamFileName + " is an unsorted bam (" + sortOrder.name() + ")");
+        if (checkSort) {
+            switch (sortOrder) {
+                case coordinate:
+                    logger.debug("BAM file '{}' is sorted.", bamFileName);
+                    break;
+                case queryname:
+                case unsorted:
+                default:
+                    throw new IOException("Expected sorted BAM file. " +
+                            "File " + bamFileName + " is an unsorted bam (" + sortOrder.name() + ")");
+            }
         }
     }
 

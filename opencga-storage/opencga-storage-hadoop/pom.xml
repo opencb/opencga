@@ -40,6 +40,11 @@
             <artifactId>opencga-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.hpg</groupId>
             <artifactId>hpg-bigdata-tools</artifactId>
             <version>${hpg-bigdata.version}</version>
