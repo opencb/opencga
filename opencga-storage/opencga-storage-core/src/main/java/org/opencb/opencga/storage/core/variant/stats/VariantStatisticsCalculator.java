@@ -144,12 +144,12 @@ public class VariantStatisticsCalculator {
 //                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));
 //
 //            }
-                variantStatsWrappers.add(
-                        new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
+            variantStatsWrappers.add(
+                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
         }
         return variantStatsWrappers;
     }
-    
+
     public static Map<String, String> removeAttributePrefix(Map<String, String> attributes) 
     throws IllegalArgumentException {
         Map<String, String> newAttributes = new LinkedHashMap<>(attributes.size());
