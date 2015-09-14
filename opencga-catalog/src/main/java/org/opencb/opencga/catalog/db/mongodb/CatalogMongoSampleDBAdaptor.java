@@ -235,7 +235,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     }
 
     @Override
-    public QueryResult setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
+    public QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
 
         String userId = acl.getUserId();
@@ -255,21 +255,25 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         }
 
         QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
 
-        return endQuery("setSampleAcl", startTime, queryResult);
+        return endQuery("setSampleAcl", startTime, getSampleAcl(sampleId, userId));
     }
 
     @Override
-    public QueryResult unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
 
         long startTime = startQuery();
 
+        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
         DBObject query = new BasicDBObject(_ID, sampleId);;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
 
         QueryResult queryResult = sampleCollection.update(query, update, null);
 
-        return endQuery("unsetSampleAcl", startTime);
+        return endQuery("unsetSampleAcl", startTime, sampleAcl);
 
     }
 

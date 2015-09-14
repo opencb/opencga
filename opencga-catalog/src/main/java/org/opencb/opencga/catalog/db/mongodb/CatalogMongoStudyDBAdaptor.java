@@ -224,7 +224,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     }
 
     @Override
-    public QueryResult modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Study> modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -255,7 +255,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
-        return endQuery("Modify study", startTime, Collections.singletonList(new ObjectMap(studyParameters)));
+        return endQuery("Modify study", startTime, getStudy(studyId, null));
     }
 
     /**

@@ -515,7 +515,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
     }
 
     @Override
-    public QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         if (!projectExists(projectId)) {
@@ -554,7 +554,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
                 throw CatalogDBException.idNotFound("Project", projectId);
             }
         }
-        return endQuery("Modify project", startTime);
+        return endQuery("Modify project", startTime, getProject(projectId, null));
     }
 
     @Override

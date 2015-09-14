@@ -481,7 +481,7 @@ class CatalogMongoDBUtils {
     }
 
 
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
+    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";

@@ -108,7 +108,7 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
     QueryResult renameFile(int fileId, String name) throws CatalogDBException;
 
@@ -123,9 +123,9 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws CatalogDBException;
 
-    QueryResult setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException;
+    QueryResult<AclEntry> setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException;
 
-    QueryResult unsetFileAcl(int fileId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException;
 
     /**
      * Dataset methods

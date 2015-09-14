@@ -17,7 +17,11 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
+
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.SampleFilterOption.*;
@@ -187,15 +191,13 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        thrown.expect(CatalogException.class);
-        catalogManager.login("admin", "admin", null);
+        catalogManager.login("admin", "admin", "localhost");
     }
 
 
     @Test
     public void testAdminUserExists2() throws Exception {
-        thrown.expect(CatalogException.class);
-        QueryResult<ObjectMap> login = catalogManager.login("admin", CatalogAuthenticationManager.cipherPassword("admin"), null);
+        QueryResult<ObjectMap> login = catalogManager.login("admin", CatalogAuthenticationManager.cipherPassword("admin"), "localhost");
         User admin = catalogManager.getUser("admin", null, login.first().getString("sessionId")).first();
         assertEquals(User.Role.ADMIN, admin.getRole());
     }
@@ -203,6 +205,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
+        thrown.expectMessage(containsString("already exists"));
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
     }
 
@@ -217,8 +220,8 @@ public class CatalogManagerTest extends GenericTest {
         System.out.println(queryResult.first().toJson());
 
         thrown.expect(CatalogException.class);
+        thrown.expectMessage(allOf(containsString("Bad"), containsString("password")));
         catalogManager.login("user", "fakePassword", "127.0.0.1");
-//        fail("Expected 'wrong password' exception");
     }
 
 
@@ -333,6 +336,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
 
         thrown.expect(CatalogDBException.class);
+        thrown.expectMessage(containsString("already exists"));
         catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
     }
 
@@ -406,7 +410,11 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser);
+        int study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate", "description", "Status", null, null, null, null, null, null, null, sessionIdUser).first().getId();
+
+        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.groups.toString() + ".userIds", "user2"), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
+        catalogManager.addMemberToGroup(study_4, "admins", "user3", sessionIdUser);
+        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.groups.toString() + ".userIds", "user3"), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new QueryOptions(), sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
@@ -1557,6 +1565,18 @@ public class CatalogManagerTest extends GenericTest {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogException.class);
         catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(23, 4, 5), null, sessionIdUser);
+    }
+
+    @Test
+    public void testCreateCohortAlreadyExisting() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
+
+
+        thrown.expect(CatalogDBException.class);
+        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
     }
 
     @Test

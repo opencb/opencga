@@ -3,6 +3,8 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
@@ -10,7 +12,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
@@ -42,9 +43,10 @@ public class FileManager extends AbstractManager implements IFileManager {
 
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                       AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -374,7 +376,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
 
-        return fileDBAdaptor.createFile(studyId, file, options);
+        QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, file, options);
+        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -494,6 +498,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
         String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
         QueryResult queryResult = fileDBAdaptor.modifyFile(fileId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
         userDBAdaptor.updateUserLastActivity(ownerId);
         return queryResult;
     }
@@ -524,7 +529,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
 
         switch (file.getType()) {
-            case FOLDER:
+            case FOLDER: {
                 QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);
                 // delete recursively. Walk tree depth first
                 for (File subfolder : allFilesInFolder.getResult()) {
@@ -546,10 +551,15 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                 fileDBAdaptor.modifyFile(fileId, objectMap);
                 QueryResult<File> queryResult = rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, objectMap, null, null);
                 return queryResult; //TODO: Return the modified file
-            case FILE:
+            }
+            case FILE: {
                 rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-                return fileDBAdaptor.modifyFile(fileId, objectMap); //TODO: Return the modified file
+                QueryResult<File> queryResult = fileDBAdaptor.modifyFile(fileId, objectMap);
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, objectMap, null, null);
+                return queryResult; //TODO: Return the modified file
+            }
         }
         return null;
     }
@@ -615,12 +625,14 @@ public class FileManager extends AbstractManager implements IFileManager {
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
                     catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
                     catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
         }
 
@@ -669,8 +681,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
-
-        return fileDBAdaptor.createDataset(studyId, dataset, options);
+        QueryResult<Dataset> queryResult = fileDBAdaptor.createDataset(studyId, dataset, options);
+        auditManager.recordCreation(AuditRecord.Resource.dataset, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override

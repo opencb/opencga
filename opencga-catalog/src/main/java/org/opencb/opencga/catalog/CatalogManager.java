@@ -21,6 +21,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -87,6 +88,7 @@ public class CatalogManager implements AutoCloseable {
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
+    private CatalogAuditManager auditManager;
 
     public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, Properties catalogProperties)
             throws IOException, CatalogIOException {
@@ -120,15 +122,16 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
+        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), authorizationManager, properties);
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory);
-        userManager = new UserManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        fileManager = new FileManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        jobManager = new JobManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
+        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -726,7 +729,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
-    
+
     /**
      * Project methods
      * ***************************
@@ -754,7 +757,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
         return individualManager.delete(individualId, options, sessionId);
     }
-    
+
     /**
      * Samples methods
      * ***************************

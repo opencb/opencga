@@ -3,6 +3,8 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
@@ -30,9 +32,10 @@ public class JobManager extends AbstractManager implements IJobManager {
     protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
 
     public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                      AuditManager auditManager,
                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                       Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 
@@ -122,7 +125,9 @@ public class JobManager extends AbstractManager implements IJobManager {
             job.setAttributes(attributes);
         }
 
-        return jobDBAdaptor.createJob(studyId, job, options);
+        QueryResult<Job> queryResult = jobDBAdaptor.createJob(studyId, job, options);
+        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -180,7 +185,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
         }
-        return jobDBAdaptor.modifyJob(jobId, parameters);
+        QueryResult<Job> queryResult = jobDBAdaptor.modifyJob(jobId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
+        return queryResult;
     }
 
     @Override
@@ -191,7 +198,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
-        return jobDBAdaptor.deleteJob(jobId);
+        QueryResult<Job> queryResult = jobDBAdaptor.deleteJob(jobId);
+        auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override
@@ -245,7 +254,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
 
-        return jobDBAdaptor.createTool(userId, tool);
+        QueryResult<Tool> queryResult = jobDBAdaptor.createTool(userId, tool);
+        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override

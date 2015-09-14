@@ -95,14 +95,19 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/search")
     @ApiOperation(value = "Get sample information", position = 4)
-    public Response searchSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "id", required = true) @QueryParam("id") String id,
-                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                  @ApiParam(value = "source", required = true) @QueryParam("source") String source,
-                                  @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId,
-                                  @ApiParam(value = "annotationSetId", required = true) @QueryParam("annotationSetId") String annotationSetId,
-                                  @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") String variableSetId,
-                                  @ApiParam(value = "annotation", required = true) @QueryParam("annotation") String annotation
+    public Response searchSamples(@ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "id") @QueryParam("id") String id,
+                                  @ApiParam(value = "name") @QueryParam("name") String name,
+                                  @ApiParam(value = "source") @QueryParam("source") String source,
+                                  @ApiParam(value = "acl") @QueryParam("acl") String acl,
+                                  @ApiParam(value = "acl.userId") @QueryParam("acl.userId") String acl_userId,
+                                  @ApiParam(value = "AclEntry read permission") @QueryParam("bacl.read") String acl_read,
+                                  @ApiParam(value = "AclEntry write permission") @QueryParam("bacl.write") String acl_write,
+                                  @ApiParam(value = "AclEntry delete permission") @QueryParam("bacl.delete") String acl_delete,
+                                  @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                                  @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
+                                  @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                                  @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
                                   ) {
         try {
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), queryOptions, sessionId);

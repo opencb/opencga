@@ -115,14 +115,12 @@ public class AnalysisOutputRecorder {
                     switch (index.getStatus()) {
                         case NONE:
                         case TRANSFORMED:
-                        case READY:
                             logger.warn("Unexpected index status. Expected "
                                     + Index.Status.TRANSFORMING + ", "
                                     + Index.Status.LOADING + " or "
                                     + Index.Status.INDEXING
                                     + " and got " + index.getStatus());
-
-                            index.setStatus(Index.Status.READY);
+                        case READY: //Do not show warn message when index status is READY.
                             break;
                         case TRANSFORMING:
                             if (jobFailed) {

@@ -3,10 +3,9 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.VariableSet;
 
 /**
@@ -20,9 +19,15 @@ public interface CatalogStudyDBAdaptor {
         name(Type.TEXT, ""),
         alias(Type.TEXT, ""),
         type(Type.TEXT, ""),
+        groups(Type.TEXT, ""),
         creatorId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
-        status(Type.TEXT, "")
+        status(Type.TEXT, ""),
+        lastActivity(Type.TEXT, ""),
+        stats(Type.TEXT, ""),
+        attributes(Type.TEXT, ""),
+        nattributes("attributes", Type.NUMERICAL, ""),
+        battributes("attributes", Type.BOOLEAN, ""),
         ;
 
         StudyFilterOptions(String key, Type type, String description) {
@@ -70,7 +75,7 @@ public interface CatalogStudyDBAdaptor {
 
     void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
-    QueryResult<ObjectMap> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
     QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 

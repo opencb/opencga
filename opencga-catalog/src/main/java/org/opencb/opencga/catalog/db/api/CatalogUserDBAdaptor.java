@@ -73,7 +73,7 @@ public interface CatalogUserDBAdaptor {
 
     QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 
-    QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
     int getProjectId(String userId, String projectAlias) throws CatalogDBException;
 
