@@ -92,7 +92,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         Configuration conf = getConf();
 
         FileSystem fileSystem = FileSystem.get(conf);
-        checkBamFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
+        checkBamOrCramFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
         return inputUri;
     }
 

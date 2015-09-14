@@ -24,6 +24,7 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -125,7 +126,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public URI load(URI inputUri) throws IOException {
-        checkUri(inputUri, "input uri");
+        UriUtils.checkUri(inputUri, "input uri", "file");
         Path input = Paths.get(inputUri.getPath());
 
 //        ObjectMapper objectMapper = new ObjectMapper();

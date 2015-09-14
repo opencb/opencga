@@ -16,20 +16,19 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileReader;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
+import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -41,7 +40,10 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -129,9 +131,9 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
     @Override
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
-        checkUri(inputUri, "input file");
+        UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
+        checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
         return inputUri;
     }
 
@@ -171,7 +173,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());
+        checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString());
 
         storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
@@ -306,36 +308,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         return destFile;
     }
 
-    @Deprecated
-    protected Path sortAlignmentsFile(Path input, Path outdir) throws IOException {
-        Path sortBam;
-        SAMFileReader reader = new SAMFileReader(input.toFile());
-        switch (reader.getFileHeader().getSortOrder()) {
-            case coordinate:
-                sortBam = input;
-                logger.info("File sorted.");
-                break;
-            case queryname:
-            case unsorted:
-            default:
-                sortBam = outdir.resolve(input.getFileName().toString() + ".sort.bam");
-                String sortCommand = "samtools sort -f " + input.toAbsolutePath().toString() + " " + sortBam.toString();
-                logger.info("Sorting file : " + sortCommand);
-                long start = System.currentTimeMillis();
-                try {
-                    Runtime.getRuntime().exec( sortCommand ).waitFor();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                long end = System.currentTimeMillis();
-                logger.info("end - start = " + (end - start)/1000.0+"s");
-                break;
-        }
-        reader.close();
-        return sortBam;
-    }
-
-
     protected AlignmentJsonDataReader getAlignmentJsonDataReader(URI input) throws IOException {
         if (!input.getScheme().equals("file")) {
             throw new IOException("URI is not a valid path");
@@ -424,8 +396,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      * @param bamFileName   Bam FileName
      * @throws IOException
      */
-    protected void checkBamFile(InputStream is, String bamFileName) throws IOException {
-        checkBamFile(is, bamFileName, true);
+    protected void checkBamOrCramFile(InputStream is, String bamFileName) throws IOException {
+        checkBamOrCramFile(is, bamFileName, true);
     }
 
     /**
@@ -435,14 +407,16 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
      * @param checkSort
      * @throws IOException
      */
-    protected void checkBamFile(InputStream is, String bamFileName, boolean checkSort) throws IOException {
-        SAMFileReader reader = new SAMFileReader(is);
-        boolean binary = reader.isBinary();
+    protected void checkBamOrCramFile(InputStream is, String bamFileName, boolean checkSort) throws IOException {
+        SamReaderFactory srf = SamReaderFactory.make();
+        srf.validationStringency(ValidationStringency.LENIENT);
+
+        SamReader reader = srf.open(SamInputResource.of(is));
         SAMFileHeader fileHeader = reader.getFileHeader();
         SAMFileHeader.SortOrder sortOrder = fileHeader.getSortOrder();
         reader.close();
 
-        if (!binary) {
+        if (reader.type().equals(SamReader.Type.SAM_TYPE)) {
             throw new IOException("Expected binary SAM file. File " + bamFileName + " is not binary.");
         }
 
@@ -454,15 +428,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
                 case queryname:
                 case unsorted:
                 default:
-                    throw new IOException("Expected sorted BAM file. " +
-                            "File " + bamFileName + " is an unsorted bam (" + sortOrder.name() + ")");
+                    throw new IOException("Expected sorted file. File '" + bamFileName + "' is not sorted by coordinates(" + sortOrder.name() + ")");
             }
-        }
-    }
-
-    protected void checkUri(URI uri, String uriName) throws IOException {
-        if(uri == null || uri.getScheme() != null && !uri.getScheme().equals("file")) {
-            throw new IOException("Expected file:// uri scheme for " + uriName);
         }
     }
 
