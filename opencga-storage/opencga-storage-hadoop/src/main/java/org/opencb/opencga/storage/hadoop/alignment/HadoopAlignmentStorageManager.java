@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.tools.alignment.BamUtils;
@@ -92,7 +93,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         Configuration conf = getConf();
 
         FileSystem fileSystem = FileSystem.get(conf);
-        BamUtils.checkBamOrCramFile(fileSystem.open(new java.nio.file.Path(inputUri)), inputUri.getPath(), false);
+        BamUtils.checkBamOrCramFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
         return inputUri;
     }
 
@@ -108,6 +109,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         codec = codec.equals("gzip") ? "deflate" : codec;
 
         boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key(), Options.INCLUDE_COVERAGE.<Boolean>defaultValue());
+        boolean adjustQuality = options.getBoolean(Options.ADJUST_QUALITY.key(), Options.ADJUST_QUALITY.<Boolean>defaultValue());
 //        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key(), Options.TRANSFORM_REGION_SIZE.<Integer>defaultValue());
 
         URI alignmentAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".avro");
@@ -128,7 +130,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 //            if (exitValue != 0) {
 //                throw new Exception("Transform cli error: Exit value = " + exitValue);
 //            }
-            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, conf);
+            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, adjustQuality, conf);
         } catch (Exception e) {
             throw new StorageManagerException("Error while transforming file", e);
         }

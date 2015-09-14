@@ -70,6 +70,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         WRITE_ALIGNMENTS ("writeAlignments", false),
         INCLUDE_COVERAGE ("includeCoverage", true),
         CREATE_BAM_INDEX ("createBai", true),
+        ADJUST_QUALITY("adjustQuality", false),
         ENCRYPT ("encrypt", false),
         COPY_FILE ("copy", false),
         DB_NAME ("database.name", "opencga"),
