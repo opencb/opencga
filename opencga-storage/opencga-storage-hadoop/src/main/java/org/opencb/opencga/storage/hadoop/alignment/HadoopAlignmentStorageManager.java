@@ -18,9 +18,9 @@ package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.hpg.bigdata.tools.converters.mr.Bam2AvroMR;
@@ -92,7 +92,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         Configuration conf = getConf();
 
         FileSystem fileSystem = FileSystem.get(conf);
-        checkBamOrCramFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
+        BamUtils.checkBamOrCramFile(fileSystem.open(new java.nio.file.Path(inputUri)), inputUri.getPath(), false);
         return inputUri;
     }
 

@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
-import htsjdk.samtools.*;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,21 +56,7 @@ import java.util.List;
  */
 public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
 
-//    public static final String MEAN_COVERAGE_SIZE_LIST = "mean_coverage_size_list";
-//    public static final String PLAIN = "plain";
-//    public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
-//    public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
-//    public static final String WRITE_COVERAGE = "transform.write_coverage";
-//    public static final String STUDY = "study";
-//    public static final String FILE_ID = "fileId";
-//    public static final String FILE_ALIAS = "fileAlias";
-//    public static final String WRITE_ALIGNMENTS = "writeAlignments";
-//    public static final String INCLUDE_COVERAGE = "includeCoverage";
-//    public static final String CREATE_BAM_INDEX = "createBai";
-//    public static final String ENCRYPT = "encrypt";
-//    public static final String COPY_FILE = "copy";
-//    public static final String DB_NAME = "database.name";
-//    public static final String TOOLS_SAMTOOLS = "tools.samtools";
+    private StorageEtlConfiguration storageEtlConfiguration;
 
     public enum Options {
         MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
@@ -88,6 +73,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         ENCRYPT ("encrypt", false),
         COPY_FILE ("copy", false),
         DB_NAME ("database.name", "opencga"),
+        @Deprecated
         TOOLS_SAMTOOLS ("tools.samtools", null);
 
         private final String key;
@@ -105,10 +91,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         @SuppressWarnings("unchecked")
         public <T> T defaultValue() {
             return (T) value;
-        }    
+        }
     }
-    
-    private StorageEtlConfiguration storageEtlConfiguration;
 
     public AlignmentStorageManager() {
         logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
@@ -133,7 +117,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
         UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
+        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
         return inputUri;
     }
 
@@ -173,7 +157,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString());
+        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
         storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
@@ -189,11 +173,10 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         //2 Index (bai)
         if(createBai) {
-            Path bamIndexPath = createBai(input, output);
+            Path bamIndexPath = BamUtils.createBai(input, output);
         }
 
         //3 Calculate Coverage and transform
-
         //Tasks
         // tasks.add(new AlignmentRegionCompactorTask(new SqliteSequenceDBAdaptor(sqliteSequenceDBPath)));
         List<Task<AlignmentRegion>> tasks = new LinkedList<>();
@@ -360,77 +343,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         }
 
         return new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
-    }
-
-    public Path createBai(Path input, Path output) throws IOException {
-        //            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
-        Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
-        if (!Files.exists(bamIndexPath)) {
-            Path samtoolsPath = Paths.get(configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getString(Options.TOOLS_SAMTOOLS.key, Options.TOOLS_SAMTOOLS.defaultValue()));
-            String samtoolsBin;
-            if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
-                samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
-                logger.debug("samtools binary set to '{}' file", samtoolsBin);
-            } else {
-                samtoolsBin = "samtools";
-                logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", Options.TOOLS_SAMTOOLS.key, samtoolsPath);
-            }
-
-            long start = System.currentTimeMillis();
-            String indexBai = samtoolsBin + " index " + input.toString(); //  + " " + bamIndexFile.toString();
-            logger.info("Creating BAM index: '{}'", indexBai);
-            try {
-                Runtime.getRuntime().exec(indexBai).waitFor();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            long end = System.currentTimeMillis();
-            logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        }
-        return bamIndexPath;
-    }
-
-    /**
-     * Check if the file is a sorted binary bam file.
-     * @param is            Bam InputStream
-     * @param bamFileName   Bam FileName
-     * @throws IOException
-     */
-    protected void checkBamOrCramFile(InputStream is, String bamFileName) throws IOException {
-        checkBamOrCramFile(is, bamFileName, true);
-    }
-
-    /**
-     * Check if the file is a sorted binary bam file.
-     * @param is            Bam InputStream
-     * @param bamFileName   Bam FileName
-     * @param checkSort
-     * @throws IOException
-     */
-    protected void checkBamOrCramFile(InputStream is, String bamFileName, boolean checkSort) throws IOException {
-        SamReaderFactory srf = SamReaderFactory.make();
-        srf.validationStringency(ValidationStringency.LENIENT);
-
-        SamReader reader = srf.open(SamInputResource.of(is));
-        SAMFileHeader fileHeader = reader.getFileHeader();
-        SAMFileHeader.SortOrder sortOrder = fileHeader.getSortOrder();
-        reader.close();
-
-        if (reader.type().equals(SamReader.Type.SAM_TYPE)) {
-            throw new IOException("Expected binary SAM file. File " + bamFileName + " is not binary.");
-        }
-
-        if (checkSort) {
-            switch (sortOrder) {
-                case coordinate:
-                    logger.debug("BAM file '{}' is sorted.", bamFileName);
-                    break;
-                case queryname:
-                case unsorted:
-                default:
-                    throw new IOException("Expected sorted file. File '" + bamFileName + "' is not sorted by coordinates(" + sortOrder.name() + ")");
-            }
-        }
     }
 
 }
