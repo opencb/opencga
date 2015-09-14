@@ -73,13 +73,13 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
              * Getting URIs and checking Paths
              */
         URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input);
-        FileUtils.checkFile(Paths.get(inputUri));
+//        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
         URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())
                 ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir)
                 // Get parent folder from input file
                 : inputUri.resolve(".");
-        FileUtils.checkDirectory(Paths.get(outdirUri));
+//        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
         logger.debug("All files and directories exist");
 
             /*

@@ -33,6 +33,7 @@
 
     <properties>
         <storage.configuration.file>storage-configuration.yml</storage.configuration.file>
+        <hpg-bigdata.version>0.5-SNAPSHOT</hpg-bigdata.version>
     </properties>
 
     <modules>

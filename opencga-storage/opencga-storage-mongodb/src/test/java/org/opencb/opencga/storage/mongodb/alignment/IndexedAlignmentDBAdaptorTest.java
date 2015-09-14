@@ -26,15 +26,16 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     private Path bamFile;
 
     @Before
-    public void before() throws IOException, FileFormatException {
+    public void before() throws IOException, FileFormatException, StorageManagerException {
         StorageConfiguration storageConfiguration = StorageConfiguration
                 .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         manager = new MongoDBAlignmentStorageManager(storageConfiguration);
@@ -67,7 +68,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         String bamFileName = "HG00096.chrom20.small.bam";
         bamFile = rootDir.resolve(bamFileName);
         Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption.REPLACE_EXISTING);
-        manager.createBai(bamFile, rootDir);
+        BamUtils.createBai(bamFile, rootDir);
 
         ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment().getOptions();
         options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");

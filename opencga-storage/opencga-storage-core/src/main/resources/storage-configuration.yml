@@ -76,8 +76,12 @@ storageEngines:
 - id: "hadoop"
   options: {}
   alignment:
-    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
-    options: {}
+    manager: "org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager"
+    options:
+#      core-site.path: ${OPENCGA.STORAGE.HADOOP.CORE_SITEPATH}
+#      hdfs-site.path: ${OPENCGA.STORAGE.HADOOP.HDFS_SITEPATH}
+      core-site.path: /etc/hadoop/conf.cloudera.yarn/core-site.xml
+      hdfs-site.path: /etc/hadoop/conf.cloudera.yarn/hdfs-site.xml
     database:
       hosts:
       - "who-master:60000"

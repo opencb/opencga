@@ -24,6 +24,8 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
@@ -110,7 +112,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
 
     @Override
-    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException {
+    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException, StorageManagerException {
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.WRITE_ALIGNMENTS.key(), false);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.CREATE_BAM_INDEX.key(), true);
         configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.INCLUDE_COVERAGE.key(), true);
@@ -124,7 +126,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
     @Override
     public URI load(URI inputUri) throws IOException {
-        checkUri(inputUri, "input uri");
+        UriUtils.checkUri(inputUri, "input uri", "file");
         Path input = Paths.get(inputUri.getPath());
 
 //        ObjectMapper objectMapper = new ObjectMapper();
