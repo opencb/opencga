@@ -131,7 +131,7 @@ public class VariantStatisticsManager {
         }
 
         // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
-        if (cohorts == null) {
+        if (cohorts == null || isAggregated(studyConfiguration.getAggregation()) && tagmap != null) {
             if (isAggregated(studyConfiguration.getAggregation()) && tagmap != null) {
                 cohorts = new LinkedHashMap<>();
                 for (String c : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
