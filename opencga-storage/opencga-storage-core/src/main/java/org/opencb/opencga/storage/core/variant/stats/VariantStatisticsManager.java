@@ -142,7 +142,7 @@ public class VariantStatisticsManager {
             }
         }
 
-        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds);
+        checkAndUpdateStudyConfigurationCohorts(studyConfiguration, cohorts, cohortIds, overwrite);
         if (!overwrite) {
             for (String cohortName : cohorts.keySet()) {
                 Integer cohortId = studyConfiguration.getCohortIds().get(cohortName);
@@ -351,11 +351,14 @@ public class VariantStatisticsManager {
      * new requirements:
      * * an empty cohort is not an error if the study is aggregated
      * * there may be several empty cohorts, not just the ALL, because there may be several aggregated files with different sets of hidden samples.
+     * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
      * @return CohortIdList
      */
     List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
-                                                        Map<String, Set<String>> cohorts, Map<String, Integer> cohortIds)
+                                                          Map<String, Set<String>> cohorts,
+                                                          Map<String, Integer> cohortIds,
+                                                          boolean overwrite)
             throws IOException {
         List<Integer> cohortIdList = new ArrayList<>();
 
@@ -444,7 +447,12 @@ public class VariantStatisticsManager {
 //                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated and INVALID");
 //            }
             if (studyConfiguration.getCalculatedStats().contains(cohortId)) {
-                throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
+                if (overwrite) {
+                    studyConfiguration.getCalculatedStats().remove(cohortId);
+                    studyConfiguration.getInvalidStats().add(cohortId);
+                } else {
+                    throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
+                }
             }
 
             cohortIdList.add(cohortId);
