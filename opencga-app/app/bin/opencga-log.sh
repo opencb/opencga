@@ -2,7 +2,7 @@
 
 PRGDIR=`dirname "$0"`
 BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
-LOG_FILE=$BASEDIR'/log/daemon.log'
+LOG_FILE=$BASEDIR'/logs/daemon.log'
 
 BOLD=`tput bold`
 UNDERLINE_ON=`tput smul`

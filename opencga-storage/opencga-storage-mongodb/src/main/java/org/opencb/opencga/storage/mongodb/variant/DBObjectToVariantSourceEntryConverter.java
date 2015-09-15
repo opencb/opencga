@@ -41,6 +41,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
+    public static final String ORI_FIELD = "_ori";
 
     private boolean includeSrc;
     private Set<Integer> returnedFiles;
@@ -141,9 +142,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                                 }
                             }
                         } else {
-                            file.addAttribute(fileId_ + entry.getKey(), entry.getValue().toString());
+                            file.addAttribute(fileId_ + entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
                         }
                     }
+                }
+                if (fileObject.containsField(ORI_FIELD)) {
+                    DBObject _ori = (DBObject) fileObject.get(ORI_FIELD);
+                    String ori = _ori.get("s") + ":" + _ori.get("i");
+                    file.addAttribute(fileId_ + "ori", ori);
                 }
             }
         }
@@ -212,8 +218,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             BasicDBObject attrs = null;
             for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
                 String stringValue = entry.getValue();
+                String key = entry.getKey().replace(".", DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;
-                if (entry.getKey().equals("src")) {
+                if (key.equals("src")) {
                     if (includeSrc) {
                         try {
                             value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
@@ -223,6 +230,12 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                     } else {
                         continue;
                     }
+                } else if (key.equals("ori")) {
+                    int indexOf = stringValue.lastIndexOf(":");
+                    fileObject.append(ORI_FIELD,
+                            new BasicDBObject("s", stringValue.substring(0, indexOf))
+                                    .append("i", Integer.parseInt(stringValue.substring(indexOf + 1))));
+                    continue;
                 } else {
                     try {
                         value = Double.parseDouble(stringValue);
@@ -231,9 +244,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 }
 
                 if (attrs == null) {
-                    attrs = new BasicDBObject(entry.getKey(), value);
+                    attrs = new BasicDBObject(key, value);
                 } else {
-                    attrs.append(entry.getKey(), value);
+                    attrs.append(key, value);
                 }
             }
 

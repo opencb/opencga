@@ -38,7 +38,8 @@ public class Study {
     private long diskUsage;
     private String cipher;
 
-    private List<Acl> acl;
+    private List<Group> groups;
+
     private List<Experiment> experiments;
 
     private List<File> files;
@@ -75,13 +76,13 @@ public class Study {
 
     public Study(String name, String alias, Type type, String description, String status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
-                new ArrayList<Acl>(), new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
+                null, new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
                 new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(),
                 uri, new HashMap<File.Bioformat, DataStore>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
-                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Acl> acl,
+                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
                  List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
@@ -96,7 +97,7 @@ public class Study {
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
-        this.acl = acl;
+        this.groups = groups;
         this.experiments = experiments;
         this.files = files;
         this.jobs = jobs;
@@ -124,15 +125,17 @@ public class Study {
                 ", lastActivity='" + lastActivity + '\'' +
                 ", diskUsage=" + diskUsage +
                 ", cipher='" + cipher + '\'' +
-                ", acl=" + acl +
+                ", groups=" + groups +
                 ", experiments=" + experiments +
                 ", files=" + files +
                 ", jobs=" + jobs +
+                ", individuals=" + individuals +
                 ", samples=" + samples +
                 ", datasets=" + datasets +
                 ", cohorts=" + cohorts +
                 ", variableSets=" + variableSets +
                 ", uri=" + uri +
+                ", dataStores=" + dataStores +
                 ", stats=" + stats +
                 ", attributes=" + attributes +
                 '}';
@@ -226,12 +229,13 @@ public class Study {
         this.cipher = cipher;
     }
 
-    public List<Acl> getAcl() {
-        return acl;
+    public List<Group> getGroups() {
+        return groups;
     }
 
-    public void setAcl(List<Acl> acl) {
-        this.acl = acl;
+    public Study setGroups(List<Group> groups) {
+        this.groups = groups;
+        return this;
     }
 
     public List<Experiment> getExperiments() {

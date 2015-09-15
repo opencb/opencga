@@ -786,7 +786,7 @@ public class OpenCGAStorageMain {
          */
         URI outputUri = new URI(c.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyId(), c.fileId)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), c.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
@@ -874,7 +874,7 @@ public class OpenCGAStorageMain {
     private static void setLogLevel(String logLevel) {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     }
 

@@ -98,10 +98,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
     @Override
     public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
-        int variableSetId = options.getInt("variableSetId");
+        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
         Map<String, Variable> variableMap = null;
         if (variableSetId > 0) {
-            variableMap = getVariableSet(variableSetId, null).first()
+            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                     .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
         }
         return getAllSamples(variableMap, options);
@@ -198,6 +198,85 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
         return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
     }
+
+    public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        int studyId = getStudyIdBySampleId(sampleId);
+        checkAclUserId(dbAdaptorFactory, userId, studyId);
+
+        DBObject query = new BasicDBObject(_ID, sampleId);
+        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
+
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);
+        Sample sample = parseObject(queryResult, Sample.class);
+        if (queryResult.getNumResults() == 0 || sample == null) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
+
+        return endQuery("get file acl", startTime, sample.getAcl());
+    }
+
+    @Override
+    public QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
+
+        long startTime = startQuery();
+        DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
+        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
+        DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
+
+        QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        List<Sample> sampleList = parseSamples(aggregate);
+
+        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId, s -> s));
+
+        return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
+    }
+
+    @Override
+    public QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        String userId = acl.getUserId();
+        DBObject query;
+        DBObject newAclObject = getDbObject(acl, "ACL");
+        DBObject update;
+
+        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
+        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
+            query = new BasicDBObject(_ID, sampleId);
+            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+        } else {    // there is already another ACL: overwrite
+            query = BasicDBObjectBuilder
+                    .start(_ID, sampleId)
+                    .append("acl.userId", userId).get();
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+        }
+
+        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.idNotFound("Sample", sampleId);
+        }
+
+        return endQuery("setSampleAcl", startTime, getSampleAcl(sampleId, userId));
+    }
+
+    @Override
+    public QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
+        DBObject query = new BasicDBObject(_ID, sampleId);;
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+
+        QueryResult queryResult = sampleCollection.update(query, update, null);
+
+        return endQuery("unsetSampleAcl", startTime, sampleAcl);
+
+    }
+
 
     @Override
     public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
@@ -417,125 +496,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         }
     }
 
-    /*
-     * Variables Methods
-     * ***************************
-     */
-
-    @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Long> count = studyCollection.count(
-                new BasicDBObject("variableSets.name", variableSet.getName()).append("id", studyId));
-        if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
-        }
-
-        int variableSetId = getNewAutoIncrementId(metaCollection);
-        variableSet.setId(variableSetId);
-        DBObject object = getDbObject(variableSet, "VariableSet");
-        DBObject query = new BasicDBObject(_ID, studyId);
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
-
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
-
-        return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
-    }
-
-    @Override
-    public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-        DBObject projection = new BasicDBObject(
-                "variableSets",
-                new BasicDBObject(
-                        "$elemMatch",
-                        new BasicDBObject("id", variableSetId)
-                )
-        );
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filteredOptions);
-        List<Study> studies = parseStudies(queryResult);
-        if(studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
-        }
-
-        return endQuery("", startTime, studies.get(0).getVariableSets());
-    }
-
-    @Override
-    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        List<DBObject> mongoQueryList = new LinkedList<>();
-
-
-        for (Map.Entry<String, Object> entry : options.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                VariableSetFilterOption option = VariableSetFilterOption.valueOf(key);
-                switch (option) {
-                    case studyId:
-                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
-                        break;
-                    default:
-                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
-                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
-                new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
-                new BasicDBObject("$unwind", "$variableSets"),
-                new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
-        ), filterOptions(options, FILTER_ROUTE_STUDIES));
-
-        List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0)).collect(Collectors.toList());
-
-        return endQuery("", startTime, variableSets);
-    }
-
-    @Override
-    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        checkVariableSetInUse(variableSetId);
-        int studyId = getStudyIdByVariableSetId(variableSetId);
-        QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
-
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
-
-        if (update.first().getN() == 0) {
-            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
-        }
-
-        return endQuery("Delete VariableSet", startTime, variableSet);
-
-    }
-
-
-    public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
-        QueryResult<Sample> samples = getAllSamples(new QueryOptions(SampleFilterOption.variableSetId.toString(), variableSetId));
-        if (samples.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
-            for (Sample sample : samples.getResult()) {
-                msg += " { id: " + sample.getId() + ", name: \"" + sample.getName() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-    }
-
 
     /*
      * Annotations Methods
@@ -590,18 +550,4 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
-
-    @Override
-    public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-
-        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
-
-        if (!queryResult.getResult().isEmpty()) {
-            Object id = queryResult.getResult().get(0).get("id");
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
-        } else {
-            throw CatalogDBException.idNotFound("VariableSet", variableSetId);
-        }
-    }
 }

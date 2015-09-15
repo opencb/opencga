@@ -3,18 +3,22 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.StudyPermission;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +34,10 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
 
     public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                        AuditManager auditManager,
                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     @Override
@@ -109,9 +114,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
 
         /* Check project permissions */
-        if (!authorizationManager.getProjectACL(userId, projectId).isWrite()) { //User can't write/modify the project
-            throw CatalogAuthorizationException.denny(userId, "create", "Project", projectId, null);
-        }
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
         if (!creatorId.equals(userId)) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
@@ -126,17 +130,11 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         LinkedList<File> files = new LinkedList<>();
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
-        LinkedList<Acl> acls = new LinkedList<>();
 
-        /* Add default ACL */
-        if (!creatorId.equals(projectOwnerId)) {
-            //Add full permissions for the creator if he is not the owner
-            acls.add(new Acl(creatorId, true, true, true, true));
-        }
 
         //Copy generic permissions from the project.
 
-        QueryResult<Acl> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, Acl.USER_OTHERS_ID);
+        QueryResult<AclEntry> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
         if (!aclQueryResult.getResult().isEmpty()) {
             //study.getAcl().add(aclQueryResult.getResult().get(0));
         } else {
@@ -149,7 +147,7 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, acls, experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
+                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
                 new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
 
 
@@ -168,16 +166,18 @@ public class StudyManager extends AbstractManager implements IStudyManager{
             }
         }
 
-        studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri));
+        study = studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri)).first();
+        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
         int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
-        fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri));
+        rootFile = fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri)).first();
+        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
         userDBAdaptor.updateUserLastActivity(projectOwnerId);
         return result;
     }
 
     @Override
-    public QueryResult<Study> share(int studyId, Acl acl) throws CatalogException {
+    public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -207,36 +207,32 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Acl studyAcl = authorizationManager.getStudyACL(userId, studyId);
-        if (studyAcl.isRead()) {
-            QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
-            if (!studyResult.getResult().isEmpty()) {
-                authorizationManager.filterFiles(userId, studyAcl, studyResult.getResult().get(0).getFiles());
-            }
-            return studyResult;
-        } else {
-            throw new CatalogDBException("Permission denied. Can't read this study");
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
+        if (!studyResult.getResult().isEmpty()) {
+            authorizationManager.filterFiles(userId, studyId, studyResult.getResult().get(0).getFiles());
         }
+        return studyResult;
+
     }
 
     @Override
     public QueryResult<Study> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        int projectId = query.getInt("projectId", -1);
-        ParamUtils.checkId(projectId, "ProjectId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
+        query.putAll(options);
 
-        Acl projectAcl = authorizationManager.getProjectACL(userId, projectId);
-        if (!projectAcl.isRead()) {
-            throw new CatalogDBException("Permission denied. Can't read project");
-        }
-
-        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(projectId, options);
+        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(query);
         List<Study> studies = allStudies.getResult();
-        authorizationManager.filterStudies(userId, projectAcl, studies);
+
+        authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
+        allStudies.setNumResults(studies.size());
+        allStudies.setNumTotalResults(studies.size());
 
         return allStudies;
     }
@@ -247,9 +243,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getStudyACL(userId, studyId).isWrite()) {
-            throw new CatalogDBException("User " + userId + " can't modify the study " + studyId);
-        }
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+
         if (parameters.containsKey("alias")) {
             rename(studyId, parameters.getString("alias"), sessionId);
 
@@ -265,29 +260,30 @@ public class StudyManager extends AbstractManager implements IStudyManager{
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<ObjectMap> result = studyDBAdaptor.modifyStudy(studyId, parameters);
-        return new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(),
-                result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(),
-                read(studyId, options, sessionId).getResult());
+        QueryResult<Study> result = studyDBAdaptor.modifyStudy(studyId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
+        return result;
     }
 
     private QueryResult rename(int studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String sessionUserId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
-        if (!authorizationManager.getStudyACL(sessionUserId, studyId).isWrite()) {  //User can't write/modify the study
-            throw new CatalogDBException("Permission denied. Can't write in project");
-        }
+        //User can't write/modify the study
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
 
         // Both users must bu updated
-        userDBAdaptor.updateUserLastActivity(sessionUserId);
+        userDBAdaptor.updateUserLastActivity(userId);
         userDBAdaptor.updateUserLastActivity(studyOwnerId);
         //TODO get all shared users to updateUserLastActivity
 
-        return studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
+        return queryResult;
 
     }
 
@@ -296,4 +292,85 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public QueryResult<Study> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
+
+
+
+    /*
+     * Variables Methods
+     */
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      List<Variable> variables, String sessionId)
+            throws CatalogException {
+
+        ParamUtils.checkObj(variables, "Variables List");
+        Set<Variable> variablesSet = new HashSet<>(variables);
+        if (variables.size() != variablesSet.size()) {
+            throw new CatalogException("Error. Repeated variables");
+        }
+        return createVariableSet(studyId, name, unique, description, attributes, variablesSet, sessionId);
+    }
+
+    @Override
+    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+                                                      String description, Map<String, Object> attributes,
+                                                      Set<Variable> variables, String sessionId)
+            throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkObj(variables, "Variables Set");
+        unique = ParamUtils.defaultObject(unique, true);
+        description = ParamUtils.defaultString(description, "");
+        attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
+
+        for (Variable variable : variables) {
+            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkObj(variable.getType(), "variable Type");
+            variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
+            variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
+            variable.setCategory(ParamUtils.defaultString(variable.getCategory(), ""));
+            variable.setDependsOn(ParamUtils.defaultString(variable.getDependsOn(), ""));
+            variable.setDescription(ParamUtils.defaultString(variable.getDescription(), ""));
+//            variable.setRank(defaultString(variable.getDescription(), ""));
+        }
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
+        VariableSet variableSet = new VariableSet(-1, name, unique, description, variables, attributes);
+        CatalogAnnotationsValidator.checkVariableSet(variableSet);
+
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
+        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSet);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        return studyDBAdaptor.getVariableSet(variableSet, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        return studyDBAdaptor.getAllVariableSets(studyId, options);
+    }
+
+    @Override
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+        QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
+        auditManager.recordDeletion(AuditRecord.Resource.variableSet, variableSetId, userId, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+
 }

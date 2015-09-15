@@ -22,8 +22,8 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.6-SNAPSHOT</version>
-        <relativePath>..</relativePath>
+        <version>0.7-dev</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-catalog</artifactId>

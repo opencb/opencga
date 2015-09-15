@@ -3,14 +3,54 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Acl;
-import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.VariableSet;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface CatalogStudyDBAdaptor {
+
+    enum StudyFilterOptions implements CatalogDBAdaptor.FilterOption {
+        id(Type.NUMERICAL, ""),
+        projectId(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        alias(Type.TEXT, ""),
+        type(Type.TEXT, ""),
+        groups(Type.TEXT, ""),
+        creatorId(Type.TEXT, ""),
+        creationDate(Type.TEXT, ""),
+        status(Type.TEXT, ""),
+        lastActivity(Type.TEXT, ""),
+        stats(Type.TEXT, ""),
+        attributes(Type.TEXT, ""),
+        nattributes("attributes", Type.NUMERICAL, ""),
+        battributes("attributes", Type.BOOLEAN, ""),
+        ;
+
+        StudyFilterOptions(String key, Type type, String description) {
+            this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+
+        StudyFilterOptions(Type type, String description) {
+            this._key = name();
+            this._description = description;
+            this._type = type;
+        }
+
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+
+        @Override public String getKey() {return _key;}
+        @Override public String getDescription() {return _description;}
+        @Override public Type getType() {return _type;}
+    }
+
 
     /**
      * Study methods
@@ -23,7 +63,9 @@ public interface CatalogStudyDBAdaptor {
 
     void checkStudyId(int studyId) throws CatalogDBException;
 
-    QueryResult<Study> getAllStudies(int projectId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
@@ -33,7 +75,7 @@ public interface CatalogStudyDBAdaptor {
 
     void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
-    QueryResult<ObjectMap> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
     QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
 
@@ -43,9 +85,25 @@ public interface CatalogStudyDBAdaptor {
 
     String getStudyOwnerId(int studyId) throws CatalogDBException;
 
-    QueryResult<Acl> getStudyAcl(int projectId, String userId) throws CatalogDBException;
+    QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult setStudyAcl(int studyId, Acl newAcl) throws CatalogDBException;
+    QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+
+    QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
 
 
+    /**
+     * VariableSet Methods
+     * ***************************
+     */
+
+    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
+
+    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+
+    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 }

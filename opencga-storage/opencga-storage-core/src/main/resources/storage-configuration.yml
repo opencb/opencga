@@ -1,15 +1,37 @@
 ---
 defaultStorageEngineId: "mongodb"
-logLevel: info
-# For OpenCGA installation: org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager
+logLevel: "info"
+logFile: ""
+
+## For OpenCGA installation use 'org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager'
+## This value can be set up using maven profiles in your .m2/settings.xml
 studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
+
+## CellBase client configuration, this is used mainly when annotating variants
+## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  hosts:
+  hosts:      ## 'remote' URL hosts to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/webservices/rest/
   - "${OPENCGA.CELLBASE.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
+  database:   ## 'local' connection to CellBase MongoDB
+    hosts:
+    - ""
+    user: ""
+    password: ""
+    options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+  preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
+
+## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
+## is launched in the specified port. Only authorized hosts are allowed to query data.
+server:
+  port: 61976
+  authorizedHosts: ["localhost"]
+
+## The following section defines all availables storage engine plugins installed
+## Default plugin is 'mongodb' storage engine
 storageEngines:
 - id: "mongodb"
-  options: {}
+  options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
     manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
     options:
@@ -28,6 +50,7 @@ storageEngines:
     options:
       database.name: "opencga"
       collection.variants: "variants"
+      collection.studies: "studies"
       include.stats: false
       annotator: cellbase_rest
       species: "hsapiens"
@@ -48,6 +71,8 @@ storageEngines:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
       user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+
+## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"
   options: {}
   alignment:

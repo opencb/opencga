@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -281,15 +282,15 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "share": {
-                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-
-                        int projectId = catalogManager.getProjectId(c.id);
-                        QueryResult result = catalogManager.shareProject(projectId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(createOutput(c.cOpt, result, null));
-
-                        break;
-                    }
+//                    case "share": {
+//                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
+//
+//                        int projectId = catalogManager.getProjectId(c.id);
+//                        QueryResult result = catalogManager.shareProject(projectId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
+//                        System.out.println(createOutput(c.cOpt, result, null));
+//
+//                        break;
+//                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -429,15 +430,15 @@ public class OpenCGAMain {
 
                         break;
                     }
-                    case "share": {
-                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
-
-                        int studyId = catalogManager.getStudyId(c.id);
-                        QueryResult result = catalogManager.shareProject(studyId, new Acl(c.user, c.read, c.write, c.execute, c.delete), sessionId);
-                        System.out.println(createOutput(c.cOpt, result, null));
-
-                        break;
-                    }
+//                    case "share": {
+//                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
+//
+//                        int studyId = catalogManager.getStudyId(c.id);
+//                        QueryResult result = catalogManager.shareProject(studyId, new AclEntry(c.user, c.read, c.write, c.execute, c.delete), sessionId);
+//                        System.out.println(createOutput(c.cOpt, result, null));
+//
+//                        break;
+//                    }
                     default:
                         optionsParser.printUsage();
                         break;
@@ -637,6 +638,8 @@ public class OpenCGAMain {
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), c.calculateStats);
+                        queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), c.annotate);
                         logger.debug("logLevel: {}", logLevel);
                         QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outdirId, sid, queryOptions);
                         System.out.println(createOutput(c.cOpt, queryResult, null));
@@ -1061,7 +1064,7 @@ public class OpenCGAMain {
 
     private StringBuilder listStudies(int projectId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
-            List<Study> studies = catalogManager.getAllStudies(projectId,
+            List<Study> studies = catalogManager.getAllStudiesInProject(projectId,
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
                     sessionId).getResult();
 
@@ -1091,6 +1094,8 @@ public class OpenCGAMain {
 
     private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
+            files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
+//            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));
             for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = iterator.next();
 //                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
@@ -1170,7 +1175,7 @@ public class OpenCGAMain {
     private static void setLogLevel(String logLevel) {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 

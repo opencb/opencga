@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.ws;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -24,10 +23,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -39,20 +36,16 @@ import javax.ws.rs.client.WebTarget;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 
 /**
  * Created by ralonso on 9/25/14.
  */
 public class WSServerTestUtils {
 
-    static ObjectMapper mapper = OpenCGAWSServer.jsonObjectMapper;
     private Server server;
     private String restURL;
     public static final int PORT = 8889;
@@ -60,8 +53,8 @@ public class WSServerTestUtils {
 
 
     public static <T> QueryResponse<QueryResult<T>> parseResult(String json, Class<T> clazz) throws IOException {
-        ObjectReader reader = mapper.reader(mapper.getTypeFactory().constructParametrizedType(
-                QueryResponse.class, QueryResponse.class, mapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
+        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
+                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
         return reader.readValue(json);
     }
 

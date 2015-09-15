@@ -18,6 +18,8 @@ package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
 import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -147,6 +149,31 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "Search studies", position = 3)
+    public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
+                                  @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
+                                  @ApiParam(value = "name") @QueryParam("name") String name,
+                                  @ApiParam(value = "alias") @QueryParam("alias") String alias,
+                                  @ApiParam(value = "type") @QueryParam("type") String type,
+                                  @ApiParam(value = "creatorId") @QueryParam("creatorId") String creatorId,
+                                  @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
+                                  @ApiParam(value = "status") @QueryParam("status") String status,
+                                  @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
+                                  @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
+                                  @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes,
+                                  @ApiParam(value = "groups") @QueryParam("groups") String groups,
+                                  @ApiParam(value = "Users in group") @QueryParam("groups.users") String groups_users
+                                  ) {
+        try {
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{studyId}/files")
     @ApiOperation(value = "Study files information", position = 3)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
@@ -187,60 +214,57 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/variants")
     @ApiOperation(value = "Study samples information", position = 6)
-    public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                                @ApiParam(value = "region", required = false) @DefaultValue("") @QueryParam("region") String region,
-                                @ApiParam(value = "gene", required = false) @DefaultValue("") @QueryParam("gene") String gene,
-                                @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
-                                @ApiParam(value = "merge", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge,
-                                @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "GroupBy: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
-
-        Query query = new Query();
-//        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
-        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), gene);
-
-        DataStore dataStore;
+    public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
+                                @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
+                                @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
+                                @ApiParam(value = "CSV list of chromosomes") @QueryParam("chromosome") String chromosome,
+                                @ApiParam(value = "CSV list of genes") @QueryParam("gene") String gene,
+                                @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
+                                @ApiParam(value = "Filter by reference") @QueryParam("reference") String reference,
+                                @ApiParam(value = "Filter by alternate") @QueryParam("alternate") String alternate,
+//                                @ApiParam(value = "") @QueryParam("studies") String studies,
+                                @ApiParam(value = "CSV list of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
+                                @ApiParam(value = "CSV list of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
+                                @ApiParam(value = "CSV list of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
+                                @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
+                                @ApiParam(value = "Minor Allele Frequency: [<|>|<=|>=]{number}") @QueryParam("maf") String maf,
+                                @ApiParam(value = "Minor Genotype Frequency: [<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
+                                @ApiParam(value = "Number of missing alleles: [<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
+                                @ApiParam(value = "Number of missing genotypes: [<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
+                                @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
+                                @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
+                                @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046") @QueryParam("annot-ct") String annot_ct,
+                                @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
+                                @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
+                                @ApiParam(value = "Polyphen value: [<|>|<=|>=]{number}") @QueryParam("polyphen") String polyphen,
+                                @ApiParam(value = "Sift value: [<|>|<=|>=]{number}") @QueryParam("sift") String sift,
+//                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
+                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
+                                @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
+                                @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
+                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
+                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+                                @ApiParam(value = "", required = false) @QueryParam("sort") boolean sort,
+                                @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
+                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
+                                @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
+                                @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
+                                @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
+        Response okResponse;
         try {
-            dataStore = AnalysisFileIndexer.getDataStore(catalogManager, (studyIdStr.contains(","))
-                    ? Integer.parseInt(studyIdStr.split(",")[0])
-                    : Integer.parseInt(studyIdStr),
-                    File.Bioformat.VARIANT, sessionId);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e);
-        }
-        String storageEngine = dataStore.getStorageEngine();
-        String dbName = dataStore.getDbName();
-
-        VariantDBAdaptor dbAdaptor;
-        try {
-            dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
-            return createErrorResponse(e);
-        }
-
-        if (histogram) {
-            QueryResult result = dbAdaptor.getFrequency(query, Region.parseRegion(region), interval);
-            return createOkResponse(Collections.singletonList(result));
-        } else if (!groupBy.isEmpty()) {
-            QueryResult result = dbAdaptor.groupBy(query, groupBy, queryOptions);
-            return createOkResponse(Collections.singletonList(result));
-        } else if(merge) {
-            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
-            QueryResult result = dbAdaptor.get(query, queryOptions);
-            return createOkResponse(Collections.singletonList(result));
-        } else {
-            String[] studies = studyIdStr.split(",");
-            List<QueryResult> results = new ArrayList<>(studies.length);
-            for (String study : studies) {
-                query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
-                QueryResult result = dbAdaptor.get(query, queryOptions);
-                results.add(result);
+            String[] studyIds = studyIdStrCvs.split(",");
+            List<QueryResult> queryResults = new LinkedList<>();
+            VariantFetcher variantFetcher = new VariantFetcher(this);
+            for (String studyIdStr : studyIds) {
+                int studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval));
             }
-            return createOkResponse(results);
+            okResponse = createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
+        return okResponse;
     }
 
     @GET
@@ -461,11 +485,40 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some study attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") int studyId,
+    public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups")
+    @ApiOperation(value = "Modify group members", position = 9)
+    public Response groups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
+                           @ApiParam(value = "User to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUser") String addUser,
+                           @ApiParam(value = "User to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUser") String removeUser) {
+        try {
+            int studyId = catalogManager.getStudyId(studyIdStr);
+            List<QueryResult> queryResults = new LinkedList<>();
+            if (!addUser.isEmpty() && !removeUser.isEmpty()) {
+                return createErrorResponse("groups", "Must specify only one user to add or remove from one group");
+            }
+            if (!addUser.isEmpty()) {
+                queryResults.add(catalogManager.addMemberToGroup(studyId, groupId, addUser, sessionId));
+            }
+            if (!removeUser.isEmpty()) {
+                queryResults.add(catalogManager.removeMemberFromGroup(studyId, groupId, removeUser, sessionId));
+            }
+            if (queryResults.isEmpty()) {
+                return createErrorResponse("groups", "Must specify a user to add or remove from one group");
+            }
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

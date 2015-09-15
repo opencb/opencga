@@ -46,7 +46,7 @@ public class OptionsParser {
     final CohortCommands cohortCommands;
     final SampleCommands sampleCommands;
 
-    public final CommandShareResource commandShareResource;
+//    public final CommandShareResource commandShareResource;
 
 
     public OptionsParser(boolean interactive) {
@@ -56,7 +56,7 @@ public class OptionsParser {
 
         commonOptions = new CommonOptions();
         userAndPasswordOptions = new UserAndPasswordOptions();
-        commandShareResource = new CommandShareResource();
+//        commandShareResource = new CommandShareResource();
 
         userCommands = new UserCommands(jcommander);
         projectCommands = new ProjectCommands(jcommander);
@@ -413,7 +413,7 @@ public class OptionsParser {
             studies.addCommand(checkCommand = new CheckCommand());
             studies.addCommand(statusCommand = new StatusCommand());
             studies.addCommand(this.annotationCommand = new AnnotationCommand());
-            studies.addCommand(commandShareResource);
+//            studies.addCommand(commandShareResource);
         }
 
         abstract class BaseStudyCommand {
@@ -717,6 +717,12 @@ public class OptionsParser {
 
             @Parameter(names = "--load", description = "Run only the load phase")
             boolean load = false;
+
+            @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
+            boolean calculateStats = false;
+
+            @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
+            boolean annotate = false;
 
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;

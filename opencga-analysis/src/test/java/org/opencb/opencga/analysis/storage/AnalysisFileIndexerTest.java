@@ -5,14 +5,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageTest;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -20,12 +16,14 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +31,9 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
+import static org.opencb.biodata.models.variant.VariantSourceEntry.DEFAULT_COHORT;
+import static org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil.runStorageJob;
 import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
-import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.runStorageJob;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
@@ -61,9 +60,9 @@ public class AnalysisFileIndexerTest {
 
     @Before
     public void before() throws Exception {
-        catalogPropertiesFile = getResourceUri("catalog.properties").getPath();
-        Properties properties = new Properties();
-        properties.load(CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
+        Path openCGA = AnalysisStorageTestUtil.isolateOpenCGA();
+        catalogPropertiesFile = openCGA.resolve("conf").resolve("catalog.properties").toString();
+        Properties properties = Config.getCatalogProperties();
 
         CatalogManagerTest.clearCatalog(properties);
         clearDB(dbName);
@@ -118,7 +117,7 @@ public class AnalysisFileIndexerTest {
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(2).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(1500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
-        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(3).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
@@ -130,11 +129,11 @@ public class AnalysisFileIndexerTest {
         assertEquals(2504, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
 
-        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
 
     private Cohort getDefaultCohort() throws CatalogException {
-        return catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId).first();
+        return catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first();
     }
 
     @Test
@@ -175,6 +174,6 @@ public class AnalysisFileIndexerTest {
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
         assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
-        checkCalculatedStats(Collections.singletonMap("all", catalogManager.getAllCohorts(studyId, new QueryOptions("name", "all"), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
 }

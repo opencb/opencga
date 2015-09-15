@@ -1,0 +1,91 @@
+---
+defaultStorageEngineId: "mongodb"
+logLevel: "info"
+logFile: ""
+
+## For OpenCGA installation use 'org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager'
+## This value can be set up using maven profiles in your .m2/settings.xml
+studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
+
+## CellBase client configuration, this is used mainly when annotating variants
+## This can be set up using maven profiles in your .m2/settings.xml
+cellbase:
+  hosts:      ## 'remote' URL hosts to annotate variants
+  - "${OPENCGA.CELLBASE.HOST}"
+  version: "${OPENCGA.CELLBASE.VERSION}"
+  database:   ## 'local' connection to CellBase MongoDB
+    hosts:
+    - ""
+    user: ""
+    password: ""
+  preferred: "remote"    ## This accept two values: 'local' and 'remote' to fetch data
+## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
+## is launched in the specified port. Only authorized hosts are allowed to query data.
+server:
+  port: 61976
+  authorizedHosts: ["localhost"]
+
+## The following section defines all availables storage engine plugins installed
+## Default plugin is 'mongodb' storage engine
+storageEngines:
+- id: "mongodb"
+  options: {}     ## this field is intended to be removed, try not to use it.
+  alignment:
+    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
+    options:
+      database.name: "opencga"
+      tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"
+      transform.region_size: 200000
+      transform.coverage_chunk_size: 1000
+      mean_coverage_size_list: [200, 10000]
+    database:
+      hosts:
+      - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
+  variant:
+    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
+    options:
+      database.name: "opencga"
+      collection.variants: "variants"
+      collection.studies: "studies"
+      include.stats: false
+      annotator: cellbase_rest
+      species: "hsapiens"
+      assembly: "GRCh37"
+      transform.batch_size: 200
+      transform.threads: 4
+      load.batch_size: 100
+      load.bulk_size: 100
+      load.compress_genotypes: true
+      load.threads: 4
+      authentication.db: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
+      ## To delete:
+      include.genotypes: true
+      include.src: false
+      collection.files: "files"
+    database:
+      hosts:
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+
+## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
+- id: "hadoop"
+  options: {}
+  alignment:
+    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"
+  variant:
+    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
+    options: {}
+    database:
+      hosts:
+      - "who-master:60000"
+      user: "user"
+      password: "password"

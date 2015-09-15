@@ -248,7 +248,7 @@ public class VariantStatisticsManager {
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
         ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
 
-        logger.info("starting stats creation");
+        logger.info("starting stats creation for cohorts {}", cohortIds.keySet());
         long start = System.currentTimeMillis();
         runner.run();
         logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
