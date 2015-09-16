@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
@@ -78,7 +79,7 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
 
 
         //Calculate stats
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), null, null, studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), null, Collections.emptyMap(), studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
 
