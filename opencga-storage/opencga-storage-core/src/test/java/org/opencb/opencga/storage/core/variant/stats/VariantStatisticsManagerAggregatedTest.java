@@ -73,7 +73,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
 
         //Calculate stats
-        Map<String, Set<String>> cohorts = Collections.singletonMap(VariantSourceEntry.DEFAULT_COHORT, Collections.emptySet());
+        Map<String, Set<String>> cohorts = new HashMap<>(Collections.singletonMap(VariantSourceEntry.DEFAULT_COHORT, Collections.emptySet()));
         URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), cohorts, Collections.emptyMap(), studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 

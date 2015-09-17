@@ -374,9 +374,9 @@ public class VariantStatisticsManager {
                     cohortId = studyConfiguration.getCohortIds().get(cohortName);
                 } else {
                     //Auto-generate cohortId. Max CohortId + 1
-                    cohortId = studyConfiguration.getCohortIds().size() > 0?
-                            Collections.max(studyConfiguration.getCohortIds().values()) +1
-                            : 0;    // if there are no cohorts and we are creating the first
+                    // if there are no cohorts and we are creating the first as 0
+                    cohortId = studyConfiguration.getCohortIds().isEmpty() ?
+                            0 : Collections.max(studyConfiguration.getCohortIds().values()) + 1;
                 }
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
@@ -399,27 +399,27 @@ public class VariantStatisticsManager {
                         StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
             }
 
-            Set<Integer> sampleIds;
-            if (samples == null) {
+            final Set<Integer> sampleIds;
+            if (samples == null || samples.isEmpty()) {
                 //There are not provided samples for this cohort. Take samples from StudyConfiguration
-                sampleIds = studyConfiguration.getCohorts().get(cohortId);
-                if (sampleIds == null || (sampleIds.isEmpty()
-                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
-                    //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
-                    throw new IOException("Cohort \"" + cohortName + "\" is empty");
-                }
-                samples = new HashSet<>();
-                Map<Integer, String> idSamples = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
-                for (Integer sampleId : sampleIds) {
-                    samples.add(idSamples.get(sampleId));
+                if (isAggregated(studyConfiguration.getAggregation())) {
+                    samples = Collections.emptySet();
+                    sampleIds = Collections.emptySet();
+                } else {
+                    sampleIds = studyConfiguration.getCohorts().get(cohortId);
+                    if (sampleIds == null || sampleIds.isEmpty()) {
+//                if (sampleIds == null || (sampleIds.isEmpty()
+//                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
+                        //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
+                        throw new IOException("Cohort \"" + cohortName + "\" is empty");
+                    }
+                    samples = new HashSet<>();
+                    Map<Integer, String> idSamples = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+                    for (Integer sampleId : sampleIds) {
+                        samples.add(idSamples.get(sampleId));
+                    }
                 }
                 cohorts.put(cohortName, samples);
-            } else if (samples.isEmpty()) {
-                if (VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation())) {  // if no aggregated study
-                    throw new IOException("Cohort \"" + cohortName + "\" is empty");
-                } else {
-                    sampleIds = Collections.EMPTY_SET;
-                }
             } else {
                 sampleIds = new HashSet<>(samples.size());
                 for (String sample : samples) {
