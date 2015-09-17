@@ -177,7 +177,8 @@ public class OpenCGAMain {
     private int runCommand(OptionsParser optionsParser) throws Exception {
         int returnValue = 0;
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
-            catalogManager = new CatalogManager(Config.getCatalogProperties());
+            Properties catalogProperties = Config.getCatalogProperties();
+            catalogManager = new CatalogManager(catalogProperties);
         }
 
         String sessionId = login(optionsParser.getUserAndPasswordOptions());
@@ -307,8 +308,10 @@ public class OpenCGAMain {
                         }
                         Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
                         int projectId = catalogManager.getProjectId(c.projectId);
+                        ObjectMap attributes = new ObjectMap();
+                        attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
+                                null, c.description, null, null, null, uri, dataStoreMap, null, attributes, c.cOpt.getQueryOptions(), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(), new QueryOptions("path", ""), sessionId).first();
                             new FileScanner(catalogManager).scan(root, uri, FileScanner.FileScannerPolicy.REPLACE, true, false, sessionId);
@@ -802,6 +805,12 @@ public class OpenCGAMain {
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        if (c.tagmap != null) {
+                            queryOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), c.tagmap);
+                        } else if (c.cohortIds == null) {
+                            logger.error("--cohort-id nor --aggregation-mapping-file provided");
+                            throw new IllegalArgumentException("--cohort-id or --aggregation-mapping-file is required to specify cohorts");
+                        }
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;

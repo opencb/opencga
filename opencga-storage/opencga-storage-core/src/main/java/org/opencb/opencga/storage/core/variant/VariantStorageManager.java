@@ -535,7 +535,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
                 String defaultCohortName = VariantSourceEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
-                Map<String, Set<String>> defaultCohort = Collections.singletonMap(defaultCohortName, indexedSamples.keySet());
+                Map<String, Set<String>> defaultCohort = new HashMap<>(Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
                 if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
                     Integer defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
                     if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
@@ -547,7 +547,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     }
                 }
 
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, Collections.emptyMap(), studyConfiguration, new QueryOptions(options));
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, new HashMap<>(), studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);

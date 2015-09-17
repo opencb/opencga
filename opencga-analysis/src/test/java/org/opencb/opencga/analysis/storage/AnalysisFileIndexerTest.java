@@ -4,7 +4,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -34,6 +36,7 @@ import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.VariantSourceEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil.runStorageJob;
 import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedAggregatedStats;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
@@ -58,8 +61,7 @@ public class AnalysisFileIndexerTest {
     private final String dbName = DB_NAME;
     private List<File> files = new ArrayList<>();
 
-    @Before
-    public void before() throws Exception {
+    public void beforeIndex() throws Exception {
         Path openCGA = AnalysisStorageTestUtil.isolateOpenCGA();
         catalogPropertiesFile = openCGA.resolve("conf").resolve("catalog.properties").toString();
         Properties properties = Config.getCatalogProperties();
@@ -101,6 +103,7 @@ public class AnalysisFileIndexerTest {
 
     @Test
     public void testIndexWithStats() throws Exception {
+        beforeIndex();
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
         QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
@@ -131,6 +134,7 @@ public class AnalysisFileIndexerTest {
 
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
+    
 
     private Cohort getDefaultCohort() throws CatalogException {
         return catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first();
@@ -138,6 +142,7 @@ public class AnalysisFileIndexerTest {
 
     @Test
     public void testIndexBySteps() throws Exception {
+        beforeIndex();
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
         QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
@@ -176,4 +181,47 @@ public class AnalysisFileIndexerTest {
         assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
     }
+    
+    public void beforeAggregatedIndex(String file, VariantSource.Aggregation aggregation) throws Exception {
+        Path openCGA = AnalysisStorageTestUtil.isolateOpenCGA();
+        catalogPropertiesFile = openCGA.resolve("conf").resolve("catalog.properties").toString();
+        Properties properties = Config.getCatalogProperties();
+
+        CatalogManagerTest.clearCatalog(properties);
+        clearDB(dbName);
+
+        catalogManager = new CatalogManager(properties);
+        fileMetadataReader = FileMetadataReader.get(catalogManager);
+        catalogFileUtils = new CatalogFileUtils(catalogManager);
+
+        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
+        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
+        projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null,
+                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
+                Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC), 
+                null, sessionId).first().getId();
+        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        files.add(create("variant-test-aggregated-file.vcf.gz"));
+    }
+    
+    @Test
+    public void testIndexWithAggregatedStats() throws Exception {
+        beforeAggregatedIndex("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
+
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC);
+
+        queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+        runStorageJob(catalogManager, analysisFileIndexer.index(files.get(0).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
+        assertEquals(0, getDefaultCohort().getSamples().size());
+        assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
+        checkCalculatedAggregatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, 
+                new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+    }
+    
 }
+
+

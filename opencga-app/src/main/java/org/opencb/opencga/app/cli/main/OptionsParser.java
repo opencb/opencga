@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -456,6 +457,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
             List<String> datastores;
+            
+            @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
+            VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
         }
 
         @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
@@ -820,7 +824,7 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = true)
+            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = false)
             List<Integer> cohortIds;
 
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
@@ -828,7 +832,10 @@ public class OptionsParser {
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
-
+            
+            @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+            String tagmap = null;
+            
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
         }

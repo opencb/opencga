@@ -5,8 +5,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStore;
@@ -35,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -73,7 +76,6 @@ public class VariantStorageTest {
     private final String userId = "user";
     private final String dbName = "opencga_variants_test";
 
-    @Before
     public void before () throws Exception {
         Path opencgaHome = AnalysisStorageTestUtil.isolateOpenCGA();
 
@@ -116,6 +118,36 @@ public class VariantStorageTest {
 
     }
 
+    public void beforeAggregated (String fileName, VariantSource.Aggregation aggregation) throws Exception {
+        Path opencgaHome = AnalysisStorageTestUtil.isolateOpenCGA();
+
+        catalogPropertiesFile = opencgaHome.resolve("conf").resolve("catalog.properties").toString();
+        Properties catalogProperties = Config.getCatalogProperties();
+        CatalogManagerTest.clearCatalog(catalogProperties);
+        clearDB(dbName);
+
+        catalogManager = new CatalogManager(catalogProperties);
+        fileMetadataReader = FileMetadataReader.get(catalogManager);
+        catalogFileUtils = new CatalogFileUtils(catalogManager);
+
+        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
+        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
+        projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null,
+                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
+                Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), aggregation),
+                null, sessionId).first().getId();
+        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        File file1 = create(fileName);
+
+//        coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
+
+        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        runStorageJob(analysisFileIndexer.index(file1.getId(), outputId, sessionId, queryOptions).first(), sessionId);
+    }
+    
     private void clearDB(String dbName) {
         logger.info("Cleaning MongoDB {}" , dbName);
         MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
@@ -138,6 +170,8 @@ public class VariantStorageTest {
 
     @Test
     public void testCalculateStatsOneByOne() throws Exception {
+        before();
+        
         VariantStorage variantStorage = new VariantStorage(catalogManager);
         Map<String, Cohort> cohorts = new HashMap<>();
 
@@ -165,6 +199,8 @@ public class VariantStorageTest {
 
     @Test
     public void testCalculateStatsGroups() throws Exception {
+        before();
+        
         VariantStorage variantStorage = new VariantStorage(catalogManager);
         Map<String, Cohort> cohorts = new HashMap<>();
 
@@ -193,6 +229,8 @@ public class VariantStorageTest {
 
     @Test
     public void testCalculateStats() throws Exception {
+        before();
+        
         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
         assertEquals(Cohort.Status.NONE, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
@@ -220,7 +258,59 @@ public class VariantStorageTest {
         checkCalculatedStats(cohorts);
     }
 
+    @Test
+    public void testCalculateAggregatedStats() throws Exception {
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
 
+        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        Map<String, Cohort> cohorts = new HashMap<>();
+
+        runStorageJob(
+                variantStorage.calculateStats(
+                        outputId,
+                        Arrays.asList(catalogManager.getAllCohorts(studyId, null, sessionId).first().getId()),
+                        sessionId,
+                        new QueryOptions(
+                                AnalysisFileIndexer.PARAMETERS,
+                                "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile
+                        )
+                ).first(),
+                sessionId
+        );
+
+        cohorts.put(VariantSourceEntry.DEFAULT_COHORT, new Cohort());
+//        cohorts.put("all", null);
+        checkCalculatedAggregatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
+    }
+
+    @Test
+    public void testCalculateAggregatedExacStats() throws Exception {
+        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+
+        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        Map<String, Cohort> cohorts = new HashMap<>();
+
+        String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
+        runStorageJob(
+                variantStorage.calculateStats(
+                        outputId,
+                        Arrays.asList(catalogManager.getAllCohorts(studyId, null, sessionId).first().getId()),
+                        sessionId,
+                        new QueryOptions(
+                                AnalysisFileIndexer.PARAMETERS,
+                                "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile
+                        ).append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap)
+                ).first(),
+                sessionId
+        );
+
+        Properties tagMapProperties = new Properties();
+        tagMapProperties.load(new FileInputStream(tagMap));
+        for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagMapProperties)) {
+            cohorts.put(cohortName, new Cohort());
+        }
+        checkCalculatedAggregatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
+    }
 //    @Test
 //    public void testAnnotateVariants() throws Exception {
 //
@@ -251,6 +341,23 @@ public class VariantStorageTest {
         }
     }
 
+    public static void checkCalculatedAggregatedStats(Map<String, Cohort> cohorts, String dbName, String catalogPropertiesFile, String sessionId) throws Exception {
+        StorageConfiguration storageConfiguration = StorageConfiguration.load();
+        storageConfiguration.getStorageEngine().getVariant().getOptions()
+                .append(CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE, catalogPropertiesFile)
+                .append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key(), CatalogStudyConfigurationManager.class.getName())
+                .append("sessionId", sessionId);
+        VariantDBAdaptor dbAdaptor = new StorageManagerFactory(storageConfiguration).getVariantStorageManager().getDBAdaptor(dbName);
+
+        for (Variant variant : dbAdaptor) {
+            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
+                assertEquals(cohorts.size(), sourceEntry.getCohortStats().size());
+                for (Map.Entry<String, VariantStats> entry : sourceEntry.getCohortStats().entrySet()) {
+                    assertTrue(cohorts.containsKey(entry.getKey()));
+                }
+            }
+        }
+    }
     /**
      * Do not execute Job using its command line, won't find the opencga-storage.sh
      * Call directly to the OpenCGAStorageMain
