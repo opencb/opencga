@@ -23,6 +23,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -773,7 +775,10 @@ public class OpenCGAMain {
                         }
 
                         if (cohorts.isEmpty()) {
-
+                            if (c.tagmap != null) {
+                                List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
+                                System.out.println(createOutput(c.cOpt, queryResults, null));
+                            }
                         } else {
                             List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
@@ -914,6 +919,23 @@ public class OpenCGAMain {
 
         return returnValue;
     }
+
+    private static List<QueryResult<Cohort>> createCohorts(String sessionId, int studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
+        List<QueryResult<Cohort>> queryResults = new ArrayList<>();
+        Properties tagmap = new Properties();
+        tagmap.load(new FileInputStream(tagmapPath));
+        Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
+        for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
+            if (!catalogCohorts.contains(cohortName)) {
+                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.<Integer>emptyList(), null, sessionId);
+                queryResults.add(cohort);
+            } else {
+                logger.warn("cohort {} was already created", cohortName);
+            }
+        }
+        return queryResults;
+    }
+
 
     private Map<File.Bioformat, DataStore> parseBioformatDataStoreMap(OptionsParser.StudyCommands.CreateCommand c) throws Exception {
         Map<File.Bioformat, DataStore> dataStoreMap;

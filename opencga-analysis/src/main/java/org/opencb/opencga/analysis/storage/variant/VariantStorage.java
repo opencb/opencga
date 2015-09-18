@@ -163,16 +163,6 @@ public class VariantStorage {
                 .getOrDefault(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE).toString());
         if (VariantSource.Aggregation.isAggregated(studyAggregation)
                 && options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
-            Properties tagMap = new Properties();
-            tagMap.load(new FileInputStream(options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())));
-            Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
-            for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagMap)) {
-                if (!catalogCohorts.contains(cohortName)) {
-                    catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.<Integer>emptyList(), null, sessionId);
-                    logger.debug("creating cohort {}", cohortName);
-                }
-            }
-            logger.debug("ended creating cohorts");
             sb.append(" --aggregation-mapping-file ")
                     .append(options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key()));
         }

@@ -796,6 +796,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
             Cohort.Type type;
+
+            @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
+            String tagmap = null;
         }
 
         @Parameters(commandNames = {SamplesCommand.COMMAND_NAME}, commandDescription = "List samples belonging to a cohort")
