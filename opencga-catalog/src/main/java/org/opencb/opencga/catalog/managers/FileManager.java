@@ -181,11 +181,17 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     public static List<String> getParentPaths(String filePath) {
         String path = "";
-        List<String> paths = new ArrayList<>(10);
-        paths.add("");  //Add root
-        for (String f : filePath.split("/")) {
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
             paths.add(path = path + f + "/");
         }
+        paths.add(filePath); //Add the file path
         return paths;
     }
 
