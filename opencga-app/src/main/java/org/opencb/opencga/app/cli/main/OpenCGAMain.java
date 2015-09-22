@@ -23,6 +23,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -1176,6 +1179,12 @@ public class OpenCGAMain {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        rootLogger.setLevel(Level.toLevel(logLevel));
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 
