@@ -590,6 +590,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkReadJob(String userId, Job job) throws CatalogException {
         try {
+            if (job.getOutput() == null || job.getInput() == null) {
+                job = readJob(job.getId());
+            }
             for (Integer fileId : job.getOutput()) {
                 checkFilePermission(fileId, userId, CatalogPermission.READ);
             }
@@ -604,6 +607,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkReadCohort(String userId, Cohort cohort) throws CatalogException {
         try {
+            if (cohort.getSamples() == null) {
+                cohort = sampleDBAdaptor.getCohort(cohort.getId()).first();
+            }
             for (Integer sampleId : cohort.getSamples()) {
                 checkSamplePermission(sampleId, userId, CatalogPermission.READ);
             }
