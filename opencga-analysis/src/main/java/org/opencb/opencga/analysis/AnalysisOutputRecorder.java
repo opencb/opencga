@@ -73,6 +73,10 @@ public class AnalysisOutputRecorder {
             List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
             List<Integer> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+            if (!ioManager.exists(tmpOutDirUri)) {
+                logger.warn("Output folder doesn't exist");
+                return;
+            }
             List<URI> uriList = ioManager.listFiles(tmpOutDirUri);
             if (uriList.isEmpty()) {
                 ioManager.deleteDirectory(tmpOutDirUri);
