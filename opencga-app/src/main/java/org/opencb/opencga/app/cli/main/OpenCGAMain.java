@@ -148,6 +148,9 @@ public class OpenCGAMain {
         } else {
             try {
                 System.exit(opencgaMain.runCommand(optionsParser));
+            } catch (RuntimeException e) {
+                logger.error(e.getMessage(), e);
+                System.exit(1);
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
