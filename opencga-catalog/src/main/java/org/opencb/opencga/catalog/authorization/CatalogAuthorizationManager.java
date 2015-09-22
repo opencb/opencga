@@ -575,6 +575,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private Job readJob(int jobId) throws CatalogDBException {
         return jobDBAdaptor.getJob(jobId, new QueryOptions("include",
                 Arrays.asList("projects.studies.jobs.id",
+                        "projects.studies.jobs.status",
                         "projects.studies.jobs.input",
                         "projects.studies.jobs.output",
                         "projects.studies.jobs.outDirId")
@@ -584,17 +585,26 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkReadJob(String userId, int jobId) throws CatalogException {
-        checkReadJob(userId, readJob(jobId));
+        _checkReadJob(userId, readJob(jobId));
     }
 
     @Override
     public void checkReadJob(String userId, Job job) throws CatalogException {
-        try {
-            if (job.getOutput() == null || job.getInput() == null) {
+            //If the given job does not contain the required fields, query Catalog
+            //Only non READY or ERROR jobs can have null output files
+            if ((job.getOutput() == null && (job.getStatus() == null || !job.getStatus().equals(Job.Status.READY) || !job.getStatus().equals(Job.Status.ERROR)))
+                    || job.getInput() == null) {
                 job = readJob(job.getId());
             }
-            for (Integer fileId : job.getOutput()) {
-                checkFilePermission(fileId, userId, CatalogPermission.READ);
+            _checkReadJob(userId, job);
+    }
+
+    private void _checkReadJob(String userId, Job job) throws CatalogException {
+        try {
+            if (job.getOutput() != null) {
+                for (Integer fileId : job.getOutput()) {
+                    checkFilePermission(fileId, userId, CatalogPermission.READ);
+                }
             }
             for (Integer fileId : job.getInput()) {
                 checkFilePermission(fileId, userId, CatalogPermission.READ);
