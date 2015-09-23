@@ -846,7 +846,18 @@ public class OpenCGAMain {
 
                         /** Record output **/
                         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                        outputRecorder.recordJobOutput(job, c.error);
+                        if (c.discardOutput) {
+                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+                            if (ioManager.exists(job.getTmpOutDirUri())) {
+                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
+                                ioManager.deleteDirectory(job.getTmpOutDirUri());
+                            } else {
+                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
+                            }
+                        } else {
+                            outputRecorder.recordJobOutput(job);
+                        }
+                        outputRecorder.postProcessJob(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();

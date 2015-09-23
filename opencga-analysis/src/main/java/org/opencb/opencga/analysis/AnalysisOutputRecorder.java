@@ -61,7 +61,17 @@ public class AnalysisOutputRecorder {
         this.sessionId = sessionId;
     }
 
-    public void recordJobOutput(Job job, boolean jobFailed) {
+    public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) {
+        recordJobOutput(job);
+
+        /** Modifies the job to set the output and endTime. **/
+        try {
+            postProcessJob(job, jobFailed);
+        } catch (CatalogException e) {
+            e.printStackTrace(); //TODO: Handle exception
+        }
+    }
+    public void recordJobOutput(Job job) {
 
         try {
             /** Scans the output directory from a job or index to find all files. **/
@@ -94,15 +104,6 @@ public class AnalysisOutputRecorder {
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
             logger.error("Error while processing Job", e);
-            return;
-        }
-
-
-        /** Modifies the job to set the output and endTime. **/
-        try {
-            postProcessJob(job, jobFailed);
-        } catch (CatalogException e) {
-            e.printStackTrace(); //TODO: Handle exception
         }
     }
 
