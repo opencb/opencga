@@ -16,25 +16,22 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.LoggerFactory;
 
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.FILEID_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.GENOTYPES_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.STUDYID_FIELD;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.*;
 
 /**
  *
@@ -43,10 +40,11 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSource
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
     public static final String UNKNOWN_GENOTYPE = "?/?";
+    @Deprecated public static final List<String> OTHER_FIELDS = Arrays.asList("GQX", "DP");   //TODO: Save this information on the StudyConfiguration
+    public static final Object UNKNOWN_FIELD = -1;
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
-    private final Map<Integer, Map<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
-    private final Map<Integer, Map<Integer, String>> __studyIdSamples; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
+    private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private Set<String> returnedSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
@@ -61,7 +59,6 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     DBObjectToSamplesConverter() {
         studyConfigurations = new HashMap<>();
         __studySamplesId = new HashMap<>();
-        __studyIdSamples = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
         returnedSamples = new HashSet<>();
         studyConfigurationManager = null;
@@ -166,17 +163,18 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         if (UNKNOWN_GENOTYPE.equals(mostCommonGtString)) {
             mostCommonGtString = returnedUnknownGenotype;
         }
-        if (mostCommonGtString != null) {
-            for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
-                entry.getValue().put("GT", mostCommonGtString);
-            }
+        if (mostCommonGtString == null) {
+            mostCommonGtString = UNKNOWN_GENOTYPE;
+        }
+        for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
+            entry.getValue().put("GT", mostCommonGtString);
         }
 
         // Loop through the non-most commmon genotypes, and set their defaultValue
         // in the position specified in the array, such as:
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
-        Map idSamples = getIndexedIdSamplesMap(studyId);
+        Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
         for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
             final String genotype;
             if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
@@ -198,17 +196,41 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
         }
 
+        final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+        for (String callField : OTHER_FIELDS) {
+            List values = (List) object.get(callField.toLowerCase());
+
+            for (int i = 0; i < values.size(); i++) {
+                Object value = values.get(i);
+                String sampleName = samplesPosition.get(i);
+                samplesData.get(sampleName).put(callField, value.toString());
+            }
+        }
+
         return samplesData;
     }
 
-    //    @Override
+    @Deprecated
     public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId) {
+        int fileId = 0;
+
+        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        Integer sampleId = studyConfiguration.getSampleIds().get(object.entrySet().iterator().next().getKey());
+        for (Map.Entry<Integer, Set<Integer>> fileSampleIds : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (fileSampleIds.getValue().contains(sampleId)) {
+                fileId = fileSampleIds.getKey();
+            }
+        }
+
+        return convertToStorageType(object, studyId, fileId);
+    }
+
+    public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId, int fileId) {
         Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
 
-//        Integer studyId = Integer.parseInt(object.getStudyId());
-//        Integer studyId = Integer.parseInt(studyIdStr);
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        Map<String, Integer> sampleIds = studyConfiguration.getSampleIds();
+
+        HashBiMap<String, Integer> sampleIds = HashBiMap.create(studyConfiguration.getSampleIds());
         // Classify samples by genotype
         for (Map.Entry<String, Map<String, String>> sample : object.entrySet()) {
             String genotype = sample.getValue().get("GT");
@@ -233,11 +255,49 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ],
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
+        BasicDBObject mongoGenotypes = new BasicDBObject();
         for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
             String genotypeStr = genotypeToStorageType(entry.getKey().toString());
             if (!defaultGenotype.contains(entry.getKey())) {
-                mongoSamples.append(genotypeStr, entry.getValue());
+                mongoGenotypes.append(genotypeStr, entry.getValue());
             }
+        }
+        mongoSamples.append(GENOTYPES_FIELD, mongoGenotypes);
+
+
+        //Position for samples in this file
+        //TODO: Ensure samples position
+        final BiMap<String, Integer> samplesPosition = HashBiMap.create();
+        int position = 0;
+        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+            samplesPosition.put(studyConfiguration.getSampleIds().inverse().get(sampleId), position++);
+        }
+
+
+
+        for (String callField : OTHER_FIELDS) {
+            List<Object> values = new ArrayList<>(samplesPosition.size());
+            for (int size = samplesPosition.size(); size > 0; size--) {
+                values.add(UNKNOWN_FIELD);
+            }
+            for (Map.Entry<String, Map<String, String>> sampleMapEntry : object.entrySet()) {
+                if (sampleMapEntry.getValue().containsKey(callField)) {
+                    Integer index = samplesPosition.get(sampleMapEntry.getKey());
+                    Object value;
+                    String stringValue = sampleMapEntry.getValue().get(callField);
+                    try {
+                        value = Integer.parseInt(stringValue);
+                    } catch (NumberFormatException e) {
+                        try {
+                            value = Double.parseDouble(stringValue);
+                        } catch (NumberFormatException e2) {
+                            value = stringValue;
+                        }
+                    }
+                    values.set(index, value);
+                }
+            }
+            mongoSamples.append(callField.toLowerCase(), values);
         }
 
         return mongoSamples;
@@ -263,13 +323,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     public void setReturnedSamples(Set<String> returnedSamples) {
         this.returnedSamples = returnedSamples;
-        __studyIdSamples.clear();
         __studySamplesId.clear();
     }
 
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
-        this.__studyIdSamples.put(studyConfiguration.getStudyId(), null);
         this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
 
         Set defGenotypeSet = studyConfiguration.getAttributes().get(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Set.class);
@@ -295,37 +353,18 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
     /**
-     * Lazy usage of idSamplesMap. Only inverts map if required
-     *
-     * @return  Inverts map "sampleIds". From Map<SampleName, SampleId> to Map<SampleId, SampleName>
-     */
-    private Map getIndexedIdSamplesMap(int studyId) {
-        Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
-        if (this.__studyIdSamples.get(studyId) == null) {
-            Map<Integer, String> idSamples = StudyConfiguration.inverseMap(sampleIds);
-            this.__studyIdSamples.put(studyId, idSamples);
-        }
-
-        Map<Integer, String> idSamples = this.__studyIdSamples.get(studyId);
-        if(sampleIds.size() != idSamples.size()) {
-            throw new IllegalStateException("Invalid sample ids map. SampleIDs must be unique.");
-        }
-        return idSamples;
-    }
-
-    /**
      * Lazy usage of loaded samplesIdMap.
      **/
-    private Map<String, Integer> getIndexedSamplesIdMap(int studyId) {
-        Map<String, Integer> sampleIds;
+    private BiMap<String, Integer> getIndexedSamplesIdMap(int studyId) {
+        final BiMap<String, Integer> sampleIds;
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
             if (!returnedSamples.isEmpty()) {
-                sampleIds = sampleIds.entrySet().stream()
+                sampleIds.entrySet().stream()
                         //ReturnedSamples could be sampleNames or sampleIds as a string
-                        .filter(e -> returnedSamples.contains(e.getKey()) || returnedSamples.contains(e.getValue().toString()))
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                        .filter(e -> !returnedSamples.contains(e.getKey()) && !returnedSamples.contains(e.getValue().toString()))
+                        .forEach(stringIntegerEntry -> sampleIds.remove(stringIntegerEntry.getKey()));
             }
             this.__studySamplesId.put(studyId, sampleIds);
         } else {

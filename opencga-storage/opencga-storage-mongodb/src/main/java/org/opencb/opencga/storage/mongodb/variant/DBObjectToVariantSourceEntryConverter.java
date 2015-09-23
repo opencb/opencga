@@ -18,16 +18,17 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import java.io.IOException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -170,7 +171,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
 //            file.setFormat((String) fileObject.get(FORMAT_FIELD));
 //        } else {
-            file.setFormat("GT");
+        String others = DBObjectToSamplesConverter.OTHER_FIELDS.stream().collect(Collectors.joining(":"));
+        file.setFormat("GT" + (others.isEmpty() ? "" : ":" + others));
 //        }
 
         // Samples
@@ -262,7 +264,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
 //            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
+            mongoFile.putAll(samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
         }
 
 

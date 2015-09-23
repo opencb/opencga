@@ -310,7 +310,7 @@ public class StudyConfiguration implements Cloneable {
         return sampleIds;
     }
 
-    public static BiMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration, int fileId) {
+    public static BiMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
         BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
         int position = 0;
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
@@ -319,8 +319,10 @@ public class StudyConfiguration implements Cloneable {
                 samplesPosition.put(idSamples.get(sampleId), position++);
             }
         }
-        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-            samplesPosition.put(idSamples.get(sampleId), position++);
+        for (int fileId : fileIds) {
+            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                samplesPosition.put(idSamples.get(sampleId), position++);
+            }
         }
         return samplesPosition;
     }
