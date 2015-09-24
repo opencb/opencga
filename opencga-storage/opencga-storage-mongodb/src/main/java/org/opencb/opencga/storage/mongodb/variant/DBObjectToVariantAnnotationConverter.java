@@ -201,7 +201,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         va.setPopulationFrequencies(populationFrequencies);
 
         // Drug-Gene Interactions
-        Map<String, List<GeneDrugInteraction>> drugGeneInteractionMap = new HashMap<>();
         List<GeneDrugInteraction> drugs = new LinkedList<>();
         if(object.containsField(DRUG_FIELD)) {
             List<DBObject> list = (List) object.get(DRUG_FIELD);
@@ -212,9 +211,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                         getDefault(dbObject, DRUG_SOURCE_FIELD, ""), ""));  // "convertToStorageType" stores the study_type within the DRUG_SOURCE_FIELD
 
             }
-            drugGeneInteractionMap.put("dgidb", drugs);
         }
-        va.setGeneDrugInteraction(drugGeneInteractionMap);
+        va.setGeneDrugInteraction(drugs);
 
         //XREfs
         List<Xref> xrefs = new LinkedList<>();
@@ -323,9 +321,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     putNotNull(ct, AA_REFERENCE_FIELD, consequenceType.getProteinVariantAnnotation().getReference());
                     putNotNull(ct, AA_ALTERNATE_FIELD, consequenceType.getProteinVariantAnnotation().getAlternate());
                     //Protein substitution region score
-                    if (consequenceType.getProteinVariantAnnotation().getProteinSubstitutionScores() != null) {
+                    if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
                         List<DBObject> proteinSubstitutionScores = new LinkedList<>();
-                        for (Score score : consequenceType.getProteinVariantAnnotation().getProteinSubstitutionScores()) {
+                        for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                             if (score != null) {
                                 if (score.getSource().equals("polyphen")) {
                                     putNotNull(ct, POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
@@ -381,7 +379,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         // Drug-Gene Interactions
         if (variantAnnotation.getGeneDrugInteraction() != null) {
             List<DBObject> drugGeneInteractions = new LinkedList<>();
-            List<GeneDrugInteraction> geneDrugInteractionList = variantAnnotation.getGeneDrugInteraction().get("dgidb");
+            List<GeneDrugInteraction> geneDrugInteractionList = variantAnnotation.getGeneDrugInteraction();
             if (geneDrugInteractionList != null) {
                 for (GeneDrugInteraction geneDrugInteraction : geneDrugInteractionList) {
                     DBObject drugDbObject = new BasicDBObject(GENE_NAME_FIELD, geneDrugInteraction.getGeneName());
@@ -402,33 +400,34 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         putNotNull(dbObject, XREFS_FIELD, xrefs);
 
         //Clinical Data
+        BasicDBObject clinicalDBObject = new BasicDBObject();
         if(variantAnnotation.getVariantTraitAssociation()!=null) {
-            BasicDBObject clinicalDBObject = new BasicDBObject();
-            if(variantAnnotation.getVariantTraitAssociation().getCosmicList()!=null) {
-                putNotNull(clinicalDBObject, COSMIC_FIELD,
+            putNotNull(clinicalDBObject, COSMIC_FIELD,
                         generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmicList()));
-            }
-
+            putNotNull(clinicalDBObject, GWAS_FIELD,
+                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwasList()));
+            putNotNull(clinicalDBObject, CLINVAR_FIELD,
+                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvarList()));
         }
+        putNotNull(dbObject, CLINICAL_DATA_FIELD, clinicalDBObject);
 
         return dbObject;
     }
 
-    private BasicDBObject generateClinicalDBList(List<T> objectList) {
-        if (variantTraitAssociation != null) {
-            if(variantTraitAssociation.getCosmicList()!=null) {
-                List<DBObject> cosmicData = new LinkedList<>();
-                for (Map.Entry<String, Object> entry : variantAnnotation.getClinical().entrySet()) {
-                    if (entry.getValue() != null) {
-                        try {
-                            clinicalData.add(new BasicDBObject(entry.getKey(), JSON.parse(writer.writeValueAsString(entry.getValue()))));
-                        } catch (JsonProcessingException e) {
-                            e.printStackTrace();
-                            logger.error("Error serializing Clinical Data " + entry.getValue().getClass(), e);
-                        }
-                    }
+    private <T> BasicDBList generateClinicalDBList(List<T> objectList) {
+        BasicDBList basicDBList = new BasicDBList();
+        if (objectList != null) {
+            for(T object : objectList) {
+                try {
+                    basicDBList.add(JSON.parse(writer.writeValueAsString(object)));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                    logger.error("Error serializing Clinical Data " + object.getClass(), e);
                 }
+            }
+            return basicDBList;
         }
+        return null;
     }
 
     private DBObject convertScoreToStorage(Score score) {
