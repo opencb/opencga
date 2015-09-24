@@ -302,9 +302,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             final Path finalOutputFileJsonFile = outputFileJsonFile;
             ParallelTaskRunner<String, String> ptr;
             try {
+                VariantJsonTransformTask variantJsonTransformTask = new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
+                variantJsonTransformTask.setIncludeSrc(includeSrc);
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
-                        new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile),
+                        variantJsonTransformTask,
                         dataWriter,
                         new ParallelTaskRunner.Config(numThreads, batchSize, capacity, false)
                 );

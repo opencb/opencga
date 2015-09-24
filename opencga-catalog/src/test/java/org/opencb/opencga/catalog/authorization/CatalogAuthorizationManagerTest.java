@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -29,7 +30,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogAuthorizationManagerTest {
+public class CatalogAuthorizationManagerTest extends GenericTest {
 
     private final String ownerUser = "owner";
     private final String studyAdminUser1 = "studyAdmin1";

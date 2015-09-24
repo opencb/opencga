@@ -203,7 +203,8 @@ public class CatalogFileUtilsTest {
                 assertTrue(f.getUri() == null);
             }
         }
-        assertTrue(!Paths.get(catalogManager.getStudyUri(studyId).resolve(folder.getName())).toFile().exists());
+        URI folderUri = catalogManager.getStudyUri(studyId).resolve(folder.getName());
+        assertTrue("folderUri " + folderUri + " shouldn't exist", !Paths.get(folderUri).toFile().exists());
 
         //Delete folder. Should trash everything.
         catalogManager.deleteFolder(folder.getId(), userSessionId);
