@@ -81,7 +81,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration.getSampleIds().put("NA19661", 3);
         studyConfiguration.getSampleIds().put("NA19685", 4);
         studyConfiguration.getFileIds().put(inputFile, fileId1);
-        studyConfiguration.getSamplesInFiles().put(fileId1, new HashSet<>(Arrays.asList(1, 2, 3, 4)));
+        studyConfiguration.getSamplesInFiles().put(fileId1, new LinkedHashSet(Arrays.asList(1, 2, 3, 4)));
 
         source2 = new VariantSource(inputFile, fileId2.toString(), studyId2.toString(), studyName2);
         studyConfiguration2 = new StudyConfiguration(studyId2, studyName2);
@@ -90,7 +90,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration2.getSampleIds().put("NA19661", 3);
         studyConfiguration2.getSampleIds().put("NA19685", 4);
         studyConfiguration2.getFileIds().put(inputFile, fileId2);
-        studyConfiguration2.getSamplesInFiles().put(fileId2, new HashSet<>(Arrays.asList(1, 2, 3, 4)));
+        studyConfiguration2.getSamplesInFiles().put(fileId2, new LinkedHashSet(Arrays.asList(1, 2, 3, 4)));
 
         source3 = new VariantSource("unreadl.vcf", fileId3.toString(), studyId2.toString(), studyName2);
         studyConfiguration2.getSampleIds().put("NA00001.X", 5);
@@ -98,7 +98,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration2.getSampleIds().put("NA00003.X", 7);
         studyConfiguration2.getSampleIds().put("NA00004.X", 8);
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
-        studyConfiguration2.getSamplesInFiles().put(fileId3, new HashSet<>(Arrays.asList(5, 6, 7, 8)));
+        studyConfiguration2.getSamplesInFiles().put(fileId3, new LinkedHashSet(Arrays.asList(5, 6, 7, 8)));
 
         dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageManagerTestUtils.DB_NAME);
     }
@@ -154,6 +154,8 @@ public class VariantMongoDBWriterTest {
     @Test
     public void testInsertMultiFiles() throws StorageManagerException {
         List<Variant> allVariants;
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS, Arrays.asList("GQX", "DP"));
+        studyConfiguration2.getAttributes().put(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS, Arrays.asList("DP", "GQX"));
 
         loadFile1();
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();

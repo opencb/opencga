@@ -39,9 +39,9 @@ public class StudyConfiguration implements Cloneable {
     private BiMap<String, Integer> cohortIds;
     private Map<Integer, Set<Integer>> cohorts;
 
-    private Set<Integer> indexedFiles;
+    private LinkedHashSet<Integer> indexedFiles;    //Use LinkedHashSet instead of Set to ensure indexing order
     private Map<Integer, String> headers;
-    private Map<Integer, Set<Integer>> samplesInFiles;
+    private Map<Integer, LinkedHashSet<Integer>> samplesInFiles; //Use LinkedHashSet instead of Set to ensure sample order
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
@@ -187,11 +187,11 @@ public class StudyConfiguration implements Cloneable {
         this.cohorts = cohorts;
     }
 
-    public Set<Integer> getIndexedFiles() {
+    public LinkedHashSet<Integer> getIndexedFiles() {
         return indexedFiles;
     }
 
-    public void setIndexedFiles(Set<Integer> indexedFiles) {
+    public void setIndexedFiles(LinkedHashSet<Integer> indexedFiles) {
         this.indexedFiles = indexedFiles;
     }
 
@@ -203,11 +203,11 @@ public class StudyConfiguration implements Cloneable {
         this.headers = headers;
     }
 
-    public Map<Integer, Set<Integer>> getSamplesInFiles() {
+    public Map<Integer, LinkedHashSet<Integer>> getSamplesInFiles() {
         return samplesInFiles;
     }
 
-    public void setSamplesInFiles(Map<Integer, Set<Integer>> samplesInFiles) {
+    public void setSamplesInFiles(Map<Integer, LinkedHashSet<Integer>> samplesInFiles) {
         this.samplesInFiles = samplesInFiles;
     }
 
@@ -300,7 +300,7 @@ public class StudyConfiguration implements Cloneable {
     public static BiMap<String, Integer> getIndexedSamples(StudyConfiguration studyConfiguration) {
         BiMap<Integer, String> idSample = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
         BiMap<String, Integer> sampleIds = HashBiMap.create();
-        for (BiMap.Entry<Integer, Set<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
             if (studyConfiguration.getIndexedFiles().contains(entry.getKey())) {
                 for (Integer sampleId : entry.getValue()) {
                     sampleIds.put(idSample.get(sampleId), sampleId);

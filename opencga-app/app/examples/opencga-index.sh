@@ -11,26 +11,28 @@ export OPENCGA_HOME=`cd "$PRGDIR/.." >/dev/null; pwd`
 export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
 
 
-export user=admin
-export password=admin
-export project_alias=1000g
-export study_alias=ph1
-export uri_arg=""
-export study_uri=""
+user=admin
+password=admin
+project_alias=1000g
+study_alias=ph1
+uri_arg=""
+study_uri=""
 
-export transform_file=false
-export pedigree_file=false
-export enqueue=""
-export log_level=info
-export input_files=()
-export input_files_len=0
+transform_file=false
+pedigree_file=false
+enqueue=""
+annotate=""
+calculateStats=""
+log_level=info
+input_files=()
+input_files_len=0
 
 function getFileId() {
     $OPENCGA_BIN files search --study-id $user@${project_alias}:${study_alias} -u $user -p $password --name $1 --output-format IDS --log-level ${log_level}
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:q" opt; do
+while getopts "htu:s:i:p:l:U:qac" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
@@ -42,6 +44,8 @@ while getopts "htu:s:i:p:l:U:q" opt; do
 	    echo "       -s study_alias : Study alias.  "
 	    echo "       -l log_level   : error, warn, info, debug  "
 	    echo "       -t             : Transform and Load in 2 steps  "
+	    echo "       -a             : Annotate database  "
+	    echo "       -c             : Calculate stats  "
 	    echo "       -U uri         : Study URI location "
 	    echo "       -q             : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
 	    #echo "       -             :   "
@@ -84,7 +88,15 @@ while getopts "htu:s:i:p:l:U:q" opt; do
 	    ;;
 	t)
 	    transform_file=true
-	    echo "Transforming file before load"
+	    echo "Transforming file before load in two different jobs"
+	    ;;
+	a)
+	    annotate="--annotate"
+	    echo "Annotating database before load"
+	    ;;
+	c)
+	    calculateStats="--calculate-stats"
+	    echo "Calculate stats over cohort ALL"
 	    ;;
 	q)
 	    enqueue="--enqueue"
@@ -142,10 +154,10 @@ for input_file in ${input_files[@]}; do
 
 		#Load file
 		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId $FILE_NAME".variants.json")
-		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load --annotate --calculate-stats
+		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue --annotate --calculate-stats
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done

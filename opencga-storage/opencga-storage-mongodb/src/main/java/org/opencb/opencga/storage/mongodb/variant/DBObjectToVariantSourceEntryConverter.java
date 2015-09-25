@@ -171,8 +171,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
 //            file.setFormat((String) fileObject.get(FORMAT_FIELD));
 //        } else {
-        String others = DBObjectToSamplesConverter.OTHER_FIELDS.stream().collect(Collectors.joining(":"));
-        file.setFormat("GT" + (others.isEmpty() ? "" : ":" + others));
+
 //        }
 
         // Samples
@@ -184,6 +183,10 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
             for (Map.Entry<String, Map<String, String>> sampleData : samplesData.entrySet()) {
                 file.addSampleData(sampleData.getKey(), sampleData.getValue());
             }
+
+            file.setFormat(samplesConverter.getFormat(studyId));
+        } else {
+            file.setFormat("");
         }
 
         return file;
@@ -264,7 +267,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
 //            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.putAll(samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
+            mongoFile.putAll(samplesConverter.convertToStorageType(object.getSamplesData(), studyId, fileId));
         }
 
 

@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.BiMap;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -82,6 +83,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String COLLECTION_STUDIES    = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
+    public static final String STORED_EXTRA_FIELDS = "storedExtraFields";
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
@@ -155,7 +157,17 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-        return super.preLoad(input, output);
+        URI uri = super.preLoad(input, output);
+
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        int fileId = options.getInt(Options.FILE_ID.key());
+
+        checkCanLoadSampleBatch(studyConfiguration, fileId);
+
+        return uri;
     }
 
     @Override
@@ -363,6 +375,63 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {
                 throw new StorageManagerException("Unable to build MongoStorageConfigurationManager", e);
+            }
+        }
+    }
+
+    /**
+     * Check if the samples from the selected file can be loaded.
+     *
+     * MongoDB storage plugin is not able to load batches of samples in a unordered way.
+     * A batch of samples is a group of samples of any size. It may be composed of one or several VCF files, depending
+     * on whether it is split by region (horizontally) or not.
+     * All the files from the same batch must be loaded, before loading the next batch. If a new batch of
+     * samples begins to be loaded, it won't be possible to load other files from previous batches
+     *
+     * The StudyConfiguration must be complete, with all the indexed files, and samples in files.
+     * Provided StudyConfiguration won't be modified
+     * Requirements:
+     *  - All samples in file must be or loaded or not loaded
+     *  - If all samples loaded, must match (same order and samples) with the last loaded file.
+     *
+     *
+     * @param studyConfiguration StudyConfiguration from the selected study
+     * @param fileId File to load
+     * @throws StorageManagerException If there is any unaccomplished requirement
+     */
+    public static void checkCanLoadSampleBatch(final StudyConfiguration studyConfiguration, int fileId) throws StorageManagerException {
+        LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+        if (!sampleIds.isEmpty()) {
+            boolean allSamplesRepeated = true;
+            boolean someSamplesRepeated = false;
+
+            BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+            for (Integer sampleId : sampleIds) {
+                if (!indexedSamples.containsValue(sampleId)) {
+                    allSamplesRepeated = false;
+                } else {
+                    someSamplesRepeated = true;
+                }
+            }
+
+            if (allSamplesRepeated) {
+                ArrayList<Integer> indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
+                if (!indexedFiles.isEmpty()) {
+                    int lastIndexedFile = indexedFiles.get(indexedFiles.size() - 1);
+                    //Check that are the same samples in the same order
+                    if (!new ArrayList<>(studyConfiguration.getSamplesInFiles().get(lastIndexedFile)).equals(new ArrayList<>(sampleIds))) {
+                        //ERROR
+                        if (studyConfiguration.getSamplesInFiles().get(lastIndexedFile).containsAll(sampleIds)) {
+                            throw new StorageManagerException("Unable to load this batch. Wrong samples order"); //TODO: Should it care?
+                        } else {
+                            throw new StorageManagerException("Unable to load this batch. Another sample batch has been loaded already.");
+                        }
+                    }
+                    //Ok, the batch of samples matches with the last loaded batch of samples.
+                }
+            } else if (someSamplesRepeated) {
+                //ERROR
+                throw new StorageManagerException("There was some already indexed samples, but not all of them. Unable to load in Storage-MongoDB");
             }
         }
     }

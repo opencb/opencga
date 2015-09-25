@@ -73,8 +73,20 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * @param defaultGenotype
      */
     public DBObjectToSamplesConverter(int studyId, List<String> samples, String defaultGenotype) {
+        this(studyId, null, samples, defaultGenotype);
+    }
+
+    /**
+     * Create a converter from DBObject to a Map of samples, providing the list
+     * of sample names.
+     *
+     * @param fileId
+     * @param samples The list of samples, if any
+     * @param defaultGenotype
+     */
+    public DBObjectToSamplesConverter(int studyId, Integer fileId, List<String> samples, String defaultGenotype) {
         this();
-        setSamples(studyId, samples);
+        setSamples(studyId, fileId, samples);
         studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
@@ -117,7 +129,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                     if(samplesBySource.getResult().isEmpty()) {
                         logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
                     } else {
-                        setSamples(studyId, (List<String>) samplesBySource.getResult().get(0));
+                        setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
                     }
                 }
             } else {
@@ -197,32 +209,20 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
         final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
-        for (String callField : OTHER_FIELDS) {
-            List values = (List) object.get(callField.toLowerCase());
+        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
+        for (String callField : otherCallFields) {
+            if (object.containsField(callField.toLowerCase())) {
+                List values = (List) object.get(callField.toLowerCase());
 
-            for (int i = 0; i < values.size(); i++) {
-                Object value = values.get(i);
-                String sampleName = samplesPosition.get(i);
-                samplesData.get(sampleName).put(callField, value.toString());
+                for (int i = 0; i < values.size(); i++) {
+                    Object value = values.get(i);
+                    String sampleName = samplesPosition.get(i);
+                    samplesData.get(sampleName).put(callField, value.toString());
+                }
             }
         }
 
         return samplesData;
-    }
-
-    @Deprecated
-    public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId) {
-        int fileId = 0;
-
-        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        Integer sampleId = studyConfiguration.getSampleIds().get(object.entrySet().iterator().next().getKey());
-        for (Map.Entry<Integer, Set<Integer>> fileSampleIds : studyConfiguration.getSamplesInFiles().entrySet()) {
-            if (fileSampleIds.getValue().contains(sampleId)) {
-                fileId = fileSampleIds.getKey();
-            }
-        }
-
-        return convertToStorageType(object, studyId, fileId);
     }
 
     public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId, int fileId) {
@@ -266,16 +266,15 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
 
         //Position for samples in this file
-        //TODO: Ensure samples position
-        final BiMap<String, Integer> samplesPosition = HashBiMap.create();
+        HashBiMap<String, Integer> samplesPosition = HashBiMap.create();
         int position = 0;
         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
             samplesPosition.put(studyConfiguration.getSampleIds().inverse().get(sampleId), position++);
         }
 
 
-
-        for (String callField : OTHER_FIELDS) {
+        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
+        for (String callField : otherCallFields) {
             List<Object> values = new ArrayList<>(samplesPosition.size());
             for (int size = samplesPosition.size(); size > 0; size--) {
                 values.add(UNKNOWN_FIELD);
@@ -304,20 +303,25 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
 
-    public void setSamples(int studyId, List<String> samples) {
+    public void setSamples(int studyId, Integer fileId, List<String> samples) {
         int i = 0;
         int size = samples == null? 0 : samples.size();
-        Map<String, Integer> sampleIds = new HashMap<>(size);
+        LinkedHashMap<String, Integer> sampleIdsMap = new LinkedHashMap<>(size);
+        LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(size);
         if (samples != null) {
             for (String sample : samples) {
-                sampleIds.put(sample, i);
+                sampleIdsMap.put(sample, i);
+                sampleIds.add(i);
                 i++;
             }
         }
         StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, "",
-                Collections.<String, Integer>emptyMap(), sampleIds,
+                Collections.<String, Integer>emptyMap(), sampleIdsMap,
                 Collections.<String, Integer>emptyMap(),
                 Collections.<Integer, Set<Integer>>emptyMap());
+        if (fileId != null) {
+            studyConfiguration.setSamplesInFiles(Collections.singletonMap(fileId, sampleIds));
+        }
         addStudyConfiguration(studyConfiguration);
     }
 
@@ -411,4 +415,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         return genotype.replace(".", "-1");
     }
 
+    public String getFormat(int studyId) {
+        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
+        String others = otherCallFields.stream().collect(Collectors.joining(":"));
+        if (others.isEmpty()) {
+            return "GT";
+        } else {
+            return "GT" + (":" + others);
+        }
+    }
 }

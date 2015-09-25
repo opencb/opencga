@@ -95,7 +95,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         sampleIds.put("NA003", 35);
         studyConfiguration.setSampleIds(sampleIds);
         studyConfiguration.getIndexedFiles().add(fileId);
-        studyConfiguration.getSamplesInFiles().put(fileId, new HashSet<>(sampleIds.values()));
+        studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet(new ArrayList<>(sampleIds.values())));
         studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton("0/0"));
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
@@ -199,7 +199,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, fileId,
-                new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
+                new DBObjectToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
         DBObject converted = converter.convertToStorageType(file);
         assertEquals(mongoStudy, converted);
     }
