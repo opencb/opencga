@@ -43,6 +43,19 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-ipc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-mapred</artifactId>
+            <classifier>hadoop2</classifier>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
@@ -53,7 +66,7 @@
         <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-hbase</artifactId>
-            <version>0.2.0</version>
+            <version>0.5.0-SNAPSHOT</version>
             <exclusions>
                 <!--<exclusion>-->
                     <!--<groupId>com.sun.jersey</groupId>-->
@@ -76,6 +89,13 @@
                     <!--<artifactId>slf4j-log4j12</artifactId>-->
                 <!--</exclusion>-->
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.mrunit</groupId>
+            <artifactId>mrunit</artifactId>
+            <version>1.1.0</version>
+            <classifier>hadoop2</classifier>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
