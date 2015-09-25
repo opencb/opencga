@@ -77,35 +77,6 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
 
     @Test
     public void deleteStatsTest() throws Exception {
-        //Calculate stats for 2 cohorts at one time
-        VariantStatisticsManager vsm = new VariantStatisticsManager();
-
-        Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        options.add(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
-        Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
-
-        /** Create cohorts **/
-        HashSet<String> cohort1 = new HashSet<>();
-        cohort1.add(iterator.next());
-        cohort1.add(iterator.next());
-
-        HashSet<String> cohort2 = new HashSet<>();
-        cohort2.add(iterator.next());
-        cohort2.add(iterator.next());
-
-        Map<String, Set<String>> cohorts = new HashMap<>();
-        Map<String, Integer> cohortIds = new HashMap<>();
-        cohorts.put("cohort1", cohort1);
-        cohorts.put("cohort2", cohort2);
-        cohortIds.put("cohort1", 10);
-        cohortIds.put("cohort2", 11);
-
-        //Calculate stats
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
-        vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
-
         String deletedCohort = "cohort2";
         dbAdaptor.deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
