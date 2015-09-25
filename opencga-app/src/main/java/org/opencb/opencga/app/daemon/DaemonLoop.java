@@ -32,9 +32,6 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
@@ -177,7 +174,7 @@ public class DaemonLoop implements Runnable {
                     switch (jobStatus) {
                         case DONE:
                             boolean jobOk = job.getError() == null || (job.getError() != null && job.getError().isEmpty());
-                            analysisOutputRecorder.recordJobOutput(job, !jobOk);
+                            analysisOutputRecorder.recordJobOutputAndPostProcess(job, !jobOk);
                             if (jobOk) {
                                 catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
                             } else {

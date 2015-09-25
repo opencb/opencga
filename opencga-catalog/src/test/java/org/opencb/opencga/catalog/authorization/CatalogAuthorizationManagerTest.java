@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -29,7 +30,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogAuthorizationManagerTest {
+public class CatalogAuthorizationManagerTest extends GenericTest {
 
     private final String ownerUser = "owner";
     private final String studyAdminUser1 = "studyAdmin1";
@@ -53,6 +54,7 @@ public class CatalogAuthorizationManagerTest {
     private int data_d1_d2;           // Forbidden for @admins
     private int data_d1_d2_d3;        // Forbidden for member
     private int data_d1_d2_d3_d4;     // Shared for @admins
+    private int data_d1_d2_d3_d4_txt; // Shared for member
     private int smp1;   // Shared with member
     private int smp2;   // Shared with studyAdmin1
     private int smp3;   // Shared with member
@@ -91,6 +93,7 @@ public class CatalogAuthorizationManagerTest {
         data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
+        data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", "file content".getBytes(), "", false, ownerSessionId).first().getId();
 
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
@@ -101,6 +104,7 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3_d4_txt, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
@@ -241,7 +245,7 @@ public class CatalogAuthorizationManagerTest {
     }
 
     @Test
-    public void readExplicitlySharedFile() throws CatalogException {
+    public void readExplicitlySharedFolder() throws CatalogException {
         catalogManager.getFile(data_d1, memberSessionId);
     }
 
@@ -268,6 +272,11 @@ public class CatalogAuthorizationManagerTest {
     public void readInheritedForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1_d2_d3_d4, memberSessionId);
+    }
+
+    @Test
+    public void readExplicitlySharedFile() throws CatalogException {
+        catalogManager.getFile(data_d1_d2_d3_d4_txt, memberSessionId);
     }
 
     @Test

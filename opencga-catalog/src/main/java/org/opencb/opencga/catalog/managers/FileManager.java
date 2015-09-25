@@ -100,7 +100,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public URI getFileUri(int studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
-        List<File> parents = getParents(false, null, filePath, studyId).getResult();
+        List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"), filePath, studyId).getResult();
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
@@ -164,7 +164,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
-        return getParents(read(fileId, null, sessionId).first(), true, options);
+        return getParents(true, options, read(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first().getPath(), getStudyId(fileId));
     }
 
     /**
@@ -181,11 +181,17 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     public static List<String> getParentPaths(String filePath) {
         String path = "";
-        List<String> paths = new ArrayList<>(10);
-        paths.add("");  //Add root
-        for (String f : filePath.split("/")) {
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
             paths.add(path = path + f + "/");
         }
+        paths.add(filePath); //Add the file path
         return paths;
     }
 

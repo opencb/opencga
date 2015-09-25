@@ -107,12 +107,15 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public VariantMongoDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         MongoCredentials credentials = getMongoCredentials(dbName);
         VariantMongoDBAdaptor variantMongoDBAdaptor;
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        if (dbName != null && !dbName.isEmpty()) {
+            options.append(Options.DB_NAME.key(), dbName);
+        }
 
         String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
-            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection, studyConfigurationManager);
         } catch (UnknownHostException e) {
             e.printStackTrace();

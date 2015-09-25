@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -118,4 +119,11 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         return queryResult;
     }
 
+    @Override
+    public List<String> getStudyNames(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+        List<Object> studyNames = coll.distinct("studyName", new BasicDBObject()).getResult();
+
+        return studyNames.stream().map(Object::toString).collect(Collectors.toList());
+    }
 }

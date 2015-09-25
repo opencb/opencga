@@ -23,6 +23,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -145,6 +148,9 @@ public class OpenCGAMain {
         } else {
             try {
                 System.exit(opencgaMain.runCommand(optionsParser));
+            } catch (RuntimeException e) {
+                logger.error(e.getMessage(), e);
+                System.exit(1);
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
@@ -840,7 +846,18 @@ public class OpenCGAMain {
 
                         /** Record output **/
                         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                        outputRecorder.recordJobOutput(job, c.error);
+                        if (c.discardOutput) {
+                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+                            if (ioManager.exists(job.getTmpOutDirUri())) {
+                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
+                                ioManager.deleteDirectory(job.getTmpOutDirUri());
+                            } else {
+                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
+                            }
+                        } else {
+                            outputRecorder.recordJobOutput(job);
+                        }
+                        outputRecorder.postProcessJob(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
@@ -1176,6 +1193,12 @@ public class OpenCGAMain {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        rootLogger.setLevel(Level.toLevel(logLevel));
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 

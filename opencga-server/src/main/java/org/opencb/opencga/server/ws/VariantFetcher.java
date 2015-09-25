@@ -85,6 +85,9 @@ public class VariantFetcher {
         if (fileIdNum != null) {
             query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIdNum);
         }
+        if (!query.containsKey(VariantDBAdaptor.VariantQueryParams.STUDIES.key())) {
+            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        }
 
 
         logger.debug("queryVariants = {}", query.toJson());

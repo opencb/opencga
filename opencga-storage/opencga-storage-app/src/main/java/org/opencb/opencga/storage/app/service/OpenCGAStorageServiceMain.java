@@ -45,6 +45,11 @@ public class OpenCGAStorageServiceMain {
 
         OptionParser.GeneralOptions opts = optionParser.getGeneralOptions();
 
+        if (opts.help) {
+            System.out.println(optionParser.usage());
+            return;
+        }
+
         //Get properties
         String propertyAppHome = System.getProperty("app.home");
         if (propertyAppHome != null) {

@@ -38,8 +38,6 @@ import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -49,7 +47,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AnalysisJobExecutor {
 
@@ -352,7 +349,7 @@ public class AnalysisJobExecutor {
 
         /** Record output **/
         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutput(job, com.getExitValue() != 0);
+        outputRecorder.recordJobOutputAndPostProcess(job, com.getExitValue() != 0);
 
         /** Change status to READY or ERROR **/
         if (com.getExitValue() == 0) {

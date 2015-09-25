@@ -961,11 +961,14 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
             int id;
 
-            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 1)
+            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
             boolean error;
 
-            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 1)
+            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 0)
             boolean force;
+
+            @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.", required = false, arity = 0)
+            boolean discardOutput;
         }
     }
 

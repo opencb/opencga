@@ -621,7 +621,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 return null;
             }
         }, queryOptions);
-        logger.info("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
+        logger.debug("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
 //        List<File> files = parseFiles(queryResult);
 
         return endQuery("Search File", startTime, queryResult);
