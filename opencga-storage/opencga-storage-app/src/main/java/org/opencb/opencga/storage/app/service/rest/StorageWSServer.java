@@ -16,16 +16,27 @@
 
 package org.opencb.opencga.storage.app.service.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
@@ -39,7 +50,7 @@ import java.util.List;
  * Created by jacobo on 23/10/14.
  */
 //@Path("/")
-public class DaemonServlet {
+public class StorageWSServer {
 
     private static final ObjectMapper jsonObjectMapper;
     private static final ObjectWriter jsonObjectWriter;
@@ -47,12 +58,21 @@ public class DaemonServlet {
     protected final String sessionIp;
     protected final UriInfo uriInfo;
     private final long startTime;
-    private final String version;
     protected QueryOptions queryOptions;
     protected MultivaluedMap<String, String> params;
 
     static {
         jsonObjectMapper = new ObjectMapper();
+
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
         jsonObjectWriter = jsonObjectMapper.writer();
     }
 
@@ -65,13 +85,17 @@ public class DaemonServlet {
     @QueryParam("metadata")
     protected Boolean metadata;
 
-    public DaemonServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    @DefaultValue("v1")
+    @QueryParam("version")
+    protected String version;
+
+    public StorageWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
         this.params = uriInfo.getQueryParameters();
 //        logger.debug(uriInfo.getRequestUri().toString());
-        this.queryOptions = new QueryOptions();
+        this.queryOptions = new QueryOptions(params, true);
         this.sessionIp = httpServletRequest.getRemoteAddr();
     }
 

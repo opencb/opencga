@@ -861,11 +861,12 @@ public class CatalogManagerTest extends GenericTest {
         fileId = catalogManager.getFileId("user@1000G:phase1:data/test/folder/test_1K.txt.gz");
         fileParents = catalogManager.getFileParents(fileId, null, sessionIdUser);
 
-        assertEquals(4, fileParents.getNumResults());
+        assertEquals(5, fileParents.getNumResults());
         assertEquals("", fileParents.getResult().get(0).getPath());
         assertEquals("data/", fileParents.getResult().get(1).getPath());
         assertEquals("data/test/", fileParents.getResult().get(2).getPath());
         assertEquals("data/test/folder/", fileParents.getResult().get(3).getPath());
+        assertEquals("data/test/folder/test_1K.txt.gz", fileParents.getResult().get(4).getPath());
     }
 
     @Test

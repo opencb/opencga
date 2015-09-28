@@ -31,9 +31,9 @@ import java.io.IOException;
  */
 
 @Path("/test")
-public class TestServlet extends DaemonServlet {
+public class TestWSServer extends StorageWSServer {
 
-    public TestServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
         System.out.println("Build TestServlet");
     }

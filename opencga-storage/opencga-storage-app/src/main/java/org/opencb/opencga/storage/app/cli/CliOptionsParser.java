@@ -354,9 +354,6 @@ public class CliOptionsParser {
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
 
-        @Parameter(names = {"--not-in-study"}, description = "A comma separated list of studies where the variant can not be present", required = false)
-        public String notInStudy;
-
         @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, ie. NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
         public String sampleGenotype;
 
@@ -372,19 +369,19 @@ public class CliOptionsParser {
         @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
         public String annot;
 
-        @Parameter(names = {"--consequence-type"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = " [CSV]", required = false, arity = 1)
         public String consequenceType;
 
         @Parameter(names = {"--biotype"}, description = " [CSV]", required = false, arity = 1)
         public String biotype;
 
-        @Parameter(names = {"--population-freqs"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--pf", "--population-frequency"}, description = " [CSV]", required = false, arity = 1)
         public String populationFreqs;
 
         @Parameter(names = {"--conservation"}, description = " [CSV]", required = false, arity = 1)
         public String conservation;
 
-        @Parameter(names = {"--protein-substitution"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
         public String proteinSubstitution;
 
         @Parameter(names = {"--gwas"}, description = "", required = false, arity = 1)
@@ -398,8 +395,32 @@ public class CliOptionsParser {
 
 
 
+        @Deprecated
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
+
+        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: --maf 1000g:all>0.4", required = false)
+        public String maf;
+
+        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: --maf 1000g:all<=0.4", required = false)
+        public String mgf;
+
+        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: --missing-allele 1000g:all=5", required = false)
+        public String missingAlleleCount;
+
+        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, example: --missing-genotype 1000g:all!=0", required = false)
+        public String missingGenotypeCount;
+
+
+        @Parameter(names = {"--dominant"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by dominant segregation, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        public String dominant;
+
+        @Parameter(names = {"--recessive"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by recessive segregation, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        public String recessive;
+
+        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by compound heterozygous, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        public String compoundHeterozygous;
+
 
         @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
         public String returnStudy;
@@ -407,7 +428,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
         public String returnSample;
 
-        @Parameter(names = {"--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
         public String outputFormat = "vcf";
 
     }
