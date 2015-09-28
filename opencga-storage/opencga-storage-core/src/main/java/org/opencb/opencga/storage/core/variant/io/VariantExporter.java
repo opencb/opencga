@@ -287,7 +287,7 @@ public class VariantExporter {
             }
         }
 
-        Set<String> ids = variant.getIds();
+        List<String> ids = variant.getIds();
 
         variantContextBuilder.start(originalPosition == null ? start : originalPosition)
                 .stop((originalPosition == null ? start : originalPosition) + (originalAlleles == null? allelesArray : originalAlleles).get(0).length() - 1)

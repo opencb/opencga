@@ -113,12 +113,13 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
                                 }
                             }
                         }
-                        String e = objectWriter.writeValueAsString(variant);
+//                        String e = objectWriter.writeValueAsString(variant);
+                        String e = variant.toJson();
                         outputBatch.add(e + "\n");
-                    } catch (IOException e) {
+                    } /*catch (IOException e) {
                         logger.error("Error parsing line: {}", line);
                         throw new IllegalStateException("Error parsing line: " + line , e);
-                    } catch (Exception e) {
+                    }*/ catch (Exception e) {
                         logger.error("Error parsing line: {}", line);
                         throw e;
                     }

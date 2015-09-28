@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.models.variation.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -147,7 +147,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
         return queryResult.getResult().stream()
-                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream().collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPop(), p -> p)))
+                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
+                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPop(), p -> p)))
                 .filter(predicate)
                 .count();
     }
@@ -159,7 +160,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(query, null);
         Variant variant = queryResult.first();
         assertEquals(1, queryResult.getNumResults());
-        assertEquals(variant.getStart(), 1650807);
+        assertEquals(variant.getStart(), Integer.valueOf(1650807));
         assertTrue(variant.getIds().contains("rs1137005"));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");

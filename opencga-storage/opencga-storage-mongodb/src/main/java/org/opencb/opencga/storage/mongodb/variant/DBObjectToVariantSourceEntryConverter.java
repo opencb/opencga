@@ -209,7 +209,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, fileId);
 
         // Alternate alleles
-        if (object.getSecondaryAlternates().length > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
+        if (object.getSecondaryAlternates().size() > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
             fileObject.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
         }
 
