@@ -18,6 +18,7 @@
 package org.opencb.opencga.analysis.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -30,6 +31,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +63,11 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private final String sessionId;
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
-    public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.alias","projects.studies.attributes." + STUDY_CONFIGURATION_FIELD));
+    public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList(
+            "projects.studies.alias",
+            "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD,
+            "projects.studies.attributes." + VariantStorageManager.Options.AGGREGATED_TYPE.key()
+    ));
     private final ObjectMapper objectMapper;
     private QueryOptions options;
 
@@ -137,6 +143,13 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
             studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
 
+            if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
+                logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
+                studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
+                        study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
+            }
+            logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation().toString());
+            
             Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
             if (o != null && o instanceof Map) {
                 if (((Long) ((Map) o).get("timeStamp")).equals(timeStamp)) {

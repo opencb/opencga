@@ -238,8 +238,17 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                     continue;
                 } else {
                     try {
-                        value = Double.parseDouble(stringValue);
-                    } catch (NumberFormatException ignore) {
+                        value = Integer.parseInt(stringValue);
+                    } catch (NumberFormatException notAnInt) {
+                        try {
+                            value = Long.parseLong(stringValue);
+                        } catch (NumberFormatException notALong) {
+                            try {
+                                value = Double.parseDouble(stringValue);
+                            } catch (NumberFormatException NotADouble) {
+                                // leave it as a String
+                            }
+                        }
                     }
                 }
 

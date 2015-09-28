@@ -63,7 +63,7 @@ public class Config {
             if (envAppHome != null) {
                 opencgaHome = envAppHome;
             } else {
-                opencgaHome = Paths.get(".", "opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
+                opencgaHome = Paths.get(".", "build").toString(); //If it has not been run from the shell script (debug)
             }
         }
         Config.setOpenCGAHome(opencgaHome);

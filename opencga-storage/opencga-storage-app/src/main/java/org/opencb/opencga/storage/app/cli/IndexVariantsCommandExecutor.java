@@ -158,10 +158,10 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
 
         // Check the database connection before we start
         if (load) {
-                if (!variantStorageManager.testConnection(variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()))) {
-                    logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
-                    throw new ParameterException("Database connection test failed");
-                }
+            if (!variantStorageManager.testConnection(variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()))) {
+                logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
+                throw new ParameterException("Database connection test failed");
+            }
         }
 
         if (extract) {

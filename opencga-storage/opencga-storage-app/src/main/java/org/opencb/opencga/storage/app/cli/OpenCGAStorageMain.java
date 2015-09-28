@@ -771,6 +771,7 @@ public class OpenCGAStorageMain {
             }
         }
 
+
         /**
          * Create DBAdaptor
          */

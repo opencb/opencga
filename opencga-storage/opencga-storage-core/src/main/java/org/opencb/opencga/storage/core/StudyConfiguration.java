@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
@@ -43,6 +44,8 @@ public class StudyConfiguration implements Cloneable {
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
+    private VariantSource.Aggregation aggregation;
+
     private Long timeStamp;
 
     private ObjectMap attributes;
@@ -62,6 +65,7 @@ public class StudyConfiguration implements Cloneable {
         this.samplesInFiles = new LinkedHashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
+        this.aggregation = other.aggregation;
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -82,6 +86,7 @@ public class StudyConfiguration implements Cloneable {
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.aggregation = VariantSource.Aggregation.NONE;
         this.attributes = new ObjectMap();
     }
 
@@ -104,6 +109,7 @@ public class StudyConfiguration implements Cloneable {
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.aggregation = VariantSource.Aggregation.NONE;
         this.attributes = new ObjectMap();
     }
 
@@ -132,6 +138,7 @@ public class StudyConfiguration implements Cloneable {
                 ", samplesInFiles=" + samplesInFiles +
                 ", calculatedStats=" + calculatedStats +
                 ", invalidStats=" + invalidStats +
+                ", aggregation=" + aggregation +
                 ", timeStamp=" + timeStamp +
                 ", attributes=" + attributes +
                 '}';
@@ -228,6 +235,14 @@ public class StudyConfiguration implements Cloneable {
         this.invalidStats = invalidStats;
     }
 
+    public VariantSource.Aggregation getAggregation() {
+        return aggregation;
+    }
+
+    public void setAggregation(VariantSource.Aggregation aggregation) {
+        this.aggregation = aggregation;
+    }
+
     public Long getTimeStamp() {
         return timeStamp;
     }
@@ -263,6 +278,7 @@ public class StudyConfiguration implements Cloneable {
         if (calculatedStats != null ? !calculatedStats.equals(that.calculatedStats) : that.calculatedStats != null)
             return false;
         if (invalidStats != null ? !invalidStats.equals(that.invalidStats) : that.invalidStats != null) return false;
+        if (aggregation != null? !aggregation.equals(that.aggregation) : that.aggregation != null) return false;
         if (timeStamp != null ? !timeStamp.equals(that.timeStamp) : that.timeStamp != null) return false;
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
@@ -280,6 +296,7 @@ public class StudyConfiguration implements Cloneable {
         result = 31 * result + (samplesInFiles != null ? samplesInFiles.hashCode() : 0);
         result = 31 * result + (calculatedStats != null ? calculatedStats.hashCode() : 0);
         result = 31 * result + (invalidStats != null ? invalidStats.hashCode() : 0);
+        result = 31 * result + (aggregation != null ? aggregation.hashCode() : 0);
         result = 31 * result + (timeStamp != null ? timeStamp.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return result;
