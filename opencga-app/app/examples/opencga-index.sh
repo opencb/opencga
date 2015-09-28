@@ -190,4 +190,4 @@ RESET_FORMATTING=`tput sgr0`
 main $@ |& sed  -e "s/\(WARN.*\)/${BOLD}${TEXT_YELLOW}\1${RESET_FORMATTING}/g"  \
                 -e "s/\(ERROR.*\)/${BOLD}${TEXT_RED}\1${RESET_FORMATTING}/g"    \
                 -e "s/\(INFO.*\)/${BOLD}${TEXT_BLUE}\1${RESET_FORMATTING}/g"    \
-                -e "s/\(\[.*\]\)/${BOLD}\1${RESET_FORMATTING}/g"
+                -e "s/\(\[[^ ]*\]\)/${BOLD}\1${RESET_FORMATTING}/g"

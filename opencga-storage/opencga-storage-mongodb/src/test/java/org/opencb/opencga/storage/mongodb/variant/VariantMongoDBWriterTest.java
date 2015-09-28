@@ -36,6 +36,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 
 import java.io.IOException;
@@ -154,8 +155,8 @@ public class VariantMongoDBWriterTest {
     @Test
     public void testInsertMultiFiles() throws StorageManagerException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS, Arrays.asList("GQX", "DP"));
-        studyConfiguration2.getAttributes().put(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS, Arrays.asList("DP", "GQX"));
+        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
 
         loadFile1();
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();

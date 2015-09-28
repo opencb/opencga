@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -37,6 +38,8 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -47,6 +50,7 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +87,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String COLLECTION_STUDIES    = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
-    public static final String STORED_EXTRA_FIELDS = "storedExtraFields";
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
@@ -168,7 +171,42 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         int fileId = options.getInt(Options.FILE_ID.key());
 
-        checkCanLoadSampleBatch(studyConfiguration, fileId);
+        boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId);
+
+        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())) {
+            List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+            if (studyConfiguration.getIndexedFiles().isEmpty()) {
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
+            } else {
+                if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+                    throw new StorageManagerException("Unable to change Stored Extra Fields if there are already indexed files.");
+                }
+            }
+        }
+
+        if (newSampleBatch) {
+            logger.info("New sample batch!!!");
+            //TODO: Check if there are regions with gaps
+//            ArrayList<Integer> indexedFiles = new ArrayList<>(studyConfiguration.getIndexedFiles());
+//            if (!indexedFiles.isEmpty()) {
+//                LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(indexedFiles.get(indexedFiles.size() - 1));
+//                if (!sampleIds.isEmpty()) {
+//                    Integer sampleId = sampleIds.iterator().next();
+//                    String files = "";
+//                    for (Integer indexedFileId : indexedFiles) {
+//                        if (studyConfiguration.getSamplesInFiles().get(indexedFileId).contains(sampleId)) {
+//                            files += "!" + indexedFileId + ";";
+//                        }
+//                    }
+////                    String genotypes = sampleIds.stream().map(i -> studyConfiguration.getSampleIds().inverse().get(i) + ":" + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE).collect(Collectors.joining(","));
+//                    String genotypes = sampleId + ":" + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
+//                    Long v = getDBAdaptor(null).count(new Query()
+//                            .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+//                            .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), files)
+//                            .append(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), genotypes)).first();
+//                }
+//            }
+        }
 
         return uri;
     }
@@ -400,9 +438,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
      *
      * @param studyConfiguration StudyConfiguration from the selected study
      * @param fileId File to load
+     * @return Returns if this file represents a new batch of samples
      * @throws StorageManagerException If there is any unaccomplished requirement
      */
-    public static void checkCanLoadSampleBatch(final StudyConfiguration studyConfiguration, int fileId) throws StorageManagerException {
+    public static boolean checkCanLoadSampleBatch(final StudyConfiguration studyConfiguration, int fileId) throws StorageManagerException {
         LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
         if (!sampleIds.isEmpty()) {
             boolean allSamplesRepeated = true;
@@ -431,12 +470,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                         }
                     }
                     //Ok, the batch of samples matches with the last loaded batch of samples.
+                    return false; // This is NOT a new batch of samples
                 }
             } else if (someSamplesRepeated) {
                 //ERROR
                 throw new StorageManagerException("There was some already indexed samples, but not all of them. Unable to load in Storage-MongoDB");
             }
         }
+        return true; // This is a new batch of samples
     }
 
 //    @Override

@@ -25,6 +25,7 @@ import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.LoggerFactory;
 
@@ -209,15 +210,15 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
         final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
-        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
-        for (String callField : otherCallFields) {
-            if (object.containsField(callField.toLowerCase())) {
-                List values = (List) object.get(callField.toLowerCase());
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        for (String extraField : extraFields) {
+            if (object.containsField(extraField.toLowerCase())) {
+                List values = (List) object.get(extraField.toLowerCase());
 
                 for (int i = 0; i < values.size(); i++) {
                     Object value = values.get(i);
                     String sampleName = samplesPosition.get(i);
-                    samplesData.get(sampleName).put(callField, value.toString());
+                    samplesData.get(sampleName).put(extraField, value.toString());
                 }
             }
         }
@@ -273,17 +274,17 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
 
-        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
-        for (String callField : otherCallFields) {
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        for (String extraField : extraFields) {
             List<Object> values = new ArrayList<>(samplesPosition.size());
             for (int size = samplesPosition.size(); size > 0; size--) {
                 values.add(UNKNOWN_FIELD);
             }
             for (Map.Entry<String, Map<String, String>> sampleMapEntry : object.entrySet()) {
-                if (sampleMapEntry.getValue().containsKey(callField)) {
+                if (sampleMapEntry.getValue().containsKey(extraField)) {
                     Integer index = samplesPosition.get(sampleMapEntry.getKey());
                     Object value;
-                    String stringValue = sampleMapEntry.getValue().get(callField);
+                    String stringValue = sampleMapEntry.getValue().get(extraField);
                     try {
                         value = Integer.parseInt(stringValue);
                     } catch (NumberFormatException e) {
@@ -296,7 +297,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                     values.set(index, value);
                 }
             }
-            mongoSamples.append(callField.toLowerCase(), values);
+            mongoSamples.append(extraField.toLowerCase(), values);
         }
 
         return mongoSamples;
@@ -417,8 +418,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     public String getFormat(int studyId) {
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        List<String> otherCallFields = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.STORED_EXTRA_FIELDS);
-        String others = otherCallFields.stream().collect(Collectors.joining(":"));
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        String others = extraFields.stream().collect(Collectors.joining(":"));
         if (others.isEmpty()) {
             return "GT";
         } else {

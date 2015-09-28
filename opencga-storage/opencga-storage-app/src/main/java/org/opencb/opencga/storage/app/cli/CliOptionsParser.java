@@ -228,6 +228,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
         public boolean includeGenotype = false;
 
+        @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
+        String extraFields;
+
         @Deprecated
         @Parameter(names = {"--compress-genotypes"}, description = "[DEPRECATED]")
         public boolean compressGenotypes = false;
