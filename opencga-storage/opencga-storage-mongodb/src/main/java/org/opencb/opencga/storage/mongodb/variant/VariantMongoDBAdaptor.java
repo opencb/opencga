@@ -623,7 +623,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                    variantAnnotation.getReferenceAllele(), variantAnnotation.getAlternateAllele());
+                    variantAnnotation.getReference(), variantAnnotation.getAlternate());
             DBObject find = new BasicDBObject("_id", id);
             DBObjectToVariantAnnotationConverter converter = new DBObjectToVariantAnnotationConverter();
             DBObject convertedVariantAnnotation = converter.convertToStorageType(variantAnnotation);
