@@ -354,7 +354,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     private DBObject getLegacyNoncompressedSamples(VariantSourceEntry object) {
         BasicDBObject mongoSamples = new BasicDBObject();
-        for (Map.Entry<String, Map<String, String>> entry : object.getSamplesData().entrySet()) {
+        for (Map.Entry<String, Map<String, String>> entry : object.getSamplesDataAsMap().entrySet()) {
             BasicDBObject sampleData = new BasicDBObject();
             for (Map.Entry<String, String> sampleEntry : entry.getValue().entrySet()) {
                 sampleData.put(sampleEntry.getKey(), sampleEntry.getValue());

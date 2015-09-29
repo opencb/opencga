@@ -145,7 +145,7 @@ public class OpenCGAWSServerTest {
         assertEquals(10, variants.size());
         for (Variant variant : variants) {
             for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(new HashSet<>(sampleNames), sourceEntry.getSamplesData().keySet());
+                assertEquals(new HashSet<>(sampleNames), sourceEntry.getSamplesDataAsMap().keySet());
             }
         }
 

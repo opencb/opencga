@@ -293,7 +293,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
             Set<String> returnedStudiesIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toSet());
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyConfiguration1.getStudyName()));
             VariantSourceEntry sourceEntry = variant.getSourceEntry(null, studyConfiguration1.getStudyName());
-            for (Map.Entry<String, Map<String, String>> entry : sourceEntry.getSamplesData().entrySet()) {
+            for (Map.Entry<String, Map<String, String>> entry : sourceEntry.getSamplesDataAsMap().entrySet()) {
                 String genotype = entry.getValue().get("GT");
                 if (studyConfiguration1.getSamplesInFiles().get(file1).contains(studyConfiguration1.getSampleIds().get(entry.getKey())) && !sourceEntry.getAttributes().containsKey(file1 + "_QUAL")) {
                     assertEquals(unknownGenotype, genotype);

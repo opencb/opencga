@@ -245,7 +245,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                     Assert.assertEquals(2504, entry.getValue().getSamplesData().size());
 
                     assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
-                    assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesData().keySet());
+                    assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesDataAsMap().keySet());
                 }
                 if (includeSrc) {
                     Assert.assertNotNull(entry.getValue().getAttribute("src"));

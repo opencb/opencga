@@ -112,9 +112,9 @@ public class VariantStatisticsCalculator {
         
         for (Variant variant : variants) {
             VariantSourceEntry file = null;
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
-                if (entry.getValue().getStudyId().equals(studyId)) {
-                    file = entry.getValue();
+            for (VariantSourceEntry entry : variant.getStudies()) {
+                if (entry.getStudyId().equals(studyId)) {
+                    file = entry;
                     break;
                 }
             }
@@ -127,10 +127,10 @@ public class VariantStatisticsCalculator {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
 
-                        Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesData(), cohort.getValue());
+                        Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesDataAsMap(), cohort.getValue());
                         VariantStats variantStats = new VariantStats(variant);
                         VariantStatsCalculator.calculate(samplesData, file.getAttributes(), null, variantStats);
-                        file.getCohortStats().put(cohort.getKey(), variantStats);
+                        file.setStats(cohort.getKey(), variantStats);
 
                     }
                 }

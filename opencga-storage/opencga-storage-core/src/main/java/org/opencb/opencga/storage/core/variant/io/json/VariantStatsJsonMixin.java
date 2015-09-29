@@ -24,7 +24,9 @@ import org.opencb.biodata.models.variant.stats.VariantHardyWeinbergStats;
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public abstract class VariantStatsJsonMixin {
-    
+
+    @JsonIgnore public abstract Object getImpl();
+
     @JsonIgnore public abstract String[] getAltAlleles();
     
     @JsonIgnore public abstract boolean isIndel();

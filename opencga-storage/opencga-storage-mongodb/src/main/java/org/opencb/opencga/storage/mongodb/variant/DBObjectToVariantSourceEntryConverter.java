@@ -157,20 +157,20 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         // Alternate alleles
         if (fileObject != null && fileObject.containsField(ALTERNATES_FIELD)) {
             List list = (List) fileObject.get(ALTERNATES_FIELD);
-            String[] alternatives = new String[list.size()];
-            int i = 0;
-            for (Object o : list) {
-                alternatives[i] = o.toString();
-                i++;
-            }
-            file.setSecondaryAlternates(alternatives);
+//            String[] alternatives = new String[list.size()];
+//            int i = 0;
+//            for (Object o : list) {
+//                alternatives[i] = o.toString();
+//                i++;
+//            }
+            file.setSecondaryAlternates(list);
         }
 
 
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
 //            file.setFormat((String) fileObject.get(FORMAT_FIELD));
 //        } else {
-            file.setFormat("GT");
+            file.setFormatAsString("GT");
 //        }
 
         // Samples
@@ -271,7 +271,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
 //            fileObject.append(FORMAT_FIELD, object.getFormat()); // Useless field if genotypeCodes are not stored
-            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesData(), studyId));
+            mongoFile.put(GENOTYPES_FIELD, samplesConverter.convertToStorageType(object.getSamplesDataAsMap(), studyId));
         }
 
 

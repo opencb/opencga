@@ -57,7 +57,7 @@ public class DBObjectToVariantConverterTest {
         variantSourceEntry = new VariantSourceEntry(fileId.toString(), studyId.toString());
         variantSourceEntry.addAttribute("QUAL", "0.01");
         variantSourceEntry.addAttribute("AN", "2");
-        variantSourceEntry.setFormat("GT:DP");
+        variantSourceEntry.setFormatAsString("GT:DP");
 
         Map<String, String> na001 = new HashMap<>();
         na001.put("GT", "0/0");

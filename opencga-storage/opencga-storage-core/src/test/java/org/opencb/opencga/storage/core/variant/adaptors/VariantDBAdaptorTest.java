@@ -65,7 +65,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), true);
+                    .append(VariantStorageManager.Options.ANNOTATE.key(), false);
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
 

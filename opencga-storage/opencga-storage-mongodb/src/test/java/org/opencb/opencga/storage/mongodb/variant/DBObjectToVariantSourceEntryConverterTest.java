@@ -54,7 +54,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         file.addAttribute("QUAL", "0.01");
         file.addAttribute("AN", "2.0");
         file.addAttribute("do.we.accept.attribute.with.dots?", "yes");
-        file.setFormat("GT");
+        file.setFormatAsString("GT");
         
         Map<String, String> na001 = new HashMap<>();
         na001.put("GT", "0/0");

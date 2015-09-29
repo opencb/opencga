@@ -258,7 +258,7 @@ public class VariantExporter {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
-            Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesData();
+            Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesDataAsMap();
             for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
                 String gt = samplesEntry.getValue().get("GT");
 //                System.out.println("gt = " + gt);
