@@ -95,14 +95,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.dataWriter = dataWriter;
     }
 
-
-    @Override
     public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
         // TODO FILE_ID must be in QueryOptions?
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
-        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
+        VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.IncludeSrc.parse(options.getString(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue()));
         boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
 //        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
@@ -517,7 +515,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DBObjectToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
         boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
         //TODO: Use the StudyConfiguration to change names to ids
-
+        
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {
             Map<String, VariantStats> cohortStats = wrapper.getCohortStats();
@@ -540,7 +538,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String id = variantConverter.buildStorageId(wrapper.getChromosome(), wrapper.getPosition(),
                         variantStats.getRefAllele(), variantStats.getAltAllele());
 
-
                 DBObject find = new BasicDBObject("_id", id);
                 if (overwrite) {
                     List<BasicDBObject> idsList = new ArrayList<>(cohorts.size());
@@ -561,12 +558,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         new BasicDBObject(DBObjectToVariantConverter.STATS_FIELD,
                                 new BasicDBObject("$each", cohorts)));
 
-                pushBuilder.find(find).update(push);
+                pushBuilder.find(find).updateOne(push);
             }
         }
 
         // TODO handle if the variant didn't had that studyId in the files array
-        // TODO check the substitution is done right if the stats are already present
         if (overwrite) {
             pullBuilder.execute();
         }
@@ -1246,7 +1242,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     .stream().map(s -> s.contains(":")? s.split(":")[1] : s).collect(Collectors.toSet()));
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
-                false,
+                VariantStorageManager.IncludeSrc.parse(VariantStorageManager.Options.INCLUDE_SRC.defaultValue()),
                 query.containsKey(VariantQueryParams.RETURNED_FILES.key()) ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key()) : null,
                 samplesConverter
         );
@@ -2442,7 +2438,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult insert(List<Variant> variants, StudyConfiguration studyConfiguration, QueryOptions options) {
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
-        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
+        VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.IncludeSrc.parse(options.getString(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options.INCLUDE_SRC.defaultValue()));
         boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue());
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager.Options.COMPRESS_GENOTYPES.defaultValue());
 //        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");

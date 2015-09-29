@@ -138,7 +138,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
         params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
         params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
-        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), true);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.IncludeSrc.FULL.toString());
         params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
@@ -169,7 +169,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 8);
         params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 8);
         params.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), false);
-        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), false);
+        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.IncludeSrc.NO.toString());
         params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 

@@ -27,6 +27,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +61,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    @Deprecated private DB db;
 //
 
+    private VariantStorageManager.IncludeSrc includeSrc = VariantStorageManager.IncludeSrc.parse(VariantStorageManager.Options.INCLUDE_SRC.defaultValue());
     private boolean includeStats;
-    private boolean includeSrc = true;
     private boolean includeSamples;
 //    private boolean compressDefaultGenotype = true;
 //    private String defaultGenotype = null;
@@ -186,6 +188,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (!data.isEmpty()) {
             coveredChromosomes.add(data.get(0).getChromosome());
         }
+
         QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
         insertionTime += queryResult.getDbTime();
         return true;
@@ -393,7 +396,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeStats = b;
     }
 
-    public final void includeSrc(boolean b) {
+    public final void includeSrc(VariantStorageManager.IncludeSrc b) {
         includeSrc = b;
     }
 
@@ -431,12 +434,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
         sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
 
-        sourceEntryConverter.setIncludeSrc(includeSrc);
-
-        // Do not create the VariantConverter with the sourceEntryConverter.
-        // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
+        // Do not create the VariantConverter with the sourceEntryConverter nor the statsconverter.
+        // The variantSourceEntry and stats conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
+        variantConverter = new DBObjectToVariantConverter(null, null);
     }
 
 //    public void setBulkSize(int bulkSize) {

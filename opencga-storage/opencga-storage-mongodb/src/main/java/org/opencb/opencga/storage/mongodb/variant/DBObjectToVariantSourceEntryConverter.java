@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -43,7 +44,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public static final String FILES_FIELD = "files";
     public static final String ORI_FIELD = "_ori";
 
-    private boolean includeSrc;
+    private VariantStorageManager.IncludeSrc includeSrc;
     private Set<Integer> returnedFiles;
 
 //    private Integer fileId;
@@ -57,7 +58,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      *
      * @param includeSrc If true, will include and gzip the "src" attribute in the DBObject
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
+    public DBObjectToVariantSourceEntryConverter(VariantStorageManager.IncludeSrc includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
         this.returnedFiles = null;
@@ -72,7 +73,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc,
+    public DBObjectToVariantSourceEntryConverter(VariantStorageManager.IncludeSrc includeSrc,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
@@ -87,7 +88,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
+    public DBObjectToVariantSourceEntryConverter(VariantStorageManager.IncludeSrc includeSrc, List<Integer> returnedFiles,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.returnedFiles = (returnedFiles != null)? new HashSet<>(returnedFiles) : null;
@@ -95,7 +96,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     }
 
 
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer returnedFile,
+    public DBObjectToVariantSourceEntryConverter(VariantStorageManager.IncludeSrc includeSrc, Integer returnedFile,
                                                  DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc, Collections.singletonList(returnedFile), samplesConverter);
     }
@@ -133,7 +134,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                     for (Map.Entry<String, Object> entry : attrs.entrySet()) {
                         // Unzip the "src" field, if available
                         if (entry.getKey().equals("src")) {
-                            if (includeSrc) {
+                            if (!includeSrc.equals(VariantStorageManager.IncludeSrc.NO)) {
                                 byte[] o = (byte[]) entry.getValue();
                                 try {
                                     file.addAttribute(fileId_ + entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
@@ -220,10 +221,23 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 String stringValue = entry.getValue();
                 String key = entry.getKey().replace(".", DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;
+                
                 if (key.equals("src")) {
-                    if (includeSrc) {
+                    if (VariantStorageManager.IncludeSrc.FULL.equals(includeSrc)) {
                         try {
                             value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
+                        } catch (IOException ex) {
+                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } else if (VariantStorageManager.IncludeSrc.FIRST_8_COLUMNS.equals(includeSrc)) {
+                        String[] fields = entry.getValue().split("\t");
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(fields[0]);
+                        for (int i = 1; i < fields.length && i < 8; i++) {
+                            sb.append("\t").append(fields[i]);
+                        }
+                        try {
+                            value = org.opencb.commons.utils.StringUtils.gzip(sb.toString());
                         } catch (IOException ex) {
                             Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -282,7 +296,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         return samplesConverter;
     }
 
-    public void setIncludeSrc(boolean includeSrc) {
+    public void setIncludeSrc(VariantStorageManager.IncludeSrc includeSrc) {
         this.includeSrc = includeSrc;
     }
 }

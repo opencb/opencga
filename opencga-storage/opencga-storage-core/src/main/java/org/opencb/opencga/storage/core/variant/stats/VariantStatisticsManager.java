@@ -266,6 +266,7 @@ public class VariantStatisticsManager {
         long start = System.currentTimeMillis();
 
         loadVariantStats(variantDBAdaptor, variantStatsUri, studyConfiguration, options);
+        logger.info("variant stats loaded, next is loading source stats");
         loadSourceStats(variantDBAdaptor, sourceStatsUri, studyConfiguration, options);
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);

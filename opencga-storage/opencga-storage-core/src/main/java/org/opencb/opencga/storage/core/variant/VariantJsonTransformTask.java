@@ -52,7 +52,7 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
     private final ObjectMapper jsonObjectMapper;
     private final Path outputFileJsonFile;
     protected static Logger logger = LoggerFactory.getLogger(VariantJsonTransformTask.class);
-    private boolean includeSrc;
+    private VariantStorageManager.IncludeSrc includeSrc;
 
     public VariantJsonTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
         this.factory = factory;
@@ -71,7 +71,7 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
         this.objectWriter = jsonObjectMapper.writerFor(Variant.class);
     }
 
-    public void setIncludeSrc(boolean includeSrc) {
+    public void setIncludeSrc(VariantStorageManager.IncludeSrc includeSrc) {
         this.includeSrc = includeSrc;
     }
 
@@ -106,7 +106,7 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
                 }
                 for (Variant variant : variants) {
                     try {
-                        if (!includeSrc) {
+                        if (VariantStorageManager.IncludeSrc.NO.equals(includeSrc)) {
                             for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
                                 if (variantSourceEntry.getAttributes().containsKey("src")) {
                                     variantSourceEntry.getAttributes().remove("src");
