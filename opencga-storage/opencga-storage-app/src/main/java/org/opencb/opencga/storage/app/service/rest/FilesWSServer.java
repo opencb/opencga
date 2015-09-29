@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -37,9 +38,9 @@ import java.util.Arrays;
  * Created by jacobo on 14/11/14.
  */
 @Path("/files")
-public class FilesServlet extends DaemonServlet {
+public class FilesWSServer extends StorageWSServer {
 
-    public FilesServlet(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
         params = uriInfo.getQueryParameters();
     }
@@ -64,7 +65,7 @@ public class FilesServlet extends DaemonServlet {
     @Path("/{fileId}/fetch")
     @Produces("application/json")
     public Response fetch(@PathParam("fileId") @DefaultValue("") String fileId,
-                          @QueryParam("backend") String backend,
+                          @QueryParam("storageEngine") String storageEngine,
                           @QueryParam("dbName") String dbName,
                           @QueryParam("bioformat") @DefaultValue("") String bioformat,
                           @QueryParam("region") String region,
@@ -80,11 +81,10 @@ public class FilesServlet extends DaemonServlet {
         try {
             switch (bioformat) {
                 case "vcf":
-
-
-                    break;
+                    queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
+                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval, queryOptions));
                 case "bam":
-                    AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(backend);
+                    AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
                     ObjectMap params = new ObjectMap();
                     AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor(dbName);
 
@@ -118,6 +118,5 @@ public class FilesServlet extends DaemonServlet {
             e.printStackTrace();
             return createErrorResponse(e.toString());
         }
-        return createErrorResponse("Unimplemented!");
     }
 }

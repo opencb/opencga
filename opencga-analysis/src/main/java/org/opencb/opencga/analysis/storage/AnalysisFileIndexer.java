@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.storage;
 
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -266,6 +267,7 @@ public class AnalysisFileIndexer {
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
         jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
+//        jobAttributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, VariantStorageManager.Options.AGGREGATED_TYPE.defaultValue()));
 
         String jobName;
         String jobDescription;
@@ -324,7 +326,7 @@ public class AnalysisFileIndexer {
             dataStore = study.getDataStores().get(bioformat);
         } else {
             int projectId = catalogManager.getProjectIdByStudyId(study.getId());
-            Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("alias", "dataStores")), sessionId).first();
+            Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("projects.alias", "projects.dataStores")), sessionId).first();
             if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
                 dataStore = project.getDataStores().get(bioformat);
             } else { //get default datastore
@@ -430,6 +432,9 @@ public class AnalysisFileIndexer {
             }
             if (options.containsKey(LOG_LEVEL)) {
                 sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
+            }
+            if (options.containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
+                sb.append(" --aggregated ").append(options.getString(VariantStorageManager.Options.AGGREGATED_TYPE.key()));
             }
             commandLine = sb.toString();
 

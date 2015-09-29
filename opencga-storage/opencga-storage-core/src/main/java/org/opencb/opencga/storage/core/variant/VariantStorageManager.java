@@ -162,6 +162,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
             studyConfiguration = new StudyConfiguration(variantOptions.getInt(Options.STUDY_ID.key), variantOptions.getString(Options.STUDY_NAME.key));
+            studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
             variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
         }
         String fileName = Paths.get(input.getPath()).getFileName().toString();
@@ -226,20 +227,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory;
         if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            switch (aggregation) {
-                default:
-                case NONE:
-                    factory = new VariantVcfFactory();
-                    break;
-                case BASIC:
-                    factory = new VariantAggregatedVcfFactory();
-                    break;
-                case EVS:
-                    factory = new VariantVcfEVSFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
-                    break;
-                case EXAC:
-                    factory = new VariantVcfExacFactory(options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key, Properties.class, null));
-                    break;
+            if (VariantSource.Aggregation.NONE.equals(aggregation)) {
+                factory = new VariantVcfFactory();
+            } else {
+                factory = new VariantAggregatedVcfFactory();
             }
         } else {
             throw new StorageManagerException("Variants input file format not supported");
@@ -302,9 +293,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             final Path finalOutputFileJsonFile = outputFileJsonFile;
             ParallelTaskRunner<String, String> ptr;
             try {
+                VariantJsonTransformTask variantJsonTransformTask = new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
+                variantJsonTransformTask.setIncludeSrc(includeSrc);
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
-                        new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile),
+                        variantJsonTransformTask,
                         dataWriter,
                         new ParallelTaskRunner.Config(numThreads, batchSize, capacity, false)
                 );
@@ -544,7 +537,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
                 String defaultCohortName = VariantSourceEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
-                Map<String, Set<String>> defaultCohort = Collections.singletonMap(defaultCohortName, indexedSamples.keySet());
+                Map<String, Set<String>> defaultCohort = new HashMap<>(Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
                 if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
                     Integer defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
                     if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
@@ -556,7 +549,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     }
                 }
 
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, Collections.emptyMap(), studyConfiguration, new QueryOptions(options));
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, new HashMap<>(), studyConfiguration, new QueryOptions(options));
                 variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);

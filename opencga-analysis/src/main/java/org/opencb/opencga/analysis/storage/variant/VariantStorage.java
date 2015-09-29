@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -34,9 +37,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -53,7 +61,7 @@ public class VariantStorage {
 
 
     public QueryResult<Job> calculateStats(Integer outDirId, List<Integer> cohortIds, String sessionId, QueryOptions options)
-            throws AnalysisExecutionException, CatalogException {
+            throws AnalysisExecutionException, CatalogException, IOException {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -61,7 +69,8 @@ public class VariantStorage {
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         final long start = System.currentTimeMillis();
 
-        if (cohortIds.isEmpty()) {
+        if ((cohortIds == null || cohortIds.isEmpty()) 
+                && !options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
             throw new CatalogException("Cohort list empty");
         }
 
@@ -146,6 +155,18 @@ public class VariantStorage {
         if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
         }
+
+        // if the study is aggregated and a mapping file is provided, pass it to storage 
+        // and create in catalog the cohorts described in the mapping file
+        Study study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.attributes")).first();
+        VariantSource.Aggregation studyAggregation = VariantSource.Aggregation.valueOf(study.getAttributes()
+                .getOrDefault(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE).toString());
+        if (VariantSource.Aggregation.isAggregated(studyAggregation)
+                && options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
+            sb.append(" --aggregation-mapping-file ")
+                    .append(options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key()));
+        }
+        
         for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
             sb.append(" --cohort-sample-ids ").append(entry.getKey().getName());
             sb.append(":");

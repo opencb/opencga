@@ -74,7 +74,7 @@ public class OpenCGAStorageService implements Runnable {
         logger.info("Server in port : {}", port);
         server = new Server(port);
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
-        context.addServlet(sh, "/opencga/rest/*");
+        context.addServlet(sh, "/opencga/webservices/rest/*");
 
         thread = new Thread(this);
     }

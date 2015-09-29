@@ -577,6 +577,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public List<URI> listFiles(URI directory) throws CatalogIOException {
+        checkUriExists(directory);
         class ListFiles extends SimpleFileVisitor<Path> {
             private List<String> filePaths = new LinkedList<>();
 

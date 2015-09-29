@@ -52,7 +52,6 @@ public class OptionParser {
         return generalOptions;
     }
 
-    //@Parameters(commandNames = {"daemon"}, commandDescription = "")
     class GeneralOptions {
 
         @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
