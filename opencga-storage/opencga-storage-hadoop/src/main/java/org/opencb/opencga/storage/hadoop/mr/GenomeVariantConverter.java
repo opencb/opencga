@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,8 +34,6 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -54,7 +53,7 @@ public class GenomeVariantConverter extends Mapper<AvroKey<Variant>, NullWritabl
 
     @Override
     protected void setup (Mapper<AvroKey<Variant>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
-            InterruptedException {
+            InterruptedException {        
         this.helper.set(new GenomeVariantHelper(context.getConfiguration()));
         converter.updateVcfMeta(getHelper().getMeta());
         super.setup(context);

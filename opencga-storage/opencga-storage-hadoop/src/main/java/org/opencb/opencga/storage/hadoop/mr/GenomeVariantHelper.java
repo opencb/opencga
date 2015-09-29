@@ -4,6 +4,7 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +23,8 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -32,6 +35,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
  */
 public class GenomeVariantHelper {
 
+    private final static Logger log = LoggerFactory.getLogger(GenomeVariantHelper.class);
+    
     private static final byte[] COLUMN_FAMILY = Bytes.toBytes("d");
 
     private static final String VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
@@ -48,6 +53,10 @@ public class GenomeVariantHelper {
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
+    public static Logger getLog() {
+        return log;
+    }
+    
     /**
      * @throws IOException
      * 
@@ -60,6 +69,28 @@ public class GenomeVariantHelper {
         this.columnFamily = COLUMN_FAMILY;
     }
 
+    public static String printClassJarPath(Class<?> clazz) {
+        StringBuilder sb = new StringBuilder();
+        String nl = "\n";
+        sb.append(clazz.getProtectionDomain().getCodeSource().getLocation()).append(nl);
+        sb.append(clazz.getResource('/' + clazz.getName().replace('.', '/') + ".class")).append(nl);
+        return sb.toString();
+    }
+    
+    public static String printSystemProperties() {
+        StringBuilder sb = new StringBuilder();
+        String nl = "\n";
+        System.getProperties().forEach((a, b) -> sb.append(a + " - " + b).append(nl));
+        return sb.toString();
+    }
+
+    public static String printConfig(Configuration conf) {
+        StringBuilder sb = new StringBuilder();
+        String nl = "\n";
+        conf.iterator().forEachRemaining(e -> sb.append(e.getKey() + " - " + e.getValue()).append(nl));
+        return sb.toString();
+    }
+
     public static void setMetaProtoFile (Configuration conf, String filePath) {
         conf.set(VCF_META_PROTO_FILE, filePath);
     }
@@ -70,6 +101,10 @@ public class GenomeVariantHelper {
 
     public static void setChunkSize (Configuration conf, Integer size) {
         conf.setInt(GENOME_VARIANT_CHUNK_SIZE, size);
+    }
+    
+    public static byte[] getDefaultColumnFamily(){
+        return COLUMN_FAMILY;
     }
 
     public VcfMeta getMeta () {
@@ -93,19 +128,26 @@ public class GenomeVariantHelper {
     }
 
     public VcfMeta loadMetaData (Configuration conf) throws IOException {
-        // try first from String
-        String protoString = conf.get(VCF_META_PROTO_STRING, StringUtils.EMPTY);
-        if (StringUtils.isNotEmpty(protoString)) {
-            return VcfMeta.parseFrom(ByteString.copyFromUtf8(protoString));
-        }
-        // Else from file
-        String filePath = conf.get(VCF_META_PROTO_FILE, StringUtils.EMPTY);
-        if (StringUtils.isNotEmpty(filePath)) {
-            Path path = new Path(filePath);
-            FileSystem fs = FileSystem.get(conf);
-            try (FSDataInputStream instream = fs.open(path)) {
-                return VcfMeta.parseFrom(instream);
+        try{
+            // try first from String
+            String protoString = conf.get(VCF_META_PROTO_STRING, StringUtils.EMPTY);
+            if (StringUtils.isNotEmpty(protoString)) {
+                getLog().info("Load Meta from PROTO string ...");
+                return VcfMeta.parseFrom(ByteString.copyFromUtf8(protoString));
             }
+            // Else from file
+            String filePath = conf.get(VCF_META_PROTO_FILE, StringUtils.EMPTY);
+            if (StringUtils.isNotEmpty(filePath)) {
+                getLog().info(String.format("Load Meta from file %s ...", filePath));
+                Path path = new Path(filePath);
+                FileSystem fs = FileSystem.get(conf);
+                try (FSDataInputStream instream = fs.open(path)) {
+                    return VcfMeta.parseFrom(instream);
+                }
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+            throw e;
         }
         throw new IllegalStateException("VCFMeta configuration missing");
     }

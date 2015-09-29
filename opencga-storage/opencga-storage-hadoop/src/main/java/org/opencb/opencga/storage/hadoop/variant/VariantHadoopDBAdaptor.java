@@ -26,7 +26,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.hpg.bigdata.core.utils.HBaseUtils;
+import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -49,7 +49,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final Table table;
 
     public VariantHadoopDBAdaptor(HadoopCredentials credentials) throws IOException {
-
         Configuration conf = HBaseConfiguration.create();
 
         // HBase configuration

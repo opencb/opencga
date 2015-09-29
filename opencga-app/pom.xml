@@ -236,11 +236,10 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
         </profile>
     </profiles>
-
 </project>
