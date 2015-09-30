@@ -213,8 +213,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         String compression = options.getString(Options.COMPRESS_METHOD.key, Options.COMPRESS_METHOD.defaultValue());
         String extension = "";
-        int numThreads = options.getInt(Options.TRANSFORM_THREADS.key, Options.TRANSFORM_THREADS.defaultValue());
-        int capacity = options.getInt("blockingQueueCapacity", numThreads*2);
+        int numTasks = options.getInt(Options.TRANSFORM_THREADS.key, Options.TRANSFORM_THREADS.defaultValue());
+        int capacity = options.getInt("blockingQueueCapacity", numTasks*2);
 
         if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
             extension = ".gz";
@@ -242,7 +242,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         logger.info("Transforming variants...");
         long start, end;
-        if (numThreads == 1) { //Run transformation with a SingleThread runner. The legacy way
+        if (numTasks == 1) { //Run transformation with a SingleThread runner. The legacy way
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
@@ -299,13 +299,13 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                         dataReader,
                         variantJsonTransformTask,
                         dataWriter,
-                        new ParallelTaskRunner.Config(numThreads, batchSize, capacity, false)
+                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
                 );
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
             }
-            logger.info("Multi thread transform...");
+            logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
             start = System.currentTimeMillis();
             try {
                 ptr.run();

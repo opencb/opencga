@@ -372,10 +372,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2"), new QueryOptions("limit", 1));
         System.out.println("queryResult.getNumTotalResults() = " + queryResult.getNumTotalResults());
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:all>0.2"), null);
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:" + VariantSourceEntry.DEFAULT_COHORT + ">0.2"), null);
         assertEquals(625, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
-                .forEach(map -> assertTrue(map.get("all").getMaf() > 0.2));
+                .forEach(map -> assertTrue(map.get(VariantSourceEntry.DEFAULT_COHORT).getMaf() > 0.2));
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2"), new QueryOptions("limit", 1));
         assertEquals(749, queryResult.getNumTotalResults());
@@ -415,10 +415,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testGetAllVariants_missingAllele() throws Exception {
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:all>4"), null);
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:" + VariantSourceEntry.DEFAULT_COHORT + ">4"), null);
         assertEquals(9, queryResult.getNumTotalResults());
         queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
-                .forEach(map -> assertTrue(map.get("all").getMissingAlleles() > 4));
+                .forEach(map -> assertTrue(map.get(VariantSourceEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
 
     }
 /*
