@@ -267,7 +267,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 }
                 variantTraitAssociation.setClinvarList(clinvarList);
             }
-            if(variantTraitAssociation.size()>0) {
+            if (variantTraitAssociation.size() > 0) {
                 return variantTraitAssociation;
             } else {
                 return null;

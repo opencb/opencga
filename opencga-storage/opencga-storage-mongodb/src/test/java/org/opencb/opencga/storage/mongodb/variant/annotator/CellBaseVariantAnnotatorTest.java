@@ -16,10 +16,15 @@
 
 package org.opencb.opencga.storage.mongodb.variant.annotator;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variation.GenomicVariant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResponse;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -29,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotat
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 public class CellBaseVariantAnnotatorTest extends GenericTest {
 
