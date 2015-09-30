@@ -87,6 +87,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         INCLUDE_STATS ("include.stats", true),              //Include existing stats on the original file.
         @Deprecated
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
+        EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
@@ -358,23 +359,33 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         } catch (NumberFormatException e) {
             throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
         }
+        options.put(Options.FILE_ID.key(), fileId);
 
         checkNewFile(studyConfiguration, fileId, fileName);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
         studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
-        /*
-         * Before load file, the StudyConfiguration has to be updated with the new sample names.
-         *  Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
-         *  If SAMPLE_IDS is missing, will auto-generate sampleIds
-         *  Will fail if:
-         *      param SAMPLE_IDS is malformed
-         *      any given sampleId is not an integer
-         *      any given sampleName is not in the input file
-         *      any given sampleName was already in the StudyConfiguration (so, was already loaded)
-         *      some sample was missing in the given SAMPLE_IDS param
-         */
 
+        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+
+        options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
+
+        return input;
+    }
+
+    /**
+     * Before load file, the StudyConfiguration has to be updated with the new sample names.
+     *  Will read param SAMPLE_IDS like [<sampleName>:<sampleId>,]*
+     *  If SAMPLE_IDS is missing, will auto-generate sampleIds
+     *  Will fail if:
+     *      param SAMPLE_IDS is malformed
+     *      any given sampleId is not an integer
+     *      any given sampleName is not in the input file
+     *      any given sampleName was already in the StudyConfiguration (so, was already loaded)
+     *      some sample was missing in the given SAMPLE_IDS param
+     */
+    public static void checkAndUpdateStudyConfiguration(StudyConfiguration studyConfiguration, int fileId, VariantSource source, ObjectMap options)
+            throws StorageManagerException {
         if (options.containsKey(Options.SAMPLE_IDS.key) && !options.getAsStringList(Options.SAMPLE_IDS.key).isEmpty()) {
             for (String sampleEntry : options.getAsStringList(Options.SAMPLE_IDS.key)) {
                 String[] split = sampleEntry.split(":");
@@ -391,7 +402,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
                 if (!source.getSamplesPosition().containsKey(sampleName)) {
                     //ERROR
-                    throw new StorageManagerException("Given sampleName is not in the input file");
+                    throw new StorageManagerException("Given sampleName '" + sampleName + "' is not in the input file");
                 } else {
                     if (!studyConfiguration.getSampleIds().containsKey(sampleName)) {
                         //Add sample to StudyConfiguration
@@ -401,7 +412,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                             //throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
 //                            logger.warn("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration");
                         } else {
-                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already loaded. It was in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
+                            throw new StorageManagerException("Sample " + sampleName + ":" + sampleId + " was already present. It was in the StudyConfiguration with a different sampleId: " + studyConfiguration.getSampleIds().get(sampleName));
                         }
                     }
                 }
@@ -458,7 +469,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
 
         if (studyConfiguration.getSamplesInFiles().containsKey(fileId)) {
-            Set<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
+            LinkedHashSet<Integer> sampleIds = studyConfiguration.getSamplesInFiles().get(fileId);
             List<String> missingSamples = new LinkedList<>();
             for (String sampleName : source.getSamples()) {
                 if (!sampleIds.contains(studyConfiguration.getSampleIds().get(sampleName))) {
@@ -466,22 +477,18 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 }
             }
             if (!missingSamples.isEmpty()) {
-                throw new StorageManagerException("Samples "  + missingSamples.toString() + "where not in file " + fileId);
+                throw new StorageManagerException("Samples "  + missingSamples.toString() + " were not in file " + fileId);
             }
             if (sampleIds.size() != source.getSamples().size()) {
                 throw new StorageManagerException("Incorrect number of samples in file " + fileId);
             }
         } else {
-            Set<Integer> sampleIdsInFile = new HashSet<>();
+            LinkedHashSet<Integer> sampleIdsInFile = new LinkedHashSet<>(source.getSamples().size());
             for (String sample : source.getSamples()) {
                 sampleIdsInFile.add(studyConfiguration.getSampleIds().get(sample));
             }
             studyConfiguration.getSamplesInFiles().put(fileId, sampleIdsInFile);
         }
-
-        options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
-
-        return input;
     }
 
     @Override

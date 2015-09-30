@@ -281,7 +281,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_filterFiles_not_1() {
         String unknownGenotype = "./.";
-        query.append(FILES.key(), file2)
+        query.append(FILES.key(), "!" + file1)
                 .append(STUDIES.key(), studyConfiguration1.getStudyName())
                 .append(UNKNOWN_GENOTYPE.key(), unknownGenotype)
                 .append(RETURNED_STUDIES.key(), studyConfiguration1.getStudyName());

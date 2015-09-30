@@ -178,7 +178,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
             for (File file : files.getResult()) {
                 studyConfiguration.getFileIds().put(file.getName(), file.getId());
-                studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
+                studyConfiguration.getSamplesInFiles().put(file.getId(), new LinkedHashSet<>(file.getSampleIds()));
                 if (file.getAttributes().containsKey("variantSource")) {
                     //attributes.variantSource.metadata.variantFileHeader
                     Object object = file.getAttributes().get("variantSource");

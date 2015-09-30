@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.core;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
@@ -33,14 +35,14 @@ public class StudyConfiguration implements Cloneable {
     private int studyId;
     private String studyName;
 
-    private Map<String, Integer> fileIds;
-    private Map<String, Integer> sampleIds;
-    private Map<String, Integer> cohortIds;
+    private BiMap<String, Integer> fileIds;
+    private BiMap<String, Integer> sampleIds;
+    private BiMap<String, Integer> cohortIds;
     private Map<Integer, Set<Integer>> cohorts;
 
-    private Set<Integer> indexedFiles;
+    private LinkedHashSet<Integer> indexedFiles;    //Use LinkedHashSet instead of Set to ensure indexing order
     private Map<Integer, String> headers;
-    private Map<Integer, Set<Integer>> samplesInFiles;
+    private Map<Integer, LinkedHashSet<Integer>> samplesInFiles; //Use LinkedHashSet instead of Set to ensure sample order
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
@@ -56,13 +58,13 @@ public class StudyConfiguration implements Cloneable {
     public StudyConfiguration(StudyConfiguration other) {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
-        this.fileIds = new LinkedHashMap<>(other.fileIds);
-        this.sampleIds = new LinkedHashMap<>(other.sampleIds);
-        this.cohortIds = new LinkedHashMap<>(other.cohortIds);
-        this.cohorts = new LinkedHashMap<>(other.cohorts);
+        this.fileIds = HashBiMap.create(other.fileIds == null? Collections.emptyMap() : other.fileIds);
+        this.sampleIds = HashBiMap.create(other.sampleIds == null? Collections.emptyMap() : other.sampleIds);
+        this.cohortIds = HashBiMap.create(other.cohortIds == null? Collections.emptyMap() : other.cohortIds);
+        this.cohorts = new HashMap<>(other.cohorts);
         this.indexedFiles = new LinkedHashSet<>(other.indexedFiles);
-        this.headers = new LinkedHashMap<>(other.headers);
-        this.samplesInFiles = new LinkedHashMap<>(other.samplesInFiles);
+        this.headers = new HashMap<>(other.headers);
+        this.samplesInFiles = new HashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
         this.aggregation = other.aggregation;
@@ -77,12 +79,12 @@ public class StudyConfiguration implements Cloneable {
     public StudyConfiguration(int studyId, String studyName) {
         this.studyId = studyId;
         this.studyName = studyName;
-        setFileIds(new LinkedHashMap<>(1));
-        setSampleIds(new LinkedHashMap<>());
-        setCohortIds(new LinkedHashMap<>());
-        this.cohorts = new LinkedHashMap<>();
+        this.fileIds = HashBiMap.create(1);
+        this.sampleIds = HashBiMap.create();
+        this.cohortIds = HashBiMap.create();
+        this.cohorts = HashBiMap.create();
         this.indexedFiles = new LinkedHashSet<>();
-        this.headers = new LinkedHashMap<>();
+        this.headers = HashBiMap.create();
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
@@ -100,13 +102,13 @@ public class StudyConfiguration implements Cloneable {
                               Map<Integer, Set<Integer>> cohorts) {
         this.studyId = studyId;
         this.studyName = studyName;
-        this.fileIds = fileIds;
-        this.sampleIds = sampleIds;
-        this.cohortIds = cohortIds;
+        this.fileIds = HashBiMap.create(fileIds == null? Collections.emptyMap() : fileIds);
+        this.sampleIds = HashBiMap.create(sampleIds == null? Collections.emptyMap() : sampleIds);
+        this.cohortIds = HashBiMap.create(cohortIds == null? Collections.emptyMap() : cohortIds);
         this.cohorts = cohorts;
         this.indexedFiles = new LinkedHashSet<>();
-        this.headers = new LinkedHashMap<>();
-        this.samplesInFiles = new LinkedHashMap<>();
+        this.headers = HashBiMap.create();
+        this.samplesInFiles = HashBiMap.create();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
         this.aggregation = VariantSource.Aggregation.NONE;
@@ -160,31 +162,28 @@ public class StudyConfiguration implements Cloneable {
         this.studyName = studyName;
     }
 
-    public Map<String, Integer> getFileIds() {
+    public BiMap<String, Integer> getFileIds() {
         return fileIds;
     }
 
     public void setFileIds(Map<String, Integer> fileIds) {
-        this.fileIds = fileIds;
-//        inverseFileIds = createInverseMap(fileIds);
+        this.fileIds = fileIds == null? null : HashBiMap.create(fileIds);
     }
 
-    public Map<String, Integer> getSampleIds() {
+    public BiMap<String, Integer> getSampleIds() {
         return sampleIds;
     }
 
     public void setSampleIds(Map<String, Integer> sampleIds) {
-        this.sampleIds = sampleIds;
-//        inverseSampleIds = createInverseMap(sampleIds);
+        this.sampleIds = sampleIds == null? null : HashBiMap.create(sampleIds);
     }
 
-    public Map<String, Integer> getCohortIds() {
+    public BiMap<String, Integer> getCohortIds() {
         return cohortIds;
     }
 
     public void setCohortIds(Map<String, Integer> cohortIds) {
-        this.cohortIds = cohortIds;
-//        inverseCohortIds = createInverseMap(cohortIds);
+        this.cohortIds = cohortIds == null? null :  HashBiMap.create(cohortIds);
     }
 
     public Map<Integer, Set<Integer>> getCohorts() {
@@ -195,11 +194,11 @@ public class StudyConfiguration implements Cloneable {
         this.cohorts = cohorts;
     }
 
-    public Set<Integer> getIndexedFiles() {
+    public LinkedHashSet<Integer> getIndexedFiles() {
         return indexedFiles;
     }
 
-    public void setIndexedFiles(Set<Integer> indexedFiles) {
+    public void setIndexedFiles(LinkedHashSet<Integer> indexedFiles) {
         this.indexedFiles = indexedFiles;
     }
 
@@ -211,11 +210,11 @@ public class StudyConfiguration implements Cloneable {
         this.headers = headers;
     }
 
-    public Map<Integer, Set<Integer>> getSamplesInFiles() {
+    public Map<Integer, LinkedHashSet<Integer>> getSamplesInFiles() {
         return samplesInFiles;
     }
 
-    public void setSamplesInFiles(Map<Integer, Set<Integer>> samplesInFiles) {
+    public void setSamplesInFiles(Map<Integer, LinkedHashSet<Integer>> samplesInFiles) {
         this.samplesInFiles = samplesInFiles;
     }
 
@@ -302,18 +301,23 @@ public class StudyConfiguration implements Cloneable {
         return result;
     }
 
+    public static <T,R> BiMap<R,T> inverseMap(BiMap<T, R> map) {
+        return map.inverse();
+    }
+
+    @Deprecated
     public static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
-        Map<R,T> inverseMap = new LinkedHashMap<>(map.size());
+        Map<R,T> inverseMap = new HashMap<>();
         for (Map.Entry<T, R> entry : map.entrySet()) {
             inverseMap.put(entry.getValue(), entry.getKey());
         }
         return inverseMap;
     }
 
-    public static Map<String, Integer> getIndexedSamples(StudyConfiguration studyConfiguration) {
-        Map<Integer, String> idSample = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
-        Map<String, Integer> sampleIds = new LinkedHashMap<>();
-        for (Map.Entry<Integer, Set<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+    public static BiMap<String, Integer> getIndexedSamples(StudyConfiguration studyConfiguration) {
+        BiMap<Integer, String> idSample = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+        BiMap<String, Integer> sampleIds = HashBiMap.create();
+        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
             if (studyConfiguration.getIndexedFiles().contains(entry.getKey())) {
                 for (Integer sampleId : entry.getValue()) {
                     sampleIds.put(idSample.get(sampleId), sampleId);
@@ -321,6 +325,23 @@ public class StudyConfiguration implements Cloneable {
             }
         }
         return sampleIds;
+    }
+
+    public static BiMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
+        BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
+        int position = 0;
+        BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
+        for (Integer indexedFileId : studyConfiguration.getIndexedFiles()) {
+            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(indexedFileId)) {
+                samplesPosition.put(idSamples.get(sampleId), position++);
+            }
+        }
+        for (int fileId : fileIds) {
+            for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
+                samplesPosition.put(idSamples.get(sampleId), position++);
+            }
+        }
+        return samplesPosition;
     }
 
 }

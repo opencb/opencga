@@ -103,7 +103,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
         Query query = new Query();
-        Set<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
+        LinkedHashSet<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
         List<String> returnedSamples = new LinkedList<>();
         Map<Integer, String> sampleIdMap = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
         for (Integer sampleId : returnedSamplesIds) {
