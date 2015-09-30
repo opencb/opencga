@@ -545,6 +545,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                             logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
                             studyConfiguration.getCalculatedStats().remove(defaultCohortId);
                             studyConfiguration.getInvalidStats().add(defaultCohortId);
+                            options.put(Options.OVERWRITE_STATS.key(), true);
                         }
                     }
                 }
