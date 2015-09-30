@@ -114,7 +114,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         int studyId = ((Number) object.get(STUDYID_FIELD)).intValue();
 //        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
         String fileId = returnedFiles != null && returnedFiles.size() == 1? returnedFiles.iterator().next().toString() : null;
-        VariantSourceEntry file = new VariantSourceEntry(fileId, getStudyName(studyId));
+        VariantSourceEntry study = new VariantSourceEntry(fileId, getStudyName(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
         DBObject fileObject = null;
@@ -137,20 +137,20 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                             if (includeSrc) {
                                 byte[] o = (byte[]) entry.getValue();
                                 try {
-                                    file.addAttribute(fileId_ + entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
+                                    study.addAttribute(fileId_ + entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
                                 } catch (IOException ex) {
                                     Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         } else {
-                            file.addAttribute(fileId_ + entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
+                            study.addAttribute(fileId_ + entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
                         }
                     }
                 }
                 if (fileObject.containsField(ORI_FIELD)) {
                     DBObject _ori = (DBObject) fileObject.get(ORI_FIELD);
                     String ori = _ori.get("s") + ":" + _ori.get("i");
-                    file.addAttribute(fileId_ + "ori", ori);
+                    study.addAttribute(fileId_ + "ori", ori);
                 }
             }
         }
@@ -164,32 +164,24 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 //                alternatives[i] = o.toString();
 //                i++;
 //            }
-            file.setSecondaryAlternates(list);
+            study.setSecondaryAlternates(list);
         }
 
 
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
-//            file.setFormat((String) fileObject.get(FORMAT_FIELD));
+//            study.setFormat((String) fileObject.get(FORMAT_FIELD));
 //        } else {
 
 //        }
 
         // Samples
         if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
-            Map<String, Map<String, String>> samplesData = samplesConverter.convertToDataModelType(object, studyId);
-
-            // Add the samples to the Java object, combining the data structures
-            // with the samples' names and the genotypes
-            for (Map.Entry<String, Map<String, String>> sampleData : samplesData.entrySet()) {
-                file.addSampleData(sampleData.getKey(), sampleData.getValue());
-            }
-
-            file.setFormatAsString(samplesConverter.getFormat(studyId));
+            samplesConverter.convertToDataModelType(object, study, studyId);
         } else {
-            file.setFormat(Collections.<String>emptyList());
+            study.setFormat(Collections.<String>emptyList());
         }
 
-        return file;
+        return study;
     }
 
     public String getStudyName(int studyId) {

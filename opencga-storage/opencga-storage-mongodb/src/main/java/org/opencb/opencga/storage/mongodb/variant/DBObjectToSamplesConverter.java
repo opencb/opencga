@@ -116,10 +116,19 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         studyConfigurations.forEach(this::addStudyConfiguration);
     }
 
-    //    @Override
-    public Map<String, Map<String, String>> convertToDataModelType(DBObject object, int studyId) {
-//        Integer studyId = Integer.parseInt(object.get(STUDYID_FIELD).toString());
-//        Integer studyId = Integer.parseInt(studyIdStr);
+    public List<List<String>> convertToDataModelType(DBObject object, int studyId) {
+        return convertToDataModelType(object, null, studyId);
+    }
+
+    /**
+     *
+     * @param object Mongo object
+     * @param study  If not null, will be filled with Format, SamplesData and SamplesPosition
+     * @param studyId StudyId
+     * @return Samples Data
+     */
+    public List<List<String>> convertToDataModelType(DBObject object, VariantSourceEntry study, int studyId) {
+
         if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument, need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
             if(queryResult.first() == null) {
@@ -136,38 +145,24 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             } else {
                 addStudyConfiguration(queryResult.first());
             }
-//            QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(
-//                    object.get(FILEID_FIELD).toString(), null);
-//            if(samplesBySource.getResult().isEmpty()) {
-//                System.out.println("DBObjectToSamplesConverter.convertToDataModelType " + samplesBySource);
-//                sampleIds = null;
-//                idSamples = null;
-//            } else {
-//                setSamples((List<String>) samplesBySource.getResult().get(0));
-//            }
         }
 
         if (!studyConfigurations.containsKey(studyId)) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
         if (sampleIds == null || sampleIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
+        final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
-//        int numSamples = idSamples.size();
 
-        // Temporary file, just to store the samples
-//        VariantSourceEntry fileWithSamples = new VariantSourceEntry(fileId.toString(), studyId.toString());
-        Map<String, Map<String, String>> samplesData = new LinkedHashMap<>();//new VariantSourceEntry(fileId.toString(), studyId.toString());
+        List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
-        // Add the samples to the file
-        for (Map.Entry<String, Integer> entry : sampleIds.entrySet()) {
-            samplesData.put(entry.getKey(), new HashMap<>(1)); //size == 1, only will contain GT field
-        }
 
         // An array of genotypes is initialized with the most common one
 //        String mostCommonGtString = mongoGenotypes.getString("def");
@@ -179,9 +174,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         if (mostCommonGtString == null) {
             mostCommonGtString = UNKNOWN_GENOTYPE;
         }
-        for (Map.Entry<String, Map<String, String>> entry : samplesData.entrySet()) {
-            entry.getValue().put("GT", mostCommonGtString);
+
+        // Add the samples to the file
+        for (int i = 0; i < sampleIds.size(); i++) {
+            String[] values = new String[1 + extraFields.size()];
+            values[0] = mostCommonGtString;
+            samplesData.add(Arrays.asList(values));
         }
+
 
         // Loop through the non-most commmon genotypes, and set their defaultValue
         // in the position specified in the array, such as:
@@ -204,13 +204,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
             for (Integer sampleId : (List<Integer>) dbo.getValue()) {
                 if (idSamples.containsKey(sampleId)) {
-                    samplesData.get(idSamples.get(sampleId)).put("GT", genotype);
+                    samplesData.get(samplesPosition.inverse().get(idSamples.get(sampleId))).set(0, genotype);
                 }
             }
         }
 
-        final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        int extraFieldPosition = 1; //Skip GT
         for (String extraField : extraFields) {
             if (object.containsField(extraField.toLowerCase())) {
                 List values = (List) object.get(extraField.toLowerCase());
@@ -218,9 +217,28 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                 for (int i = 0; i < values.size(); i++) {
                     Object value = values.get(i);
                     String sampleName = samplesPosition.get(i);
-                    samplesData.get(sampleName).put(extraField, value.toString());
+                    samplesData.get(samplesPosition.inverse().get(sampleName)).set(extraFieldPosition, value.toString());
                 }
             }
+            extraFieldPosition++;
+        }
+
+        //If != null, just return samplesData
+        if (study != null) {
+            //Set FORMAT
+            if (extraFields.isEmpty()) {
+                study.setFormat(Collections.singletonList("GT"));
+            } else {
+                List<String> format = new ArrayList<>(1 + extraFields.size());
+                format.add("GT");
+                format.addAll(extraFields);
+                study.setFormat(format);
+            }
+
+            //Set Samples Position
+            study.setSamplesPosition(samplesPosition.inverse());
+            //Set Samples Data
+            study.setSamplesData(samplesData);
         }
 
         return samplesData;
@@ -416,14 +434,15 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         return genotype.replace(".", "-1");
     }
 
-    public String getFormat(int studyId) {
+    public List<String> getFormat(int studyId) {
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
-        String others = extraFields.stream().collect(Collectors.joining(":"));
-        if (others.isEmpty()) {
-            return "GT";
+        if (extraFields.isEmpty()) {
+            return Collections.singletonList("GT");
         } else {
-            return "GT" + (":" + others);
+            List<String> format = new ArrayList<>(1 + extraFields.size());
+            format.addAll(extraFields);
+            return format;
         }
     }
 }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.junit.*;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
@@ -188,6 +189,31 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
+
+    }
+
+    @Test
+    public void indexWithOtherFields() throws Exception {
+        //GT:DS:GL
+
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DS", "GL"))
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2));
+
+        checkTransformedVariants(etlResult.transformResult, studyConfiguration, 999);
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, 999);
+
+        VariantVcfReader reader = new VariantVcfReader(new VariantSource("", "2", Integer.toString(STUDY_ID), STUDY_NAME), smallInputUri.getPath());
+        reader.open();
+        reader.pre();
+        for (Variant variant : reader.read(999)) {
+            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd()), new QueryOptions()).first();
+            assertEquals(variant, loadedVariant);
+        }
+        reader.post();
+        reader.close();
 
     }
 
@@ -402,7 +428,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
                     Assert.assertNotNull(entry.getValue().getSamplesData());
-                    Assert.assertEquals(2504, entry.getValue().getSamplesData().size());
+                    Assert.assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
 
                     assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
                     assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesDataAsMap().keySet());

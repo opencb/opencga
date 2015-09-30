@@ -209,7 +209,7 @@ public class VariantMongoDBWriterTest {
     public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String> valueProvider, String field) {
         assertTrue(studyConfiguration.getFileIds().values().contains(fileId));
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
-            assertEquals(valueProvider.apply(sampleId), variant.getSourceEntry(null, studyConfiguration.getStudyName())
+            assertEquals(valueProvider.apply(sampleId), variant.getSourceEntry(studyConfiguration.getStudyName())
                     .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
         );
     }
