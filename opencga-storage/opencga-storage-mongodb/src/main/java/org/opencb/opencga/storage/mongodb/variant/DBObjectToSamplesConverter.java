@@ -48,7 +48,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
     private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
-    private Set<String> returnedSamples;
+    private LinkedHashSet<String> returnedSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
     private String returnedUnknownGenotype;
@@ -63,7 +63,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         __studySamplesId = new HashMap<>();
         __returnedSamplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
-        returnedSamples = new HashSet<>();
+        returnedSamples = new LinkedHashSet<>();
         studyConfigurationManager = null;
         returnedUnknownGenotype = null;
     }
@@ -347,8 +347,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         addStudyConfiguration(studyConfiguration);
     }
 
-    public void setReturnedSamples(Set<String> returnedSamples) {
-        this.returnedSamples = returnedSamples;
+    public void setReturnedSamples(List<String> returnedSamples) {
+        this.returnedSamples = new LinkedHashSet<>(returnedSamples);
         __studySamplesId.clear();
         __returnedSamplesPosition.clear();
     }
@@ -411,9 +411,15 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             } else {
                 samplesPosition = new LinkedHashMap<>(returnedSamples.size());
                 int index = 0;
-                for (String sample : getIndexedSamplesIdMap(studyConfiguration.getStudyId()).keySet()) {
-                    samplesPosition.put(sample, index++);
+                BiMap<String, Integer> indexedSamplesId = getIndexedSamplesIdMap(studyConfiguration.getStudyId());
+                for (String returnedSample : returnedSamples) {
+                    if (indexedSamplesId.containsKey(returnedSample)) {
+                        samplesPosition.put(returnedSample, index++);
+                    }
                 }
+//                for (String sample : indexedSamplesId.keySet()) {
+//                    samplesPosition.put(sample, index++);
+//                }
             }
             __returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
         }

@@ -245,43 +245,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(query, options);
         List<Variant> variants = queryResult.getResult();
 
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19600");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19600");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19660");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19660");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19661");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19661");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19685");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19685");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19600,NA19685");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19685");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19661,NA19600");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19661");
-
-        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19660,NA19661,NA19600");
-        queryResult = dbAdaptor.get(query, options);
-        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19661", "NA19660");
-
-
-
-
+        checkSamplesData("NA19600", variants, query, options);
+        checkSamplesData("NA19660", variants, query, options);
+        checkSamplesData("NA19661", variants, query, options);
+        checkSamplesData("NA19685", variants, query, options);
+        checkSamplesData("NA19600,NA19685", variants, query, options);
+        checkSamplesData("NA19685,NA19600", variants, query, options);
+        checkSamplesData("NA19660,NA19661,NA19600", variants, query, options);
     }
 
-    public void checkSampleGT(List<Variant> variants1, List<Variant> variants2, String ... samplesName) {
-        Iterator<Variant> it_1 = variants1.iterator();
-        Iterator<Variant> it_2 = variants2.iterator();
+    public void checkSamplesData(String samples, List<Variant> allVariants, Query query, QueryOptions options) {
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
+        queryResult = dbAdaptor.get(query, options);
+        List<String> samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
 
+        Iterator<Variant> it_1 = allVariants.iterator();
+        Iterator<Variant> it_2 = queryResult.getResult().iterator();
 
         LinkedHashMap<String, Integer> samplesPosition1 = null;
         LinkedHashMap<String, Integer> samplesPosition2 = null;
@@ -294,6 +273,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
             if (samplesPosition2 == null) {
                 samplesPosition2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+                assertEquals(samplesName, new ArrayList<>(samplesPosition2.keySet()));
             }
             assertSame(samplesPosition1, variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
             assertSame(samplesPosition2, variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());

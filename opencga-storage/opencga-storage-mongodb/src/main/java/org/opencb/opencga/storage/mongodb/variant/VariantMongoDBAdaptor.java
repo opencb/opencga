@@ -1273,7 +1273,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             //Remove the studyName, if any
             samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                    .stream().map(s -> s.contains(":")? s.split(":")[1] : s).collect(Collectors.toSet()));
+                    .stream().map(s -> s.contains(":")? s.split(":")[1] : s).collect(Collectors.toList()));
         }
         DBObjectToVariantSourceEntryConverter sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(
                 false,
