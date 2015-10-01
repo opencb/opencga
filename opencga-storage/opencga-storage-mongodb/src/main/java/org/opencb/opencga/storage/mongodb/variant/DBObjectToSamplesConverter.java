@@ -46,6 +46,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
+    private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private Set<String> returnedSamples;
     private VariantSourceDBAdaptor sourceDbAdaptor;
@@ -60,6 +61,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     DBObjectToSamplesConverter() {
         studyConfigurations = new HashMap<>();
         __studySamplesId = new HashMap<>();
+        __returnedSamplesPosition = new HashMap<>();
         studyDefaultGenotypeSet = new HashMap<>();
         returnedSamples = new HashSet<>();
         studyConfigurationManager = null;
@@ -156,7 +158,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         if (sampleIds == null || sampleIds.isEmpty()) {
             return Collections.emptyList();
         }
-        final BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration);
+        final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
@@ -204,7 +207,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
             for (Integer sampleId : (List<Integer>) dbo.getValue()) {
                 if (idSamples.containsKey(sampleId)) {
-                    samplesData.get(samplesPosition.inverse().get(idSamples.get(sampleId))).set(0, genotype);
+                    samplesData.get(samplesPositionToReturn.get(idSamples.get(sampleId))).set(0, genotype);
                 }
             }
         }
@@ -216,8 +219,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
                 for (int i = 0; i < values.size(); i++) {
                     Object value = values.get(i);
-                    String sampleName = samplesPosition.get(i);
-                    samplesData.get(samplesPosition.inverse().get(sampleName)).set(extraFieldPosition, value.toString());
+                    String sampleName = samplesPosition.inverse().get(i);
+                    samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, value.toString());
                 }
             }
             extraFieldPosition++;
@@ -236,7 +239,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
 
             //Set Samples Position
-            study.setSamplesPosition(samplesPosition.inverse());
+            study.setSamplesPosition(samplesPositionToReturn);
             //Set Samples Data
             study.setSamplesData(samplesData);
         }
@@ -347,6 +350,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public void setReturnedSamples(Set<String> returnedSamples) {
         this.returnedSamples = returnedSamples;
         __studySamplesId.clear();
+        __returnedSamplesPosition.clear();
     }
 
     public void addStudyConfiguration(StudyConfiguration studyConfiguration) {
@@ -379,15 +383,17 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * Lazy usage of loaded samplesIdMap.
      **/
     private BiMap<String, Integer> getIndexedSamplesIdMap(int studyId) {
-        final BiMap<String, Integer> sampleIds;
+        BiMap<String, Integer> sampleIds;
         if (this.__studySamplesId.get(studyId) == null) {
             StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
             sampleIds = StudyConfiguration.getIndexedSamples(studyConfiguration);
             if (!returnedSamples.isEmpty()) {
+                BiMap<String, Integer> returnedSampleIds = HashBiMap.create();
                 sampleIds.entrySet().stream()
                         //ReturnedSamples could be sampleNames or sampleIds as a string
-                        .filter(e -> !returnedSamples.contains(e.getKey()) && !returnedSamples.contains(e.getValue().toString()))
-                        .forEach(stringIntegerEntry -> sampleIds.remove(stringIntegerEntry.getKey()));
+                        .filter(e -> returnedSamples.contains(e.getKey()) || returnedSamples.contains(e.getValue().toString()))
+                        .forEach(stringIntegerEntry -> returnedSampleIds.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+                sampleIds = returnedSampleIds;
             }
             this.__studySamplesId.put(studyId, sampleIds);
         } else {
@@ -396,6 +402,25 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         return sampleIds;
     }
+
+    private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
+        if (!__returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
+            LinkedHashMap<String, Integer> samplesPosition;
+            if (returnedSamples.isEmpty()) {
+                samplesPosition = new LinkedHashMap<>(StudyConfiguration.getSamplesPosition(studyConfiguration));
+            } else {
+                samplesPosition = new LinkedHashMap<>(returnedSamples.size());
+                int index = 0;
+                for (String sample : getIndexedSamplesIdMap(studyConfiguration.getStudyId()).keySet()) {
+                    samplesPosition.put(sample, index++);
+                }
+            }
+            __returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
+        }
+        LinkedHashMap<String, Integer> samplesPosition = __returnedSamplesPosition.get(studyConfiguration.getStudyId());
+        return samplesPosition;
+    }
+
 
     private VariantSourceEntry getLegacyNoncompressedSamples(BasicDBObject object) {
         VariantSourceEntry variantSourceEntry = new VariantSourceEntry(object.get(FILEID_FIELD).toString(),

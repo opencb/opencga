@@ -33,7 +33,7 @@ public abstract class VariantSourceEntryJsonMixin {
 
     @JsonIgnore public abstract Set<String> getSampleNames();
 
-    @JsonIgnore public abstract Set<String> setSamplePositions();
+    @JsonIgnore public abstract Map<String, Integer> setSamplePositions();
 
     @JsonIgnore public abstract VariantStats getStats();
 

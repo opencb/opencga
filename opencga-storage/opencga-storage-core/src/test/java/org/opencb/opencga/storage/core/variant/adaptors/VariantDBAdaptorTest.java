@@ -22,7 +22,6 @@ import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -32,7 +31,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -148,7 +146,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
         return queryResult.getResult().stream()
                 .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
-                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPop(), p -> p)))
+                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p)))
                 .filter(predicate)
                 .count();
     }
@@ -237,6 +235,74 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.FILES.key(), -1);
         queryResult = dbAdaptor.get(query, options);
         assertEquals("There is no file with ID -1", 0, queryResult.getNumResults());
+    }
+    @Test
+    public void testGetAllVariants_returned_samples() {
+        QueryOptions options = new QueryOptions("limit", 0); //no limit;
+
+        Query query = new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        queryResult = dbAdaptor.get(query, options);
+        List<Variant> variants = queryResult.getResult();
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19600");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19600");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19660");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19660");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19661");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19661");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19685");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19685");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19600,NA19685");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19685");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19661,NA19600");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19661");
+
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "NA19660,NA19661,NA19600");
+        queryResult = dbAdaptor.get(query, options);
+        checkSampleGT(queryResult.getResult(), variants, "NA19600", "NA19661", "NA19660");
+
+
+
+
+    }
+
+    public void checkSampleGT(List<Variant> variants1, List<Variant> variants2, String ... samplesName) {
+        Iterator<Variant> it_1 = variants1.iterator();
+        Iterator<Variant> it_2 = variants2.iterator();
+
+
+        LinkedHashMap<String, Integer> samplesPosition1 = null;
+        LinkedHashMap<String, Integer> samplesPosition2 = null;
+        for (int i = 0; i < queryResult.getNumResults(); i++) {
+            Variant variant1 = it_1.next();
+            Variant variant2 = it_2.next();
+
+            if (samplesPosition1 == null) {
+                samplesPosition1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+            }
+            if (samplesPosition2 == null) {
+                samplesPosition2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+            }
+            assertSame(samplesPosition1, variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition2, variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
+            for (String sampleName: samplesName) {
+                String gt1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                String gt2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                assertEquals(sampleName + " " + variant1.getChromosome() + ":" + variant1.getStart(), gt1, gt2);
+            }
+        }
     }
 
     @Test
