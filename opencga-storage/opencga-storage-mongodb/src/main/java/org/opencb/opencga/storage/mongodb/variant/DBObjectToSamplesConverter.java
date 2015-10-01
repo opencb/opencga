@@ -155,12 +155,13 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
-        if (sampleIds == null || sampleIds.isEmpty()) {
-            return Collections.emptyList();
-        }
         final BiMap<String, Integer> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        if (sampleIds == null || sampleIds.isEmpty()) {
+            fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList());
+            return Collections.emptyList();
+        }
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
 
@@ -226,6 +227,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             extraFieldPosition++;
         }
 
+        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData);
+        return samplesData;
+    }
+
+    private void fillStudyEntryFields(VariantSourceEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData) {
         //If != null, just return samplesData
         if (study != null) {
             //Set FORMAT
@@ -243,8 +249,6 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             //Set Samples Data
             study.setSamplesData(samplesData);
         }
-
-        return samplesData;
     }
 
     public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId, int fileId) {
