@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.io.DataReader;
 import org.slf4j.LoggerFactory;
 

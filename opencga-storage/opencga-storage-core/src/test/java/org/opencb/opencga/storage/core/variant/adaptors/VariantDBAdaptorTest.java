@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
