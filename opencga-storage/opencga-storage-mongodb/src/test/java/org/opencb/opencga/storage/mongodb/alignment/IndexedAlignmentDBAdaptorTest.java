@@ -25,7 +25,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -34,7 +34,6 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
