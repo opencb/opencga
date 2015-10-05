@@ -172,6 +172,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+        studyConfigurationManager.setDefaultQueryOptions(options);
+
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
         parseQuery(query, qb);
