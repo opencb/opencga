@@ -206,15 +206,21 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     @Override
     public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        if (!options.containsKey("include") && !options.containsKey("exclude")) {
+            options.put("exclude", Collections.singletonList("projects.studies.attributes.studyConfiguration"));
+        }
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
         if (!studyResult.getResult().isEmpty()) {
             authorizationManager.filterFiles(userId, studyId, studyResult.getResult().get(0).getFiles());
         }
-        return studyResult;
 
+        return studyResult;
     }
 
     @Override
@@ -223,6 +229,10 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        if (!options.containsKey("include") && !options.containsKey("exclude")) {
+            options.put("exclude", Collections.singletonList("projects.studies.attributes.studyConfiguration"));
+        }
 
         query.putAll(options);
 

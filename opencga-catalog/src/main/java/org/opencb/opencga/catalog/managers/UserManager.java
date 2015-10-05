@@ -166,7 +166,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public QueryResult<User> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /**

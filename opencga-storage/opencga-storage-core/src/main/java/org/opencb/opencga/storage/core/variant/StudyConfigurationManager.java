@@ -35,6 +35,7 @@ import java.util.Map;
 public abstract class StudyConfigurationManager {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
+    public static final String FULL = "full";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
 
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();

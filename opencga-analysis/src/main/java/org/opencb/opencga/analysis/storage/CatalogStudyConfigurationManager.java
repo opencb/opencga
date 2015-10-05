@@ -149,8 +149,8 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             if (o != null && o instanceof Map) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
-                logger.trace("Read StudyConfiguration from catalog: {}", studyConfiguration);
-                if (studyConfiguration.getTimeStamp().equals(timeStamp)) {
+                logger.trace("Read StudyConfiguration from catalog");
+                if (Objects.equals(studyConfiguration.getTimeStamp(), timeStamp)) {
                     logger.debug("Return empty StudyConfiguration");
                     return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
                 } else {
@@ -158,7 +158,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 }
             }
 
-            if (studyConfiguration.getFileIds() == null || studyConfiguration.getFileIds().isEmpty()) {
+            if (studyConfiguration.getFileIds() == null || studyConfiguration.getFileIds().isEmpty() || options != null && options.getBoolean(FULL, false)) {
                 fillStudyConfiguration(studyConfiguration, study, sessionId);
                 logger.debug("Updating StudyConfiguration");
                 _updateStudyConfiguration(studyConfiguration, options);
