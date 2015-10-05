@@ -48,10 +48,11 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
-            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
+            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path",
+                    "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
-            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name"));
+            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
