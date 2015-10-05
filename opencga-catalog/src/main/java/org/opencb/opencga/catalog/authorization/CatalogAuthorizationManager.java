@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.db.api.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -305,6 +306,27 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @param group     User belonging group.
      * @throws CatalogException
      */
+    private AclEntry resolveSampleAcl(Sample sample, String userId, Group group) throws CatalogException {
+        if (group == null) {
+            return new AclEntry(userId, false, false, false, false);
+        }
+
+        if (sample.getAcl() == null) {
+            return resolveSampleAcl(sample.getId(), userId, group);
+        } else {
+            Map<String, AclEntry> userAclMap = sample.getAcl().stream().collect(Collectors.toMap(AclEntry::getUserId, e -> e));
+            return resolveSampleAcl(userId, group, userAclMap);
+        }
+    }
+
+    /**
+     * Resolves the permissions between a sample and a user.
+     * Returns the most specific matching ACL following the next sequence:
+     * user > group > others > study
+     *
+     * @param group     User belonging group.
+     * @throws CatalogException
+     */
     private AclEntry resolveSampleAcl(int sampleId, String userId, Group group) throws CatalogException {
         if (group == null) {
             return new AclEntry(userId, false, false, false, false);
@@ -312,6 +334,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         String groupId = "@" + group.getId();
         Map<String, AclEntry> userAclMap = sampleDBAdaptor.getSampleAcl(sampleId, Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID)).first();
+
+        return resolveSampleAcl(userId, group, userAclMap);
+    }
+
+    private AclEntry resolveSampleAcl(String userId, Group group, Map<String, AclEntry> userAclMap) {
+        String groupId = "@" + group.getId();
 
         if (userAclMap.containsKey(userId)) {
             return userAclMap.get(userId);
@@ -476,7 +504,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         Iterator<Sample> sampleIterator = samples.iterator();
         while (sampleIterator.hasNext()) {
             Sample sample = sampleIterator.next();
-            AclEntry sampleACL = resolveSampleAcl(sample.getId(), userId, group);
+            AclEntry sampleACL = resolveSampleAcl(sample, userId, group);
             if (!sampleACL.isRead()) {
                 sampleIterator.remove();
             }

@@ -276,11 +276,18 @@ class CatalogMongoDBUtils {
             List<String> list = filteredOptions.getAsStringList(listName);
             List<String> filteredList = new LinkedList<>();
             int length = route.length();
-            if (list != null) {
+            if (list != null && !list.isEmpty()) {
                 for (String s : list) {
                     if (s.startsWith(route)) {
                         filteredList.add(s.substring(length));
                     }
+                }
+                if (listName.equals("include")) {
+                    filteredList.add("id");
+                    filteredList.add(_ID);
+                } else if (listName.equals("exclude")) {
+                    filteredList.remove("id");
+                    filteredList.remove(_ID);
                 }
                 filteredOptions.put(listName, filteredList);
             }

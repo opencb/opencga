@@ -211,8 +211,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Collections.singletonList("projects.studies.attributes.studyConfiguration"));
+        if (!options.containsKey("include") || options.getList("include") == null || options.getList("include").isEmpty()) {
+            options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
@@ -230,8 +230,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         query = ParamUtils.defaultObject(query, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Collections.singletonList("projects.studies.attributes.studyConfiguration"));
+        if (!options.containsKey("include") || options.getList("include") == null || options.getList("include").isEmpty()) {
+            options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
         query.putAll(options);
