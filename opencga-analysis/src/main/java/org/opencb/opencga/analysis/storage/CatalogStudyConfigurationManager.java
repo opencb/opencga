@@ -138,10 +138,24 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             if (studyId == null) {
                 studyId = catalogManager.getStudyId(studyName);
             }
-            logger.debug("Reading StudyConfiguration from Catalog. studyId: {}", studyId);
+            logger.debug("Reading StudyConfiguration from Catalog. study: {}, studyId: {}", studyName, studyId);
             logger.debug("CatalogStudyConfigurationManager - options = '{}'", ((options == null) ? null : options.toJson()));
             Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
             studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
+
+            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
+            if (o != null && o instanceof Map) {
+                if (((Long) ((Map) o).get("timeStamp")).equals(timeStamp)) {
+                    logger.debug("Return empty StudyConfiguration");
+                    return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
+                } else {
+                    logger.debug("Given timeStamp ({}) not equals to stored({}).", timeStamp, ((Map) o).get("timeStamp"));
+                }
+                Object attributes = ((Map) o).get("attributes");
+                if (attributes != null && attributes instanceof Map) {
+                    studyConfiguration.getAttributes().putAll((Map) attributes);
+                }
+            }
 
             if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
                 logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
@@ -149,17 +163,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                         study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
             }
             logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation().toString());
-            
-            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
-            if (o != null && o instanceof Map) {
-                if (((Long) ((Map) o).get("timeStamp")).equals(timeStamp)) {
-                    return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-                }
-                Object attributes = ((Map) o).get("attributes");
-                if (attributes != null && attributes instanceof Map) {
-                    studyConfiguration.getAttributes().putAll((Map) attributes);
-                }
-            }
+
 //            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
 //            if (o == null ) {
 //                studyConfiguration = new StudyConfiguration(studyId, study.getName());
@@ -168,13 +172,15 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 //            } else {
 //                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
 //            }
-            logger.trace("Read StudyConfiguration studyConfiguration {}", studyConfiguration);
+            logger.trace("Read StudyConfiguration from catalog: {}", studyConfiguration);
 
+            logger.debug("Get Indexed Files");
             QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId);
             for (File file : indexedFiles.getResult()) {
                 studyConfiguration.getIndexedFiles().add(file.getId());
             }
 
+            logger.debug("Get Files");
             QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
             for (File file : files.getResult()) {
                 studyConfiguration.getFileIds().put(file.getName(), file.getId());
@@ -196,11 +202,13 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 }
             }
 
+            logger.debug("Get Samples");
             QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
             for (Sample sample : samples.getResult()) {
                 studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
             }
 
+            logger.debug("Get Cohorts");
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
             for (Cohort cohort : cohorts.getResult()) {
                 studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
@@ -218,12 +226,12 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             logger.error("Unable to get StudyConfiguration from Catalog", e);
         }
 
+        logger.debug("Created StudyConfiguration in {}ms", System.currentTimeMillis() - start);
         if (studyConfiguration == null) {
             return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
         } else {
             return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(studyConfiguration));
         }
-
     }
 
     @Override
