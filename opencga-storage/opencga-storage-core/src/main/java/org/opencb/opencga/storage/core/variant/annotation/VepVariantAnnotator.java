@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.annotation.io.VepFormatReader;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -92,13 +92,18 @@ public class VepVariantAnnotator implements VariantAnnotator {
 
                     /** Read annotations **/
                     List<VariantAnnotation> variantAnnotation;
-                    while ((variantAnnotation = vepFormatReader.read()) != null) {
-                        queue.put(variantAnnotation.get(0));  // read() method always returns a list of just one element
-                        annotationsCounter++;
-                        if (annotationsCounter % 1000 == 0) {
-                            logger.info("Element {}", annotationsCounter);
-                        }
+                    //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME
+                    if (true) {
+                        throw new UnsupportedOperationException();
                     }
+//                    while ((variantAnnotation = vepFormatReader.read()) != null) {
+//                        queue.put(variantAnnotation.get(0));  // read() method always returns a list of just one element
+//                        annotationsCounter++;
+//                        if (annotationsCounter % 1000 == 0) {
+//                            logger.info("Element {}", annotationsCounter);
+//                        }
+//                    }
+                    //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME
                     for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
                         queue.put(lastElement);
                     }

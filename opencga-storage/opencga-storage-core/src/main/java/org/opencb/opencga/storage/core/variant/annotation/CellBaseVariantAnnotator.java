@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variation.GenomicVariant;
 import org.opencb.cellbase.core.client.CellBaseClient;
@@ -49,6 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -295,19 +296,19 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<GenomicVariant> genomicVariantList) throws IOException {
         QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
-        List<String> genomicVariantStringList = new ArrayList<>(genomicVariantList.size());
-        for (GenomicVariant genomicVariant : genomicVariantList) {
-            genomicVariantStringList.add(genomicVariant.toString());
-        }
+//        List<String> genomicVariantStringList = new ArrayList<>(genomicVariantList.size());
+//        for (GenomicVariant genomicVariant : genomicVariantList) {
+//            genomicVariantStringList.add(genomicVariant.toString());
+//        }
 
         boolean queryError = false;
         try {
-            queryResponse = cellBaseClient.get(
-                    CellBaseClient.Category.genomic,
-                    CellBaseClient.SubCategory.variant,
-                    genomicVariantStringList,
-                    CellBaseClient.Resource.fullAnnotation,
-                    new QueryOptions("post", true));
+            queryResponse = cellBaseClient.nativeGet(
+                    CellBaseClient.Category.genomic.toString(),
+                    CellBaseClient.SubCategory.variant.toString(),
+                    genomicVariantList.stream().map(Object::toString).collect(Collectors.joining(",")),
+                    "full_annotation",
+                    new QueryOptions("post", false), VariantAnnotation.class);
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
                 queryError = true;

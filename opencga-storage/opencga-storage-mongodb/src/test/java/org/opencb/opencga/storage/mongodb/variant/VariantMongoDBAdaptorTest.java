@@ -51,32 +51,33 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
 
     @Test
     public void deleteStudyTest() throws Exception {
+        fileIndexed = false;
         dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
-        assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
-        fileIndexed = false;
+        QueryResult<Long> allVariants = dbAdaptor.count(new Query());
+        assertEquals(NUM_VARIANTS, allVariants.first().intValue());
     }
 
     @Test
     public void deleteAndPurgeStudyTest() throws Exception {
+        fileIndexed = false;
         dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
+        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
         assertEquals(0, allVariants.getNumTotalResults());
-        fileIndexed = false;
     }
 
     @Test
     public void deleteStatsTest() throws Exception {
+        fileIndexed = false;
         String deletedCohort = "cohort2";
         dbAdaptor.deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
@@ -85,32 +86,29 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
                 assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue().getCohortStats().keySet().contains(deletedCohort));
             }
         }
-        QueryResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
-        assertEquals(NUM_VARIANTS, allVariants.getNumTotalResults());
-        fileIndexed = false;
+        QueryResult<Long> allVariants = dbAdaptor.count(new Query());
+        assertEquals(NUM_VARIANTS, allVariants.first().intValue());
     }
 
     @Test
     public void deleteAnnotationTest() throws Exception {
-        QueryOptions queryOptions = new QueryOptions("limit", 1);
-
+        fileIndexed = false;
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), true);
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        long numAnnotatedVariants = dbAdaptor.get(query, queryOptions).getNumTotalResults();
+        long numAnnotatedVariants = dbAdaptor.count(query).first();
 
         assertEquals("All variants should be annotated", NUM_VARIANTS, numAnnotatedVariants);
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        long numVariantsChr1 = dbAdaptor.get(query, queryOptions).getNumTotalResults();
+        long numVariantsChr1 = dbAdaptor.count(query).first();
         dbAdaptor.deleteAnnotation("", new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1"), new QueryOptions());
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
-        long numVariantsNoAnnotation = dbAdaptor.get(query, queryOptions).getNumTotalResults();
+        long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
         assertEquals(numVariantsChr1, numVariantsNoAnnotation);
-        fileIndexed = false;
     }
 
 }

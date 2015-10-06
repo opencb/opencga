@@ -109,11 +109,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants() {
-        options = new QueryOptions("limit", 1);
-//        options = new QueryOptions("count", true);
-        queryResult = dbAdaptor.get(new Query(), options);
-        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
-        assertEquals(1, queryResult.getNumResults());
+        long numResults = dbAdaptor.count(null).first();
+        assertEquals(NUM_VARIANTS, numResults);
     }
 
     @Test
@@ -147,6 +144,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
+        queryResult.getResult().forEach(variant -> {
+            assertNotNull(variant);
+            assertNotNull("In" + variant, variant.getAnnotation());
+            assertNotNull("In" + variant, variant.getAnnotation().getPopulationFrequencies());
+        });
         return queryResult.getResult().stream()
                 .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
                         .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p)))
@@ -228,16 +230,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_files() {
-        QueryOptions options = new QueryOptions("limit", 1);
 
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.FILES.key(), 6);
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.FILES.key(), -1);
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals("There is no file with ID -1", 0, queryResult.getNumResults());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals("There is no file with ID -1", 0, numResults);
     }
     @Test
     public void testGetAllVariants_returned_samples() {
@@ -331,9 +331,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         //get for each genotype. Should return all variants
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":0|0,0|1,1|0,1|1,./.");
-        queryResult = dbAdaptor.get(query, new QueryOptions("limit", 1));
-        assertEquals(1, queryResult.getNumResults());
-        assertEquals(NUM_VARIANTS, queryResult.getNumTotalResults());
+        long numResults = dbAdaptor.count(null).first();
+        assertEquals(NUM_VARIANTS, numResults);
 
         //Get all missing genotypes for sample na19600
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":./.");
@@ -419,27 +418,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_maf() throws Exception {
 
         QueryResult<Variant> queryResult;
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2"), new QueryOptions("limit", 1));
-        System.out.println("queryResult.getNumTotalResults() = " + queryResult.getNumTotalResults());
+        long numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2")).first();
+        System.out.println("queryResult.getNumTotalResults() = " + numResults);
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:" + VariantSourceEntry.DEFAULT_COHORT + ">0.2"), null);
         assertEquals(625, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
                 .forEach(map -> assertTrue(map.get(VariantSourceEntry.DEFAULT_COHORT).getMaf() > 0.2));
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2"), new QueryOptions("limit", 1));
-        assertEquals(749, queryResult.getNumTotalResults());
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:10>0.2"), new QueryOptions("limit", 1));
-        assertEquals(749, queryResult.getNumTotalResults());
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:10>0.2"), new QueryOptions("limit", 1));
-        assertEquals(749, queryResult.getNumTotalResults());
+        numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2")).first();
+        assertEquals(749, numResults);
+        numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:10>0.2")).first();
+        assertEquals(749, numResults);
+        numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:10>0.2")).first();
+        assertEquals(749, numResults);
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), null);
         assertEquals(749, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
                 .forEach(map -> assertTrue(map.get("cohort1").getMaf() > 0.2));
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2"), new QueryOptions("limit", 1));
-        assertEquals(691, queryResult.getNumTotalResults());
+        numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2")).first();
+        assertEquals(691, numResults);
         queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
                 .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2));
 
