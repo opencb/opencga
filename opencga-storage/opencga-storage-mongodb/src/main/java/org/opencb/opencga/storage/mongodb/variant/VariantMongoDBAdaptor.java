@@ -172,12 +172,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+        studyConfigurationManager.setDefaultQueryOptions(options);
+
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
         DBObject projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", qb.get().toString());
+        options.add("skipCount", true);
 
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
         // set query Id?

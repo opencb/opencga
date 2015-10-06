@@ -48,10 +48,11 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
-            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
+            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path",
+                    "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
-            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name"));
+            .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
@@ -64,6 +65,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList(
+            "projects.studies.id",
             "projects.studies.alias",
             "projects.studies.attributes." + STUDY_CONFIGURATION_FIELD,
             "projects.studies.attributes." + VariantStorageManager.Options.AGGREGATED_TYPE.key()
@@ -138,28 +140,56 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             if (studyId == null) {
                 studyId = catalogManager.getStudyId(studyName);
             }
-            logger.debug("Reading StudyConfiguration from Catalog. studyId: {}", studyId);
+            logger.debug("Reading StudyConfiguration from Catalog. study: {}, studyId: {}", studyName, studyId);
             logger.debug("CatalogStudyConfigurationManager - options = '{}'", ((options == null) ? null : options.toJson()));
             Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
             studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
 
-            if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
-                logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
-                studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
-                        study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
-            }
-            logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation().toString());
-            
             Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
             if (o != null && o instanceof Map) {
-                if (((Long) ((Map) o).get("timeStamp")).equals(timeStamp)) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
+                logger.trace("Read StudyConfiguration from catalog");
+                if (Objects.equals(studyConfiguration.getTimeStamp(), timeStamp)) {
+                    logger.debug("Return empty StudyConfiguration");
                     return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-                }
-                Object attributes = ((Map) o).get("attributes");
-                if (attributes != null && attributes instanceof Map) {
-                    studyConfiguration.getAttributes().putAll((Map) attributes);
+                } else {
+                    logger.debug("Given timeStamp ({}) not equals to stored({}).", timeStamp, ((Map) o).get("timeStamp"));
                 }
             }
+
+            if (studyConfiguration.getFileIds() == null || studyConfiguration.getFileIds().isEmpty() || options != null && options.getBoolean(FULL, false)) {
+                fillStudyConfiguration(studyConfiguration, study, sessionId);
+                logger.debug("Updating StudyConfiguration");
+                _updateStudyConfiguration(studyConfiguration, options);
+            }
+
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            logger.error("Unable to get StudyConfiguration from Catalog", e);
+        } catch (IOException e) {
+            logger.error("Unable to get StudyConfiguration from Catalog", e);
+            e.printStackTrace();
+        }
+
+        logger.debug("Created StudyConfiguration in {}ms", System.currentTimeMillis() - start);
+        if (studyConfiguration == null) {
+            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
+        } else {
+            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+        }
+    }
+
+    private void fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
+        int studyId = study.getId();
+        fillNullMaps(studyConfiguration);
+        if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
+            logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
+            studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
+                    study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
+        }
+        logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation());
+
 //            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
 //            if (o == null ) {
 //                studyConfiguration = new StudyConfiguration(studyId, study.getName());
@@ -168,62 +198,78 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 //            } else {
 //                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
 //            }
-            logger.trace("Read StudyConfiguration studyConfiguration {}", studyConfiguration);
 
-            QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId);
-            for (File file : indexedFiles.getResult()) {
-                studyConfiguration.getIndexedFiles().add(file.getId());
-            }
+        logger.debug("Get Indexed Files");
+        QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId);
+        for (File file : indexedFiles.getResult()) {
+            studyConfiguration.getIndexedFiles().add(file.getId());
+        }
 
-            QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
-            for (File file : files.getResult()) {
-                studyConfiguration.getFileIds().put(file.getName(), file.getId());
-                studyConfiguration.getSamplesInFiles().put(file.getId(), new LinkedHashSet<>(file.getSampleIds()));
-                if (file.getAttributes().containsKey("variantSource")) {
-                    //attributes.variantSource.metadata.variantFileHeader
-                    Object object = file.getAttributes().get("variantSource");
+        logger.debug("Get Files");
+        QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
+        for (File file : files.getResult()) {
+
+            studyConfiguration.getFileIds().put(file.getName(), file.getId());
+            studyConfiguration.getSamplesInFiles().put(file.getId(), new LinkedHashSet<>(file.getSampleIds()));
+
+
+            if (file.getIndex() != null && file.getIndex().getStatus().equals(Index.Status.READY) && file.getAttributes().containsKey("variantSource")) {
+                //attributes.variantSource.metadata.variantFileHeader
+                Object object = file.getAttributes().get("variantSource");
+                if (object instanceof Map) {
+                    Map variantSource = ((Map) object);
+                    object = variantSource.get("metadata");
                     if (object instanceof Map) {
-                        Map variantSource = ((Map) object);
-                        object = variantSource.get("metadata");
-                        if (object instanceof Map) {
-                            Map metadata = (Map) object;
-                            if (metadata.containsKey("variantFileHeader")) {
-                                String variantFileHeader = metadata.get("variantFileHeader").toString();
-                                studyConfiguration.getHeaders().put(file.getId(), variantFileHeader);
-                            }
+                        Map metadata = (Map) object;
+                        if (metadata.containsKey("variantFileHeader")) {
+                            String variantFileHeader = metadata.get("variantFileHeader").toString();
+                            studyConfiguration.getHeaders().put(file.getId(), variantFileHeader);
                         }
                     }
                 }
             }
-
-            QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
-            for (Sample sample : samples.getResult()) {
-                studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
-            }
-
-            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
-            for (Cohort cohort : cohorts.getResult()) {
-                studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
-                studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
-                if (cohort.getStatus() == Cohort.Status.READY) {
-                    studyConfiguration.getCalculatedStats().add(cohort.getId());
-                } else if (cohort.getStatus() == Cohort.Status.INVALID) {
-                    studyConfiguration.getInvalidStats().add(cohort.getId());
-                }
-            }
-
-
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            logger.error("Unable to get StudyConfiguration from Catalog", e);
         }
 
-        if (studyConfiguration == null) {
-            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-        } else {
-            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+        logger.debug("Get Samples");
+        QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
+
+        for (Sample sample : samples.getResult()) {
+            studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
         }
 
+        logger.debug("Get Cohorts");
+        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
+
+        for (Cohort cohort : cohorts.getResult()) {
+            studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
+            studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
+            if (cohort.getStatus() == Cohort.Status.READY) {
+                studyConfiguration.getCalculatedStats().add(cohort.getId());
+            } else if (cohort.getStatus() == Cohort.Status.INVALID) {
+                studyConfiguration.getInvalidStats().add(cohort.getId());
+            }
+        }
+    }
+
+    private void fillNullMaps(StudyConfiguration studyConfiguration) {
+        if (studyConfiguration.getFileIds() == null) {
+            studyConfiguration.setFileIds(new HashMap<>());
+        }
+        if (studyConfiguration.getSamplesInFiles() == null) {
+            studyConfiguration.setSamplesInFiles(new HashMap<>());
+        }
+        if (studyConfiguration.getSampleIds() == null) {
+            studyConfiguration.setSampleIds(new HashMap<>());
+        }
+        if (studyConfiguration.getCohortIds() == null) {
+            studyConfiguration.setCohortIds(new HashMap<>());
+        }
+        if (studyConfiguration.getCohorts() == null) {
+            studyConfiguration.setCohorts(new HashMap<>());
+        }
+        if (studyConfiguration.getAttributes() == null) {
+            studyConfiguration.setAttributes(new ObjectMap());
+        }
     }
 
     @Override
@@ -233,12 +279,12 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         }
         try {
             logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
-            StudyConfiguration smallStudyConfiguration = new StudyConfiguration(studyConfiguration.getStudyId(), studyConfiguration.getStudyName(), null, null, null, null);
-            smallStudyConfiguration.setIndexedFiles(studyConfiguration.getIndexedFiles());
-            smallStudyConfiguration.setCalculatedStats(studyConfiguration.getCalculatedStats());
-            smallStudyConfiguration.setInvalidStats(studyConfiguration.getInvalidStats());
-            smallStudyConfiguration.setAttributes(studyConfiguration.getAttributes());
-            smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
+//            StudyConfiguration smallStudyConfiguration = new StudyConfiguration(studyConfiguration.getStudyId(), studyConfiguration.getStudyName(), null, null, null, null);
+//            smallStudyConfiguration.setIndexedFiles(studyConfiguration.getIndexedFiles());
+//            smallStudyConfiguration.setCalculatedStats(studyConfiguration.getCalculatedStats());
+//            smallStudyConfiguration.setInvalidStats(studyConfiguration.getInvalidStats());
+//            smallStudyConfiguration.setAttributes(studyConfiguration.getAttributes());
+//            smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
 
             //Check if any cohort stat has been updated
             if (!studyConfiguration.getCalculatedStats().isEmpty()) {
@@ -263,7 +309,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 }
             }
 
-            return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, smallStudyConfiguration)), options.getString("sessionId", sessionId));
+            return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
         } catch (CatalogException e) {
             logger.error("Unable to update StudyConfiguration in Catalog", e);
             return new QueryResult(Integer.toString(studyConfiguration.getStudyId()), -1, 0, 0, "", e.getMessage(), Collections.emptyList());

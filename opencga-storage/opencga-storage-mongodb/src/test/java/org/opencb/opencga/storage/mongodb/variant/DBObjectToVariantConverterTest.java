@@ -129,7 +129,7 @@ public class DBObjectToVariantConverterTest {
         BasicDBObject mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, fileId);
 
         mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
-                new BasicDBObject("QUAL", 0.01).append("AN", 2.0));
+                new BasicDBObject("QUAL", 0.01).append("AN", 2));
 //        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
 
         BasicDBObject mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId)
