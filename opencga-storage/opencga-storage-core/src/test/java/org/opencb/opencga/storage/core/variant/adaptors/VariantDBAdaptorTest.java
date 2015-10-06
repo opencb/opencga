@@ -18,12 +18,11 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.models.variation.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -32,7 +31,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -65,7 +63,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), true);
+                    .append(VariantStorageManager.Options.ANNOTATE.key(), false);
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
 
@@ -116,7 +114,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
-    public void testGetAllVariants_frequency() {
+    public void testGetAllVariants_populationFrequency() {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.REFERENCE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(43, queryResult.getNumResults());
@@ -147,7 +145,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
         return queryResult.getResult().stream()
-                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream().collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPop(), p -> p)))
+                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
+                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p)))
                 .filter(predicate)
                 .count();
     }
@@ -159,7 +158,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(query, null);
         Variant variant = queryResult.first();
         assertEquals(1, queryResult.getNumResults());
-        assertEquals(variant.getStart(), 1650807);
+        assertEquals(variant.getStart(), Integer.valueOf(1650807));
         assertTrue(variant.getIds().contains("rs1137005"));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");
@@ -236,6 +235,54 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.FILES.key(), -1);
         queryResult = dbAdaptor.get(query, options);
         assertEquals("There is no file with ID -1", 0, queryResult.getNumResults());
+    }
+    @Test
+    public void testGetAllVariants_returned_samples() {
+        QueryOptions options = new QueryOptions("limit", 0); //no limit;
+
+        Query query = new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        queryResult = dbAdaptor.get(query, options);
+        List<Variant> variants = queryResult.getResult();
+
+        checkSamplesData("NA19600", variants, query, options);
+        checkSamplesData("NA19660", variants, query, options);
+        checkSamplesData("NA19661", variants, query, options);
+        checkSamplesData("NA19685", variants, query, options);
+        checkSamplesData("NA19600,NA19685", variants, query, options);
+        checkSamplesData("NA19685,NA19600", variants, query, options);
+        checkSamplesData("NA19660,NA19661,NA19600", variants, query, options);
+    }
+
+    public void checkSamplesData(String samples, List<Variant> allVariants, Query query, QueryOptions options) {
+        query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
+        queryResult = dbAdaptor.get(query, options);
+        List<String> samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+
+        Iterator<Variant> it_1 = allVariants.iterator();
+        Iterator<Variant> it_2 = queryResult.getResult().iterator();
+
+        LinkedHashMap<String, Integer> samplesPosition1 = null;
+        LinkedHashMap<String, Integer> samplesPosition2 = null;
+        for (int i = 0; i < queryResult.getNumResults(); i++) {
+            Variant variant1 = it_1.next();
+            Variant variant2 = it_2.next();
+
+            if (samplesPosition1 == null) {
+                samplesPosition1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+            }
+            if (samplesPosition2 == null) {
+                samplesPosition2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+                assertEquals(samplesName, new ArrayList<>(samplesPosition2.keySet()));
+            }
+            assertSame(samplesPosition1, variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition2, variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
+            for (String sampleName: samplesName) {
+                String gt1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                String gt2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                assertEquals(sampleName + " " + variant1.getChromosome() + ":" + variant1.getStart(), gt1, gt2);
+            }
+        }
     }
 
     @Test

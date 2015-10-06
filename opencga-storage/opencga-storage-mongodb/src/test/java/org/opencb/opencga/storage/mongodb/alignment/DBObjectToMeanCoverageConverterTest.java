@@ -21,10 +21,10 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.junit.Test;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.test.GenericTest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class DBObjectToMeanCoverageConverterTest extends GenericTest {
 

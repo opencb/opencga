@@ -22,7 +22,7 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.exceptions.ShortReferenceSequenceException;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.run.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

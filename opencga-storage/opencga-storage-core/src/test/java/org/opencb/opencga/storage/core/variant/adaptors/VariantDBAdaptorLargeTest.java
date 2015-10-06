@@ -281,7 +281,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     @Test
     public void testGetAllVariants_filterFiles_not_1() {
         String unknownGenotype = "./.";
-        query.append(FILES.key(), file2)
+        query.append(FILES.key(), "!" + file1)
                 .append(STUDIES.key(), studyConfiguration1.getStudyName())
                 .append(UNKNOWN_GENOTYPE.key(), unknownGenotype)
                 .append(RETURNED_STUDIES.key(), studyConfiguration1.getStudyName());
@@ -292,8 +292,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
             assertEquals(Collections.singleton(null), returnedFileIds);
             Set<String> returnedStudiesIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toSet());
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyConfiguration1.getStudyName()));
-            VariantSourceEntry sourceEntry = variant.getSourceEntry(null, studyConfiguration1.getStudyName());
-            for (Map.Entry<String, Map<String, String>> entry : sourceEntry.getSamplesData().entrySet()) {
+            VariantSourceEntry sourceEntry = variant.getSourceEntry(studyConfiguration1.getStudyName());
+            for (Map.Entry<String, Map<String, String>> entry : sourceEntry.getSamplesDataAsMap().entrySet()) {
                 String genotype = entry.getValue().get("GT");
                 if (studyConfiguration1.getSamplesInFiles().get(file1).contains(studyConfiguration1.getSampleIds().get(entry.getKey())) && !sourceEntry.getAttributes().containsKey(file1 + "_QUAL")) {
                     assertEquals(unknownGenotype, genotype);

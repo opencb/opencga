@@ -143,8 +143,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
                         }
 //                        sourceEntry = variant.getSourceEntry(Integer.toString(fid), Integer.toString(sid));
                         if (sourceEntry != null) {
-                            Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
-                            cohortStats.put(cid, variantStats);
+                            sourceEntry.setStats(cid, variantStats);
                         } else {
                             //This could happen if the study has been excluded
                             logger.trace("ignoring non present source entry studyId={}", sid);

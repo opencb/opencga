@@ -374,7 +374,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 //            }
 
             if (variant.getIds() == null) {
-                variant.setIds(new HashSet<>());
+                variant.setIds(new LinkedList<>());
             }
 
             StringBuilder vcfRecord = new StringBuilder();
@@ -399,8 +399,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                         .append(variant.getSourceEntries().get(file).getAttribute("FILTER")).append("\t")
                         .append("File=" + file).append(",")
                         .append(variant.getSourceEntries().get(file).getAttribute("INFO")).append("\t")
-                        .append(variant.getSourceEntries().get(file).getFormat()).append("\t")
-                        .append(variant.getSourceEntries().get(file).getSamplesData());
+                        .append(variant.getSourceEntries().get(file).getFormatAsString()).append("\t")
+                        .append(variant.getSourceEntries().get(file).getSamplesDataAsMap());
             }
             printWriter.println(vcfRecord.toString());
         }

@@ -143,6 +143,7 @@ public class VariantJsonReader implements VariantReader {
         try {
             if (variantsParser.nextToken() != null) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
+                variant.getSourceEntry(source.getFileId(), source.getStudyId()).setSamplesPosition(source.getSamplesPosition());
                 return Arrays.asList(variant);
             }
         } catch (IOException ex) {
@@ -159,6 +160,7 @@ public class VariantJsonReader implements VariantReader {
         try {
             for (int i = 0; i < batchSize && variantsParser.nextToken() != null; i++) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
+                variant.getSourceEntry(source.getFileId(), source.getStudyId()).setSamplesPosition(source.getSamplesPosition());
                 listRecords.add(variant);
             }
         } catch (IOException ex) {

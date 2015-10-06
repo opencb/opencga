@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variation.GenomicVariant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.lib.DBAdaptorFactory;
@@ -237,8 +238,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                         logger.debug("Skip variant! {}", variant);
                     } else {
                         GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
-                                variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
-                                variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
+                                variant.getReference().isEmpty() && variant.getType() == VariantType.INDEL ? "-" : variant.getReference(),
+                                variant.getAlternate().isEmpty() && variant.getType() == VariantType.INDEL ? "-" : variant.getAlternate());
                         genomicVariantList.add(genomicVariant);
                     }
                 }

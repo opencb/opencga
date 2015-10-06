@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -211,6 +212,7 @@ public class VariantStatisticsManager {
             this.studyConfiguration = studyConfiguration;
 //            this.fileId = fileId;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
+            jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
             this.variantSourceStats = variantSourceStats;
             this.tagmap = tagmap;

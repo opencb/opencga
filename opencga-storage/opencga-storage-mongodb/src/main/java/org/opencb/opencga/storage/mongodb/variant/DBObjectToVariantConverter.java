@@ -114,7 +114,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
         if (object.containsField(IDS_FIELD)) {
             Object ids = object.get(IDS_FIELD);
-            variant.setIds(new HashSet<>(((Collection<String>) ids)));
+            variant.setIds(new LinkedList<>(((Collection<String>) ids)));
         }
 
         // Transform HGVS: List of map entries -> Map of lists
@@ -155,7 +155,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());
             annotation.setStart(variant.getStart());
-            variant.setAnnotation(annotation);
+//            variant.setAnnotation(annotation);  //TODO feature/variant-avro: Fix annotation
         }
 
         // Statistics
@@ -193,7 +193,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
-        for (Map.Entry<String, Set<String>> entry : variant.getHgvs().entrySet()) {
+        for (Map.Entry<String, List<String>> entry : variant.getHgvs().entrySet()) {
             for (String value : entry.getValue()) {
                 hgvs.add(new BasicDBObject(HGVS_TYPE_FIELD, entry.getKey()).append(HGVS_NAME_FIELD, value));
             }

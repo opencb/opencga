@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.ObjectMap;

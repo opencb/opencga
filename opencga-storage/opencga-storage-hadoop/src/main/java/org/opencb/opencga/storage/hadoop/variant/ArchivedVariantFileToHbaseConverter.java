@@ -81,7 +81,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         // Attributes
         VariantProtos.VariantFileAttributes attrsProto = buildAttributesProto(object);
         put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + "attrs"), attrsProto.toByteArray());
-        put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + "format"), Bytes.toBytes(object.getFormat()));
+        put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + "format"), Bytes.toBytes(object.getFormatAsString()));
 
         // Samples
         if (samples != null && !samples.isEmpty()) {
@@ -93,7 +93,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         
         // Statistics
         if (statsConverter != null) {
-            VariantStatsProtos.VariantStats statsProto = statsConverter.convertToStorageType(object.getStats());
+            VariantStatsProtos.VariantStats statsProto = statsConverter.convertToStorageType(object.getStats(VariantSourceEntry.DEFAULT_COHORT));
             put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + "stats"), statsProto.toByteArray());
         }
         
