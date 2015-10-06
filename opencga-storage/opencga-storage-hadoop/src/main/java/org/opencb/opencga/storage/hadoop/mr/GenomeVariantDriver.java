@@ -5,7 +5,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Map.Entry;
 
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.io.DatumReader;
@@ -19,16 +18,20 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.opencb.biodata.models.variant.avro.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
-import org.opencb.biodata.models.variant.converter.VariantFileMetadataToVcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
+import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVcfMeta;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +76,8 @@ public class GenomeVariantDriver extends Configured implements Tool {
         
         // add metadata config as string
         addMetaData(conf,inputMetaFile); // TODO store in HBase
-        VcfMeta meta = new GenomeVariantHelper(conf).getMeta(); // testing
+        GenomeVariantHelper variantHelper = new GenomeVariantHelper(conf);
+        VcfMeta meta = variantHelper.getMeta(); // testing
 
         /* JOB setup */
         Job job = Job.getInstance(conf, "Genome Variant to HBase");
@@ -83,7 +87,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         // input
         FileInputFormat.addInputPath(job, new Path(inputfile));
 
-        AvroJob.setInputKeySchema(job, Variant.getClassSchema());
+        AvroJob.setInputKeySchema(job, VariantAvro.getClassSchema());
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
         // mapper
@@ -103,17 +107,28 @@ public class GenomeVariantDriver extends Configured implements Tool {
 
         job.setNumReduceTasks(0);
 
-        if( HBaseUtils.createTableIfNeeded(tablename, GenomeVariantHelper.getDefaultColumnFamily(), job.getConfiguration())){
+        if( HBaseUtils.createTableIfNeeded(tablename, variantHelper.getColumnFamily(), job.getConfiguration())){
             LOG.info(String.format("Create table '%s' in hbase!", tablename));
         }
+        storeMetaData(variantHelper, tablename, job.getConfiguration());
         return job.waitForCompletion(true) ? 0 : 1;
     }
-    
+
+    private void storeMetaData(GenomeVariantHelper variantHelper, String tablename, Configuration conf) throws IOException {
+        Put put = variantHelper.getMetaAsPut();
+        TableName tname = TableName.valueOf(tablename);
+        try (
+                Connection con = ConnectionFactory.createConnection(conf);
+                Table table = con.getTable(tname);){
+            table.put(put);
+        }
+    }
+
     private void addMetaData(Configuration conf, String inputMetaFile) throws IOException {
         Class<GeneratedMessage> clazz = com.google.protobuf.GeneratedMessage.class;
-        System.out.println(clazz.getProtectionDomain().getCodeSource().getLocation());
+        LOG.debug(clazz.getProtectionDomain().getCodeSource().getLocation().toString());
         URL url = clazz.getResource('/'+clazz.getName().replace('.', '/')+".class");
-        System.out.println(url);
+        LOG.debug(url.toString());
         VcfMeta meta = getMetaData(conf, inputMetaFile);
         String protocFile = inputMetaFile+".protoc3";
         Path to = new Path(protocFile);

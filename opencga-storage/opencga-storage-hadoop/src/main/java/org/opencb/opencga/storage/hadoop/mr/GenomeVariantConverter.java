@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,10 +27,11 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.opencb.biodata.models.variant.avro.Variant;
-import org.opencb.biodata.models.variant.converter.VariantAvroToVcfRecord;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.biodata.tools.variant.converter.VariantToProtoVcfRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,20 +39,20 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantConverter extends Mapper<AvroKey<Variant>, NullWritable, ImmutableBytesWritable, Put> {
+public class GenomeVariantConverter extends Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put> {
 
     private final static Logger log = LoggerFactory.getLogger(GenomeVariantConverter.class);
 
-    private final VariantAvroToVcfRecord converter = new VariantAvroToVcfRecord();
+    private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
     private final AtomicReference<GenomeVariantHelper> helper = new AtomicReference<GenomeVariantHelper>();
 
-    DatumWriter<Variant> variantDatumWriter = new SpecificDatumWriter<Variant>(Variant.class);
+    DatumWriter<VariantAvro> variantDatumWriter = new SpecificDatumWriter<VariantAvro>(VariantAvro.class);
 
     public GenomeVariantConverter () {
     }
 
     @Override
-    protected void setup (Mapper<AvroKey<Variant>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
+    protected void setup (Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
             InterruptedException {        
         this.helper.set(new GenomeVariantHelper(context.getConfiguration()));
         converter.updateVcfMeta(getHelper().getMeta());
@@ -72,16 +72,17 @@ public class GenomeVariantConverter extends Mapper<AvroKey<Variant>, NullWritabl
     }
 
     @Override
-    protected void map (AvroKey<Variant> key, NullWritable value,
-            Mapper<AvroKey<Variant>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
-        Variant variant = key.datum();
+    protected void map (AvroKey<VariantAvro> key, NullWritable value,
+            Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
+        VariantAvro varAvro = key.datum();
+        Variant variant = new Variant(varAvro);
         VcfSlice slice = convert(variant);
         Put put = getHelper().wrap(slice);
         ImmutableBytesWritable rowKey = new ImmutableBytesWritable(put.getRow());
         context.write(rowKey, put);
     }
 
-    public VariantAvroToVcfRecord getConverter () {
+    public VariantToProtoVcfRecord getConverter () {
         return converter;
     }
 

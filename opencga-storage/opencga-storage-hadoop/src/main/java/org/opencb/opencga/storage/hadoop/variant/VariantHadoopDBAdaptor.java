@@ -19,7 +19,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
@@ -60,18 +60,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
     }
-
-    @Deprecated
-	@Override
-    public QueryResult<Variant> getAllVariants(QueryOptions options) {return null;}
-
-    @Deprecated
-	@Override
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {return null;}
-
-	@Override
-    @Deprecated
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {return null;}
 
     @Override
     @Deprecated
@@ -158,39 +146,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return allResults;
     }
 
-    @Override
-    @Deprecated
-    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {return null;}
-
-    @Override
-    @Deprecated
-    public QueryResult groupBy(String field, QueryOptions options) {return null;}
-
-    @Override
-    @Deprecated
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator() {
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator(QueryOptions options) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        return null;
-    }
-
-    @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-        return null;
-    }
 
     @Override
     public boolean close() {
@@ -228,173 +183,216 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return logger;
     }
 
+    @Override
+    public void setDataWriter(DataWriter dataWriter) {
+        // TODO Auto-generated method stub
+        
+    }
 
-	@Override
-	public QueryResult<Variant> get(Query query, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public List<QueryResult<Variant>> get(List<Query> queries,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult delete(Query query, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult<Long> count(Query query) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public VariantDBIterator iterator(Query query, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void forEach(Consumer<? super Variant> action) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public QueryResult deleteStudy(String studyName, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void forEach(Query query, Consumer<? super Variant> action,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public QueryResult<Variant> get(Query query, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public StudyConfigurationManager getStudyConfigurationManager() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void setStudyConfigurationManager(
-			StudyConfigurationManager studyConfigurationManager) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public QueryResult<Long> count(Query query) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public void setDataWriter(DataWriter dataWriter) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public QueryResult distinct(Query query, String field) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult insert(List<Variant> variants, String studyName,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public VariantDBIterator iterator() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult delete(Query query, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public VariantDBIterator iterator(Query query, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult deleteSamples(String studyName,
-			List<String> sampleNames, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public void forEach(Consumer<? super Variant> action) {
+        // TODO Auto-generated method stub
+        
+    }
 
-	@Override
-	public QueryResult deleteFile(String studyName, String fileName,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
+        // TODO Auto-generated method stub
+        
+    }
 
-	@Override
-	public QueryResult deleteStudy(String studyName, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult distinct(Query query, String field) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult getFrequency(Query query, Region region,
-			int regionIntervalSize) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult rank(Query query, String field, int numResults,
-			boolean asc) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult groupBy(Query query, String field, QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult groupBy(Query query, List<String> fields,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers,
-			String studyName, QueryOptions queryOptions) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
+            QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult updateStats(
-			List<VariantStatsWrapper> variantStatsWrappers, String studyName,
-			QueryOptions queryOptions) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult deleteStats(String studyName, String cohortName,
-			QueryOptions options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult addAnnotations(
-			List<VariantAnnotation> variantAnnotations,
-			QueryOptions queryOptions) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult deleteAnnotation(String annotationId, Query query,
-			QueryOptions queryOptions) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public QueryResult updateStats(
-			List<VariantStatsWrapper> variantStatsWrappers, int studyId,
-			QueryOptions queryOptions) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public QueryResult<Variant> getAllVariants(QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(String field, QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public VariantDBIterator iterator(QueryOptions options) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
 
 }

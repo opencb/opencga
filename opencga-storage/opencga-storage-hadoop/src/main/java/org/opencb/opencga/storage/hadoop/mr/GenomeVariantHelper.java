@@ -4,7 +4,6 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,14 +35,17 @@ import com.google.protobuf.InvalidProtocolBufferException;
 public class GenomeVariantHelper {
 
     private final static Logger log = LoggerFactory.getLogger(GenomeVariantHelper.class);
-    
-    private static final byte[] COLUMN_FAMILY = Bytes.toBytes("d");
 
-    private static final String VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
-    private static final String VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
-    private static final String GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
-    private static final char ROWKEY_SEPARATOR = '_';
+    private static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
+    private static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+    private static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
+    private static final String CONFIG_META_ROW_KEY = "opencga.storage.hadoop.vcf.meta.key";
+
+    private static final String DEFAULT_META_ROW_KEY = "META";
+    private static final char DEFAULT_ROWKEY_SEPARATOR = '_';
+    private static final byte[] DEFAULT_COLUMN_FAMILY = Bytes.toBytes("d");
     private static Integer DEFAULT_CHUNK_SIZE = 100;
+
     private final VcfMeta meta;
 
     private final byte[] column;
@@ -53,10 +55,12 @@ public class GenomeVariantHelper {
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
+    private byte[] metaRowKey;
+
     public static Logger getLog() {
         return log;
     }
-    
+
     /**
      * @throws IOException
      * 
@@ -64,9 +68,10 @@ public class GenomeVariantHelper {
     public GenomeVariantHelper (Configuration conf) throws IOException {
         meta = loadMetaData(conf);
         column = Bytes.toBytes(getMeta().getFileId());
-        chunkSize.set(conf.getInt(GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
-        this.separator = ROWKEY_SEPARATOR;
-        this.columnFamily = COLUMN_FAMILY;
+        chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
+        this.separator = DEFAULT_ROWKEY_SEPARATOR;
+        this.columnFamily = DEFAULT_COLUMN_FAMILY;
+        this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
     }
 
     public static String printClassJarPath(Class<?> clazz) {
@@ -76,7 +81,7 @@ public class GenomeVariantHelper {
         sb.append(clazz.getResource('/' + clazz.getName().replace('.', '/') + ".class")).append(nl);
         return sb.toString();
     }
-    
+
     public static String printSystemProperties() {
         StringBuilder sb = new StringBuilder();
         String nl = "\n";
@@ -92,19 +97,23 @@ public class GenomeVariantHelper {
     }
 
     public static void setMetaProtoFile (Configuration conf, String filePath) {
-        conf.set(VCF_META_PROTO_FILE, filePath);
+        conf.set(CONFIG_VCF_META_PROTO_FILE, filePath);
+    }
+    
+    public static void setMetaRowKey(Configuration conf, String rowkey){
+        conf.set(CONFIG_META_ROW_KEY, rowkey);
     }
 
     public static void setMetaProtoString (Configuration conf, String utfString) {
-        conf.set(VCF_META_PROTO_STRING, utfString);
+        conf.set(CONFIG_VCF_META_PROTO_STRING, utfString);
     }
 
     public static void setChunkSize (Configuration conf, Integer size) {
-        conf.setInt(GENOME_VARIANT_CHUNK_SIZE, size);
+        conf.setInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, size);
     }
     
     public static byte[] getDefaultColumnFamily(){
-        return COLUMN_FAMILY;
+        return DEFAULT_COLUMN_FAMILY;
     }
 
     public VcfMeta getMeta () {
@@ -130,13 +139,13 @@ public class GenomeVariantHelper {
     public VcfMeta loadMetaData (Configuration conf) throws IOException {
         try{
             // try first from String
-            String protoString = conf.get(VCF_META_PROTO_STRING, StringUtils.EMPTY);
+            String protoString = conf.get(CONFIG_VCF_META_PROTO_STRING, StringUtils.EMPTY);
             if (StringUtils.isNotEmpty(protoString)) {
                 getLog().info("Load Meta from PROTO string ...");
                 return VcfMeta.parseFrom(ByteString.copyFromUtf8(protoString));
             }
             // Else from file
-            String filePath = conf.get(VCF_META_PROTO_FILE, StringUtils.EMPTY);
+            String filePath = conf.get(CONFIG_VCF_META_PROTO_FILE, StringUtils.EMPTY);
             if (StringUtils.isNotEmpty(filePath)) {
                 getLog().info(String.format("Load Meta from file %s ...", filePath));
                 Path path = new Path(filePath);
@@ -216,6 +225,18 @@ public class GenomeVariantHelper {
         Put put = new Put(rowId);
         put.addColumn(getColumnFamily(), getColumn(), arr);
         return put;
+    }
+
+    public Put getMetaAsPut(){
+        byte[] rowId = getMetaRowKey();
+        byte[] data = getMeta().toByteArray();
+        Put put = new Put(rowId);
+        put.addColumn(getColumnFamily(), getColumn(), data);
+        return put;
+    }
+
+    private byte[] getMetaRowKey() {
+        return metaRowKey ;
     }
 
     /**
