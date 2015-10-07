@@ -7,7 +7,6 @@ import org.opencb.opencga.lib.common.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -51,7 +50,7 @@ public class SimpleThreadRunner {
 
         executorService = Executors.newFixedThreadPool(numTasks + 1 + writers.size());
     }
-    public void run() {
+    public void run() throws Exception {
         reader.open();
         reader.pre();
 
@@ -66,22 +65,30 @@ public class SimpleThreadRunner {
             task.pre();
         }
 
-        executorService.submit(new ReaderRunnable(reader));
-        TaskRunnable taskRunnable = new TaskRunnable(this.tasks);
+        List<Future> futures = new ArrayList<>(1 + numTasks + writers.size());
+        futures.add(executorService.submit(new ReaderCallable(reader)));
+        TaskCallable taskCallable = new TaskCallable(this.tasks);
         for (Integer i = 0; i < numTasks; i++) {
-            executorService.submit(taskRunnable);
+            futures.add(executorService.submit(taskCallable));
         }
         for (DataWriter writer : writers) {
-            executorService.submit(new WriterRunnable(writer));
+            futures.add(executorService.submit(new WriterCallable(writer)));
         }
 
-        executorService.shutdown();
         try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+            for (Future future : futures) {
+                future.get();   // this will force the retrieval of the exceptions thrown by the callables
+            }
         } catch (Exception e) {
-            logger.error(ExceptionUtils.getExceptionString(e));
+            logger.error("caught executorService Exception:", e);
+            postAndclose(); // closing resources even if the loop was abruptly stopped
+            throw e;
         }
 
+        postAndclose();
+    }
+
+    private void postAndclose() {
         for (Task task : tasks) {
             task.post();
         }
@@ -95,92 +102,77 @@ public class SimpleThreadRunner {
         for (DataWriter writer : writers) {
             writer.close();
         }
-
     }
 
-    class ReaderRunnable implements Runnable {
+    class ReaderCallable implements Callable<Void> {
 
         final DataReader dataReader;
 
-        ReaderRunnable(DataReader dataReader) {
+        ReaderCallable(DataReader dataReader) {
             this.dataReader = dataReader;
         }
 
         @Override
-        public void run() {
+        public Void call() throws Exception {
             List<String> batch;
 //            System.out.println("reader: init");
+//            try {
             batch = dataReader.read(batchSize);
 //            System.out.println("reader: batch.size = " + batch.size());
 
             while (batch != null && !batch.isEmpty()) {
-                try {
-                    logger.trace("reader: prePut readBlockingQueue.size: " + readBlockingQueue.size());
-                    readBlockingQueue.put(batch);
-                    logger.trace("reader: postPut, readqueue.size: " + readBlockingQueue.size());
-                } catch (InterruptedException e) {
-                    logger.error(ExceptionUtils.getExceptionString(e));
-                }
+                logger.trace("reader: prePut readBlockingQueue.size: " + readBlockingQueue.size());
+                readBlockingQueue.put(batch);
+                logger.trace("reader: postPut, readqueue.size: " + readBlockingQueue.size());
 //                System.out.println("reader: preRead");
                 batch = dataReader.read(batchSize);
 //                System.out.println("reader: batch.size = " + batch.size());
             }
-            try {
-                logger.debug("reader: putting POISON_PILL");
-                readBlockingQueue.put(POISON_PILL);
-            } catch (InterruptedException e) {
-                logger.error(ExceptionUtils.getExceptionString(e));
-            } catch (Exception e) {
-                logger.error("UNEXPECTED ENDING of a reader thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
-            }
+//                logger.debug("reader: putting POISON_PILL");
+//                readBlockingQueue.put(POISON_PILL);
+            logger.debug("reader: putting POISON_PILL");
+            readBlockingQueue.put(POISON_PILL);
+//            } catch (Exception e) {
+//                logger.error();
+//                throw new Exception("UNEXPECTED ENDING of a reader thread due to an error: " + e.getMessage(), e);
+//            }
+            return null;
         }
     }
 
-    class TaskRunnable implements Runnable {
+    class TaskCallable implements Callable<Void> {
 
         private long timeBlockedAtSendWrite;
         private long timeTaskApply;
 
         final List<Task> tasks;
 
-        TaskRunnable(List<Task> tasks) {
+        TaskCallable(List<Task> tasks) {
             this.tasks = tasks;
         }
 
 
         @Override
-        public void run() {
+        public Void call() throws Exception {
             List<String> batch = new ArrayList<>(batchSize);
             long timeBlockedAtSendWrite = 0;
             long timeTaskApply = 0;
-            try {
-                batch = getBatch();
-            } catch (InterruptedException e) {
-                logger.error(ExceptionUtils.getExceptionString(e));
-            }
+            batch = getBatch();
             while (!batch.isEmpty()) {
-                try {
-                    long s;
-                    s = System.nanoTime();
-                    for (Task task : tasks) {
-                        task.apply(batch);
-                    }
-                    timeTaskApply += s - System.nanoTime();
+                long s;
+                s = System.nanoTime();
+                for (Task task : tasks) {
+                    task.apply(batch);
+                }
+                timeTaskApply += s - System.nanoTime();
 //                    logger.trace("task: apply done, pre put, writeBlockingQueue.size: " + writeBlockingQueue.size());
 
-                    s = System.nanoTime();
-                    writeBlockingQueue.put(batch);
-                    logger.trace("task: apply done (post put) writeQueue.size: " + writeBlockingQueue.size());
-                    timeBlockedAtSendWrite += s - System.nanoTime();
-                    batch = getBatch();
-                } catch (InterruptedException | IOException e) {
-                    logger.error(ExceptionUtils.getExceptionString(e));
-                } catch (Exception e) {
-                    logger.error("UNEXPECTED ENDING of a task thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
-                    return;
-                }
-            }
-            synchronized (numTasks) {
+                s = System.nanoTime();
+                writeBlockingQueue.put(batch);
+                logger.trace("task: apply done (post put) writeQueue.size: " + writeBlockingQueue.size());
+                timeBlockedAtSendWrite += s - System.nanoTime();
+                batch = getBatch();
+            } synchronized (numTasks) {
                 this.timeBlockedAtSendWrite += timeBlockedAtSendWrite;
                 this.timeTaskApply += timeTaskApply;
                 finishedTasks++;
@@ -188,16 +180,12 @@ public class SimpleThreadRunner {
                     logger.debug("task; timeBlockedAtSendWrite = " + timeBlockedAtSendWrite / -1000000000.0 + "s");
                     logger.debug("task; timeTaskApply = " + timeTaskApply / -1000000000.0 + "s");
                     logger.trace("task: putting POISON PILL");
-                    try {
-                        writeBlockingQueue.put(POISON_PILL);
-                    } catch (InterruptedException e) {
-                        logger.error(ExceptionUtils.getExceptionString(e));
-                    }
+                    writeBlockingQueue.put(POISON_PILL);
                 }
             }
 
             logger.trace("task: leaving run(). sizes: read: " + readBlockingQueue.size() + ", write: " + writeBlockingQueue.size());
-
+            return null;
         }
         private int finishedTasks = 0;
         private List<String> getBatch() throws InterruptedException {
@@ -212,46 +200,36 @@ public class SimpleThreadRunner {
         }
     }
 
-    class WriterRunnable implements Runnable {
+    class WriterCallable implements Callable<Void> {
 
         long timeBlockedWatingDataToWrite = 0;
         final DataWriter dataWriter;
 
-        WriterRunnable(DataWriter dataWriter) {
+        WriterCallable(DataWriter dataWriter) {
             this.dataWriter = dataWriter;
         }
 
         @Override
-        public void run() {
-            List<String> batch = new ArrayList<>(batchSize);
-            try {
-                batch = getBatch();
-            } catch (InterruptedException e) {
-                logger.error(ExceptionUtils.getExceptionString(e));
-            }
+        public Void call() throws Exception {
+            List<String> batch;
             long s, timeWriting = 0;
-//            while (!batch.isEmpty()) {
+            batch = getBatch();
             while (batch != POISON_PILL) {
-                try {
-                    s = System.nanoTime();
-                    logger.trace("writer: writing...");
-                    dataWriter.write(batch);
-                    logger.trace("writer: wrote");
-                    timeWriting += s - System.nanoTime();
-                    batch = getBatch();
-                } catch (InterruptedException e) {
-                    logger.error(ExceptionUtils.getExceptionString(e));
-                } catch (Exception e) {
-                    logger.error("UNEXPECTED ENDING of a writer thread due to an error:\n" + ExceptionUtils.getExceptionString(e));
-                }
+                s = System.nanoTime();
+                logger.trace("writer: writing...");
+                dataWriter.write(batch);
+                logger.trace("writer: wrote");
+                timeWriting += s - System.nanoTime();
+                batch = getBatch();
             }
             logger.debug("write: timeWriting = " + timeWriting / -1000000000.0 + "s");
             logger.debug("write: timeBlockedWatingDataToWrite = " + timeBlockedWatingDataToWrite / -1000000000.0 + "s");
+            return null;
         }
 
         private List<String> getBatch() throws InterruptedException {
             List<String> batch;
-                logger.trace("writer: about to block, writeBlockingQueue.size() = " + writeBlockingQueue.size());
+            logger.trace("writer: about to block, writeBlockingQueue.size() = " + writeBlockingQueue.size());
 
             long s = System.nanoTime();
             batch = writeBlockingQueue.take();

@@ -118,7 +118,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI load(URI inputUri, ObjectMap params) throws IOException {
+    public URI load(URI inputUri, ObjectMap params) throws IOException, StorageManagerException {
         // input: getDBSchemaReader
         // output: getDBWriter()
 
@@ -207,7 +207,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     batchSize,
                     loadThreads*2,
                     0);
-            threadRunner.run();
+            try {
+                threadRunner.run();
+            } catch (Exception e) {
+                throw new StorageManagerException("MongoDBVariantStorageManager.load failed: runner threw exception", e);
+            }
 
         }
 

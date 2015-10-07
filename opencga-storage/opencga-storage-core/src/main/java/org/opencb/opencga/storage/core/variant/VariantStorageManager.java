@@ -127,7 +127,7 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
      * @throws IOException
      */
     @Override
-    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException {
+    final public URI transform(URI inputUri, URI pedigreeUri, URI outputUri, ObjectMap params) throws IOException, StorageManagerException {
         // input: VcfReader
         // output: JsonWriter
 
@@ -240,7 +240,11 @@ public abstract class VariantStorageManager implements StorageManager<VariantWri
 
             logger.info("Multi thread transform...");
             start = System.currentTimeMillis();
-            runner.run();
+            try {
+                runner.run();
+            } catch (Exception e) {
+                throw new StorageManagerException("VariantStorageManager.transform failed, runner threw exception", e);
+            }
             end = System.currentTimeMillis();
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
