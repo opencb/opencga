@@ -23,12 +23,15 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -43,10 +46,15 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
+import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -196,6 +204,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+        String format = options.getString("transform.format", "json");
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
@@ -238,8 +247,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
 
 
-        Path outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
-        Path outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
+        Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
+        Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
 
         logger.info("Transforming variants...");
         long start, end;
@@ -247,8 +256,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
-                outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
-                outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
+                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
+                outputMetaFile = output.resolve(fileName + ".file.json" + extension);
             }
 
             //Ped Reader
@@ -280,7 +289,43 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             }
             end = System.currentTimeMillis();
 
-        } else {
+        } else if (format.equals("avro")) {
+            //Read VariantSource
+            source = readVariantSource(input, source);
+
+            //Reader
+            StringDataReader dataReader = new StringDataReader(input);
+
+            //Writer
+            DataWriter<ByteBuffer> dataWriter;
+            try {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, new FileOutputStream(outputVariantsFile.toFile()));
+            } catch (FileNotFoundException e) {
+                throw new StorageManagerException("Fail init writer", e);
+            }
+
+            ParallelTaskRunner<String, ByteBuffer> ptr;
+            try {
+                final VariantSource finalSource = source;
+                ptr = new ParallelTaskRunner<>(
+                        dataReader,
+                        () -> new VariantAvroTransformTask(factory, finalSource),
+                        dataWriter,
+                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                );
+            } catch (Exception e) {
+                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+            }
+            logger.info("Multi thread transform...");
+            start = System.currentTimeMillis();
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
+            }
+            end = System.currentTimeMillis();
+        } else if (format.equals("json")) {
             //Read VariantSource
             source = readVariantSource(input, source);
 
@@ -288,10 +333,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             StringDataReader dataReader = new StringDataReader(input);
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile);
 
             final VariantSource finalSource = source;
-            final Path finalOutputFileJsonFile = outputFileJsonFile;
+            final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
             try {
                 VariantJsonTransformTask variantJsonTransformTask = new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
@@ -315,11 +360,13 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
+        } else {
+            throw new IllegalArgumentException("Unknown format " + format);
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
 
-        return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
+        return outputUri.resolve(outputVariantsFile.getFileName().toString());
     }
 
     @Override

@@ -50,18 +50,18 @@ public class VariantJsonReader implements VariantReader {
     protected ObjectMapper jsonObjectMapper;
     private JsonParser variantsParser;
     private JsonParser globalParser;
-    
+
     private InputStream variantsStream;
     private InputStream globalStream;
-    
+
     private String variantFilename;
     private String globalFilename;
-    
+
     private Path variantsPath;
     private Path globalPath;
-    
+
     private VariantSource source;
-    
+
 //    public VariantJsonReader(String variantFilename, String globalFilename) {
     public VariantJsonReader(VariantSource source, String variantFilename, String globalFilename) {
         this.source = source;
@@ -77,7 +77,7 @@ public class VariantJsonReader implements VariantReader {
             this.variantsPath = Paths.get(this.variantFilename);
 //            this.variantsPath = Paths.get(source.getFileName());
             this.globalPath = Paths.get(this.globalFilename);
-            
+
             Files.exists(this.variantsPath);
             Files.exists(this.globalPath);
 
@@ -99,7 +99,7 @@ public class VariantJsonReader implements VariantReader {
                 this.globalStream = new FileInputStream(globalPath.toFile());
             }
 
-            
+
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -110,14 +110,14 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public boolean pre() {
-        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         try {
             variantsParser = factory.createParser(variantsStream);
             globalParser = factory.createParser(globalStream);
             // TODO Optimizations for memory management?
-            
+
             // Read global JSON file and copy its info into the already available VariantSource object
             VariantSource readSource = globalParser.readValueAs(VariantSource.class);
             source.setFileName(readSource.getFileName());
@@ -134,7 +134,7 @@ public class VariantJsonReader implements VariantReader {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
-        
+
         return true;
     }
 
@@ -156,7 +156,7 @@ public class VariantJsonReader implements VariantReader {
     @Override
     public List<Variant> read(int batchSize) {
         List<Variant> listRecords = new ArrayList<>(batchSize);
-        
+
         try {
             for (int i = 0; i < batchSize && variantsParser.nextToken() != null; i++) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
@@ -169,7 +169,7 @@ public class VariantJsonReader implements VariantReader {
 
         return listRecords;
     }
-    
+
     @Override
     public boolean post() {
         return true;
@@ -184,7 +184,7 @@ public class VariantJsonReader implements VariantReader {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
-        
+
         return true;
     }
 

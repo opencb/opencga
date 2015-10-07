@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant;
+package org.opencb.opencga.storage.core.variant.transform;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,7 +42,7 @@ import java.util.List;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String> {
+public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String> {
 
     final VariantFactory factory;
     final ObjectWriter objectWriter;
@@ -88,48 +88,40 @@ class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String
     public List<String> apply(List<String> batch) {
         List<String> outputBatch = new ArrayList<>(batch.size());
 //            logger.info("batch.size() = " + batch.size());
-        try {
-            for (String line : batch) {
-                if (line.startsWith("#") || line.trim().isEmpty()) {
-                    continue;
-                }
-                List<Variant> variants = null;
+        for (String line : batch) {
+            if (line.startsWith("#") || line.trim().isEmpty()) {
+                continue;
+            }
+            List<Variant> variants = null;
+            try {
+                variants = factory.create(source, line);
+            } catch (NotAVariantException e) {
+                variants = Collections.emptyList();
+            } catch (Exception e) {
+                logger.error("Error parsing line: {}", line);
+                throw e;
+            }
+            for (Variant variant : variants) {
                 try {
-                    variants = factory.create(source, line);
-                } catch (NotAVariantException e) {
-                    variants = Collections.emptyList();
-                } catch (Exception e) {
+                    if (!includeSrc) {
+                        for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                            if (variantSourceEntry.getAttributes().containsKey("src")) {
+                                variantSourceEntry.getAttributes().remove("src");
+                            }
+                        }
+                    }
+                    String e = variant.toJson();
+                    outputBatch.add(e);
+                    outputBatch.add("\n");
+                }  catch (Exception e) {
                     logger.error("Error parsing line: {}", line);
                     throw e;
                 }
-                for (Variant variant : variants) {
-                    try {
-                        if (!includeSrc) {
-                            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                                if (variantSourceEntry.getAttributes().containsKey("src")) {
-                                    variantSourceEntry.getAttributes().remove("src");
-                                }
-                            }
-                        }
-//                        String e = objectWriter.writeValueAsString(variant);
-                        String e = variant.toJson();
-                        outputBatch.add(e + "\n");
-                    } /*catch (IOException e) {
-                        logger.error("Error parsing line: {}", line);
-                        throw new IllegalStateException("Error parsing line: " + line , e);
-                    }*/ catch (Exception e) {
-                        logger.error("Error parsing line: {}", line);
-                        throw e;
-                    }
-                }
             }
-//            logger.info("outputBatch.size() = " + outputBatch.size());
-            batch.clear();
-            batch.addAll(outputBatch);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
         }
+//            logger.info("outputBatch.size() = " + outputBatch.size());
+        batch.clear();
+        batch.addAll(outputBatch);
         return batch;
     }
 }
