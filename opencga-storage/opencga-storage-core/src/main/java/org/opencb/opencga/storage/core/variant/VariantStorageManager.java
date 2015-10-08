@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
@@ -31,6 +34,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
@@ -50,15 +54,15 @@ import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTas
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by imedina on 13/08/14.
@@ -303,13 +307,31 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             } catch (FileNotFoundException e) {
                 throw new StorageManagerException("Fail init writer", e);
             }
+            Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
+
+            if (options.getBoolean("transform.htsjdk")) {
+                FullVcfCodec codec = new FullVcfCodec();
+                final VariantSource finalSource = source;
+                try (InputStream fileInputStream = input.toString().endsWith("gz")
+                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                        : new FileInputStream(input.toFile())) {
+                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource);
+                } catch (IOException e) {
+                    throw new StorageManagerException("Unable to read VCFHeader", e);
+                }
+            } else {
+                final VariantSource finalSource = source;
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource);
+            }
 
             ParallelTaskRunner<String, ByteBuffer> ptr;
             try {
-                final VariantSource finalSource = source;
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
-                        () -> new VariantAvroTransformTask(factory, finalSource),
+                        taskSupplier,
                         dataWriter,
                         new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
                 );
