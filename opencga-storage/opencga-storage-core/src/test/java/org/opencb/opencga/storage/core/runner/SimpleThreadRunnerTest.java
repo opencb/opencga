@@ -86,6 +86,17 @@ public class SimpleThreadRunnerTest {
         }
     }
 
+//    @Test
+//    public void finallyTest () throws Exception {
+//        try {
+//            throw new InterruptedException("interrupted");
+//        } catch (Exception e) {
+//            throw new Exception(e);
+//        } finally {
+//            System.out.println("on finally");
+//        }
+//    }
+
     @Test(timeout = 5000)
     public void interruptedReaderTest () throws Exception {
         final AtomicInteger processedElems = new AtomicInteger(0);
@@ -154,13 +165,13 @@ public class SimpleThreadRunnerTest {
         List<String> data = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9");
 
         //Reader
-        DataReader dataReader = new TestDataReader(data, processedElems, true);
+        DataReader dataReader = new TestDataReader(data, processedElems, false);
 
         // Task
         Task task = new TestTask(processedElems, false);
 
         //Writer
-        DataWriter dataWriter = new TestDataWriter(processedElems, false);
+        DataWriter dataWriter = new TestDataWriter(processedElems, true);
 
         SimpleThreadRunner runner = new SimpleThreadRunner(
                 dataReader,
@@ -225,6 +236,11 @@ public class SimpleThreadRunnerTest {
         public List read(int batchSize) {
             List<String> ret = new ArrayList<>();
             for (int i = 0; i < batchSize && cursor < data.size(); i++, cursor++) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 ret.add(data.get(cursor));
                 System.out.println("read elem " + data.get(cursor));
                 processedElems.incrementAndGet();
@@ -319,7 +335,7 @@ public class SimpleThreadRunnerTest {
                 System.out.println("write elem " + elem);
                 processedElems.incrementAndGet();
                 processed++;
-                if (processed == 7 && interrupt) {
+                if (processed == 1 && interrupt) {
                     throw new RuntimeException("Fake writer interrupt");
                 }
             }

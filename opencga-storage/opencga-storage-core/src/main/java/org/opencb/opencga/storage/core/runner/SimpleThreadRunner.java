@@ -79,16 +79,23 @@ public class SimpleThreadRunner {
             for (Future future : futures) {
                 future.get();   // this will force the retrieval of the exceptions thrown by the callables
             }
-        } catch (Exception e) {
-            logger.error("caught executorService Exception:", e);
-            postAndclose(); // closing resources even if the loop was abruptly stopped
-            throw e;
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+        } catch (Exception runnerFailed) {
+            logger.error("caught executorService Exception:", runnerFailed);
+            executorService.shutdownNow();
+            throw runnerFailed;
+        } finally {
+            try {
+                postAndclose(); // closing resources even if the loop was abruptly stopped
+            } catch (Exception closeFailed) { // ignoring close failures, the important exception is "why the runnerFailed"
+                logger.warn("ignoring exception thrown by resources closing: ", closeFailed);
+            }
         }
-
-        postAndclose();
     }
 
     private void postAndclose() {
+        logger.debug("starting resources closing");
         for (Task task : tasks) {
             task.post();
         }
@@ -102,6 +109,7 @@ public class SimpleThreadRunner {
         for (DataWriter writer : writers) {
             writer.close();
         }
+        logger.debug("ending resources closing");
     }
 
     class ReaderCallable implements Callable<Void> {
@@ -116,7 +124,6 @@ public class SimpleThreadRunner {
         public Void call() throws Exception {
             List<String> batch;
 //            System.out.println("reader: init");
-//            try {
             batch = dataReader.read(batchSize);
 //            System.out.println("reader: batch.size = " + batch.size());
 
@@ -132,10 +139,6 @@ public class SimpleThreadRunner {
 //                readBlockingQueue.put(POISON_PILL);
             logger.debug("reader: putting POISON_PILL");
             readBlockingQueue.put(POISON_PILL);
-//            } catch (Exception e) {
-//                logger.error();
-//                throw new Exception("UNEXPECTED ENDING of a reader thread due to an error: " + e.getMessage(), e);
-//            }
             return null;
         }
     }
