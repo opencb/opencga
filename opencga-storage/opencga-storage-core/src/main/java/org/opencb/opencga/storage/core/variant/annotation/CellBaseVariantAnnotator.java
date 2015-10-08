@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
@@ -87,6 +88,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         this.dbAdaptorFactory = null;
         this.cellBaseClient = null;
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
     }
 
 //    public CellBaseVariantAnnotator(CellBaseConfiguration cellbaseConfiguration, String cellbaseSpecies, String cellbaseAssembly) {
@@ -308,7 +310,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     CellBaseClient.SubCategory.variant.toString(),
                     genomicVariantList.stream().map(Object::toString).collect(Collectors.joining(",")),
                     "full_annotation",
-                    new QueryOptions("post", false), VariantAnnotation.class);
+                    new QueryOptions("post", true), VariantAnnotation.class);
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
                 queryError = true;

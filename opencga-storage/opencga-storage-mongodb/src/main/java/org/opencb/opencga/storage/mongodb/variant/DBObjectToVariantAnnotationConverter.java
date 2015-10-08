@@ -84,6 +84,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String GWAS_FIELD = "gwas";
     public static final String CLINVAR_FIELD = "clinvar";
 
+    public static final String DEFAULT_STRAND_VALUE = "+";
+
     private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
 
@@ -151,7 +153,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                             getDefault(ct, GENE_NAME_FIELD, "") /*.toString()*/,
                             getDefault(ct, ENSEMBL_GENE_ID_FIELD, "") /*.toString()*/,
                             getDefault(ct, ENSEMBL_TRANSCRIPT_ID_FIELD, "") /*.toString()*/,
-                            getDefault(ct, STRAND_FIELD, "") /*.toString()*/,
+                            getDefault(ct, STRAND_FIELD, "+") /*.toString()*/,
                             getDefault(ct, BIOTYPE_FIELD, "") /*.toString()*/,
                             getDefault(ct, C_DNA_POSITION_FIELD, 0),
                             getDefault(ct, CDS_POSITION_FIELD, 0),
@@ -323,7 +325,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 putNotNull(ct, ENSEMBL_TRANSCRIPT_ID_FIELD, consequenceType.getEnsemblTranscriptId());
 //                putNotNull(ct, RELATIVE_POS_FIELD, consequenceType.getRelativePosition());
                 putNotNull(ct, CODON_FIELD, consequenceType.getCodon());
-                putNotNull(ct, STRAND_FIELD, consequenceType.getStrand());
+                putNotDefault(ct, STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
                 putNotNull(ct, BIOTYPE_FIELD, consequenceType.getBiotype());
                 putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getCDnaPosition());
                 putNotNull(ct, CDS_POSITION_FIELD, consequenceType.getCdsPosition());
@@ -421,15 +423,17 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
         //Clinical Data
         BasicDBObject clinicalDBObject = new BasicDBObject();
-        if(variantAnnotation.getVariantTraitAssociation()!=null) {
+        if (variantAnnotation.getVariantTraitAssociation() != null) {
             putNotNull(clinicalDBObject, COSMIC_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
+                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
             putNotNull(clinicalDBObject, GWAS_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
+                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
             putNotNull(clinicalDBObject, CLINVAR_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
+                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
         }
-        putNotNull(dbObject, CLINICAL_DATA_FIELD, clinicalDBObject);
+        if (!clinicalDBObject.isEmpty()) {
+            dbObject.put(CLINICAL_DATA_FIELD, clinicalDBObject);
+        }
 
         return dbObject;
     }
@@ -498,6 +502,12 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
     private void putNotNull(DBObject dbObject, String key, Integer obj) {
         if(obj != null && obj != 0) {
+            dbObject.put(key, obj);
+        }
+    }
+
+    private void putNotDefault(DBObject dbObject, String key, String obj, Object defaultValue) {
+        if (obj != null && !obj.isEmpty() && !obj.equals(defaultValue)) {
             dbObject.put(key, obj);
         }
     }

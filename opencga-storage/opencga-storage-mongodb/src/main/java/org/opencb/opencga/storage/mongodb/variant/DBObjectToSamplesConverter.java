@@ -252,7 +252,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
     public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId, int fileId) {
-        Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
+        Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
 
@@ -261,18 +261,18 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         for (Map.Entry<String, Map<String, String>> sample : object.entrySet()) {
             String genotype = sample.getValue().get("GT");
             if (genotype != null) {
-                Genotype g = new Genotype(genotype);
-                List<Integer> samplesWithGenotype = genotypeCodes.get(g);
+//                Genotype g = new Genotype(genotype);
+                List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
                 if (samplesWithGenotype == null) {
                     samplesWithGenotype = new ArrayList<>();
-                    genotypeCodes.put(g, samplesWithGenotype);
+                    genotypeCodes.put(genotype, samplesWithGenotype);
                 }
                 samplesWithGenotype.add(sampleIds.get(sample.getKey()));
             }
         }
 
 
-        Set<Genotype> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().map(Genotype::new).collect(Collectors.toSet());
+        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
         // In Mongo, samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
@@ -282,8 +282,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
         BasicDBObject mongoGenotypes = new BasicDBObject();
-        for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-            String genotypeStr = genotypeToStorageType(entry.getKey().toString());
+        for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
+            String genotypeStr = genotypeToStorageType(entry.getKey());
             if (!defaultGenotype.contains(entry.getKey())) {
                 mongoGenotypes.append(genotypeStr, entry.getValue());
             }
