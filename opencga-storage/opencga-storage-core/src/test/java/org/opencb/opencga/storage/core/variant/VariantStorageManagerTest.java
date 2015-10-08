@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.junit.*;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -53,6 +54,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         ETLResult etlResult = runDefaultETL(variantStorageManager, studyConfiguration);
         assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.gz'" ,
                 Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.gz"));
+
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
+        checkTransformedVariants(etlResult.transformResult, studyConfiguration);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
+    }
+
+    @Test
+    public void avroBasicIndex() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(inputUri ,variantStorageManager, studyConfiguration, new ObjectMap("transform.format", "avro"));
+        assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.avro.gz'" ,
+                Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.avro.gz"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.transformResult, studyConfiguration);
@@ -383,27 +397,25 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     /* ---------------------------------------------------- */
 
 
-    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) {
+    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageManagerException {
         checkTransformedVariants(variantsJson, studyConfiguration, NUM_VARIANTS);
     }
 
-    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants) {
+    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants) throws StorageManagerException {
         long start = System.currentTimeMillis();
-        VariantJsonReader variantJsonReader = new VariantJsonReader(new VariantSource(VCF_TEST_FILE_NAME, "6", "", ""),
-                variantsJson.getPath(),
-                variantsJson.getPath().replace("variants", "file"));
+        VariantReader variantReader = VariantStorageManager.getVariantReader(Paths.get(variantsJson.getPath()), new VariantSource(VCF_TEST_FILE_NAME, "6", "", ""));
 
-        variantJsonReader.open();
-        variantJsonReader.pre();
+        variantReader.open();
+        variantReader.pre();
 
         List<Variant> read;
         int numVariants = 0;
-        while ((read = variantJsonReader.read(100)) != null && !read.isEmpty()) {
+        while ((read = variantReader.read(100)) != null && !read.isEmpty()) {
             numVariants += read.size();
         }
 
-        variantJsonReader.post();
-        variantJsonReader.close();
+        variantReader.post();
+        variantReader.close();
 
         assertEquals(expectedNumVariants, numVariants); //9792
         logger.info("checkTransformedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");

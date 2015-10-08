@@ -1,22 +1,32 @@
 package org.opencb.opencga.storage.core.variant.transform;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroEncoder;
+import org.opencb.opencga.storage.core.runner.StringDataWriter;
+import org.opencb.opencga.storage.core.variant.io.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,21 +48,24 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
     private final VCFCodec vcfCodec;
     private final VariantContextToVariantConverter converter;
     private final VariantNormalizer normalizer;
+    private final Path outputFileJsonFile;
 
 
-    public VariantAvroTransformTask(VariantFactory factory, VariantSource source) {
+    public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
         this.factory = factory;
         this.source = source;
+        this.outputFileJsonFile = outputFileJsonFile;
 
         this.vcfCodec = null;
         this.converter = null;
         this.normalizer = null;
-        this.encoder = null;
+        this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
-    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source) {
+    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile) {
         this.factory = null;
         this.source = source;
+        this.outputFileJsonFile = outputFileJsonFile;
 
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
@@ -125,6 +138,15 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
 
     @Override
     public void post() {
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
 
+        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
+        try {
+            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
+            StringDataWriter.write(outputFileJsonFile, Collections.singletonList(sourceJsonString));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
     }
 }

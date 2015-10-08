@@ -16,16 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.BiMap;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -38,22 +28,27 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by imedina on 13/08/14.
@@ -270,8 +265,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Reader
-        VariantReader variantJsonReader;
-        variantJsonReader = getVariantJsonReader(input, source);
+        VariantReader variantReader;
+        variantReader = getVariantReader(input, source);
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
@@ -304,7 +299,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Runner
         if (loadThreads == 1) {
             logger.info("Single thread load...");
-            VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
+            VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, writers, taskList, batchSize);
             vr.run();
         } else {
             logger.info("Multi thread load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
@@ -348,7 +343,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 }
 
                 ptr = new ParallelTaskRunner<>(
-                        variantJsonReader,
+                        variantReader,
                         tasks,
                         null,
                         new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
