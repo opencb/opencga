@@ -211,7 +211,17 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readProjectDenny() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getProject(p1, null, externalSessionId);
+    }
+
+    @Test
+    public void readProjectAllow() throws CatalogException {
         catalogManager.getProject(p1, null, memberSessionId);
+    }
+
+    @Test
+    public void readProjectAllow2() throws CatalogException {
+        catalogManager.getProject(p1, null, ownerSessionId);
     }
 
     /*--------------------------*/

@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.ObjectMap;
@@ -163,7 +163,13 @@ public class VariantAnnotationManager {
 //                            variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
 //                            variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
 //                    genomicVariantList.add(genomicVariant);
-                    batch.add(new VariantAnnotation(variant.getChromosome(), variant.getStart(), variant.getEnd(), variant.getReference(), variant.getAlternate()));
+                    VariantAnnotation variantAnnotation = new VariantAnnotation();
+                    variantAnnotation.setChromosome(variant.getChromosome());
+                    variantAnnotation.setStart( variant.getStart());
+                    variantAnnotation.setEnd( variant.getEnd());
+                    variantAnnotation.setReference( variant.getReference());
+                    variantAnnotation.setAlternate( variant.getAlternate());
+                    batch.add(variantAnnotation);
                 }
             }
             return batch;

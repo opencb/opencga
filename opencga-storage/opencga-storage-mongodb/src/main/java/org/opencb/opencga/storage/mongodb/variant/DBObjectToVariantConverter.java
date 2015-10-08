@@ -24,7 +24,7 @@ import java.util.*;
 
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
@@ -211,12 +211,12 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
 //        // Annotations
         mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
-//        if (variantAnnotationConverter != null) {
-//            if (object.getAnnotation() != null) {
-//                DBObject annotation = variantAnnotationConverter.convertToStorageType(object.getAnnotation());
-//                mongoVariant.append(ANNOTATION_FIELD, annotation);
-//            }
-//        }
+        if (variantAnnotationConverter != null) {
+            if (variant.getAnnotation() != null) {
+                DBObject annotation = variantAnnotationConverter.convertToStorageType(variant.getAnnotation());
+                mongoVariant.append(ANNOTATION_FIELD, annotation);
+            }
+        }
 
         // Statistics
         if (statsConverter != null) {

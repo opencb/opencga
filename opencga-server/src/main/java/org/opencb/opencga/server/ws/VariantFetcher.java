@@ -109,7 +109,9 @@ public class VariantFetcher {
         } else if (!groupBy.isEmpty()) {
             result = dbAdaptor.groupBy(query, groupBy, queryOptions);
         } else {
+            logger.debug("getVariants {}, {}", query, queryOptions);
             result = dbAdaptor.get(query, queryOptions);
+            logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
         }
         return result;
     }

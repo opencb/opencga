@@ -129,12 +129,14 @@ public class OpenCGAWSServer {
             e.printStackTrace();
         }
 
+        String logFile = null;
         try {
             org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
             java.nio.file.Path logs = Paths.get(Config.getOpenCGAHome(), "logs");
             //Files.createDirectory(logs);
-            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n");
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logs.resolve("server.log").toString(), true);
+            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
+            logFile = logs.resolve("server.log").toString();
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
             rollingFileAppender.setThreshold(Level.TRACE);
             rollingFileAppender.setMaxFileSize("10MB");
             rollingFileAppender.setMaxBackupIndex(10);
@@ -149,6 +151,7 @@ public class OpenCGAWSServer {
         logger.info("| Starting OpenCGA-server, creating OpenCGAWSServer");
         logger.info("| This log must appear only once.");
         logger.info("|  * OpenCGA home set to: " + Config.getOpenCGAHome());
+        logger.info("|  * Server logfile: " + logFile);
 
 //        if (!openCGAHome.isEmpty() && Paths.get(openCGAHome).toFile().exists()) {
 //            System.out.println("Using \"openCGAHome\" from the properties file");

@@ -34,7 +34,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
 /**

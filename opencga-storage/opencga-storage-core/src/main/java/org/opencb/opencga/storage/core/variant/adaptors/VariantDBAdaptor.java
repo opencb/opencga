@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;

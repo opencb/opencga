@@ -251,7 +251,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
-        Response okResponse;
         try {
             String[] studyIds = studyIdStrCvs.split(",");
             List<QueryResult> queryResults = new LinkedList<>();
@@ -260,11 +259,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 int studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval));
             }
-            okResponse = createOkResponse(queryResults);
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        return okResponse;
     }
 
     @GET

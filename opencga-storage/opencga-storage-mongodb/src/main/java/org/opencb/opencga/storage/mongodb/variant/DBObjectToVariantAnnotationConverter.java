@@ -25,9 +25,8 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
-import org.opencb.biodata.models.variant.annotation.*;
-import org.opencb.biodata.models.variation.PopulationFrequency;
-import org.opencb.cellbase.core.common.drug.Drug;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,7 +147,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     }
 
 
-                    consequenceTypes.add(new ConsequenceType(
+                    consequenceTypes.add(buildConsequenceType(
                             getDefault(ct, GENE_NAME_FIELD, "") /*.toString()*/,
                             getDefault(ct, ENSEMBL_GENE_ID_FIELD, "") /*.toString()*/,
                             getDefault(ct, ENSEMBL_TRANSCRIPT_ID_FIELD, "") /*.toString()*/,
@@ -156,10 +155,10 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                             getDefault(ct, BIOTYPE_FIELD, "") /*.toString()*/,
                             getDefault(ct, C_DNA_POSITION_FIELD, 0),
                             getDefault(ct, CDS_POSITION_FIELD, 0),
-                            getDefault(ct, AA_POSITION_FIELD, 0),
+                            getDefault(ct, CODON_FIELD, ""), getDefault(ct, AA_POSITION_FIELD, 0),
                             getDefault(ct, AA_REFERENCE_FIELD, "") /*.toString() */,
                             getDefault(ct, AA_ALTERNATE_FIELD, "") /*.toString() */,
-                            getDefault(ct, CODON_FIELD, "") /*.toString() */,
+                            /*.toString() */
                             proteinSubstitutionScores,
                             soAccessionNames));
                 }
@@ -194,8 +193,11 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
                         (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0),
-                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0)
-                ));
+                        (float) getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0),
+                        -1.0f,
+                        -1.0f,
+                        -1.0f
+                        ));
             }
         }
         va.setPopulationFrequencies(populationFrequencies);
@@ -240,34 +242,52 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         return va;
     }
 
+    private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
+                                                 String biotype, Integer cDnaPosition, Integer cdsPosition, String codon, Integer aaPosition,
+                                                 String aaReference, String aaAlternate, List<Score> proteinSubstitutionScores,
+                                                 List<String> soNameList) {
+        List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
+        for (String soName : soNameList) {
+            soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
+        }
+        ProteinVariantAnnotation proteinVariantAnnotation = new ProteinVariantAnnotation(null, null, aaPosition,
+                aaReference, aaAlternate, null, null, proteinSubstitutionScores, null, null);
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, cDnaPosition,
+                cdsPosition, codon, proteinVariantAnnotation, soTerms);
+    }
+
     private VariantTraitAssociation parseClinicalData(DBObject clinicalData) {
-        if(clinicalData!=null) {
+        if (clinicalData != null) {
+            int size = 0;
             VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
             BasicDBList cosmicDBList = (BasicDBList) clinicalData.get(COSMIC_FIELD);
-            if(cosmicDBList!=null) {
+            if (cosmicDBList != null) {
                 List<Cosmic> cosmicList = new ArrayList<>(cosmicDBList.size());
-                for(Object object : cosmicDBList) {
+                for (Object object : cosmicDBList) {
                     cosmicList.add(jsonObjectMapper.convertValue(object, Cosmic.class));
                 }
-                variantTraitAssociation.setCosmicList(cosmicList);
+                size += cosmicList.size();
+                variantTraitAssociation.setCosmic(cosmicList);
             }
             BasicDBList gwasDBList = (BasicDBList) clinicalData.get(GWAS_FIELD);
-            if(gwasDBList!=null) {
+            if (gwasDBList != null) {
                 List<Gwas> gwasList = new ArrayList<>(gwasDBList.size());
-                for(Object object : gwasDBList) {
+                for (Object object : gwasDBList) {
                     gwasList.add(jsonObjectMapper.convertValue(object, Gwas.class));
                 }
-                variantTraitAssociation.setGwasList(gwasList);
+                size += gwasList.size();
+                variantTraitAssociation.setGwas(gwasList);
             }
             BasicDBList clinvarDBList = (BasicDBList) clinicalData.get(CLINVAR_FIELD);
-            if(clinvarDBList!=null) {
-                List<Clinvar> clinvarList = new ArrayList<>(clinvarDBList.size());
-                for(Object object : clinvarDBList) {
-                    clinvarList.add(jsonObjectMapper.convertValue(object, Clinvar.class));
+            if (clinvarDBList != null) {
+                List<ClinVar> clinvarList = new ArrayList<>(clinvarDBList.size());
+                for (Object object : clinvarDBList) {
+                    clinvarList.add(jsonObjectMapper.convertValue(object, ClinVar.class));
                 }
-                variantTraitAssociation.setClinvarList(clinvarList);
+                size += clinvarList.size();
+                variantTraitAssociation.setClinvar(clinvarList);
             }
-            if(variantTraitAssociation.size()>0) {
+            if (size > 0) {
                 return variantTraitAssociation;
             } else {
                 return null;
@@ -301,17 +321,17 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 putNotNull(ct, GENE_NAME_FIELD, consequenceType.getGeneName());
                 putNotNull(ct, ENSEMBL_GENE_ID_FIELD, consequenceType.getEnsemblGeneId());
                 putNotNull(ct, ENSEMBL_TRANSCRIPT_ID_FIELD, consequenceType.getEnsemblTranscriptId());
-                putNotNull(ct, RELATIVE_POS_FIELD, consequenceType.getRelativePosition());
+//                putNotNull(ct, RELATIVE_POS_FIELD, consequenceType.getRelativePosition());
                 putNotNull(ct, CODON_FIELD, consequenceType.getCodon());
                 putNotNull(ct, STRAND_FIELD, consequenceType.getStrand());
                 putNotNull(ct, BIOTYPE_FIELD, consequenceType.getBiotype());
-                putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getcDnaPosition());
+                putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getCDnaPosition());
                 putNotNull(ct, CDS_POSITION_FIELD, consequenceType.getCdsPosition());
 
-                if (consequenceType.getSoTerms() != null) {
+                if (consequenceType.getSequenceOntologyTerms() != null) {
                     List<Integer> soAccession = new LinkedList<>();
-                    for (ConsequenceType.ConsequenceTypeEntry entry : consequenceType.getSoTerms()) {
-                        soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getSoName()));
+                    for (SequenceOntologyTerm entry : consequenceType.getSequenceOntologyTerms()) {
+                        soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getName()));
                     }
                     putNotNull(ct, SO_ACCESSION_FIELD, soAccession);
                 }
@@ -403,11 +423,11 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         BasicDBObject clinicalDBObject = new BasicDBObject();
         if(variantAnnotation.getVariantTraitAssociation()!=null) {
             putNotNull(clinicalDBObject, COSMIC_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmicList()));
+                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
             putNotNull(clinicalDBObject, GWAS_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwasList()));
+                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
             putNotNull(clinicalDBObject, CLINVAR_FIELD,
-                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvarList()));
+                        generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
         }
         putNotNull(dbObject, CLINICAL_DATA_FIELD, clinicalDBObject);
 
@@ -443,8 +463,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
     private DBObject convertPopulationFrequencyToStorage(PopulationFrequency populationFrequency) {
         DBObject dbObject = new BasicDBObject(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
-        putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPop());
-        putNotNull(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, populationFrequency.getSuperPop());
+        putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPopulation());
+        putNotNull(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, populationFrequency.getSuperPopulation());
         putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
         putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
         return dbObject;

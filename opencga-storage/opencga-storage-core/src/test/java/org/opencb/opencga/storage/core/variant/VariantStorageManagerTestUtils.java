@@ -58,11 +58,11 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
         Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath, StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath , StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath, StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
         smallInputUri = smallInputPath.toUri();
-        corruptedInputUri = corruptedInputPath .toUri();
+        corruptedInputUri = corruptedInputPath.toUri();
         outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
 
@@ -71,7 +71,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
     public static URI getResourceUri(String resourceName) throws IOException {
         Path rootDir = getTmpRootDir();
         Path resourcePath = rootDir.resolve(resourceName);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath , StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption.REPLACE_EXISTING);
         return resourcePath.toUri();
     }
 

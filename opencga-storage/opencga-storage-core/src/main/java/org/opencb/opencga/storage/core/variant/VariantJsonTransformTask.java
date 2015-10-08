@@ -25,17 +25,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;

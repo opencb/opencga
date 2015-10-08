@@ -20,7 +20,7 @@ import com.mongodb.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
@@ -172,12 +172,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+        studyConfigurationManager.setDefaultQueryOptions(options);
+
         QueryBuilder qb = QueryBuilder.start();
 //        parseQueryOptions(options, qb);
         parseQuery(query, qb);
 //        DBObject projection = parseProjectionQueryOptions(options);
         DBObject projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", qb.get().toString());
+        options.add("skipCount", true);
 
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
         // set query Id?

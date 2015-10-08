@@ -8,7 +8,7 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 
 import java.util.List;
 
@@ -133,7 +133,7 @@ public class DBObjectToVariantAnnotationConverterTest {
         VariantAnnotation convertedVariantAnnotation = dbObjectToVariantAnnotationConverter.convertToDataModelType(dbObject);
         assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(1).getProteinVariantAnnotation().getReference(), "CYS");
         assertEquals(convertedVariantAnnotation.getGeneDrugInteraction().get(0).getDrugName(), "PA164712505");
-        assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmicList().get(0).getPrimarySite(), "large_intestine");
+        assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
 
     }
 

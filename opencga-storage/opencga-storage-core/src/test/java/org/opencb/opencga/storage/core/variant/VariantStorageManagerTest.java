@@ -417,9 +417,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = studyConfiguration.getStudyName();
-        QueryResult allVariants = dbAdaptor.get(new Query(), new QueryOptions("limit", 1));
-        assertEquals(1, allVariants.getNumResults());
-        assertEquals(expectedNumVariants, allVariants.getNumTotalResults());
+        QueryResult<Long> count = dbAdaptor.count(new Query());
+        assertEquals(1, count.getNumResults());
+        assertEquals(expectedNumVariants, count.first().intValue());
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
             assertTrue(studyConfiguration.getHeaders().containsKey(fileId));
         }
@@ -438,10 +438,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 }
                 for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                     String cohortName = StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId);
-                    assertTrue(entry.getValue().getCohortStats().containsKey(cohortName));
+                    assertTrue(entry.getValue().getStats().containsKey(cohortName));
                     assertEquals(variant + " has incorrect stats for cohort \"" + cohortName + "\":" + cohortId,
                             studyConfiguration.getCohorts().get(cohortId).size(),
-                            entry.getValue().getCohortStats().get(cohortName).getGenotypesCount().values().stream().reduce((a, b) -> a + b).orElse(0).intValue());
+                            entry.getValue().getStats().get(cohortName).getGenotypesCount().values().stream().reduce((a, b) -> a + b).orElse(0).intValue());
                 }
             }
             numVariants++;
