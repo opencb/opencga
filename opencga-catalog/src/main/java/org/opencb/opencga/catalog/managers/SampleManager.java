@@ -66,7 +66,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
         }
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.getSample(sampleId,
-                new QueryOptions("include", Collections.singletonList("annotationSets")));
+                new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets")));
 
         List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
         if (checkAnnotationSet) {

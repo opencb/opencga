@@ -125,7 +125,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
         }
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.getIndividual(individualId,
-                new QueryOptions("include", Collections.singletonList("annotationSets")));
+                new QueryOptions("include", Collections.singletonList("projects.studies.individuals.annotationSets")));
 
         List<AnnotationSet> annotationSets = individualQueryResult.getResult().get(0).getAnnotationSets();
 //        if (checkAnnotationSet) {
