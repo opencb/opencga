@@ -105,8 +105,11 @@ public class JobManager extends AbstractManager implements IJobManager {
         for (Integer inputFile : inputFiles) {
             authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
         }
-        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
-        File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).getResult().get(0);
+        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
+                "projects.studies.files.id",
+                "projects.studies.files.type",
+                "projects.studies.files.path"));
+        File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).first();
 
         if (!outDir.getType().equals(File.Type.FOLDER)) {
             throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
