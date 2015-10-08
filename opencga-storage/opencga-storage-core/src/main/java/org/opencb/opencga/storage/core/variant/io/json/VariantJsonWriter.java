@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.io.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -84,11 +85,12 @@ public class VariantJsonWriter implements VariantWriter {
 
     @Override
     public boolean pre() {
-        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantSource.class, VariantSourceJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);

@@ -11,6 +11,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -35,7 +36,7 @@ import java.util.*;
 public class VariantExporter {
 
     private static final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
-    private static final String ORI = "ori";    // attribute present in the variant to retrieve the reference base in indels. Reference base as T in TA	T
+//    private static final String ORI = "ori";    // attribute present in the variant to retrieve the reference base in indels. Reference base as T in TA	T
 
     private static CellBaseClient cellbaseClient;
 
@@ -353,9 +354,11 @@ public class VariantExporter {
 
     private static String[] getOri(VariantSourceEntry variantSourceEntry) {
 
-        for (Map.Entry<String, String> entry : variantSourceEntry.getAttributes().entrySet()) {
-            if (entry.getKey().endsWith(ORI)) {
-                return entry.getValue().split(":");
+        List<FileEntry> files = variantSourceEntry.getFiles();
+        if (!files.isEmpty()) {
+            String call = files.get(0).getCall();
+            if (call != null && !call.isEmpty()) {
+                return call.split(":");
             }
         }
         return null;

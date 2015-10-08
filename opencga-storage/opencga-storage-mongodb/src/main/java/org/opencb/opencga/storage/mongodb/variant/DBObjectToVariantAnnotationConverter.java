@@ -25,6 +25,7 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
+import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -416,7 +417,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         //XREFs
         if(variantAnnotation.getXrefs() != null) {
             for (Xref xref : variantAnnotation.getXrefs()) {
-                xrefs.add(convertXrefToStorage(xref.getId(), xref.getSrc()));
+                xrefs.add(convertXrefToStorage(xref.getId(), xref.getSource()));
             }
         }
         putNotNull(dbObject, XREFS_FIELD, xrefs);
@@ -443,7 +444,11 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         if (objectList != null) {
             for(T object : objectList) {
                 try {
-                    basicDBList.add(JSON.parse(writer.writeValueAsString(object)));
+                    if (object instanceof GenericRecord) {
+                        basicDBList.add(JSON.parse(object.toString()));
+                    } else {
+                        basicDBList.add(JSON.parse(writer.writeValueAsString(object)));
+                    }
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                     logger.error("Error serializing Clinical Data " + object.getClass(), e);

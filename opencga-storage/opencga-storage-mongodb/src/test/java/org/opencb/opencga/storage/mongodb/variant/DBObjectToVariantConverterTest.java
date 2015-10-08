@@ -147,7 +147,7 @@ public class DBObjectToVariantConverterTest {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToVariantSourceEntryConverter(
                         true,
-                        new DBObjectToSamplesConverter(studyId, sampleNames, "0/0")),
+                        new DBObjectToSamplesConverter(studyId, fileId, sampleNames, "0/0")),
                 new DBObjectToVariantStatsConverter());
         DBObject converted = converter.convertToStorageType(variant);
         assertFalse(converted.containsField(DBObjectToVariantConverter.IDS_FIELD)); //IDs must be added manually.

@@ -111,32 +111,32 @@ public class VariantStatisticsCalculator {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
         
         for (Variant variant : variants) {
-            VariantSourceEntry file = null;
+            VariantSourceEntry study = null;
             for (VariantSourceEntry entry : variant.getStudies()) {
                 if (entry.getStudyId().equals(studyId)) {
-                    file = entry;
+                    study = entry;
                     break;
                 }
             }
-            if (file == null) {
+            if (study == null) {
                 skippedFiles++;
                 continue;
             }
             
             if (!isAggregated(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
-                    if (overwrite || file.getCohortStats(cohort.getKey()) == null) {
+                    if (overwrite || study.getStats(cohort.getKey()) == null) {
 
-                        Map<String, Map<String, String>> samplesData = filterSamples(file.getSamplesDataAsMap(), cohort.getValue());
+                        Map<String, Map<String, String>> samplesData = filterSamples(study.getSamplesDataAsMap(), cohort.getValue());
                         VariantStats variantStats = new VariantStats(variant);
-                        VariantStatsCalculator.calculate(samplesData, file.getAttributes(), null, variantStats);
-                        file.setStats(cohort.getKey(), variantStats);
+                        VariantStatsCalculator.calculate(samplesData, study.getAttributes(), null, variantStats);
+                        study.setStats(cohort.getKey(), variantStats);
 
                     }
                 }
             } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation.NONE.equals(aggregation))
-                file.setAttributes(removeAttributePrefix(file.getAttributes()));
-                aggregatedCalculator.calculate(variant, file);
+//                study.setAttributes(removeAttributePrefix(study.getAttributes()));
+                aggregatedCalculator.calculate(variant, study);
             }
 //            if (overwrite || file.getStats() == null) {
 //                VariantStats allVariantStats = new VariantStats(variant);
@@ -145,11 +145,12 @@ public class VariantStatisticsCalculator {
 //
 //            }
             variantStatsWrappers.add(
-                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), file.getCohortStats()));
+                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), study.getCohortStats()));
         }
         return variantStatsWrappers;
     }
 
+    @Deprecated
     public static Map<String, String> removeAttributePrefix(Map<String, String> attributes) 
     throws IllegalArgumentException {
         Map<String, String> newAttributes = new LinkedHashMap<>(attributes.size());

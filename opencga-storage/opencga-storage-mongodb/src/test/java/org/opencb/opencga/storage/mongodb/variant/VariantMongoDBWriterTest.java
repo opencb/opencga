@@ -54,7 +54,7 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConver
  */
 public class VariantMongoDBWriterTest {
 
-    private static String inputFile = VariantMongoDBWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile;
     private static MongoDBVariantStorageManager variantStorageManager;
     private VariantSource source1, source2, source3;
     private StudyConfiguration studyConfiguration, studyConfiguration2;
@@ -71,6 +71,8 @@ public class VariantMongoDBWriterTest {
     public void setUp() throws Exception {
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
+
+        inputFile = VariantStorageManagerTestUtils.getResourceUri("/variant-test-file.vcf.gz").getPath();
 
         MongoVariantStorageManagerTestUtils.clearDB(VariantStorageManagerTestUtils.DB_NAME);
         variantStorageManager = MongoVariantStorageManagerTestUtils.getVariantStorageManager();

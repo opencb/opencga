@@ -18,6 +18,7 @@ package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
@@ -187,6 +188,7 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
     }
 

@@ -38,7 +38,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
     private VariantSourceEntry file;
     private BasicDBObject mongoStudy;
     private DBObject mongoFileWithIds;
-    private Map<String, String> convertedAttributes;
 
     private List<String> sampleNames;
     private Integer fileId;
@@ -66,9 +65,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
         na003.put("GT", "1/1");
         file.addSampleData("NA003", na003);
 
-        //Contains file attributes with the prefix "<fileId>_"
-        convertedAttributes = file.getAttributes().entrySet().stream().collect(Collectors.toMap(e -> file.getFileId() + "_" + e.getKey(), Map.Entry::getValue));
-
         // MongoDB object
         mongoStudy = new BasicDBObject(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, studyId);
 
@@ -95,7 +91,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         sampleIds.put("NA003", 35);
         studyConfiguration.setSampleIds(sampleIds);
         studyConfiguration.getIndexedFiles().add(fileId);
-        studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet(new ArrayList<>(sampleIds.values())));
+        studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(15, 25, 35)));
         studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton("0/0"));
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
@@ -180,7 +176,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
         // Test with no stats converter provided
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, fileId, new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         VariantSourceEntry converted = converter.convertToDataModelType(mongoStudy);
-        file.setAttributes(convertedAttributes);
         assertEquals(file, converted);
     }
 
@@ -191,7 +186,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
         // Test with a stats converter provided but no stats object
         DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(true, fileId, new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         VariantSourceEntry converted = converter.convertToDataModelType(mongoStudy);
-        file.setAttributes(convertedAttributes);
         assertEquals(file, converted);
     }
 
@@ -220,7 +214,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
         convertedMongo = converter.convertToStorageType(file);
         assertEquals(mongoFileWithIds, convertedMongo);
         convertedFile = converter.convertToDataModelType(convertedMongo);
-        file.setAttributes(convertedAttributes);
         assertEquals(file, convertedFile);
 
     }
@@ -239,8 +232,6 @@ public class DBObjectToVariantSourceEntryConverterTest {
                 samplesConverter
         );
         convertedFile = converter.convertToDataModelType(mongoFileWithIds);
-        assertEquals(convertedAttributes, convertedFile.getAttributes());
-        convertedFile.setAttributes(file.getAttributes());
         convertedMongo = converter.convertToStorageType(convertedFile);
         assertEquals(file, convertedFile);
         assertEquals(mongoFileWithIds, convertedMongo);

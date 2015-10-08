@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -264,15 +265,15 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         queryResult = dbAdaptor.get(query, options);
 
         query = new Query(STUDIES.key(), studyConfiguration1.getStudyName());
-        QueryResult<Variant> queryResultStudy = dbAdaptor.get(query, options.append("limit", 1));
+        QueryResult<Variant> queryResultStudy = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultStudy.getNumTotalResults(), queryResult.getNumResults());
         assertEquals(5479, queryResult.getNumResults());
         assertEquals(5479, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
-            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFileId).collect(Collectors.toSet());
-            assertEquals(Collections.singleton(null), returnedFileIds);
+            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFiles).flatMap(fileEntries -> fileEntries.stream().map(FileEntry::getFileId)).collect(Collectors.toSet());
+            assertTrue(returnedFileIds.contains(Integer.toString(file1)) || returnedFileIds.contains(Integer.toString(file2)));
             Set<String> returnedStudiesIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toSet());
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyConfiguration1.getStudyName()));
         }
@@ -288,8 +289,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         queryResult = dbAdaptor.get(query, options);
 
         for (Variant variant : queryResult.getResult()) {
-            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFileId).collect(Collectors.toSet());
-            assertEquals(Collections.singleton(null), returnedFileIds);
+            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFiles).flatMap(fileEntries -> fileEntries.stream().map(FileEntry::getFileId)).collect(Collectors.toSet());
+            assertEquals(Collections.singleton("2"), returnedFileIds);
             Set<String> returnedStudiesIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toSet());
             assertTrue("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds.contains(studyConfiguration1.getStudyName()));
             VariantSourceEntry sourceEntry = variant.getSourceEntry(studyConfiguration1.getStudyName());
@@ -312,14 +313,14 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         queryResult = dbAdaptor.get(query, options);
 
         query = new Query(FILES.key(), file1);
-        QueryResult<Variant> queryResultFile = dbAdaptor.get(query, options.append("limit", 1));
+        QueryResult<Variant> queryResultFile = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultFile.getNumTotalResults(), queryResult.getNumResults());
         assertEquals(3282, queryResult.getNumResults());
         assertEquals(3282, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
-            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFileId).collect(Collectors.toSet());
+            Set<String> returnedFileIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getFiles).flatMap(fileEntries -> fileEntries.stream().map(FileEntry::getFileId)).collect(Collectors.toSet());
             Set<String> returnedStudiesIds = variant.getSourceEntries().values().stream().map(VariantSourceEntry::getStudyId).collect(Collectors.toSet());
 
 //            assertEquals("Returned files :" + returnedFileIds.toString(), Collections.singleton(file1.toString()), returnedFileIds);
