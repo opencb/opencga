@@ -16,24 +16,16 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 /**
- * Created by imedina on 16/06/15.
+ * Created by imedina on 08/10/15.
  */
-public class VariantPerformanceEvaluator extends PerformanceEvaluator {
+public class BenchmarkManager {
 
-    private VariantDBAdaptor variantDBAdaptor;
+    private StorageConfiguration storageConfiguration;
 
-
-    public VariantPerformanceEvaluator() {
-        logger = LoggerFactory.getLogger(this.getClass());
-    }
-
-    @Override
-    public BenchmarkStats run() {
-        return null;
+    public BenchmarkManager() {
     }
 
 }

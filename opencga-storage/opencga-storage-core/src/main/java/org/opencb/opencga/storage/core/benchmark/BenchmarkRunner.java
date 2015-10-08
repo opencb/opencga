@@ -21,11 +21,11 @@ import org.slf4j.Logger;
 /**
  * Created by imedina on 16/06/15.
  */
-public abstract class PerformanceEvaluator {
+public abstract class BenchmarkRunner {
 
     protected Logger logger;
 
-    public PerformanceEvaluator() {
+    public BenchmarkRunner() {
 
     }
 

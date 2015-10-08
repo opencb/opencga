@@ -41,6 +41,7 @@ public class StorageConfiguration {
     private CellBaseConfiguration cellbase;
     private QueryServerConfiguration server;
 
+    private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
 
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
@@ -224,6 +225,14 @@ public class StorageConfiguration {
 
     public void setServer(QueryServerConfiguration server) {
         this.server = server;
+    }
+
+    public BenchmarkConfiguration getBenchmark() {
+        return benchmark;
+    }
+
+    public void setBenchmark(BenchmarkConfiguration benchmark) {
+        this.benchmark = benchmark;
     }
 
     public List<StorageEngineConfiguration> getStorageEngines() {
