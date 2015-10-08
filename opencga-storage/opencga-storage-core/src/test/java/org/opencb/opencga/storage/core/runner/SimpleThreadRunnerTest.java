@@ -49,41 +49,6 @@ public class SimpleThreadRunnerTest {
         runner.run();
         System.out.println(processedElems.get());
         assertEquals(data.size()*3, processedElems.get());
-
-
-
-
-
-
-
-        Callable callableTask = new Callable<Void> () {
-
-            @Override
-            public Void call ()throws Exception {
-                throw new Exception("exception from callable");
-//                return null;
-            }
-        };
-
-
-
-
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
-        Future future = executorService.submit(callableTask);
-//        try {
-//            future.get();
-//        } catch (ExecutionException ex) {
-//            ex.getCause().printStackTrace();
-//        }
-//        executorService.submit(callableTask);
-//        executorService.shutdown();
-        try {
-
-//            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-            future.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 //    @Test
