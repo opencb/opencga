@@ -215,7 +215,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             }
             studyConfiguration.getSamplesInFiles().put(file.getId(), new HashSet<>(file.getSampleIds()));
 
-            if (file.getIndex() != null && file.getIndex().getStatus().equals(Index.Status.READY) && file.getAttributes().containsKey("variantSource")) {
+            if (studyConfiguration.getIndexedFiles().contains(file.getId()) && file.getAttributes().containsKey("variantSource")) {
                 //attributes.variantSource.metadata.variantFileHeader
                 Object object = file.getAttributes().get("variantSource");
                 if (object instanceof Map) {
@@ -241,6 +241,10 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
         logger.debug("Get Cohorts");
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
+        studyConfiguration.getCalculatedStats().clear();
+        studyConfiguration.getInvalidStats().clear();
+        studyConfiguration.getCohortIds().clear();
+        studyConfiguration.getCohorts().clear();
 
         for (Cohort cohort : cohorts.getResult()) {
             studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
@@ -287,10 +291,22 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
             //Check if any cohort stat has been updated
             if (!studyConfiguration.getCalculatedStats().isEmpty()) {
-                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(), new QueryOptions("id", new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
+                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
                     if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
                         logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
                         catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                    }
+                }
+            }
+
+            //Check if any cohort stat has been invalidated
+            if (!studyConfiguration.getInvalidStats().isEmpty()) {
+                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getInvalidStats())), sessionId).getResult()) {
+                    if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.INVALID)) {
+                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.INVALID);
+                        catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), sessionId);
                     }
                 }
             }

@@ -567,6 +567,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     public static String buildFilename(String studyName, int fileId) {
+        int index = studyName.indexOf(":");
+        if (index >= 0) {
+            studyName = studyName.substring(index + 1);
+        }
         return studyName + "_" + fileId;
     }
 
