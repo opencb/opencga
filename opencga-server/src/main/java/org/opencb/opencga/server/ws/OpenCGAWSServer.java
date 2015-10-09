@@ -23,10 +23,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.apache.log4j.*;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -34,16 +38,14 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.networks.Layout;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -51,13 +53,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.Path;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Path("/{version}")
@@ -182,9 +183,10 @@ public class OpenCGAWSServer {
 
         jsonObjectMapper = new ObjectMapper();
 
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
 
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

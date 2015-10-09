@@ -37,6 +37,7 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -731,11 +732,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
         List<QueryResult> results = new LinkedList<>();
         try {
-            VariantFetcher variantFetcher = new VariantFetcher(this);
+            VariantFetcher variantFetcher = new VariantFetcher(this, catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;
-                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId);
+                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
         } catch (Exception e) {
