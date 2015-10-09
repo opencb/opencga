@@ -348,9 +348,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         for (Variant variant : queryResult.getResult()) {
             for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
                 if (sourceEntry.getStudyId().equals(studyConfiguration1.getStudyName())) {
-                    assertEquals("StudyId:" + sourceEntry.getStudyId() + ", SampleNames " + sourceEntry.getSampleNames(), sampleSet, sourceEntry.getSampleNames());
+                    assertEquals("StudyId:" + sourceEntry.getStudyId() + ", SampleNames " + sourceEntry.getSamplesName(), sampleSet, sourceEntry.getSamplesName());
                 } else {
-                    assertEquals("StudyId:" + sourceEntry.getStudyId() + ", SampleNames " + sourceEntry.getSampleNames(), Collections.<String>emptySet(), sourceEntry.getSampleNames());
+                    assertEquals("StudyId:" + sourceEntry.getStudyId() + ", SampleNames " + sourceEntry.getSamplesName(), Collections.<String>emptySet(), sourceEntry.getSamplesName());
                 }
             }
         }

@@ -194,7 +194,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             assertEquals("At variant " + originalVariant, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f", "s"));
             VariantSourceEntry originalSourceEntry = originalVariant.getSourceEntry("f", "s");
             VariantSourceEntry exportedSourceEntry = exportedVariant.getSourceEntry("f", "s");
-            for (String sampleName : originalSourceEntry.getSampleNames()) {
+            for (String sampleName : originalSourceEntry.getSamplesName()) {
                 assertEquals("For sample '" + sampleName + "' " + originalVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
             }
         }

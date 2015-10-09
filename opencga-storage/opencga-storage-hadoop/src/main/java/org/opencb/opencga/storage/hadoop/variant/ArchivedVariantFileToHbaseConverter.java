@@ -85,7 +85,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
 
         // Samples
         if (samples != null && !samples.isEmpty()) {
-            for (String sampleName : object.getSampleNames()) {
+            for (String sampleName : object.getSamplesName()) {
                 VariantProtos.VariantSample sampleProto = buildSampleProto(object, sampleName);
                 put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + sampleName), sampleProto.toByteArray());
             }
