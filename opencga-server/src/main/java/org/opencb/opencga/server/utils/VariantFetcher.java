@@ -25,7 +25,6 @@ import java.util.List;
  */
 public class VariantFetcher {
 
-    private final OpenCGAWSServer wsServer;
     private final CatalogManager catalogManager;
     private final StorageManagerFactory storageManagerFactory;
     private final Logger logger;
@@ -33,8 +32,7 @@ public class VariantFetcher {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantFetcher(OpenCGAWSServer wsServer, CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
-        this.wsServer = wsServer;
+    public VariantFetcher(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
         this.catalogManager = catalogManager;
         this.storageManagerFactory = storageManagerFactory;
         logger = LoggerFactory.getLogger(VariantFetcher.class);
@@ -106,7 +104,7 @@ public class VariantFetcher {
                 throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
             }
             result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
-        } else if (!groupBy.isEmpty()) {
+        } else if (groupBy != null && !groupBy.isEmpty()) {
             result = dbAdaptor.groupBy(query, groupBy, queryOptions);
         } else {
             logger.debug("getVariants {}, {}", query, queryOptions);

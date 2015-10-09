@@ -732,7 +732,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
         List<QueryResult> results = new LinkedList<>();
         try {
-            VariantFetcher variantFetcher = new VariantFetcher(this, catalogManager, storageManagerFactory);
+            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;

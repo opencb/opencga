@@ -253,7 +253,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         try {
             String[] studyIds = studyIdStrCvs.split(",");
             List<QueryResult> queryResults = new LinkedList<>();
-            VariantFetcher variantFetcher = new VariantFetcher(this, catalogManager, storageManagerFactory);
+            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 int studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
