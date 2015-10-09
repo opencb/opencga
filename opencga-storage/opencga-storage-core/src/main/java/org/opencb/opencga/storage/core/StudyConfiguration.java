@@ -333,12 +333,12 @@ public class StudyConfiguration implements Cloneable {
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
         for (Integer indexedFileId : studyConfiguration.getIndexedFiles()) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(indexedFileId)) {
-                samplesPosition.put(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
             }
         }
         for (int fileId : fileIds) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                samplesPosition.put(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
             }
         }
         return samplesPosition;
