@@ -110,7 +110,7 @@ public class VariantFetcher {
             logger.debug("getVariants {}, {}", query, queryOptions);
             result = dbAdaptor.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
-            if (queryOptions.getString("model", "biodata").equalsIgnoreCase("ga4gh")) {
+            if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
                 result = convertToGA4GH(result);
             }
         }

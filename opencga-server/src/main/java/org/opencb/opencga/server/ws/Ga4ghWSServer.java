@@ -99,7 +99,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             List<Variant> variants = variantFetcher.variantsStudy(studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
             response.setNextPageToken(Integer.toString(++page));
             response.setVariants(variants);
-            return createOkResponse(response);
+            return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
