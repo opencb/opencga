@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 16/10/14.
@@ -220,8 +221,9 @@ public class AnalysisFileIndexer {
                 defaultCohort = cohorts.first();
             }
 
+            //Samples are the already indexed plus those that are going to be indexed
             Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
-            samples.addAll(originalFile.getSampleIds());
+            samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
                 catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
