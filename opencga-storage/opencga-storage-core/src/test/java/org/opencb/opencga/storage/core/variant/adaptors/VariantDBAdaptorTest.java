@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.datastore.core.ObjectMap;
@@ -272,17 +272,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             Variant variant2 = it_2.next();
 
             if (samplesPosition1 == null) {
-                samplesPosition1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+                samplesPosition1 = variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();
             }
             if (samplesPosition2 == null) {
-                samplesPosition2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition();
+                samplesPosition2 = variant2.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();
                 assertEquals(samplesName, new ArrayList<>(samplesPosition2.keySet()));
             }
-            assertSame(samplesPosition1, variant1.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
-            assertSame(samplesPosition2, variant2.getSourceEntry(studyConfiguration.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition1, variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition());
+            assertSame(samplesPosition2, variant2.getStudy(studyConfiguration.getStudyName()).getSamplesPosition());
             for (String sampleName: samplesName) {
-                String gt1 = variant1.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
-                String gt2 = variant2.getSourceEntry(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                String gt1 = variant1.getStudy(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
+                String gt2 = variant2.getStudy(studyConfiguration.getStudyName()).getSampleData(sampleName, "GT");
                 assertEquals(sampleName + " " + variant1.getChromosome() + ":" + variant1.getStart(), gt1, gt2);
             }
         }
@@ -295,7 +295,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         for (VariantDBIterator iterator = dbAdaptor.iterator(query, new QueryOptions()); iterator.hasNext(); ) {
             Variant variant = iterator.next();
             numVariants++;
-            VariantSourceEntry entry = variant.getSourceEntries().entrySet().iterator().next().getValue();
+            StudyEntry entry = variant.getStudiesMap().entrySet().iterator().next().getValue();
 //            assertEquals("6", entry.getFileId());
             assertEquals(studyConfiguration.getStudyName(), entry.getStudyId());
             assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getSamplesName());
@@ -311,22 +311,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":1|1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), STUDY_NAME + ":NA19600:1|1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), "NA19600:1|1").append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), "NA19600:1|1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT"))));
 
 
         //get for each genotype. Should return all variants
@@ -338,20 +338,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":./.");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
 
         //This works, but is incorrect. Better use "./."
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":-1/-1");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT"))));
 
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
         query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), na19600+":1|1"+";"+na19685+":0|0,1|0");
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(14, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getSourceEntries().forEach((s, vse) -> {
+        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> {
             assertEquals("1|1", vse.getSampleData("NA19600", "GT"));
             assertTrue(Arrays.asList("0|0", "1|0").contains(vse.getSampleData("NA19685", "GT")));
         }));
@@ -421,10 +421,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         long numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), ">0.2")).first();
         System.out.println("queryResult.getNumTotalResults() = " + numResults);
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:" + VariantSourceEntry.DEFAULT_COHORT + ">0.2"), null);
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:" + StudyEntry.DEFAULT_COHORT + ">0.2"), null);
         assertEquals(625, queryResult.getNumResults());
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
-                .forEach(map -> assertTrue(map.get(VariantSourceEntry.DEFAULT_COHORT).getMaf() > 0.2));
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
+                .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMaf() > 0.2));
 
         numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort1>0.2")).first();
         assertEquals(749, numResults);
@@ -434,12 +434,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(749, numResults);
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), null);
         assertEquals(749, queryResult.getNumResults());
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort1").getMaf() > 0.2));
 
         numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2")).first();
         assertEquals(691, numResults);
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2));
 
 
@@ -450,12 +450,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2;1000g:cohort1<0.2"), null);
         assertEquals(75, queryResult.getNumResults());
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2 && map.get("cohort1").getMaf() < 0.2));
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2,1000g:cohort1<0.2"), null);
         assertEquals(866, queryResult.getNumResults());
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2 || map.get("cohort1").getMaf() < 0.2));
 
 
@@ -464,10 +464,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testGetAllVariants_missingAllele() throws Exception {
 
-        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:" + VariantSourceEntry.DEFAULT_COHORT + ">4"), null);
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), "1000g:" + StudyEntry.DEFAULT_COHORT + ">4"), null);
         assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().stream().map(variant -> variant.getSourceEntries().get("1000g").getCohortStats())
-                .forEach(map -> assertTrue(map.get(VariantSourceEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
+        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
+                .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
 
     }
 /*

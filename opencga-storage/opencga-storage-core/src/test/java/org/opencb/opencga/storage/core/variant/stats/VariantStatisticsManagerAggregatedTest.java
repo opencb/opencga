@@ -4,7 +4,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -73,7 +73,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
 
         //Calculate stats
-        Map<String, Set<String>> cohorts = new HashMap<>(Collections.singletonMap(VariantSourceEntry.DEFAULT_COHORT, Collections.emptySet()));
+        Map<String, Set<String>> cohorts = new HashMap<>(Collections.singletonMap(StudyEntry.DEFAULT_COHORT, Collections.emptySet()));
         URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), cohorts, Collections.emptyMap(), studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
@@ -83,8 +83,8 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
     private static void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
         for (Variant variant : dbAdaptor) {
-            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
                     assertTrue("CohortStats should contain stats for cohort " + entry.getKey()

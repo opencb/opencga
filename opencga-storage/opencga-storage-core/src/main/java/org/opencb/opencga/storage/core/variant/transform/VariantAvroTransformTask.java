@@ -1,20 +1,16 @@
 package org.opencb.opencga.storage.core.variant.transform;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.*;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
-import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
@@ -96,9 +92,11 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
                 for (Variant variant : variants) {
                     try {
                         if (!includeSrc) {
-                            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                                if (variantSourceEntry.getAttributes().containsKey("src")) {
-                                    variantSourceEntry.getAttributes().remove("src");
+                            for (StudyEntry studyEntry : variant.getStudies()) {
+                                for (FileEntry fileEntry : studyEntry.getFiles()) {
+                                    if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
+                                        fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
+                                    }
                                 }
                             }
                         }

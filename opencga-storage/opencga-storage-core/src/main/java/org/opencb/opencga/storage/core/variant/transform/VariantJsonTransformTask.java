@@ -21,10 +21,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantFactory;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -59,7 +57,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
 
         JsonFactory jsonFactory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(jsonFactory);
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
@@ -104,9 +102,11 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
             for (Variant variant : variants) {
                 try {
                     if (!includeSrc) {
-                        for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-                            if (variantSourceEntry.getAttributes().containsKey("src")) {
-                                variantSourceEntry.getAttributes().remove("src");
+                        for (StudyEntry studyEntry : variant.getStudies()) {
+                            for (FileEntry fileEntry : studyEntry.getFiles()) {
+                                if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
+                                    fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
+                                }
                             }
                         }
                     }

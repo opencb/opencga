@@ -22,7 +22,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -190,12 +190,14 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             assertEquals("At variant " + originalVariant, originalVariant.getStart(), exportedVariant.getStart());
             assertEquals("At variant " + originalVariant, originalVariant.getEnd(), exportedVariant.getEnd());
             assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds());
-            assertEquals("At variant " + originalVariant, originalVariant.getSourceEntries().size(), exportedVariant.getSourceEntries().size());
+            assertEquals("At variant " + originalVariant, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
             assertEquals("At variant " + originalVariant, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f", "s"));
-            VariantSourceEntry originalSourceEntry = originalVariant.getSourceEntry("f", "s");
-            VariantSourceEntry exportedSourceEntry = exportedVariant.getSourceEntry("f", "s");
+            StudyEntry originalSourceEntry = originalVariant.getStudy("s");
+            StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
             for (String sampleName : originalSourceEntry.getSamplesName()) {
-                assertEquals("For sample '" + sampleName + "' " + originalVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
+                assertEquals("For sample '" + sampleName + "' " + originalVariant,
+                        originalSourceEntry.getSampleData(sampleName, "GT"),
+                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
             }
         }
         return originalVariants.size();

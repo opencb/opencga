@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
@@ -29,12 +29,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConverter<VariantSourceEntry, DBObject> {
+public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverter<StudyEntry, DBObject> {
 
     public final static String FILEID_FIELD = "fid";
     public final static String STUDYID_FIELD = "sid";
@@ -59,7 +58,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      *
      * @param includeSrc If true, will include and gzip the "src" attribute in the DBObject
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc) {
         this.includeSrc = includeSrc;
         this.samplesConverter = null;
         this.returnedFiles = null;
@@ -74,8 +73,8 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc,
-                                                 DBObjectToSamplesConverter samplesConverter) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc,
+                                                DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
     }
@@ -89,16 +88,16 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
      * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
-                                                 DBObjectToSamplesConverter samplesConverter) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
+                                                DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.returnedFiles = (returnedFiles != null)? new HashSet<>(returnedFiles) : null;
         this.samplesConverter = samplesConverter;
     }
 
 
-    public DBObjectToVariantSourceEntryConverter(boolean includeSrc, Integer returnedFile,
-                                                 DBObjectToSamplesConverter samplesConverter) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc, Integer returnedFile,
+                                                DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc, Collections.singletonList(returnedFile), samplesConverter);
     }
 
@@ -111,11 +110,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     }
 
     @Override
-    public VariantSourceEntry convertToDataModelType(DBObject object) {
+    public StudyEntry convertToDataModelType(DBObject object) {
         int studyId = ((Number) object.get(STUDYID_FIELD)).intValue();
 //        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
 //        String fileId = returnedFiles != null && returnedFiles.size() == 1? returnedFiles.iterator().next().toString() : null;
-        VariantSourceEntry study = new VariantSourceEntry(getStudyName(studyId));
+        StudyEntry study = new StudyEntry(getStudyName(studyId));
 
 //        String fileId = (String) object.get(FILEID_FIELD);
         DBObject fileObject = null;
@@ -143,7 +142,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                                 try {
                                     attributes.put(entry.getKey(), org.opencb.commons.utils.StringUtils.gunzip(o));
                                 } catch (IOException ex) {
-                                    Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(DBObjectToStudyVariantEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         } else {
@@ -208,8 +207,14 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     }
 
     @Override
-    public DBObject convertToStorageType(VariantSourceEntry object) {
-        int fileId = Integer.parseInt(object.getFileId());
+    public DBObject convertToStorageType(StudyEntry object) {
+
+        if (object.getFiles().size() != 1) {
+            throw new IllegalArgumentException("Expected just one file in the study to convert");
+        }
+        FileEntry file = object.getFiles().get(0);
+
+        int fileId = Integer.parseInt(file.getFileId());
         BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, fileId);
 
         // Alternate alleles
@@ -218,9 +223,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         }
 
         // Attributes
-        if (object.getAttributes().size() > 0) {
+        if (file.getAttributes().size() > 0) {
             BasicDBObject attrs = null;
-            for (Map.Entry<String, String> entry : object.getAttributes().entrySet()) {
+            for (Map.Entry<String, String> entry : file.getAttributes().entrySet()) {
                 String stringValue = entry.getValue();
                 String key = entry.getKey().replace(".", DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS);
                 Object value = stringValue;
@@ -229,7 +234,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                         try {
                             value = org.opencb.commons.utils.StringUtils.gzip(stringValue);
                         } catch (IOException ex) {
-                            Logger.getLogger(DBObjectToVariantSourceEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(DBObjectToStudyVariantEntryConverter.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     } else {
                         continue;
@@ -275,7 +280,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
 
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
-            mongoFile.putAll(samplesConverter.convertToStorageType(object.getSamplesDataAsMap(), studyId, fileId));
+            mongoFile.putAll(samplesConverter.convertToStorageType(object, studyId, fileId));
         }
 
 

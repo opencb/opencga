@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.io;
 
+import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -10,7 +11,7 @@ import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.Query;
@@ -153,10 +154,14 @@ public class VariantExporter {
 
         if (headers.size() > 1 || !returnedSamples.isEmpty()) {
             String[] lines = fileHeader.split("\n");
-            Set<String> sampleSet = !returnedSamples.isEmpty() ?
-                    new HashSet<>(returnedSamples)
-                    : studyConfiguration.getSampleIds().keySet();
-            String samples = String.join("\t", sampleSet);
+            if (returnedSamples.isEmpty()) {
+                BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                returnedSamples = new ArrayList<>(samplesPosition.size());
+                for (int i = 0; i < samplesPosition.size(); i++) {
+                    returnedSamples.add(samplesPosition.get(i));
+                }
+            }
+            String samples = String.join("\t", returnedSamples);
             lines[lines.length-1] = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
             logger.debug("export will be done on samples: [{}]", samples);
 
@@ -235,8 +240,8 @@ public class VariantExporter {
         ArrayList<Genotype> genotypes = new ArrayList<>();
         Integer originalPosition = null;
         List<String> originalAlleles = null;
-        for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
-            String[] ori = getOri(variantSourceEntry);
+        for (StudyEntry studyEntry : variant.getStudies()) {
+            String[] ori = getOri(studyEntry);
             Integer auxOriginalPosition = getOriginalPosition(ori);
             if (originalPosition != null && auxOriginalPosition != null && !originalPosition.equals(auxOriginalPosition)) {
                 throw new IllegalStateException("Two or more VariantSourceEntries have different origin. Unable to merge");
@@ -254,14 +259,14 @@ public class VariantExporter {
             }
 
 
-            String sourceFilter = variantSourceEntry.getAttribute("FILTER");
+            String sourceFilter = studyEntry.getAttribute("FILTER");
             if (sourceFilter != null && !filter.equals(sourceFilter)) {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
-            Map<String, Map<String, String>> samplesData = variantSourceEntry.getSamplesDataAsMap();
-            for (Map.Entry<String, Map<String, String>> samplesEntry : samplesData.entrySet()) {
-                String gt = samplesEntry.getValue().get("GT");
+            for (String sampleName : studyEntry.getOrderedSamplesName()) {
+                Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
+                String gt = sampleData.get("GT");
 //                System.out.println("gt = " + gt);
                 if (gt != null) {
                     org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
@@ -283,7 +288,7 @@ public class VariantExporter {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
                     }
-                    genotypes.add(new GenotypeBuilder().name(samplesEntry.getKey()).alleles(alleles).phased(genotype.isPhased()).make());
+                    genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles).phased(genotype.isPhased()).make());
                 }
             }
         }
@@ -352,9 +357,9 @@ public class VariantExporter {
         return null;
     }
 
-    private static String[] getOri(VariantSourceEntry variantSourceEntry) {
+    private static String[] getOri(StudyEntry studyEntry) {
 
-        List<FileEntry> files = variantSourceEntry.getFiles();
+        List<FileEntry> files = studyEntry.getFiles();
         if (!files.isEmpty()) {
             String call = files.get(0).getCall();
             if (call != null && !call.isEmpty()) {

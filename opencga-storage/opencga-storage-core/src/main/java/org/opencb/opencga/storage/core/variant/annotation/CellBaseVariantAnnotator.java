@@ -24,8 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variation.GenomicVariant;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.cellbase.core.db.DBAdaptorFactory;
 import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
@@ -219,8 +217,8 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
         try {
             final int[] readsCounter = {0};
-            DataReader<GenomicVariant> genomicVariantDataReader = readBatchSize -> {
-                List<GenomicVariant> genomicVariantList = new ArrayList<>(readBatchSize);
+            DataReader<Variant> genomicVariantDataReader = readBatchSize -> {
+                List<Variant> variantList = new ArrayList<>(readBatchSize);
                 int i = 0;
                 while(iterator.hasNext() && i++ < readBatchSize) {
                     Variant variant = iterator.next();
@@ -239,22 +237,19 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                         );
                         logger.debug("Skip variant! {}", variant);
                     } else {
-                        GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
-                                variant.getReference().isEmpty() && variant.getType() == VariantType.INDEL ? "-" : variant.getReference(),
-                                variant.getAlternate().isEmpty() && variant.getType() == VariantType.INDEL ? "-" : variant.getAlternate());
-                        genomicVariantList.add(genomicVariant);
+                        variantList.add(variant);
                     }
                 }
 
-                return genomicVariantList;
+                return variantList;
             };
 
-            ParallelTaskRunner.Task<GenomicVariant,VariantAnnotation> annotationTask = genomicVariantList -> {
+            ParallelTaskRunner.Task<Variant, VariantAnnotation> annotationTask = genomicVariantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
                 logger.debug("Annotating batch of {} genomic variants.", genomicVariantList.size());
                 try {
-                    if(cellBaseClient != null) {
+                    if (cellBaseClient != null) {
                         variantAnnotationList = getVariantAnnotationsREST(genomicVariantList);
                     } else {
                         variantAnnotationList = getVariantAnnotationsDbAdaptor(genomicVariantList);
@@ -263,7 +258,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
                     e.printStackTrace();
                     throw new RuntimeException(e);
                 }
-                logger.debug("Annotated batch of {} genomic variants. Time: {}s", genomicVariantList.size(), (System.currentTimeMillis()-start)/1000.0);
+                logger.debug("Annotated batch of {} genomic variants. Time: {}s", genomicVariantList.size(), (System.currentTimeMillis() - start) / 1000.0);
                 return variantAnnotationList;
             };
 
@@ -281,7 +276,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             };
 
             ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
-            ParallelTaskRunner<GenomicVariant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(genomicVariantDataReader, annotationTask, variantAnnotationDataWriter, config);
+            ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(genomicVariantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
         } catch (IOException e) {
             throw e;
@@ -296,10 +291,10 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
 
     /////// CREATE ANNOTATION - AUX METHODS
 
-    private List<VariantAnnotation> getVariantAnnotationsREST(List<GenomicVariant> genomicVariantList) throws IOException {
+    private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
         QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
-//        List<String> genomicVariantStringList = new ArrayList<>(genomicVariantList.size());
-//        for (GenomicVariant genomicVariant : genomicVariantList) {
+//        List<String> genomicVariantStringList = new ArrayList<>(variants.size());
+//        for (GenomicVariant genomicVariant : variants) {
 //            genomicVariantStringList.add(genomicVariant.toString());
 //        }
 
@@ -308,7 +303,7 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             queryResponse = cellBaseClient.nativeGet(
                     CellBaseClient.Category.genomic.toString(),
                     CellBaseClient.SubCategory.variant.toString(),
-                    genomicVariantList.stream().map(Object::toString).collect(Collectors.joining(",")),
+                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
                     "full_annotation",
                     new QueryOptions("post", true), VariantAnnotation.class);
             if (queryResponse == null) {
@@ -321,28 +316,28 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
             queryResponse = null;
         }
 
-        if(queryResponse != null && queryResponse.getResponse().size() != genomicVariantList.size()) {
-            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != genomicVariantList size (" + genomicVariantList.size() + ").");
-            //throw new IOException("QueryResult size != " + genomicVariantList.size() + ". " + queryResponse);
+        if(queryResponse != null && queryResponse.getResponse().size() != variants.size()) {
+            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != variants size (" + variants.size() + ").");
+            //throw new IOException("QueryResult size != " + variants.size() + ". " + queryResponse);
             queryError = true;
         }
 
         if(queryError) {
 //            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
 
-            if (genomicVariantList.size() == 1) {
-                logger.error("CellBase REST error. Skipping variant. {}", genomicVariantList.get(0));
+            if (variants.size() == 1) {
+                logger.error("CellBase REST error. Skipping variant. {}", variants.get(0));
                 return Collections.emptyList();
             }
 
             List<VariantAnnotation> variantAnnotationList = new LinkedList<>();
-            List<GenomicVariant> genomicVariants1 = genomicVariantList.subList(0, genomicVariantList.size() / 2);
-            if (!genomicVariants1.isEmpty()) {
-                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants1));
+            List<Variant> variants1 = variants.subList(0, variants.size() / 2);
+            if (!variants1.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(variants1));
             }
-            List<GenomicVariant> genomicVariants2 = genomicVariantList.subList(genomicVariantList.size() / 2, genomicVariantList.size());
-            if (!genomicVariants2.isEmpty()) {
-                variantAnnotationList.addAll(getVariantAnnotationsREST(genomicVariants2));
+            List<Variant> variants2 = variants.subList(variants.size() / 2, variants.size());
+            if (!variants2.isEmpty()) {
+                variantAnnotationList.addAll(getVariantAnnotationsREST(variants2));
             }
             return variantAnnotationList;
         }
@@ -350,14 +345,14 @@ public class CellBaseVariantAnnotator implements VariantAnnotator {
         Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
 
         QueryResult<VariantAnnotation>[] queryResults = response.toArray(new QueryResult[1]);
-        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());
+        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
         for (QueryResult<VariantAnnotation> queryResult : queryResults) {
             variantAnnotationList.addAll(queryResult.getResult());
         }
         return variantAnnotationList;
     }
 
-    private List<VariantAnnotation> getVariantAnnotationsDbAdaptor(List<GenomicVariant> genomicVariantList) throws IOException {
+    private List<VariantAnnotation> getVariantAnnotationsDbAdaptor(List<Variant> genomicVariantList) throws IOException {
 //        QueryOptions queryOptions = new QueryOptions();
 //
 //        List<VariantAnnotation> variantAnnotationList = new ArrayList<>(genomicVariantList.size());

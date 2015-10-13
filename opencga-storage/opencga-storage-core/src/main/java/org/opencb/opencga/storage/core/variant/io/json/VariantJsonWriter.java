@@ -32,9 +32,11 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantVcfFactory;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
@@ -86,7 +88,7 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean pre() {
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
@@ -121,17 +123,19 @@ public class VariantJsonWriter implements VariantWriter {
     public boolean write(List<Variant> batch) {
         for (Variant variant : batch) {
             try {
-                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+                for (StudyEntry studyEntry : variant.getStudies()) {
                     if (!includeSrc) {
-                        if (variantSourceEntry.getAttributes().containsKey("src")) {
-                            variantSourceEntry.getAttributes().remove("src");
+                        for (FileEntry fileEntry : studyEntry.getFiles()) {
+                            if (fileEntry.getAttributes().containsKey(VariantVcfFactory.SRC)) {
+                                fileEntry.getAttributes().remove(VariantVcfFactory.SRC);
+                            }
                         }
                     }
                     if (!includeSamples) {
-                        variantSourceEntry.getSamplesData().clear();
+                        studyEntry.getSamplesData().clear();
                     }
                     if (!includeStats) {
-                        variantSourceEntry.setCohortStats(Collections.emptyMap());
+                        studyEntry.setStats(Collections.emptyMap());
                     }
                 }
                 variantsGenerator.writeObject(variant);

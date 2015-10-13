@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -42,7 +42,6 @@ import javax.ws.rs.core.MediaType;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -144,8 +143,8 @@ public class OpenCGAWSServerTest {
         List<Variant> variants = fileTest.fetchVariants(fileVcf.getId(), sessionId, queryOptions);
         assertEquals(10, variants.size());
         for (Variant variant : variants) {
-            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(new HashSet<>(sampleNames), sourceEntry.getSamplesDataAsMap().keySet());
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                assertEquals(sampleNames.size(), sourceEntry.getSamplesData().size());
             }
         }
 

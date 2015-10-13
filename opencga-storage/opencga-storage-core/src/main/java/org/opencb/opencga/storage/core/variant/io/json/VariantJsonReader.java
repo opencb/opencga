@@ -25,16 +25,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -59,6 +57,7 @@ public class VariantJsonReader implements VariantReader {
 
     private Path variantsPath;
     private Path globalPath;
+    private LinkedHashMap<String, Integer> samplesPosition;
 
     private VariantSource source;
 
@@ -110,7 +109,7 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public boolean pre() {
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         try {
@@ -135,6 +134,16 @@ public class VariantJsonReader implements VariantReader {
             return false;
         }
 
+        Map<String, Integer> samplesPosition = source.getSamplesPosition();
+        this.samplesPosition = new LinkedHashMap<>(samplesPosition.size());
+        String[] samples = new String[samplesPosition.size()];
+        for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
+            samples[entry.getValue()] = entry.getKey();
+        }
+        for (int i = 0; i < samples.length; i++) {
+            this.samplesPosition.put(samples[i], i);
+        }
+
         return true;
     }
 
@@ -143,7 +152,7 @@ public class VariantJsonReader implements VariantReader {
         try {
             if (variantsParser.nextToken() != null) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
-                variant.getSourceEntry(source.getFileId(), source.getStudyId()).setSamplesPosition(source.getSamplesPosition());
+                variant.getStudy(source.getStudyId()).setSamplesPosition(samplesPosition);
                 return Arrays.asList(variant);
             }
         } catch (IOException ex) {
@@ -160,7 +169,7 @@ public class VariantJsonReader implements VariantReader {
         try {
             for (int i = 0; i < batchSize && variantsParser.nextToken() != null; i++) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
-                variant.getSourceEntry(source.getFileId(), source.getStudyId()).setSamplesPosition(source.getSamplesPosition());
+                variant.getStudy(source.getStudyId()).setSamplesPosition(samplesPosition);
                 listRecords.add(variant);
             }
         } catch (IOException ex) {

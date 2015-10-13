@@ -19,10 +19,8 @@ package org.opencb.opencga.storage.core.variant;
 import org.junit.*;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -31,7 +29,6 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -85,7 +82,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
-        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT);
+        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
         assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
         assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
@@ -124,8 +121,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         for (; iterator.hasNext();) {
             Variant variant = iterator.next();
             numVariants++;
-//            Map<String, VariantSourceEntry> map = variant.getSourceEntries().values().stream().collect(Collectors.toMap(VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
-            Map<String, VariantSourceEntry> map = variant.getSourceEntries();
+//            Map<String, VariantSourceEntry> map = variant.getStudies().stream().collect(Collectors.toMap(VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
+            Map<String, StudyEntry> map = variant.getStudiesMap();
 
             assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyName()));
             assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyName()));
@@ -436,7 +433,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             assertTrue(studyConfiguration.getHeaders().containsKey(fileId));
         }
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
                     Assert.assertNotNull(entry.getValue().getSamplesData());
@@ -446,7 +443,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                     assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesDataAsMap().keySet());
                 }
                 if (includeSrc) {
-                    Assert.assertNotNull(entry.getValue().getAttribute("src"));
+                    for (FileEntry fileEntry : entry.getValue().getFiles()) {
+                        Assert.assertNotNull(fileEntry.getAttributes().get(VariantVcfFactory.SRC));
+                    }
                 }
                 for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                     String cohortName = StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId);

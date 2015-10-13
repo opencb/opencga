@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedEVSStatsCalculator;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedExacStatsCalculator;
@@ -111,8 +111,8 @@ public class VariantStatisticsCalculator {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
         
         for (Variant variant : variants) {
-            VariantSourceEntry study = null;
-            for (VariantSourceEntry entry : variant.getStudies()) {
+            StudyEntry study = null;
+            for (StudyEntry entry : variant.getStudies()) {
                 if (entry.getStudyId().equals(studyId)) {
                     study = entry;
                     break;
@@ -145,7 +145,7 @@ public class VariantStatisticsCalculator {
 //
 //            }
             variantStatsWrappers.add(
-                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), study.getCohortStats()));
+                    new VariantStatsWrapper(variant.getChromosome(), variant.getStart(), study.getStats()));
         }
         return variantStatsWrappers;
     }

@@ -22,7 +22,7 @@ import com.mongodb.DBObject;
 
 import java.util.*;
 
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.utils.CryptoUtils;
@@ -77,7 +77,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
     }
 
-    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
+    private DBObjectToStudyVariantEntryConverter variantSourceEntryConverter;
     private DBObjectToVariantAnnotationConverter variantAnnotationConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
@@ -97,7 +97,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      * @param variantSourceEntryConverter The object used to convert the files
      * @param statsConverter
      */
-    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
+    public DBObjectToVariantConverter(DBObjectToStudyVariantEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
         this.variantSourceEntryConverter = variantSourceEntryConverter;
         this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
@@ -132,7 +132,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
-                    variant.addSourceEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
+                    variant.addStudyEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
                 }
             }
         }
@@ -203,7 +203,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         // Files
         if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
-            for (VariantSourceEntry archiveFile : variant.getSourceEntries().values()) {
+            for (StudyEntry archiveFile : variant.getStudies()) {
                 mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
@@ -220,7 +220,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Statistics
         if (statsConverter != null) {
-            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getSourceEntries());
+            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getStudiesMap());
             mongoVariant.put(STATS_FIELD, mongoStats);
         }
 
