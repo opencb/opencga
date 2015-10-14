@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -62,6 +63,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
         this.jsonObjectMapper = jsonObjectMapper;
         this.objectWriter = jsonObjectMapper.writerFor(Variant.class);

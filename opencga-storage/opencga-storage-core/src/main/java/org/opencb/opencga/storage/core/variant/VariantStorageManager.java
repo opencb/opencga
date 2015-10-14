@@ -27,6 +27,8 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
+import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -662,7 +664,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         try {
             reader.open();
             reader.pre();
+            source.getMetadata().clear();
             source.addMetadata("variantFileHeader", reader.getHeader());
+            VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(reader.getHeader());
+            source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
             reader.post();
             reader.close();
         } catch (Exception e) {

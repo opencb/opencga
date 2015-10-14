@@ -7,6 +7,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
@@ -16,7 +17,8 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroEncoder;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
-import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,6 +140,7 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
     public void post() {
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
 
         ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
         try {

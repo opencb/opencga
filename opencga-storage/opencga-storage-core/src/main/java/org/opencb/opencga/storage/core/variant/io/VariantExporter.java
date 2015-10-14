@@ -6,13 +6,13 @@ import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -22,8 +22,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -152,8 +150,9 @@ public class VariantExporter {
         }
         String fileHeader = headers.iterator().next();
 
-        if (headers.size() > 1 || !returnedSamples.isEmpty()) {
-            String[] lines = fileHeader.split("\n");
+        int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
+        if (lastLineIndex >= 0) {
+            String substring = fileHeader.substring(0, lastLineIndex);
             if (returnedSamples.isEmpty()) {
                 BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
                 returnedSamples = new ArrayList<>(samplesPosition.size());
@@ -162,23 +161,12 @@ public class VariantExporter {
                 }
             }
             String samples = String.join("\t", returnedSamples);
-            lines[lines.length-1] = "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
             logger.debug("export will be done on samples: [{}]", samples);
 
-            FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
-            for (String line : lines) {
-                fileWriter.write(line);
-                fileWriter.write("\n");
-            }
-            fileWriter.close();
-        } else {
-            FileWriter fileWriter = new FileWriter("/tmp/header.vcf");
-            fileWriter.write(fileHeader);
-            fileWriter.close();
+            fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
         }
 
-        // BIG TODO jmmut: build header line by line with VCFHeaderLine and key, value pairs
-        return new VCFHeader(new VCFFileReader(new File("/tmp/header.vcf"), false).getFileHeader());
+        return VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(fileHeader);
     }
 
     /**
