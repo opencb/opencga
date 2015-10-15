@@ -179,8 +179,8 @@ public class GenomeVariantDriver extends Configured implements Tool {
             System.exit(-1);
         }
 
-        conf.set(OPT_VCF_FILE,args[0]);
-        conf.set(OPT_VCF_META_FILE,args[1]);
+        conf.set(OPT_VCF_FILE,toolArgs[0]);
+        conf.set(OPT_VCF_META_FILE,toolArgs[1]);
         addServerAndTableSettings(conf,toolArgs[2]);
 
         //set the configuration back, so that Tool can configure itself
