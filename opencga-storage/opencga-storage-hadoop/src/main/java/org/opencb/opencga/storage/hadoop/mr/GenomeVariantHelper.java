@@ -4,6 +4,7 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,8 +97,8 @@ public class GenomeVariantHelper {
         return sb.toString();
     }
 
-    public static void setMetaProtoFile (Configuration conf, String filePath) {
-        conf.set(CONFIG_VCF_META_PROTO_FILE, filePath);
+    public static void setMetaProtoFile (Configuration conf, URI filePath) {
+        conf.set(CONFIG_VCF_META_PROTO_FILE, filePath.toString());
     }
     
     public static void setMetaRowKey(Configuration conf, String rowkey){
@@ -148,7 +149,7 @@ public class GenomeVariantHelper {
             String filePath = conf.get(CONFIG_VCF_META_PROTO_FILE, StringUtils.EMPTY);
             if (StringUtils.isNotEmpty(filePath)) {
                 getLog().info(String.format("Load Meta from file %s ...", filePath));
-                Path path = new Path(filePath);
+                Path path = new Path(URI.create(filePath));
                 FileSystem fs = FileSystem.get(conf);
                 try (FSDataInputStream instream = fs.open(path)) {
                     return VcfMeta.parseFrom(instream);
@@ -269,7 +270,7 @@ public class GenomeVariantHelper {
      *            Genomic position
      * @return {@link String} Row key string
      */
-    public String generateBlockId (String chrom, long position) {
+    private String generateBlockId (String chrom, long position) {
         long slicePosition = getSlicePosition(position);
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());

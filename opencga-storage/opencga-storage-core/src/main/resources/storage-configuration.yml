@@ -1,5 +1,5 @@
 ---
-defaultStorageEngineId: "mongodb"
+defaultStorageEngineId: "${OPENCGA.STORAGE.ENGINE.DEFAULT}"
 logLevel: "info"
 logFile: ""
 
@@ -80,14 +80,15 @@ storageEngines:
     options: {}
     database:
       hosts:
-      - "who-master:60000"
-      user: "user"
-      password: "password"
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
-    options: {}
+    options: 
+      database.name: "opencga"
     database:
       hosts:
-      - "who-master:60000"
-      user: "user"
-      password: "password"
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"

@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
@@ -37,9 +39,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.GeneratedMessage;
+import com.sun.tools.internal.jxc.gen.config.Config;
 
 public class GenomeVariantDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(GenomeVariantDriver.class);
+
+    public static final String HBASE_MASTER = "hbase.master";
+    public static final String HBASE_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
+    public static final String OPT_TABLE_NAME = "opencga.table.name";
+    public static final String OPT_VCF_FILE = "opencga.file.vcf";
+    public static final String OPT_VCF_META_FILE = "opencga.file.vcfmeta";
 
     public GenomeVariantDriver () {
     }
@@ -49,30 +58,12 @@ public class GenomeVariantDriver extends Configured implements Tool {
     }
 
     public int run (String[] args) throws Exception {
-        if (args.length != 3) {
-            System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <output-table>\n", getClass().getSimpleName());
-            System.err.println("Found " + Arrays.toString(args));
-            ToolRunner.printGenericCommandUsage(System.err);
-            return -1;
-        }
-
-        String inputfile = args[0]; 
-        String inputMetaFile = args[1];
-        String target = args[2];
-
+        Configuration conf = getConf();
+        URI inputFile = URI.create(conf.get(OPT_VCF_FILE));
+        URI inputMetaFile = URI.create(conf.get(OPT_VCF_META_FILE));
+        String tablename = conf.get(OPT_TABLE_NAME);
 
 /*  SERVER details  */
-        URI uri = new URI(target);
-        String server = uri.getHost();
-        Integer port = uri.getPort() > 0?uri.getPort() : 60000;
-        String tablename = uri.getPath();
-        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
-        String master = String.join(":", server, port.toString());
-        
-
-        Configuration conf = getConf();        
-        conf.set("hbase.zookeeper.quorum", server);
-        conf.set("hbase.master", master);
         
         // add metadata config as string
         addMetaData(conf,inputMetaFile); // TODO store in HBase
@@ -85,7 +76,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
 
         // input
-        FileInputFormat.addInputPath(job, new Path(inputfile));
+        FileInputFormat.addInputPath(job, new Path(inputFile));
 
         AvroJob.setInputKeySchema(job, VariantAvro.getClassSchema());
         job.setInputFormatClass(AvroKeyInputFormat.class);
@@ -124,7 +115,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         }
     }
 
-    private void addMetaData(Configuration conf, String inputMetaFile) throws IOException {
+    private void addMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Class<GeneratedMessage> clazz = com.google.protobuf.GeneratedMessage.class;
         LOG.debug(clazz.getProtectionDomain().getCodeSource().getLocation().toString());
         URL url = clazz.getResource('/'+clazz.getName().replace('.', '/')+".class");
@@ -136,11 +127,11 @@ public class GenomeVariantDriver extends Configured implements Tool {
         try(FSDataOutputStream os = fs.create(to,true);){
             os.write(meta.toByteArray());
         }
-        GenomeVariantHelper.setMetaProtoFile(conf, protocFile);
+        GenomeVariantHelper.setMetaProtoFile(conf, URI.create(protocFile));
 //        GenomeVariantHelper.setMetaProtoString(conf, meta.getStudyIdBytes().toStringUtf8());
     }
 
-    private VcfMeta getMetaData (Configuration conf, String inputMetaFile) throws IOException {
+    private VcfMeta getMetaData (Configuration conf, URI inputMetaFile) throws IOException {
         String ret = StringUtils.EMPTY;
         Path from = new Path(inputMetaFile);
         FileSystem fs = FileSystem.get(conf);
@@ -158,12 +149,47 @@ public class GenomeVariantDriver extends Configured implements Tool {
             return meta;
         }
     }
+    
+    private static void addServerAndTableSettings(Configuration conf, String target) throws URISyntaxException{
+        URI uri = new URI(target);
+        String server = uri.getHost();
+        Integer port = uri.getPort() > 0?uri.getPort() : 60000;
+        String tablename = uri.getPath();
+        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
+        String master = String.join(":", server, port.toString());
+
+        conf.set(HBASE_ZOOKEEPER_QUORUM, server);
+        conf.set(HBASE_MASTER, master);
+        conf.set(OPT_TABLE_NAME,tablename);
+    }
 
     public static void main (String[] args) throws Exception {
         Configuration conf = new Configuration();
-        int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
+        GenomeVariantDriver driver = new GenomeVariantDriver();
+        GenericOptionsParser parser = new GenericOptionsParser(conf, args);
         
-//        int exitCode = new GenomeVariantDriver().run(args);
+        //get the args w/o generic hadoop args
+        String[] toolArgs = parser.getRemainingArgs();
+        
+        if (toolArgs.length != 3) {
+            System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <output-table>\n", 
+                    GenomeVariantDriver.class.getSimpleName());
+            System.err.println("Found " + Arrays.toString(toolArgs));
+            ToolRunner.printGenericCommandUsage(System.err);
+            System.exit(-1);
+        }
+
+        conf.set(OPT_VCF_FILE,args[0]);
+        conf.set(OPT_VCF_META_FILE,args[1]);
+        addServerAndTableSettings(conf,toolArgs[2]);
+
+        //set the configuration back, so that Tool can configure itself
+        driver.setConf(conf);
+        
+        /* Alternative to using tool runner */
+//      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
+        int exitCode = driver.run(toolArgs);
+        
         System.exit(exitCode);
     }
 

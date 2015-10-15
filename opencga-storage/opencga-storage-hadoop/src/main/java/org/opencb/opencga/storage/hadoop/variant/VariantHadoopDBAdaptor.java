@@ -21,7 +21,6 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -41,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Created by mh719 on 16/06/15.
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
-    public final static byte[] COLUMN_FAMILY = Bytes.toBytes("d");
+    private static final byte[] COLUMN_FAMILY = Bytes.toBytes("d");
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
@@ -317,18 +316,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
         return null;
@@ -390,6 +377,20 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
+            QueryOptions queryOptions) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
+            QueryOptions queryOptions) {
         // TODO Auto-generated method stub
         return null;
     }
