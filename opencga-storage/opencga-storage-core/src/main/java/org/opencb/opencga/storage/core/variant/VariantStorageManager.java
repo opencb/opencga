@@ -664,10 +664,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         try {
             reader.open();
             reader.pre();
-            source.getMetadata().clear();
-            source.addMetadata("variantFileHeader", reader.getHeader());
-            VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(reader.getHeader());
-            source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
+            String variantFileHeader = reader.getHeader();
+            source.addMetadata("variantFileHeader", variantFileHeader);
+            if (source.getHeader() == null) {
+                VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(variantFileHeader);
+                source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
+            }
             reader.post();
             reader.close();
         } catch (Exception e) {
