@@ -38,7 +38,7 @@
         <java.version>1.8</java.version>
         <opencga.version>0.7-dev</opencga.version>
         <biodata.version>0.6.0-SNAPSHOT</biodata.version>
-        <datastore.version>0.5.0-SNAPSHOT</datastore.version>
+        <datastore.version>0.4-SNAPSHOT</datastore.version>
         <cellbase.version>4.0.0-SNAPSHOT</cellbase.version>
         <java-common-libs.version>3.1.0-SNAPSHOT</java-common-libs.version>
         <hadoop.version>2.6.0</hadoop.version>
@@ -215,7 +215,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>12.0</version>
+                <version>15.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -473,6 +473,7 @@
 
                 <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
                 <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.STORAGE.ENGINE.DEFAULT>mongodb</OPENCGA.STORAGE.ENGINE.DEFAULT>
             </properties>
         </profile>
         <profile>
