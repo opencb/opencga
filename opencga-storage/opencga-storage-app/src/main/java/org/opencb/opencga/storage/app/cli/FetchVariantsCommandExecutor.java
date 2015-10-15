@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.Query;
@@ -355,6 +355,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
     }
 
+    @Deprecated
+    @SuppressWarnings("deprecated")
     private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter printWriter) {
 
         Map<String, StudyConfiguration> studyConfigurationMap = null;
@@ -415,7 +417,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         JsonFactory factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(factory);
 
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
 

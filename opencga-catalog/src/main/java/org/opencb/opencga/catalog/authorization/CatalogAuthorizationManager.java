@@ -271,7 +271,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
         if (!paths.isEmpty()) {
-            System.out.println("Querying for " + paths.size() + " paths to catalog");
+//            System.out.println("Querying for " + paths.size() + " paths to catalog");
             Map<String, Map<String, AclEntry>> map = fileDBAdaptor.getFilesAcl(studyId, paths, Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID)).first();
             for (String path : paths) {
                 Map<String, AclEntry> stringAclEntryMap;
@@ -476,7 +476,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (File file : files) {
             paths.addAll(FileManager.getParentPaths(file.getPath()));
         }
-        System.out.println("Querying for " + paths.size() + " paths to the authContext");
+//        System.out.println("Querying for " + paths.size() + " paths to the authContext");
         getFileAclEntries(studyAuthenticationContext, userId, studyId, "@" + group.getId(), new ArrayList<>(paths));
 
         Iterator<File> fileIt = files.iterator();

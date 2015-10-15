@@ -27,7 +27,7 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
@@ -54,7 +54,7 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConver
  */
 public class VariantMongoDBWriterTest {
 
-    private static String inputFile = VariantMongoDBWriterTest.class.getResource("/variant-test-file.vcf.gz").getFile();
+    private static String inputFile;
     private static MongoDBVariantStorageManager variantStorageManager;
     private VariantSource source1, source2, source3;
     private StudyConfiguration studyConfiguration, studyConfiguration2;
@@ -72,6 +72,8 @@ public class VariantMongoDBWriterTest {
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
+        inputFile = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz").getPath();
+
         MongoVariantStorageManagerTestUtils.clearDB(VariantStorageManagerTestUtils.DB_NAME);
         variantStorageManager = MongoVariantStorageManagerTestUtils.getVariantStorageManager();
 
@@ -82,7 +84,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration.getSampleIds().put("NA19661", 3);
         studyConfiguration.getSampleIds().put("NA19685", 4);
         studyConfiguration.getFileIds().put(inputFile, fileId1);
-        studyConfiguration.getSamplesInFiles().put(fileId1, new LinkedHashSet(Arrays.asList(1, 2, 3, 4)));
+        studyConfiguration.getSamplesInFiles().put(fileId1, new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)));
 
         source2 = new VariantSource(inputFile, fileId2.toString(), studyId2.toString(), studyName2);
         studyConfiguration2 = new StudyConfiguration(studyId2, studyName2);
@@ -91,7 +93,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration2.getSampleIds().put("NA19661", 3);
         studyConfiguration2.getSampleIds().put("NA19685", 4);
         studyConfiguration2.getFileIds().put(inputFile, fileId2);
-        studyConfiguration2.getSamplesInFiles().put(fileId2, new LinkedHashSet(Arrays.asList(1, 2, 3, 4)));
+        studyConfiguration2.getSamplesInFiles().put(fileId2, new LinkedHashSet<>(Arrays.asList(1, 2, 3, 4)));
 
         source3 = new VariantSource("unreadl.vcf", fileId3.toString(), studyId2.toString(), studyName2);
         studyConfiguration2.getSampleIds().put("NA00001.X", 5);
@@ -99,7 +101,7 @@ public class VariantMongoDBWriterTest {
         studyConfiguration2.getSampleIds().put("NA00003.X", 7);
         studyConfiguration2.getSampleIds().put("NA00004.X", 8);
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
-        studyConfiguration2.getSamplesInFiles().put(fileId3, new LinkedHashSet(Arrays.asList(5, 6, 7, 8)));
+        studyConfiguration2.getSamplesInFiles().put(fileId3, new LinkedHashSet<>(Arrays.asList(5, 6, 7, 8)));
 
         dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageManagerTestUtils.DB_NAME);
     }
@@ -173,16 +175,16 @@ public class VariantMongoDBWriterTest {
         Variant variant;
         variant = allVariants.get(0);
         assertEquals(999, variant.getStart().longValue());
-        assertEquals(Collections.singleton(studyName1), variant.getSourceEntries().keySet());
+        assertEquals(Collections.singleton(studyName1), variant.getStudiesMap().keySet());
 
         variant = allVariants.get(1);
         assertEquals(1000, variant.getStart().longValue());
-        assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getSourceEntries().keySet());
+        assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration, fileId1, (sampleId) -> Integer.toString(sampleId + 10), "DP");
 
         variant = allVariants.get(2);
         assertEquals(1002, variant.getStart().longValue());
-        assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getSourceEntries().keySet());
+        assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration, fileId1, (sampleId) -> Integer.toString(sampleId + 10), "DP");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
@@ -190,14 +192,14 @@ public class VariantMongoDBWriterTest {
 
         variant = allVariants.get(3);
         assertEquals(1004, variant.getStart().longValue());
-        assertEquals(Collections.singleton(studyName2), variant.getSourceEntries().keySet());
+        assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration2, fileId2, Object::toString, "DP");
         checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
         checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
 
         variant = allVariants.get(4);
         assertEquals(1006, variant.getStart().longValue());
-        assertEquals(Collections.singleton(studyName2), variant.getSourceEntries().keySet());
+        assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "GQX");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
@@ -209,7 +211,7 @@ public class VariantMongoDBWriterTest {
     public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String> valueProvider, String field) {
         assertTrue(studyConfiguration.getFileIds().values().contains(fileId));
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
-            assertEquals(valueProvider.apply(sampleId), variant.getSourceEntry(studyConfiguration.getStudyName())
+            assertEquals(valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
                     .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
         );
     }
@@ -218,37 +220,37 @@ public class VariantMongoDBWriterTest {
     public void loadFile1() throws StorageManagerException {
         VariantMongoDBWriter mongoDBWriter;
         Variant variant;
-        VariantSourceEntry sourceEntry;
+        StudyEntry sourceEntry;
         mongoDBWriter = new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false);
         mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
         mongoDBWriter.open();
         mongoDBWriter.pre();
 
         variant = new Variant("X", 999, 999, "A", "C");
-        sourceEntry = new VariantSourceEntry(source1.getFileId(), source1.getStudyId());
+        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "11").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "12").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         variant = new Variant("X", 1000, 1000, "A", "C");
-        sourceEntry = new VariantSourceEntry(source1.getFileId(), source1.getStudyId());
+        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "11").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "12").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         variant = new Variant("X", 1002, 1002, "A", "C");
-        sourceEntry = new VariantSourceEntry(source1.getFileId(), source1.getStudyId());
+        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "0/1").append("DP", "11").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "12").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "14").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         mongoDBWriter.post();
@@ -260,28 +262,28 @@ public class VariantMongoDBWriterTest {
     public void loadFile2() throws StorageManagerException {
         VariantMongoDBWriter mongoDBWriter;
         Variant variant;
-        VariantSourceEntry sourceEntry;
+        StudyEntry sourceEntry;
         mongoDBWriter = new VariantMongoDBWriter(fileId2, studyConfiguration2, dbAdaptor, true, false);
         mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
         mongoDBWriter.open();
         mongoDBWriter.pre();
 
         variant = new Variant("X", 1000, 1000, "A", "C");
-        sourceEntry = new VariantSourceEntry(source2.getFileId(), source2.getStudyId());
+        sourceEntry = new StudyEntry(source2.getFileId(), source2.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "1").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "1/1").append("DP", "2").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "3").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "4").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         variant = new Variant("X", 1004, 1004, "A", "C");
-        sourceEntry = new VariantSourceEntry(source2.getFileId(), source2.getStudyId());
+        sourceEntry = new StudyEntry(source2.getFileId(), source2.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "0/1").append("DP", "1").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "2").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "3").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "4").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         mongoDBWriter.post();
@@ -293,7 +295,7 @@ public class VariantMongoDBWriterTest {
     public void loadFile3() throws StorageManagerException {
         VariantMongoDBWriter mongoDBWriter;
         Variant variant;
-        VariantSourceEntry sourceEntry;
+        StudyEntry sourceEntry;
         mongoDBWriter = new VariantMongoDBWriter(fileId3, studyConfiguration2, dbAdaptor, true, false);
         mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
         mongoDBWriter.open();
@@ -301,30 +303,30 @@ public class VariantMongoDBWriterTest {
 
 
         variant = new Variant("X", 1000, 1000, "A", "C");
-        sourceEntry = new VariantSourceEntry(source3.getFileId(), source3.getStudyId());
+        sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
         sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         variant = new Variant("X", 1002, 1002, "A", "C");
-        sourceEntry = new VariantSourceEntry(source3.getFileId(), source3.getStudyId());
+        sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
         sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         variant = new Variant("X", 1006, 1006, "A", "C");
-        sourceEntry = new VariantSourceEntry(source3.getFileId(), source3.getStudyId());
+        sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
         sourceEntry.addSampleData("NA00001.X", ((Map) new ObjectMap("GT", "0/1").append("DP", "5").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00002.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "6").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
-        variant.addSourceEntry(sourceEntry);
+        variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 
         mongoDBWriter.post();

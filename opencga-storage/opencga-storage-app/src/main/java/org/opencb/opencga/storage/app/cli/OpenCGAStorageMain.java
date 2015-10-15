@@ -31,7 +31,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -832,7 +832,7 @@ public class OpenCGAStorageMain {
         JsonFactory factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(factory);
 
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
 

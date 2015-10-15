@@ -1,12 +1,10 @@
 package org.opencb.opencga.analysis.storage.variant;
 
-import org.apache.tools.ant.types.Commandline;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.datastore.core.ObjectMap;
@@ -15,7 +13,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil;
@@ -27,9 +24,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.app.StorageMain;
-import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -37,22 +31,18 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.opencb.biodata.models.variant.VariantSourceEntry.DEFAULT_COHORT;
+import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
@@ -300,7 +290,7 @@ public class VariantStorageTest {
                 sessionId
         );
 
-        cohorts.put(VariantSourceEntry.DEFAULT_COHORT, new Cohort());
+        cohorts.put(StudyEntry.DEFAULT_COHORT, new Cohort());
 //        cohorts.put("all", null);
         checkCalculatedAggregatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
     }
@@ -353,9 +343,9 @@ public class VariantStorageTest {
         VariantDBAdaptor dbAdaptor = new StorageManagerFactory(storageConfiguration).getVariantStorageManager().getDBAdaptor(dbName);
 
         for (Variant variant : dbAdaptor) {
-            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(cohorts.size(), sourceEntry.getCohortStats().size());
-                for (Map.Entry<String, VariantStats> entry : sourceEntry.getCohortStats().entrySet()) {
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                assertEquals(cohorts.size(), sourceEntry.getStats().size());
+                for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
                     assertTrue(cohorts.containsKey(entry.getKey()));
                     if (cohorts.get(entry.getKey()) != null) {
                         assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples.", cohorts.get(entry.getKey()).getSamples().size(), entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
@@ -374,9 +364,9 @@ public class VariantStorageTest {
         VariantDBAdaptor dbAdaptor = new StorageManagerFactory(storageConfiguration).getVariantStorageManager().getDBAdaptor(dbName);
 
         for (Variant variant : dbAdaptor) {
-            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                assertEquals(cohorts.size(), sourceEntry.getCohortStats().size());
-                for (Map.Entry<String, VariantStats> entry : sourceEntry.getCohortStats().entrySet()) {
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                assertEquals(cohorts.size(), sourceEntry.getStats().size());
+                for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
                     assertTrue(cohorts.containsKey(entry.getKey()));
                 }
             }

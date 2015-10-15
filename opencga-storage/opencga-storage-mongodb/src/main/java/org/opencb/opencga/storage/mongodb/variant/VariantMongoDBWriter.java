@@ -69,7 +69,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;
     private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToVariantSourceEntryConverter sourceEntryConverter;
+    private DBObjectToStudyVariantEntryConverter sourceEntryConverter;
     private DBObjectToSamplesConverter sampleConverter;
 
 //    private long numVariantsWritten;
@@ -230,7 +230,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            if (!existingVariants.contains(id)) {
 //                DBObject variantDocument = variantConverter.convertToStorageType(variant);
 //                List<DBObject> mongoFiles = new LinkedList<>();
-//                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//                for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                    if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                        continue;
 //                    }
@@ -241,7 +241,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                bulk.insert(variantDocument);
 //                currentBulkSize++;
 //            } else {
-//                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//                for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                    if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                        continue;
 //                    }
@@ -276,7 +276,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            variant.setAnnotation(null);
 //            String id = variantConverter.buildStorageId(variant);
 //
-//            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//            for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                    continue;
 //                }
@@ -430,7 +430,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
         sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
 
-        sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
+        sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc, sampleConverter);
 
         sourceEntryConverter.setIncludeSrc(includeSrc);
 

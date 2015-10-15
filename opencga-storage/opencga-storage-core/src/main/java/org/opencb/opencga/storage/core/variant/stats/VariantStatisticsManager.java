@@ -23,8 +23,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
@@ -233,7 +232,7 @@ public class VariantStatisticsManager {
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
-                    if (variantStatsWrapper.getCohortStats().get(VariantSourceEntry.DEFAULT_COHORT) == null) {
+                    if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
                         defaultCohortAbsent = true;
                     }
                 } catch (JsonProcessingException e) {

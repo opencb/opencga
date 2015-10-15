@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.analysis.storage;
 
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -41,6 +40,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 16/10/14.
@@ -213,17 +213,18 @@ public class AnalysisFileIndexer {
         }
         if (!simulate) {
             Cohort defaultCohort = null;
-            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), StudyEntry.DEFAULT_COHORT), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, VariantSourceEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
 
+            //Samples are the already indexed plus those that are going to be indexed
             Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
-            samples.addAll(originalFile.getSampleIds());
+            samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
-                logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
+                logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
                 catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
             }
         }

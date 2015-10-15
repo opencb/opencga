@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
@@ -23,12 +26,18 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
+import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
+import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -40,17 +49,23 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
+import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by imedina on 13/08/14.
@@ -196,6 +211,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+        String format = options.getString("transform.format", "json");
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
@@ -238,8 +254,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
 
 
-        Path outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
-        Path outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
+        Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
+        Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
 
         logger.info("Transforming variants...");
         long start, end;
@@ -247,8 +263,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
-                outputVariantJsonFile = output.resolve(fileName + ".variants.json" + extension);
-                outputFileJsonFile = output.resolve(fileName + ".file.json" + extension);
+                outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
+                outputMetaFile = output.resolve(fileName + ".file.json" + extension);
             }
 
             //Ped Reader
@@ -280,7 +296,63 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             }
             end = System.currentTimeMillis();
 
-        } else {
+        } else if (format.equals("avro")) {
+            //Read VariantSource
+            source = readVariantSource(input, source);
+
+            //Reader
+            StringDataReader dataReader = new StringDataReader(input);
+
+            //Writer
+            DataWriter<ByteBuffer> dataWriter;
+            try {
+                dataWriter = new AvroFileWriter<>(VariantAvro.getClassSchema(), compression, new FileOutputStream(outputVariantsFile.toFile()));
+            } catch (FileNotFoundException e) {
+                throw new StorageManagerException("Fail init writer", e);
+            }
+            Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
+
+            if (options.getBoolean("transform.htsjdk")) {
+                FullVcfCodec codec = new FullVcfCodec();
+                final VariantSource finalSource = source;
+                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
+                try (InputStream fileInputStream = input.toString().endsWith("gz")
+                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                        : new FileInputStream(input.toFile())) {
+                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile);
+                } catch (IOException e) {
+                    throw new StorageManagerException("Unable to read VCFHeader", e);
+                }
+            } else {
+                final VariantSource finalSource = source;
+                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile);
+            }
+
+            ParallelTaskRunner<String, ByteBuffer> ptr;
+            try {
+                ptr = new ParallelTaskRunner<>(
+                        dataReader,
+                        taskSupplier,
+                        dataWriter,
+                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                );
+            } catch (Exception e) {
+                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+            }
+            logger.info("Multi thread transform...");
+            start = System.currentTimeMillis();
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+                throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
+            }
+            end = System.currentTimeMillis();
+        } else if (format.equals("json")) {
             //Read VariantSource
             source = readVariantSource(input, source);
 
@@ -288,10 +360,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             StringDataReader dataReader = new StringDataReader(input);
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantJsonFile);
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile);
 
             final VariantSource finalSource = source;
-            final Path finalOutputFileJsonFile = outputFileJsonFile;
+            final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
             try {
                 VariantJsonTransformTask variantJsonTransformTask = new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
@@ -315,11 +387,13 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
+        } else {
+            throw new IllegalArgumentException("Unknown format " + format);
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
 
-        return outputUri.resolve(outputVariantJsonFile.getFileName().toString());
+        return outputUri.resolve(outputVariantsFile.getFileName().toString());
     }
 
     @Override
@@ -542,7 +616,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
                 URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileId) + "." + TimeUtils.getTime());
 
-                String defaultCohortName = VariantSourceEntry.DEFAULT_COHORT;
+                String defaultCohortName = StudyEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
                 Map<String, Set<String>> defaultCohort = new HashMap<>(Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
                 if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
@@ -574,6 +648,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     public static String buildFilename(String studyName, int fileId) {
+        int index = studyName.indexOf(":");
+        if (index >= 0) {
+            studyName = studyName.substring(index + 1);
+        }
         return studyName + "_" + fileId;
     }
 
@@ -581,28 +659,40 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         if (source == null) {
             source = new VariantSource("", "", "", "");
         }
-        if (input.toFile().getName().contains("json")) {
-            try {
-                VariantJsonReader reader = getVariantJsonReader(input, source);
-                reader.open();
-                reader.pre();
-                reader.post();
-                reader.close();
-            } catch (IOException e) {
-                throw new StorageManagerException("Can not read VariantSource from " + input, e);
-            }
-        } else {
-            VariantReader reader = new VariantVcfReader(source, input.toAbsolutePath().toString());
+        VariantReader reader = getVariantReader(input, source);
+
+        try {
             reader.open();
             reader.pre();
-            source.addMetadata("variantFileHeader", reader.getHeader());
+            String variantFileHeader = reader.getHeader();
+            source.addMetadata("variantFileHeader", variantFileHeader);
+            if (source.getHeader() == null) {
+                VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(variantFileHeader);
+                source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
+            }
             reader.post();
             reader.close();
+        } catch (Exception e) {
+            throw new StorageManagerException("Unable to read VariantSource", e);
         }
+
         return source;
     }
 
-    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws IOException {
+    protected static VariantReader getVariantReader(Path input, VariantSource source) throws StorageManagerException {
+        String fileName = input.getFileName().toString();
+        if (fileName.contains("json")) {
+            return getVariantJsonReader(input, source);
+        } else if (fileName.contains("avro")) {
+            return getVariantAvroReader(input, source);
+        } else if (fileName.endsWith("vcf") || fileName.endsWith("vcf.gz")) {
+            return new VariantVcfReader(source, input.toAbsolutePath().toString());
+        } else {
+            throw new StorageManagerException("Variants input file format not supported for file: " + input);
+        }
+    }
+
+    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageManagerException {
         VariantJsonReader variantJsonReader;
         if (    input.toString().endsWith(".json") ||
                 input.toString().endsWith(".json.gz") ||
@@ -611,9 +701,20 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {
-            throw new IOException("Variants input file format not supported for file: " + input);
+            throw new StorageManagerException("Variants input file format not supported for file: " + input);
         }
         return variantJsonReader;
+    }
+
+    protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
+        VariantAvroReader variantAvroReader;
+        if (input.toString().matches(".*avro(\\..*)?$")) {
+            String sourceFile = input.toAbsolutePath().toString().replace("variants.avro", "file.json");
+            variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), source);
+        } else {
+            throw new StorageManagerException("Variants input file format not supported for file: " + input);
+        }
+        return variantAvroReader;
     }
 
     /* --------------------------------------- */

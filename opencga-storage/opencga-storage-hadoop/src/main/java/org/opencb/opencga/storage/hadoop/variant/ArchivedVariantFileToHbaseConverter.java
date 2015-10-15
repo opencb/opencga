@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.protobuf.VariantProtos;
 import org.opencb.biodata.models.variant.protobuf.VariantStatsProtos;
 import org.opencb.datastore.core.ComplexTypeConverter;
@@ -31,7 +31,7 @@ import org.opencb.opencga.storage.core.adaptors.StudyDBAdaptor;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter<VariantSourceEntry, Put> {
+public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter<StudyEntry, Put> {
 
     private boolean includeSamples;
 
@@ -69,12 +69,12 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
     }
 
     @Override
-    public VariantSourceEntry convertToDataModelType(Put object) {
+    public StudyEntry convertToDataModelType(Put object) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Put convertToStorageType(VariantSourceEntry object) {
+    public Put convertToStorageType(StudyEntry object) {
         Put put = new Put(rowkey);
         String prefix = object.getStudyId() + "_" + object.getFileId() + "_";
 
@@ -85,7 +85,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
 
         // Samples
         if (samples != null && !samples.isEmpty()) {
-            for (String sampleName : object.getSampleNames()) {
+            for (String sampleName : object.getSamplesName()) {
                 VariantProtos.VariantSample sampleProto = buildSampleProto(object, sampleName);
                 put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + sampleName), sampleProto.toByteArray());
             }
@@ -93,14 +93,14 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         
         // Statistics
         if (statsConverter != null) {
-            VariantStatsProtos.VariantStats statsProto = statsConverter.convertToStorageType(object.getStats(VariantSourceEntry.DEFAULT_COHORT));
+            VariantStatsProtos.VariantStats statsProto = statsConverter.convertToStorageType(object.getStats(StudyEntry.DEFAULT_COHORT));
             put.add(VariantToHBaseConverter.COLUMN_FAMILY, Bytes.toBytes(prefix + "stats"), statsProto.toByteArray());
         }
         
         return put;
     }
 
-    private VariantProtos.VariantFileAttributes buildAttributesProto(VariantSourceEntry file) {
+    private VariantProtos.VariantFileAttributes buildAttributesProto(StudyEntry file) {
         VariantProtos.VariantFileAttributes.Builder builder = VariantProtos.VariantFileAttributes.newBuilder();
 
         for (Map.Entry<String, String> attr : file.getAttributes().entrySet()) {
@@ -113,7 +113,7 @@ public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter
         return builder.build();
     }
 
-    private VariantProtos.VariantSample buildSampleProto(VariantSourceEntry file, String sampleName) {
+    private VariantProtos.VariantSample buildSampleProto(StudyEntry file, String sampleName) {
         String joinedSampleFields = VcfUtils.getJoinedSampleFields(file, sampleName);
         VariantProtos.VariantSample.Builder builder = VariantProtos.VariantSample.newBuilder();
         builder.setSample(joinedSampleFields);

@@ -20,8 +20,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToVariantSourceEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantEntryConverter.*;
 
 /**
  *
@@ -129,7 +128,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * @param studyId StudyId
      * @return Samples Data
      */
-    public List<List<String>> convertToDataModelType(DBObject object, VariantSourceEntry study, int studyId) {
+    public List<List<String>> convertToDataModelType(DBObject object, StudyEntry study, int studyId) {
 
         if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument, need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
@@ -231,7 +230,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         return samplesData;
     }
 
-    private void fillStudyEntryFields(VariantSourceEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData) {
+    private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData) {
         //If != null, just return samplesData
         if (study != null) {
             //Set FORMAT
@@ -251,28 +250,33 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
     }
 
-    public DBObject convertToStorageType(Map<String, Map<String, String>> object, int studyId, int fileId) {
-        Map<Genotype, List<Integer>> genotypeCodes = new HashMap<>();
+    public DBObject convertToStorageType(StudyEntry studyEntry, int studyId, int fileId) {
+        Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
 
         HashBiMap<String, Integer> sampleIds = HashBiMap.create(studyConfiguration.getSampleIds());
         // Classify samples by genotype
-        for (Map.Entry<String, Map<String, String>> sample : object.entrySet()) {
-            String genotype = sample.getValue().get("GT");
+        int sampleIdx = 0;
+        Integer gtIdx = studyEntry.getFormatPositions().get("GT");
+        List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
+        for (List<String> data : studyEntry.getSamplesData()) {
+            String genotype = data.get(gtIdx);
+            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
             if (genotype != null) {
-                Genotype g = new Genotype(genotype);
-                List<Integer> samplesWithGenotype = genotypeCodes.get(g);
+//                Genotype g = new Genotype(genotype);
+                List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
                 if (samplesWithGenotype == null) {
                     samplesWithGenotype = new ArrayList<>();
-                    genotypeCodes.put(g, samplesWithGenotype);
+                    genotypeCodes.put(genotype, samplesWithGenotype);
                 }
-                samplesWithGenotype.add(sampleIds.get(sample.getKey()));
+                samplesWithGenotype.add(sampleIds.get(sampleName));
             }
+            sampleIdx++;
         }
 
 
-        Set<Genotype> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().map(Genotype::new).collect(Collectors.toSet());
+        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
         // In Mongo, samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
@@ -282,8 +286,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // "1|0" : [ 262, 290, 300, 331, 343, 369, 374, 391, 879, 918, 930 ]
         BasicDBObject mongoSamples = new BasicDBObject();
         BasicDBObject mongoGenotypes = new BasicDBObject();
-        for (Map.Entry<Genotype, List<Integer>> entry : genotypeCodes.entrySet()) {
-            String genotypeStr = genotypeToStorageType(entry.getKey().toString());
+        for (Map.Entry<String, List<Integer>> entry : genotypeCodes.entrySet()) {
+            String genotypeStr = genotypeToStorageType(entry.getKey());
             if (!defaultGenotype.contains(entry.getKey())) {
                 mongoGenotypes.append(genotypeStr, entry.getValue());
             }
@@ -305,11 +309,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             for (int size = samplesPosition.size(); size > 0; size--) {
                 values.add(UNKNOWN_FIELD);
             }
-            for (Map.Entry<String, Map<String, String>> sampleMapEntry : object.entrySet()) {
-                if (sampleMapEntry.getValue().containsKey(extraField)) {
-                    Integer index = samplesPosition.get(sampleMapEntry.getKey());
+            sampleIdx = 0;
+            if (studyEntry.getFormatPositions().containsKey(extraField)) {
+                Integer fieldIdx = studyEntry.getFormatPositions().get(extraField);
+                String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+                for (List<String> sampleData : studyEntry.getSamplesData()) {
+                    Integer index = samplesPosition.get(sampleName);
                     Object value;
-                    String stringValue = sampleMapEntry.getValue().get(extraField);
+                    String stringValue = sampleData.get(fieldIdx);
                     try {
                         value = Integer.parseInt(stringValue);
                     } catch (NumberFormatException e) {
@@ -320,6 +327,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         }
                     }
                     values.set(index, value);
+                    sampleIdx++;
                 }
             }
             mongoSamples.append(extraField.toLowerCase(), values);
@@ -411,7 +419,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         if (!__returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             if (returnedSamples.isEmpty()) {
-                samplesPosition = new LinkedHashMap<>(StudyConfiguration.getSamplesPosition(studyConfiguration));
+                BiMap<Integer, String> unorderedSamplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
+                for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
+                    samplesPosition.put(unorderedSamplesPosition.get(i), i);
+                }
             } else {
                 samplesPosition = new LinkedHashMap<>(returnedSamples.size());
                 int index = 0;
@@ -432,24 +444,24 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
 
-    private VariantSourceEntry getLegacyNoncompressedSamples(BasicDBObject object) {
-        VariantSourceEntry variantSourceEntry = new VariantSourceEntry(object.get(FILEID_FIELD).toString(),
+    private StudyEntry getLegacyNoncompressedSamples(BasicDBObject object) {
+        StudyEntry studyEntry = new StudyEntry(object.get(FILEID_FIELD).toString(),
                 object.get(STUDYID_FIELD).toString());
 
         BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
         for (Object entry : mongoGenotypes.toMap().entrySet()) {
             Map.Entry sample = (Map.Entry) entry;
-            variantSourceEntry.addSampleData(sample.getKey().toString(), ((DBObject) sample.getValue()).toMap());
+            studyEntry.addSampleData(sample.getKey().toString(), ((DBObject) sample.getValue()).toMap());
         }
 //            for (String sample : samples) {
 //                Map<String, String> sampleData = ((DBObject) mongoGenotypes.get(sample)).toMap();
 //                fileWithSamples.addSampleData(sample, sampleData);
 //                System.out.println("Sample processed: " + sample);
 //            }
-        return variantSourceEntry;
+        return studyEntry;
     }
 
-    private DBObject getLegacyNoncompressedSamples(VariantSourceEntry object) {
+    private DBObject getLegacyNoncompressedSamples(StudyEntry object) {
         BasicDBObject mongoSamples = new BasicDBObject();
         for (Map.Entry<String, Map<String, String>> entry : object.getSamplesDataAsMap().entrySet()) {
             BasicDBObject sampleData = new BasicDBObject();

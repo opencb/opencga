@@ -82,9 +82,9 @@ public class StudyConfiguration implements Cloneable {
         this.fileIds = HashBiMap.create(1);
         this.sampleIds = HashBiMap.create();
         this.cohortIds = HashBiMap.create();
-        this.cohorts = HashBiMap.create();
+        this.cohorts = new HashMap<>();
         this.indexedFiles = new LinkedHashSet<>();
-        this.headers = HashBiMap.create();
+        this.headers = new HashMap<>();
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
@@ -333,12 +333,12 @@ public class StudyConfiguration implements Cloneable {
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
         for (Integer indexedFileId : studyConfiguration.getIndexedFiles()) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(indexedFileId)) {
-                samplesPosition.put(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
             }
         }
         for (int fileId : fileIds) {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-                samplesPosition.put(idSamples.get(sampleId), position++);
+                samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
             }
         }
         return samplesPosition;
