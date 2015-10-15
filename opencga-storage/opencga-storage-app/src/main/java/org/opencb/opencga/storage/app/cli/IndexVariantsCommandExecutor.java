@@ -82,7 +82,9 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
              * Getting URIs and checking Paths
              */
         URI variantsUri = UriUtils.createUri(indexVariantsCommandOptions.input);
-        FileUtils.checkFile(Paths.get(variantsUri));
+        if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
+            FileUtils.checkFile(Paths.get(variantsUri));
+        }
 
         URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
                 ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
@@ -95,7 +97,9 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.outdir)
                 // Get parent folder from input file
                 : variantsUri.resolve(".");
-        FileUtils.checkDirectory(Paths.get(outdirUri), true);
+        if (outdirUri.getScheme().startsWith("file") || outdirUri.getScheme().isEmpty()) {
+            FileUtils.checkDirectory(Paths.get(outdirUri), true);
+        }
         logger.debug("All files and directories exist");
 
 //            VariantSource source = new VariantSource(fileName, indexVariantsCommandOptions.fileId,

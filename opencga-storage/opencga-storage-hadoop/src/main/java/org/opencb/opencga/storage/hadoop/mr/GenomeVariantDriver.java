@@ -1,13 +1,19 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.zip.GZIPInputStream;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.file.DataFileStream;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -30,11 +36,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVcfMeta;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,17 +145,29 @@ public class GenomeVariantDriver extends Configured implements Tool {
         FileSystem fs = FileSystem.get(conf);
         VariantFileMetadataToVcfMeta conv = new VariantFileMetadataToVcfMeta();
         DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<VariantFileMetadata>(VariantFileMetadata.class);
-        try (FSDataInputStream ids = fs.open(from);
-                DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<VariantFileMetadata>(ids, userDatumReader);) {
-            Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
-            if(!iter.hasNext()){
-                throw new IllegalStateException(String.format("No Meta data object found in %s !!!",inputMetaFile));
+        VariantFileMetadata variantFileMetadata;
+        if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+
+            try (InputStream ids = inputMetaFile.toString().endsWith("json.gz")? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
+                variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
             }
-            VcfMeta meta = conv.convert(iter.next());
-            if(iter.hasNext())
-                LOG.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
-            return meta;
+        } else {
+            try (FSDataInputStream ids = fs.open(from);
+                 DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader);) {
+                Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
+                if (!iter.hasNext()) {
+                    throw new IllegalStateException(String.format("No Meta data object found in %s !!!", inputMetaFile));
+                }
+                variantFileMetadata = iter.next();
+                if (iter.hasNext()) {
+                    LOG.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+                }
+            }
         }
+        VcfMeta meta = conv.convert(variantFileMetadata);
+        return meta;
     }
     
     private static void addServerAndTableSettings(Configuration conf, String target) throws URISyntaxException{

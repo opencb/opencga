@@ -3,11 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
@@ -44,23 +47,51 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
 //        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 //        options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
-        
-        return input;  // TODO 
-    }
-    
-    @Override
-    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        getLogger().info("Pretransform: " + input);
+
+        //TODO: CopyFromLocal input to HDFS
+        if (!input.getScheme().equals("hdfs")) {
+            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
+        }
+
         return input;  // TODO 
     }
 
     @Override
+    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
+        logger.info("Pretransform: " + input);
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        options.put("transform.format", "avro");
+        return super.preTransform(input);  // TODO
+    }
+
+
+
+    @Override
     public URI load(URI input) throws IOException, StorageManagerException {
-        URI vcfMeta = URI.create(input.toString()+".meta");
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        URI vcfMeta = URI.create(input.toString().replace("variants.avro", "file.json"));
         
         HadoopCredentials db = getDbCredentials();
-        int val = GenomeVariantLoadDriver.load(db, input, vcfMeta);
-        
+
+        String hadoopRoute = options.getString("hadoop.bin", "hadoop");
+        String jarOption = "opencga.storage.hadoop.jar-with-dependencies";
+        String jar = options.getString(jarOption, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + jarOption);
+        }
+
+        // "Usage: %s [generic options] <avro> <avro-meta> <output-table>
+        String commandLine = hadoopRoute + " jar " + jar + " " + input + " " + vcfMeta + " " + db.getTable();
+
+
+        logger.debug("------------------------------------------------------");
+        logger.debug(commandLine);
+        logger.debug("------------------------------------------------------");
+        Command command = new Command(commandLine, options.getAsStringList("hadoop.env"));
+        command.run();
+        logger.debug("------------------------------------------------------");
+        logger.debug("Exit value: {}", command.getExitValue());
+
         return input; // TODO  change return value
     }
 
