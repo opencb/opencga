@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.runner;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.lib.common.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +32,7 @@ public class SimpleThreadRunner {
     public SimpleThreadRunner(DataReader reader, List<Task> tasks, DataWriter writer, int batchSize, int capacity, Integer numTasks) {
         this(reader, tasks, Collections.singletonList(writer), batchSize, capacity, numTasks);
     }
+
     public SimpleThreadRunner(DataReader reader, List<Task> tasks, List<DataWriter> writers, int batchSize, int capacity, Integer numTasks) {
         this.batchSize = batchSize;
         this.capacity = capacity;
@@ -50,6 +50,7 @@ public class SimpleThreadRunner {
 
         executorService = Executors.newFixedThreadPool(numTasks + 1 + writers.size());
     }
+
     public void run() throws Exception {
         reader.open();
         reader.pre();
@@ -135,8 +136,6 @@ public class SimpleThreadRunner {
                 batch = dataReader.read(batchSize);
 //                System.out.println("reader: batch.size = " + batch.size());
             }
-//                logger.debug("reader: putting POISON_PILL");
-//                readBlockingQueue.put(POISON_PILL);
             logger.debug("reader: putting POISON_PILL");
             readBlockingQueue.put(POISON_PILL);
             return null;
@@ -145,8 +144,9 @@ public class SimpleThreadRunner {
 
     class TaskCallable implements Callable<Void> {
 
-        private long timeBlockedAtSendWrite;
-        private long timeTaskApply;
+        private long totalTimeBlockedAtSendWrite;
+        private long totalTimeTaskApply;
+        private int finishedTasks = 0;
 
         final List<Task> tasks;
 
@@ -154,13 +154,11 @@ public class SimpleThreadRunner {
             this.tasks = tasks;
         }
 
-
         @Override
         public Void call() throws Exception {
-            List<String> batch = new ArrayList<>(batchSize);
+            List<String> batch = getBatch();
             long timeBlockedAtSendWrite = 0;
             long timeTaskApply = 0;
-            batch = getBatch();
             while (!batch.isEmpty()) {
                 long s;
                 s = System.nanoTime();
@@ -175,9 +173,11 @@ public class SimpleThreadRunner {
                 logger.trace("task: apply done (post put) writeQueue.size: " + writeBlockingQueue.size());
                 timeBlockedAtSendWrite += s - System.nanoTime();
                 batch = getBatch();
-            } synchronized (numTasks) {
-                this.timeBlockedAtSendWrite += timeBlockedAtSendWrite;
-                this.timeTaskApply += timeTaskApply;
+            }
+            
+            synchronized (numTasks) {
+                totalTimeBlockedAtSendWrite += timeBlockedAtSendWrite;
+                totalTimeTaskApply += timeTaskApply;
                 finishedTasks++;
                 if (numTasks == finishedTasks) {
                     logger.debug("task; timeBlockedAtSendWrite = " + timeBlockedAtSendWrite / -1000000000.0 + "s");
@@ -190,7 +190,7 @@ public class SimpleThreadRunner {
             logger.trace("task: leaving run(). sizes: read: " + readBlockingQueue.size() + ", write: " + writeBlockingQueue.size());
             return null;
         }
-        private int finishedTasks = 0;
+
         private List<String> getBatch() throws InterruptedException {
             List<String> batch;
             batch = readBlockingQueue.take();
@@ -214,9 +214,8 @@ public class SimpleThreadRunner {
 
         @Override
         public Void call() throws Exception {
-            List<String> batch;
+            List<String> batch = getBatch();
             long s, timeWriting = 0;
-            batch = getBatch();
             while (batch != POISON_PILL) {
                 s = System.nanoTime();
                 logger.trace("writer: writing...");
