@@ -62,7 +62,7 @@ public class SimpleThreadRunnerTest {
 //        }
 //    }
 
-    @Test(timeout = 5000)
+    @Test(timeout = 5000, expected = Exception.class)
     public void interruptedReaderTest () throws Exception {
         final AtomicInteger processedElems = new AtomicInteger(0);
         List<String> data = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -84,16 +84,11 @@ public class SimpleThreadRunnerTest {
                 4,
                 1
         );
-
-        try {
-            runner.run();
-            fail();
-        } catch (Exception e) {
-            System.out.println("expected exception");
-        }
+        
+        runner.run();
     }
 
-    @Test(timeout = 5000)
+    @Test(timeout = 5000, expected = Exception.class)
     public void interruptedTaskTest () throws Exception {
         final AtomicInteger processedElems = new AtomicInteger(0);
         List<String> data = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -116,15 +111,10 @@ public class SimpleThreadRunnerTest {
                 1
         );
 
-        try {
-            runner.run();
-            fail();
-        } catch (Exception e) {
-            System.out.println("expected exception");
-        }
+        runner.run();
     }
 
-    @Test(timeout = 5000)
+    @Test(timeout = 5000, expected = Exception.class)
     public void interruptedWriterTest () throws Exception {
         final AtomicInteger processedElems = new AtomicInteger(0);
         List<String> data = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9");
@@ -147,12 +137,7 @@ public class SimpleThreadRunnerTest {
                 1
         );
 
-        try {
-            runner.run();
-            fail();
-        } catch (Exception e) {
-            System.out.println("expected exception");
-        }
+        runner.run();
     }
 
     public class TestDataReader implements DataReader {
