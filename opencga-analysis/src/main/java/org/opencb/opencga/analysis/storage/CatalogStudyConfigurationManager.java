@@ -150,7 +150,7 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
                 ObjectMapper objectMapper = new ObjectMapper();
                 studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
                 logger.trace("Read StudyConfiguration from catalog");
-                if (Objects.equals(studyConfiguration.getTimeStamp(), timeStamp)) {
+                if (timeStamp != null && Objects.equals(studyConfiguration.getTimeStamp(), timeStamp)) {
                     logger.debug("Return empty StudyConfiguration");
                     return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
                 } else {
