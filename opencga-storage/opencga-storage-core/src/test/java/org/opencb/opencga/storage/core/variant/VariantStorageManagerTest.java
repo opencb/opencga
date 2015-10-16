@@ -210,18 +210,29 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         ETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration,
                 new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DS", "GL"))
-                        .append(VariantStorageManager.Options.FILE_ID.key(), 2));
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration, 999);
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, 999);
 
-        VariantVcfReader reader = new VariantVcfReader(new VariantSource("", "2", Integer.toString(STUDY_ID), STUDY_NAME), smallInputUri.getPath());
+        VariantVcfReader reader = new VariantVcfReader(new VariantSource("", "2", STUDY_NAME, STUDY_NAME), smallInputUri.getPath());
         reader.open();
         reader.pre();
         for (Variant variant : reader.read(999)) {
+            variant.getStudy(STUDY_NAME).getAttributes().remove("src");
             Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd()), new QueryOptions()).first();
-            assertEquals(variant, loadedVariant);
+            loadedVariant.setAnnotation(null);                                          //Remove annotation
+            loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
+            loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
+                values.set(0, values.get(0).replace("0/0", "0|0"));
+                while(values.get(1).length() < 5) values.set(1, values.get(1) + "0");   //Set lost zeros
+
+            });
+            assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant, loadedVariant);
+
         }
         reader.post();
         reader.close();
@@ -380,12 +391,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     protected VariantSource createVariantSource(StudyConfiguration studyConfiguration, Integer fileId) {
         studyConfiguration.getFileIds().put("fileName", fileId);
         VariantSource source = new VariantSource("fileName", fileId.toString(), studyConfiguration.getStudyId() + "" , studyConfiguration.getStudyName());
-        source.getSamplesPosition().put("s0", 0);
-        source.getSamplesPosition().put("s1", 1);
-        source.getSamplesPosition().put("s2", 2);
-        source.getSamplesPosition().put("s3", 3);
-        source.getSamplesPosition().put("s4", 4);
-        source.getSamplesPosition().put("s5", 5);
+        Map<String, Integer> samplesPosition = new HashMap<>();
+        samplesPosition.put("s0", 0);
+        samplesPosition.put("s1", 1);
+        samplesPosition.put("s2", 2);
+        samplesPosition.put("s3", 3);
+        samplesPosition.put("s4", 4);
+        samplesPosition.put("s5", 5);
+        source.setSamplesPosition(samplesPosition);
         return source;
     }
 

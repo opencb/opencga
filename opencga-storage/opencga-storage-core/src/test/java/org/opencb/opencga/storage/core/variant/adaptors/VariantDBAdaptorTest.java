@@ -69,21 +69,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     .append(VariantStorageManager.Options.ANNOTATE.key(), true);
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
+            Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
             VariantStatisticsManager vsm = new VariantStatisticsManager();
 
             QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
             options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
-            Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
+            Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
 
             /** Create cohorts **/
             HashSet<String> cohort1 = new HashSet<>();
-            cohort1.add(iterator.next());
-            cohort1.add(iterator.next());
+            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
+            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
 
             HashSet<String> cohort2 = new HashSet<>();
-            cohort2.add(iterator.next());
-            cohort2.add(iterator.next());
+            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
+            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
 
             Map<String, Set<String>> cohorts = new HashMap<>();
             Map<String, Integer> cohortIds = new HashMap<>();
@@ -382,7 +383,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertTrue("Should contain key " + id, counts.containsKey(id));
             assertEquals("Size and count for id (" + id + ")are different", ((List) resultMap.get("values")).size(), counts.get(id).intValue());
 
-            QueryResult<Variant> queryResult3 = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), id), new QueryOptions("limit", 1));
+            QueryOptions queryOptions = new QueryOptions("limit", 1).append("skipCount", false);
+            QueryResult<Variant> queryResult3 = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), id), queryOptions);
             assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumTotalResults());
             assertEquals(1, queryResult3.getNumResults());
         }
@@ -396,8 +398,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         assertEquals(limit, queryResult_rank.getNumResults());
         for (Map<String, Object> map : queryResult_rank.getResult()) {
-            QueryResult<Variant> variantQueryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), map.get("id")), new QueryOptions("limit", 1));
-            assertEquals(((Number) variantQueryResult.getNumTotalResults()).intValue(), ((Number) map.get("count")).intValue());
+            QueryResult<Long> variantQueryResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), map.get("id")));
+            assertEquals(((Number) variantQueryResult.first()).intValue(), ((Number) map.get("count")).intValue());
         }
     }
 
@@ -409,8 +411,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         assertEquals(limit, queryResult_rank.getNumResults());
         for (Map<String, Object> map : queryResult_rank.getResult()) {
-            QueryResult<Variant> variantQueryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")), new QueryOptions("limit", 1));
-            assertEquals(((Number) variantQueryResult.getNumTotalResults()).intValue(), ((Number) map.get("count")).intValue());
+            QueryResult<Long> variantQueryResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), map.get("id")));
+            assertEquals(((Number) variantQueryResult.first()).intValue(), ((Number) map.get("count")).intValue());
         }
     }
 
@@ -437,10 +439,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort1").getMaf() > 0.2));
 
-        numResults = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2")).first();
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2"), null);
+        numResults = queryResult.getNumResults();
         assertEquals(691, numResults);
-        queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
-                .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2));
+        queryResult.getResult().stream().forEach(
+                variant -> assertTrue(variant.toString(), variant.getStudy("1000g").getStats("cohort2").getMaf() > 0.2)
+        );
 
 
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1000g:cohort2>0.2,1000g:cohort2<=0.2"), null);

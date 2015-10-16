@@ -26,6 +26,8 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.utils.CryptoUtils;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.util.*;
 
@@ -93,31 +95,36 @@ public class DBObjectToVariantConverterTest {
     
     @Test
     public void testConvertToDataModelTypeWithFiles() {
-        variant.addStudyEntry(studyEntry);
-        
         // MongoDB object
 
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToStudyVariantEntryConverter.FILEID_FIELD, studyEntry.getFiles().get(0).getFileId())
-                .append(DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, studyEntry.getStudyId());
-        mongoFile.append(DBObjectToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
-                new BasicDBObject("QUAL", 0.01).append("AN", 2));
-//        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
-        BasicDBObject genotypeCodes = new BasicDBObject();
-//        genotypeCodes.append("def", "0/0");
-        genotypeCodes.append("0/1", Collections.singletonList(1));
-        mongoFile.append(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
-        BasicDBList files = new BasicDBList();
-        files.add(mongoFile);
-        mongoVariant.append("files", files);
+        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry.getStudyId()));
+
+//        mongoStudy.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
+        mongoStudy.append(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, new BasicDBObject("0/1", Collections.singletonList(1)))
+                .append("dp", Arrays.asList(4, 5));
+
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToStudyVariantEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry.getFiles().get(0).getFileId()))
+                .append(DBObjectToStudyVariantEntryConverter.ATTRIBUTES_FIELD, new BasicDBObject("QUAL", 0.01).append("AN", 2));
+
+        mongoStudy.append(DBObjectToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
+
+        mongoVariant.append(DBObjectToVariantConverter.STUDIES_FIELD, Collections.singletonList(mongoStudy));
         
-        List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
+        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, studyId.toString(), fileId, fileId.toString());//studyId, fileId, sampleNames, "0/0"
+        studyConfiguration.getIndexedFiles().add(fileId);
+        studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(0, 1)));
+        studyConfiguration.getSampleIds().put("NA001", 0);
+        studyConfiguration.getSampleIds().put("NA002", 1);
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0/0");
+        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Collections.singletonList("DP"));
+
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToStudyVariantEntryConverter(
                         true,
-                        new DBObjectToSamplesConverter(studyId, sampleNames, "0/0")),
+                        new DBObjectToSamplesConverter(studyConfiguration)),
                 new DBObjectToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
-        assertEquals(variant, converted);
+        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(),variant, converted);
     }
 
     @Test
@@ -160,7 +167,8 @@ public class DBObjectToVariantConverterTest {
     public void testConvertToDataModelTypeWithoutFiles() {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter();
         Variant converted = converter.convertToDataModelType(mongoVariant);
-        assertEquals(variant, converted);
+        variant.setStudies(Collections.<StudyEntry>emptyList());
+        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant, converted);
     }
 
     @Test

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -36,6 +37,7 @@ import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,7 @@ public class VariantStatisticsManager {
         jsonFactory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(jsonFactory);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
 
     private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {

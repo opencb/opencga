@@ -118,7 +118,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
         // Transform HGVS: List of map entries -> Map of lists
-        BasicDBList mongoHgvs = (BasicDBList) object.get(HGVS_FIELD);
+        List mongoHgvs = (List) object.get(HGVS_FIELD);
         if (mongoHgvs != null) {
             for (Object o : mongoHgvs) {
                 DBObject dbo = (DBObject) o;
@@ -128,7 +128,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Files
         if (variantSourceEntryConverter != null) {
-            BasicDBList mongoFiles = (BasicDBList) object.get(STUDIES_FIELD);
+            List mongoFiles = (List) object.get(STUDIES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
@@ -155,7 +155,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());
             annotation.setStart(variant.getStart());
-//            variant.setAnnotation(annotation);  //TODO feature/variant-avro: Fix annotation
+            variant.setAnnotation(annotation);
         }
 
         // Statistics
