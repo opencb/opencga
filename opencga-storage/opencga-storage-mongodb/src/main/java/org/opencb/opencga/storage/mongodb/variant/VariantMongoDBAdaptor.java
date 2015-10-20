@@ -21,6 +21,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
@@ -1101,6 +1102,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
             }
             for (Variant variant : data) {
+                if (variant.getType().equals(VariantType.NO_VARIATION)) {
+                    //Storage-MongoDB is not able to store NON VARIANTS
+                    continue;
+                } else if (variant.getType().equals(VariantType.SYMBOLIC)) {
+                    logger.warn("Skip symbolic variant " + variant.toString());
+                    continue;
+                }
                 String id = variantConverter.buildStorageId(variant);
                 for (StudyEntry studyEntry : variant.getStudies()) {
                     if (studyEntry.getFiles().size() == 0 || !studyEntry.getFiles().get(0).getFileId().equals(fileIdStr)) {
