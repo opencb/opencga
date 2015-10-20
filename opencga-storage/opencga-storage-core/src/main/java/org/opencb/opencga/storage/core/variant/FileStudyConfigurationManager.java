@@ -48,12 +48,17 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     @Override
     protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyName, options);
-        return readStudyConfiguration(path);    }
+        QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
+        result.first().setStudyName(studyName);
+        return result;
+    }
 
     @Override
     public QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyId, options);
-        return readStudyConfiguration(path);
+        QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
+        result.first().setStudyId(studyId);
+        return result;
     }
 
     public QueryResult<StudyConfiguration> readStudyConfiguration(Path path) {
@@ -91,7 +96,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
             Object o = options.get(STUDY_CONFIGURATION_PATH);
             if (o == null) {
                 //TODO: Read path from a default folder?
-                return null;
+                return Paths.get(studyId + ".json");
             } else if (o instanceof Path) {
                 path = (Path) o;
             } else {
@@ -107,7 +112,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
         Object o = options.get(STUDY_CONFIGURATION_PATH);
         if (o == null) {
             //TODO: Read path from a default folder?
-            return null;
+            return Paths.get(studyName + ".json");
         } else if (o instanceof Path) {
             path = (Path) o;
         } else {
@@ -117,7 +122,11 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     static public StudyConfiguration read(Path path) throws IOException {
-        return new ObjectMapper(new JsonFactory()).readValue(path.toFile(), StudyConfiguration.class);
+        if (path == null || !path.toFile().exists()) {
+            return new StudyConfiguration(1, "default");
+        } else {
+            return new ObjectMapper(new JsonFactory()).readValue(path.toFile(), StudyConfiguration.class);
+        }
     }
 
     static public void write(StudyConfiguration studyConfiguration, Path path) throws IOException {
