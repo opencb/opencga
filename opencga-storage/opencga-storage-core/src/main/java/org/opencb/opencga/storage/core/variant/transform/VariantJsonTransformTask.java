@@ -27,12 +27,15 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
+import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +53,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
     private final Path outputFileJsonFile;
     protected static Logger logger = LoggerFactory.getLogger(VariantJsonTransformTask.class);
     private boolean includeSrc;
+    private final VariantGlobalStatsCalculator variantStatsTask;
 
     public VariantJsonTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
         this.factory = factory;
@@ -67,6 +71,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
 
         this.jsonObjectMapper = jsonObjectMapper;
         this.objectWriter = jsonObjectMapper.writerFor(Variant.class);
+        variantStatsTask = new VariantGlobalStatsCalculator(source);
     }
 
     public void setIncludeSrc(boolean includeSrc) {
@@ -74,7 +79,13 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
     }
 
     @Override
+    public void pre() {
+        variantStatsTask.pre();
+    }
+
+    @Override
     public void post() {
+        variantStatsTask.post();
         ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
@@ -120,6 +131,9 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
                     throw e;
                 }
             }
+
+            variantStatsTask.apply(variants);
+
         }
 //            logger.info("outputBatch.size() = " + outputBatch.size());
         batch.clear();

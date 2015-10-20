@@ -29,6 +29,7 @@ import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
+import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -211,7 +212,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
-        String format = options.getString("transform.format", "json");
+        String format = options.getString("transform.format", "avro");
+        String parser = options.getString("transform.parser", "htsjdk");
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
@@ -259,7 +261,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         logger.info("Transforming variants...");
         long start, end;
-        if (numTasks == 1) { //Run transformation with a SingleThread runner. The legacy way
+        if (numTasks == 1 && format.equals("json")) { //Run transformation with a SingleThread runner. The legacy way
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
@@ -312,7 +314,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             }
             Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
 
-            if (options.getBoolean("transform.htsjdk")) {
+            if (parser.equalsIgnoreCase("htsjdk")) {
+                logger.info("Using HTSJDK to read variants.");
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
@@ -322,14 +325,17 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
                     VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
                     VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile);
+                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile, statsCalculator);
                 } catch (IOException e) {
                     throw new StorageManagerException("Unable to read VCFHeader", e);
                 }
             } else {
+                logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile);
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator);
             }
 
             ParallelTaskRunner<String, ByteBuffer> ptr;
@@ -343,7 +349,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             } catch (Exception e) {
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
             }
-            logger.info("Multi thread transform...");
+            logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
             start = System.currentTimeMillis();
             try {
                 ptr.run();

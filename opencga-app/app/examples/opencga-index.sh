@@ -20,6 +20,7 @@ study_uri=""
 
 transform_file=false
 pedigree_file=false
+link=false
 enqueue=""
 annotate=""
 calculateStats=""
@@ -32,17 +33,18 @@ function getFileId() {
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:qac" opt; do
+while getopts "htu:s:i:p:l:U:qacL" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
 	    echo "Usage: "
 	    echo "       -h             :   "
-	    echo "       -i vcf_file    : VCF input file  "
+	    echo "       -u user_name   : User name. [admin] "
+	    echo "       -s study_alias : Study alias. [ph1] "
+	    echo "    *  -i vcf_file    : VCF input file  "
+	    echo "       -L             : Link file instead of copy  "
 	    echo "       -p ped_file    : Pedigree input file  "
-	    echo "       -u user_name   : User name.  "
-	    echo "       -s study_alias : Study alias.  "
-	    echo "       -l log_level   : error, warn, info, debug  "
+	    echo "       -l log_level   : error, warn, info, debug [info] "
 	    echo "       -t             : Transform and Load in 2 steps  "
 	    echo "       -a             : Annotate database  "
 	    echo "       -c             : Calculate stats  "
@@ -102,6 +104,10 @@ while getopts "htu:s:i:p:l:U:qac" opt; do
 	    enqueue="--enqueue"
 	    echo "Queuing index jobs"
 	    ;;
+	L)
+	    link=true
+	    echo "Linking vcf input file"
+	    ;;
 	\?)
 	    ;;
 	esac
@@ -132,12 +138,16 @@ if [ $pedigree_file == false ]; then
 else
 	PEDIGREE_FILE_NAME=$(echo $pedigree_file | rev | cut -d / -f1 | rev )
 	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $pedigree_file --path data/peds/ --checksum --output-format IDS  --log-level ${log_level}
-	$OPENCGA_BIN samples load -u $user -p $password --pedigree-id $(getFileId ${PEDIGREE_FILE_NAME}"$" ) --output-format ID_CSV --log-level ${log_level}
+	$OPENCGA_BIN samples load -u $user -p $password --pedigree-id $(getFileId ^${PEDIGREE_FILE_NAME}"$" ) --output-format ID_CSV --log-level ${log_level}
 fi
 
 for input_file in ${input_files[@]}; do
 	echo "Indexing file $input_file"
-	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+	if [ "$link" == "true" ]; then
+		$OPENCGA_BIN files link -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+	else
+		$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+	fi
 
 	FILE_NAME=$(echo $input_file | rev | cut -d / -f1 | rev )
 	VCF_FILE_ID=$(getFileId ${FILE_NAME}"$" )
@@ -153,7 +163,7 @@ for input_file in ${input_files[@]}; do
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 
 		#Load file
-		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId $FILE_NAME".variants.json")
+		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId ^$FILE_NAME".variants")
 		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	else

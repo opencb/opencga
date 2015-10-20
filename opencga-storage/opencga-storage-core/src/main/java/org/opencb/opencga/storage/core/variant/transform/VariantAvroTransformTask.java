@@ -13,6 +13,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
+import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroEncoder;
@@ -28,6 +29,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Created on 01/10/15
@@ -47,12 +50,15 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
     private final VariantContextToVariantConverter converter;
     private final VariantNormalizer normalizer;
     private final Path outputFileJsonFile;
+    private final VariantGlobalStatsCalculator variantStatsTask;
 
 
-    public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile) {
+    public VariantAvroTransformTask(VariantFactory factory,
+                                    VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
+        this.variantStatsTask = variantStatsTask;
 
         this.vcfCodec = null;
         this.converter = null;
@@ -60,7 +66,9 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
-    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile) {
+    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version,
+                                    VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask) {
+        this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
@@ -72,6 +80,12 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
+    @Override
+    public void pre() {
+        synchronized (variantStatsTask) {
+            variantStatsTask.pre();
+        }
+    }
 
     @Override
     public List<ByteBuffer> apply(List<String> batch) {
@@ -108,6 +122,8 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
                         throw new RuntimeException(e);
                     }
                 }
+                variantStatsTask.apply(variants);
+
             }
         } else {
             List<VariantContext> variantContexts = new ArrayList<>(batch.size());
@@ -121,6 +137,8 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
             List<Variant> variants = converter.apply(variantContexts);
 
             List<Variant> normalizedVariants = normalizer.apply(variants);
+
+            variantStatsTask.apply(variants);
 
             for (Variant normalizedVariant : normalizedVariants) {
                 avros.add(normalizedVariant.getImpl());
@@ -138,6 +156,9 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
 
     @Override
     public void post() {
+        synchronized (variantStatsTask) {
+            variantStatsTask.post();
+        }
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
