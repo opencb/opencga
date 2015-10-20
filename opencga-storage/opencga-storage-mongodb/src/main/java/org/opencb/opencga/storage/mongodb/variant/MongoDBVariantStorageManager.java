@@ -114,7 +114,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection, studyConfigurationManager);
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection,
+                    studyConfigurationManager, configuration.getStorageEngine(STORAGE_ENGINE_ID));
         } catch (UnknownHostException e) {
             e.printStackTrace();
             return null;

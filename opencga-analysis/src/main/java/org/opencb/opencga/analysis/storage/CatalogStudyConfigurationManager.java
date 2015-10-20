@@ -183,6 +183,18 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private void fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
         int studyId = study.getId();
         fillNullMaps(studyConfiguration);
+
+        //Clear maps
+        studyConfiguration.getIndexedFiles().clear();
+        studyConfiguration.getFileIds().clear();
+        studyConfiguration.getSamplesInFiles().clear();
+        studyConfiguration.getHeaders().clear();
+        studyConfiguration.getSampleIds().clear();
+        studyConfiguration.getCalculatedStats().clear();
+        studyConfiguration.getInvalidStats().clear();
+        studyConfiguration.getCohortIds().clear();
+        studyConfiguration.getCohorts().clear();
+
         if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
             logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
             studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
@@ -239,10 +251,6 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
 
         logger.debug("Get Cohorts");
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
-        studyConfiguration.getCalculatedStats().clear();
-        studyConfiguration.getInvalidStats().clear();
-        studyConfiguration.getCohortIds().clear();
-        studyConfiguration.getCohorts().clear();
 
         for (Cohort cohort : cohorts.getResult()) {
             studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());

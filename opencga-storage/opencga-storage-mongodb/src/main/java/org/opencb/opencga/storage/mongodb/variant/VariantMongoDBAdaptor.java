@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -31,6 +32,7 @@ import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -55,11 +57,15 @@ import java.util.stream.Collectors;
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
+    public static final String DEFAULT_TIMEOUT = "dbadaptor.default_timeout";
+    public static final String MAX_TIMEOUT = "dbadaptor.max_timeout";
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
+    private final ObjectMap configuration;
+    private final StorageEngineConfiguration storageEngineConfiguration;
 
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -77,7 +83,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
-    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName, StudyConfigurationManager studyConfigurationManager)
+    public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
+                                 StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
             throws UnknownHostException {
         // MongoDB configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
@@ -86,6 +93,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
+        this.storageEngineConfiguration = storageEngineConfiguration;
+        this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
+                ? new ObjectMap()
+                : this.storageEngineConfiguration.getVariant().getOptions();
     }
 
 
@@ -181,7 +192,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        DBObject projection = parseProjectionQueryOptions(options);
         DBObject projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", qb.get().toString());
-        options.add("skipCount", true);
+        options.putIfAbsent(MongoDBCollection.SKIP_COUNT, true);
+
+        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT, 3_000);
+        int maxTimeout = configuration.getInt(MAX_TIMEOUT, 30_000);
+        int timeout = options.getInt(MongoDBCollection.TIMEOUT, defaultTimeout);
+        if (timeout > maxTimeout || timeout < 0) {
+            timeout = maxTimeout;
+        }
+        options.put(MongoDBCollection.TIMEOUT, timeout);
+
 
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
         // set query Id?
@@ -1138,21 +1158,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     updates.add(update);
                 }
             }
-            QueryOptions options = new QueryOptions("upsert", true);
-            options.put("multi", false);
-            try {
-                variantsCollection.update(queries, updates, options);
-            } catch (BulkWriteException e) {
-                for (BulkWriteError writeError : e.getWriteErrors()) {
-                    if (writeError.getCode() == 11000) { //Dup Key error code
-                        nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
-                    } else {
-                        throw e;
+            //
+            if (!queries.isEmpty()) {
+                QueryOptions options = new QueryOptions("upsert", true);
+                options.put("multi", false);
+                try {
+                    variantsCollection.update(queries, updates, options);
+                } catch (BulkWriteException e) {
+                    for (BulkWriteError writeError : e.getWriteErrors()) {
+                        if (writeError.getCode() == 11000) { //Dup Key error code
+                            nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
+                        } else {
+                            throw e;
+                        }
                     }
                 }
+                queries.clear();
+                updates.clear();
             }
-            queries.clear();
-            updates.clear();
         }
 
         for (Variant variant : data) {
