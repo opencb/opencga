@@ -22,7 +22,6 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -39,7 +38,6 @@ import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -287,6 +285,12 @@ public class AnalysisJobExecutor {
     private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
 
         Command com = new Command(job.getCommandLine());
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+        URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
+        com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
+        URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
+        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+
         final int jobId = job.getId();
         Thread hook = new Thread(() -> {
             try {
@@ -319,25 +323,24 @@ public class AnalysisJobExecutor {
 
     private static QueryResult<Job> postExecuteLocal(CatalogManager catalogManager, Job job, String sessionId, Command com)
             throws CatalogException {
-        /** Write output to file **/
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-        try {
-            URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
-            if (com.getOutput() != null) {
-                ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
-                com.setOutput(null);
+        /** Close output streams **/
+        if (com.getOutputOutputStream() != null) {
+            try {
+                com.getOutputOutputStream().close();
+            } catch (IOException e) {
+                logger.warn("Error closing OutputStream", e);
             }
-        } catch (CatalogIOException e) {
-            e.printStackTrace();
+            com.setOutputOutputStream(null);
+            com.setOutput(null);
         }
-        try {
-            URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
-            if (com.getError() != null) {
-                ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
-                com.setError(null);
+        if (com.getErrorOutputStream() != null) {
+            try {
+                com.getErrorOutputStream().close();
+            } catch (IOException e) {
+                logger.warn("Error closing OutputStream", e);
             }
-        } catch (CatalogIOException e) {
-            e.printStackTrace();
+            com.setErrorOutputStream(null);
+            com.setError(null);
         }
 
         /** Change status to DONE  - Add the execution information to the job entry **/
