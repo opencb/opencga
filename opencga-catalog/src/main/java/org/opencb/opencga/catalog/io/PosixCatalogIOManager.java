@@ -551,6 +551,20 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
+    public DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException {
+        Path path = Paths.get(fileUri);
+        if (overwrite || !Files.exists(path)) {
+            try {
+                return new DataOutputStream(new FileOutputStream(path.toFile()));
+            } catch (IOException e) {
+                throw new CatalogIOException("Unable to create file", e);
+            }
+        } else {
+            throw new CatalogIOException("File already exists");
+        }
+    }
+
+    @Override
     public String calculateChecksum(URI file) throws CatalogIOException {
         String checksum;
         try {
