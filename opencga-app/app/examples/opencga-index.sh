@@ -18,7 +18,9 @@ study_alias=ph1
 uri_arg=""
 study_uri=""
 
+split_index_job=false
 transform_file=false
+load_file=false
 pedigree_file=false
 link=false
 enqueue=""
@@ -33,7 +35,7 @@ function getFileId() {
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:qacL" opt; do
+while getopts "htu:s:i:p:l:U:qacxTL" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
@@ -42,10 +44,12 @@ while getopts "htu:s:i:p:l:U:qacL" opt; do
 	    echo "       -u user_name   : User name. [admin] "
 	    echo "       -s study_alias : Study alias. [ph1] "
 	    echo "    *  -i vcf_file    : VCF input file  "
-	    echo "       -L             : Link file instead of copy  "
+	    echo "       -x             : Link file instead of copy  "
 	    echo "       -p ped_file    : Pedigree input file  "
 	    echo "       -l log_level   : error, warn, info, debug [info] "
-	    echo "       -t             : Transform and Load in 2 steps  "
+	    echo "       -T             : If present it only runs the transform stage. Loading requires -L "
+	    echo "       -L             : If present only the load stage is executed. Transformation requires -T "
+	    echo "       -t             : Transform and Load in 2 steps [DEPRECATED] "
 	    echo "       -a             : Annotate database  "
 	    echo "       -c             : Calculate stats  "
 	    echo "       -U uri         : Study URI location "
@@ -76,7 +80,6 @@ while getopts "htu:s:i:p:l:U:qacL" opt; do
 	    echo "Using pedigree file " $OPTARG
 	    ;;
 	U)
-
 	    uri_arg="--uri"
 	    study_uri=$OPTARG
 	    echo "Using URI "$study_uri
@@ -89,8 +92,20 @@ while getopts "htu:s:i:p:l:U:qacL" opt; do
         fi
 	    ;;
 	t)
+	    split_index_job=true
 	    transform_file=true
-	    echo "Transforming file before load in two different jobs"
+	    load_file=true
+	    echo "Transforming file before load in two different jobs. DEPRECATED use -TL instead"
+	    ;;
+	T)
+	    split_index_job=true
+	    transform_file=true
+	    echo "Transforming file"
+	    ;;
+	L)
+	    split_index_job=true
+	    load_file=true
+	    echo "Loading file"
 	    ;;
 	a)
 	    annotate="--annotate"
@@ -104,7 +119,7 @@ while getopts "htu:s:i:p:l:U:qacL" opt; do
 	    enqueue="--enqueue"
 	    echo "Queuing index jobs"
 	    ;;
-	L)
+	x)
 	    link=true
 	    echo "Linking vcf input file"
 	    ;;
@@ -128,7 +143,7 @@ fi
 $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log-level ${log_level}
 $OPENCGA_BIN projects create -a ${project_alias} -d "1000 genomes" -n "1000 Genomes" -u $user -p $password --log-level ${log_level}
 $OPENCGA_BIN users list -u $user -p $password -R
-$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d asdf --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:opencga_test_$user"
+$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d "Default study" --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:opencga_test_$user"
 
 $OPENCGA_BIN users list -u $user -p $password -R
 
@@ -143,29 +158,42 @@ fi
 
 for input_file in ${input_files[@]}; do
 	echo "Indexing file $input_file"
-	if [ "$link" == "true" ]; then
-		$OPENCGA_BIN files link -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
-	else
-		$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
-	fi
 
 	FILE_NAME=$(echo $input_file | rev | cut -d / -f1 | rev )
 	VCF_FILE_ID=$(getFileId ${FILE_NAME}"$" )
+
+	if [ -z $VCF_FILE_ID ]; then
+		if [ "$link" == "true" ]; then
+			$OPENCGA_BIN files link -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+		else
+			$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+		fi
+		VCF_FILE_ID=$(getFileId ${FILE_NAME}"$" )
+	else
+		echo "File already pressent on Catalog"
+	fi
+
 
 	echo "Added VCF file "$input_file" = "$VCF_FILE_ID
 
 	$OPENCGA_BIN users list -u $user -p $password -R
 
-	if [ "$transform_file" == "true" ]; then
+	if [ $split_index_job == true ]; then
 		#Transform file
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform
-		$OPENCGA_BIN users list -u $user -p $password -R
-		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+		if [ $transform_file == true ]; then
+			echo "Transforming file $input_file"
+			$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform
+			$OPENCGA_BIN users list -u $user -p $password -R
+			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+		fi
 
 		#Load file
-		TRANSFORMED_VARIANTS_FILE_ID=$(getFileId ^$FILE_NAME".variants")
-		$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats
-		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+		if [ $load_file == true ]; then
+			echo "Loading file $input_file"
+			TRANSFORMED_VARIANTS_FILE_ID=$(getFileId ^$FILE_NAME".variants")
+			$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats
+			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+		fi
 	else
 		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
