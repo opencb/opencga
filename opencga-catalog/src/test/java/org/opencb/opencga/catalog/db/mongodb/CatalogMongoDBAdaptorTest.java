@@ -41,6 +41,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -786,6 +787,52 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+    }
+
+    @Test
+    public void createMultipleCohorts() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        List<Thread> threads = new LinkedList<>();
+        for (int i = 0; i < 10; i++) {
+            threads.add(new Thread(() -> {
+                try {
+                    catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "", Collections.emptyList(), null));
+                } catch (CatalogDBException ignore) {}
+            }));
+        }
+        threads.parallelStream().forEach(Thread::run);
+        threads.parallelStream().forEach((thread) -> {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        threads = new LinkedList<>();
+        for (int i = 0; i < 10; i++) {
+            threads.add(new Thread(() -> {
+                try {
+                    catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort("Cohort2", Cohort.Type.COLLECTION, "", "", Collections.emptyList(), null));
+                } catch (CatalogDBException ignore) {}
+            }));
+        }
+        threads.parallelStream().forEach(Thread::run);
+        threads.parallelStream().forEach((thread) -> {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        Study study = catalogDBAdaptor.getCatalogStudyDBAdaptor().getStudy(studyId, null).first();
+        assertEquals(2, study.getCohorts().size());
+        Set<String> names = study.getCohorts().stream().map(Cohort::getName).collect(Collectors.toSet());
+        assertTrue(names.contains("Cohort"));
+        assertTrue(names.contains("Cohort2"));
+
     }
 
     /**

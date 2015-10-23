@@ -344,28 +344,34 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
-                .start(_ID, studyId)
-                .append("cohorts.name", cohort.getName())
-                .get());
+        checkCohortNameExists(studyId, cohort.getName());
 
-        if(count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cohort { name: \"" + cohort.getName() + "\" } already exists in this study.");
-        }
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int newId = getNewAutoIncrementId(metaCollection);;
         cohort.setId(newId);
 
         DBObject cohortObject = getDbObject(cohort, "Cohort");
         QueryResult<WriteResult> update = studyCollection.update(
-                new BasicDBObject(_ID, studyId),
+                new BasicDBObject(_ID, studyId).append("cohorts.name", new BasicDBObject("$ne", cohort.getName())),
                 new BasicDBObject("$push", new BasicDBObject("cohorts", cohortObject)), null);
 
         if (update.getResult().get(0).getN() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.alreadyExists("Cohort", "name", cohort.getName());
         }
 
         return endQuery("createCohort", startTime, getCohort(newId));
+    }
+
+    private void checkCohortNameExists(int studyId, String cohortName) throws CatalogDBException {
+        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
+                .start(_ID, studyId)
+                .append("cohorts.name", cohortName)
+                .get());
+
+        if(count.getResult().get(0) > 0) {
+            throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
+        }
     }
 
     @Override
