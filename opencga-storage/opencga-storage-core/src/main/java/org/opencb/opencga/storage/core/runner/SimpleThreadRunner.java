@@ -17,6 +17,7 @@ import java.util.concurrent.*;
  */
 public class SimpleThreadRunner {
 
+    private static final int MAX_SECONDS_ABORT_WAIT = 30;   // when children fail and don't terminate, how many seconds to wait until main thread closes resources
     final List POISON_PILL = new LinkedList();
     final BlockingQueue<List> readBlockingQueue;
     final BlockingQueue<List> writeBlockingQueue;
@@ -88,6 +89,17 @@ public class SimpleThreadRunner {
             throw runnerFailed;
         } finally {
             try {
+                int i = 0;
+                while (!executorService.isTerminated() && i < MAX_SECONDS_ABORT_WAIT) {
+                    Thread.sleep(1000);
+                    i++;
+                    logger.info("waiting for child threads termination");
+                }
+
+                if (!executorService.isTerminated()) {
+                    logger.warn("child threads didn't terminate");
+                }
+
                 postAndclose(); // closing resources even if the loop was abruptly stopped
             } catch (Exception closeFailed) { // ignoring close failures, the important exception is "why the runnerFailed"
                 logger.warn("ignoring exception thrown by resources closing: ", closeFailed);
