@@ -17,8 +17,6 @@
 package org.opencb.opencga.analysis.storage.variant;
 
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -37,14 +35,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -67,6 +61,8 @@ public class VariantStorage {
         }
         final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
+        String fileIdStr = options.getString(VariantStorageManager.Options.FILE_ID.key(), null);
+        final Integer fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
         final long start = System.currentTimeMillis();
 
         if ((cohortIds == null || cohortIds.isEmpty()) 
@@ -87,9 +83,12 @@ public class VariantStorage {
                 case NONE:
                 case INVALID:
                     break;
-                case CALCULATING:
                 case READY:
-//                case INVALID:
+                    if (options.getBoolean("force", false)) {
+                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.INVALID), sessionId);
+                        break;
+                    }
+                case CALCULATING:
                     throw new CatalogException("Unable to calculate stats for cohort " +
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
                             " with status \"" + cohort.getStatus() + "\"");
@@ -144,7 +143,6 @@ public class VariantStorage {
                 .append(" stats-variants ")
                 .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
-//                .append(" --file-id ").append(indexedFile.getId())
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
                 .append(" --database ").append(dataStore.getDbName())
                 .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
@@ -152,6 +150,9 @@ public class VariantStorage {
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
+        if (fileId != null) {
+            sb.append(" --file-id ").append(fileId);
+        }
         if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
         }

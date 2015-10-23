@@ -507,7 +507,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         public int studyId;
 
-        @Deprecated @Parameter(names = {"-f", "--file-id"}, description = "[DEPRECATED] Unique ID for the file", required = false, arity = 1)
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
         public int fileId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)

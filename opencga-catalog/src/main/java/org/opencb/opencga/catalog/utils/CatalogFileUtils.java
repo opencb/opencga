@@ -632,7 +632,7 @@ public class CatalogFileUtils {
     private void copy(CatalogIOManager sourceIOManager, URI source, CatalogIOManager targetIOManager, URI target)
             throws IOException, CatalogIOException {
 
-        logger.info("Coping file from {} to {}", source, target);
+        logger.info("Copying file from {} to {}", source, target);
         //If it's the same IOManager, copy intra FS
         if(sourceIOManager == targetIOManager) {
             sourceIOManager.copyFile(source, target);

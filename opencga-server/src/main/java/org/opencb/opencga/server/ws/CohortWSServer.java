@@ -24,6 +24,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -207,7 +208,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "Calculate cohort stats", required = false) @QueryParam("calculate") boolean calculate,
                           @ApiParam(value = "Delete stats [PENDING]", required = false) @QueryParam("delete") boolean delete,
                           @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
-                          @ApiParam(value = "Output directory", required = true) @QueryParam("outdirId") String outdirIdStr
+                          @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
                           ) {
         try {
             String[] split = cohortIdsCsv.split(",");
@@ -217,20 +218,21 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                int outdirId = catalogManager.getFileId(outdirIdStr);
+                Integer outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
                 queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                queryOptions.add(AnalysisFileIndexer.PARAMETERS, );
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult = variantStorage.calculateStats(outdirId, cohortIds, sessionId, queryOptions);
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
-                return createErrorResponse("Delete cohort stats", "Pending");
+                List<QueryResult<Cohort>> results = new LinkedList<>();
+                for (Integer cohortId : cohortIds) {
+                    results.add(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
+                }
+                return createOkResponse(results);
             } else {
-                return createErrorResponse("Get cohort stats", "Pending");
-//                for (Integer cohortId : cohortIds) {
-//                    Cohort first = catalogManager.getCohort(cohortId, null, sessionId).first();
-//                }
+                int studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
+                return createOkResponse(catalogManager.getAllCohorts(studyId,
+                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), cohortIdsCsv), sessionId).first());
             }
 
         } catch (Exception e) {

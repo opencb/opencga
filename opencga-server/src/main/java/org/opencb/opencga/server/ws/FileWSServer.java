@@ -131,10 +131,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @ApiOperation(value = "Create folder", position = 2)
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder) {
+                                 @ApiParam(value = "Path of the folder to be created", required = true) @QueryParam("folder") String folder,
+                                 @ApiParam(value = "parents", required = false) @QueryParam("parents") @DefaultValue("true") boolean parents) {
         try {
             java.nio.file.Path folderPath = Paths.get(folder);
-            boolean parents = true;
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
             return createOkResponse(queryResult);
