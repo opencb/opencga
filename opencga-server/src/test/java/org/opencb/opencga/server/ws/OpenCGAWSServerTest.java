@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class OpenCGAWSServerTest {
 
@@ -145,7 +146,9 @@ public class OpenCGAWSServerTest {
         for (Variant variant : variants) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 assertEquals(sampleNames.size(), sourceEntry.getSamplesData().size());
+                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
             }
+            assertNotNull("Must be annotated", variant.getAnnotation());
         }
 
         Cohort myCohort = OpenCGAWSServer.catalogManager.createCohort(study.getId(), "MyCohort", Cohort.Type.FAMILY, "", samples.stream().map(Sample::getId).collect(Collectors.toList()), null, sessionId).first();

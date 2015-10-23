@@ -205,9 +205,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Cohort stats", position = 2)
     public Response stats(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdsCsv,
                           @ApiParam(value = "Calculate cohort stats", required = false) @QueryParam("calculate") boolean calculate,
-                          @ApiParam(value = "Delete stats [PENDING}", required = false) @QueryParam("delete") boolean delete,
+                          @ApiParam(value = "Delete stats [PENDING]", required = false) @QueryParam("delete") boolean delete,
                           @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
-                          @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
+                          @ApiParam(value = "Output directory", required = true) @QueryParam("outdirId") String outdirIdStr
                           ) {
         try {
             String[] split = cohortIdsCsv.split(",");

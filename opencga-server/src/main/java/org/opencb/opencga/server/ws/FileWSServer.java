@@ -41,6 +41,7 @@ import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -497,7 +498,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File index", position = 14)
     public Response index(@ApiParam("fileId") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
                           @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate) {
+                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate,
+                          @ApiParam("Calculate stats") @DefaultValue("true") @QueryParam("calculateStats") boolean calculateStats) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
         try {
@@ -506,12 +508,8 @@ public class FileWSServer extends OpenCGAWSServer {
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            if (!queryOptions.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-                File a = catalogManager.getFile(fileId, sessionId).getResult().get(0);
-                if(a.getBioformat() == File.Bioformat.VARIANT){
-                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--calculate-stats", "--include-stats"));
-                }
-            }
+            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
+            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
             QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
