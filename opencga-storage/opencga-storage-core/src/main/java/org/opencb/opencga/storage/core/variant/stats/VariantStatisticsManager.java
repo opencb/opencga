@@ -163,6 +163,9 @@ public class VariantStatisticsManager {
 
        // reader, tasks and writer
         Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        if (options.containsKey(VariantStorageManager.Options.FILE_ID.key())) {
+            readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(VariantStorageManager.Options.FILE_ID.key()));
+        }
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {

@@ -124,6 +124,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         TRANSFORM_BATCH_SIZE ("transform.batch.size", 200),
         TRANSFORM_THREADS ("transform.threads", 4),
+        TRANSFORM_FORMAT ("transform.format", "avro"),
         LOAD_BATCH_SIZE ("load.batch.size", 100),
         LOAD_THREADS ("load.threads", 4),
 
@@ -212,7 +213,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
         boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
-        String format = options.getString("transform.format", "avro");
+        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", "htsjdk");
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
@@ -633,6 +634,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                             studyConfiguration.getCalculatedStats().remove(defaultCohortId);
                             studyConfiguration.getInvalidStats().add(defaultCohortId);
                             options.put(Options.OVERWRITE_STATS.key(), true);
+                        } else {
+                            logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
+                            studyConfiguration.getCalculatedStats().remove(defaultCohortId);
+                            studyConfiguration.getInvalidStats().add(defaultCohortId);
+                            options.put(Options.OVERWRITE_STATS.key(), false);
                         }
                     }
                 }
