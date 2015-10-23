@@ -725,6 +725,10 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readAll(studyId, null, null, sessionId);
     }
 
+    public QueryResult<Job> getAllJobs(int studyId, QueryOptions query, String sessionId) throws CatalogException {
+        return jobManager.readAll(studyId, query, query, sessionId);
+    }
+
 
     public QueryResult modifyJob(int jobId, ObjectMap parameters, String sessionId) throws CatalogException {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options

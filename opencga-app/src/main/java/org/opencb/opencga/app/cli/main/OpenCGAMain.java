@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
@@ -39,6 +38,7 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -887,6 +887,48 @@ public class OpenCGAMain {
                         jobQueryResult = catalogManager.getJob(c.id, c.cOpt.getQueryOptions(), sessionId);
                         System.out.println(createOutput(c.cOpt, jobQueryResult, null));
 
+                        break;
+                    }
+                    case "status": {
+                        OptionsParser.JobsCommands.StatusCommand c = optionsParser.getJobsCommands().statusCommand;
+
+                        final List<Integer> studyIds;
+                        if (c.studyId == null || c.studyId.isEmpty()) {
+                            studyIds = catalogManager.getAllStudies(new QueryOptions("include", "id"), sessionId)
+                                    .getResult().stream().map(Study::getId).collect(Collectors.toList());
+                        } else {
+                            studyIds = new LinkedList<>();
+                            for (String s : c.studyId.split(",")) {
+                                studyIds.add(catalogManager.getStudyId(s));
+                            }
+                        }
+                        for (Integer studyId : studyIds) {
+                            QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
+                                    new QueryOptions("status", Collections.singletonList(Job.Status.RUNNING.toString())), sessionId);
+
+                            for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
+                                Job job = iterator.next();
+                                System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
+                                URI tmpOutDirUri = job.getTmpOutDirUri();
+                                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+                                ioManager.listFilesStream(tmpOutDirUri)
+                                        .sorted()
+                                        .forEach(uri -> {
+                                                    String count;
+                                                    try {
+                                                        long fileSize = ioManager.getFileSize(uri);
+                                                        count = humanReadableByteCount(fileSize, false);
+                                                    } catch (CatalogIOException e) {
+                                                        count = "ERROR";
+                                                    }
+                                                    System.out.format("\t%s [%s]\n", tmpOutDirUri.relativize(uri), count);
+                                                }
+                                        );
+                                if (iterator.hasNext()) {
+                                    System.out.println("-----------------------------------------");
+                                }
+                            }
+                        }
                         break;
                     }
                     default: {
