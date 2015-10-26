@@ -33,17 +33,7 @@ import static org.junit.Assert.*;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
-
-    @Override
-    protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
-    }
-
-    @Override
-    protected void clearDB(String dbName) throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB(dbName);
-    }
+public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoVariantStorageManagerTestUtils {
 
     @Test
     public void deleteStudyTest() throws Exception {

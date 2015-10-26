@@ -33,7 +33,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoVariantStorageManagerTest extends VariantStorageManagerTest {
+public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoVariantStorageManagerTestUtils {
 
 //    @Rule
 //    public ExpectedException thrown = ExpectedException.none();
@@ -42,16 +42,6 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest {
 //    protected ExpectedException getThrown() {
 //        return thrown;
 //    }
-
-    @Override
-    protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
-    }
-
-    @Override
-    protected void clearDB(String dbName) throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB(dbName);
-    }
 
     @Test
     public void checkCanLoadSampleBatchTest() throws StorageManagerException {

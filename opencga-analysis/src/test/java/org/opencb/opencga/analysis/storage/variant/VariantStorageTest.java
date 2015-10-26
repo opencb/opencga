@@ -344,9 +344,9 @@ public class VariantStorageTest {
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                assertEquals(cohorts.size(), sourceEntry.getStats().size());
+                assertEquals("In variant " +variant.toString(), cohorts.size(), sourceEntry.getStats().size());
                 for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
-                    assertTrue(cohorts.containsKey(entry.getKey()));
+                    assertTrue("In variant " +variant.toString(), cohorts.containsKey(entry.getKey()));
                     if (cohorts.get(entry.getKey()) != null) {
                         assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples.", cohorts.get(entry.getKey()).getSamples().size(), entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
                     }

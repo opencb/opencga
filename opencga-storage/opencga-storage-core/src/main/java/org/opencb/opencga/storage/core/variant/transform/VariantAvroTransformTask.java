@@ -138,7 +138,7 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
 
             List<Variant> normalizedVariants = normalizer.apply(variants);
 
-            variantStatsTask.apply(variants);
+            variantStatsTask.apply(normalizedVariants);
 
             for (Variant normalizedVariant : normalizedVariants) {
                 avros.add(normalizedVariant.getImpl());

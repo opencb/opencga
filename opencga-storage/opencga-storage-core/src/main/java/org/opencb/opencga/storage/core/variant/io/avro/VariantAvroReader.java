@@ -8,6 +8,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.xerial.snappy.SnappyInputStream;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,7 +65,9 @@ public class VariantAvroReader implements VariantReader {
     public boolean pre() {
         try(InputStream inputStream = metadataFile.toString().endsWith("gz")
                 ? new GZIPInputStream(new FileInputStream(metadataFile))
-                : new FileInputStream(metadataFile)) {
+                : metadataFile.toString().endsWith("snappy")
+                    ? new SnappyInputStream(new FileInputStream(metadataFile))
+                    : new FileInputStream(metadataFile)) {
             ObjectMapper jsonObjectMapper = new ObjectMapper();
 
             // Read global JSON file and copy its info into the already available VariantSource object

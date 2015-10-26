@@ -7,15 +7,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoVariantStorageManagerTest
 /**
  * Created by hpccoll1 on 01/06/15.
  */
-public class MongoVariantStatisticsManagerTest extends VariantStatisticsManagerTest {
+public class MongoVariantStatisticsManagerTest extends VariantStatisticsManagerTest implements MongoVariantStorageManagerTestUtils {
 
-    @Override
-    protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
-    }
-
-    @Override
-    protected void clearDB(String dbName) throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB(dbName);
-    }
 }

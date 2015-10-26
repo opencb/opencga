@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
@@ -24,7 +25,7 @@ import java.nio.file.StandardCopyOption;
  * Created by jacobo on 31/05/15.
  */
 @Ignore
-public abstract class VariantStorageManagerTestUtils extends GenericTest {
+public abstract class VariantStorageManagerTestUtils extends GenericTest implements VariantStorageTest {
 
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
@@ -90,9 +91,6 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest {
     public final void _before() throws Exception {
         variantStorageManager = getVariantStorageManager();
     }
-
-    protected abstract VariantStorageManager getVariantStorageManager() throws Exception;
-    protected abstract void clearDB(String dbName) throws Exception;
 
 
     /* ---------------------------------------------------- */

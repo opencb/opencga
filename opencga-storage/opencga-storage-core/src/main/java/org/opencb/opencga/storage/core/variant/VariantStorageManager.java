@@ -626,6 +626,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 String defaultCohortName = StudyEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
                 Map<String, Set<String>> defaultCohort = new HashMap<>(Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
+
+                QueryOptions statsOptions = new QueryOptions(options);
                 if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
                     Integer defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
                     if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
@@ -633,18 +635,19 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                             logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
                             studyConfiguration.getCalculatedStats().remove(defaultCohortId);
                             studyConfiguration.getInvalidStats().add(defaultCohortId);
-                            options.put(Options.OVERWRITE_STATS.key(), true);
+                            statsOptions.put(Options.OVERWRITE_STATS.key(), true);
                         } else {
                             logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
                             studyConfiguration.getCalculatedStats().remove(defaultCohortId);
                             studyConfiguration.getInvalidStats().add(defaultCohortId);
-                            options.put(Options.OVERWRITE_STATS.key(), false);
+                            statsOptions.put(Options.OVERWRITE_STATS.key(), false);
                         }
                     }
                 }
+                statsOptions.remove(Options.FILE_ID.key());
 
-                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, new HashMap<>(), studyConfiguration, new QueryOptions(options));
-                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, new QueryOptions(options));
+                URI statsUri = variantStatisticsManager.createStats(dbAdaptor, statsOutputUri, defaultCohort, new HashMap<>(), studyConfiguration, statsOptions);
+                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, statsOptions);
             } catch (Exception e) {
                 logger.error("Can't calculate stats." , e);
                 e.printStackTrace();

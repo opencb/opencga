@@ -160,7 +160,7 @@ public class AnalysisFileIndexerTest {
 
         //Get transformed file
         QueryOptions searchOptions = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getOutput())
-                .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~variants.json");
+                .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchOptions, sessionId).first();
         assertEquals(job.getId(), transformedFile.getJobId());
 
