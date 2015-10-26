@@ -902,4 +902,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readTool(id, sessionId);
     }
 
+    public QueryResult<Tool> getAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobManager.readAllTools(queryOptions, sessionId);
+    }
 }

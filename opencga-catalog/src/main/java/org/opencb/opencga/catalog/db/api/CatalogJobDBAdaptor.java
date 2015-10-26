@@ -49,6 +49,7 @@ public interface CatalogJobDBAdaptor {
 
     int getToolId(String userId, String toolAlias) throws CatalogDBException;
 
+    QueryResult<Tool> getAllTools(QueryOptions queryOptions) throws CatalogDBException;
 
 //    public abstract QueryResult<Tool> searchTool(QueryOptions options);
 
