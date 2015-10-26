@@ -199,6 +199,8 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
             logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
             studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
                     study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
+        } else {
+            studyConfiguration.setAggregation(VariantSource.Aggregation.NONE);
         }
         logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation());
 
