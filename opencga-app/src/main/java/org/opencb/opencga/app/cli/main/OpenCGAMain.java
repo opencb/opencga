@@ -943,18 +943,20 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.ToolCommands.CreateCommand c = optionsParser.getToolCommands().createCommand;
 
+                        Path path = Paths.get(c.path);
+                        FileUtils.checkDirectory(path);
+
                         QueryResult<Tool> tool = catalogManager.createTool(c.alias, c.description, null, null,
-                                c.path, c.openTool, sessionId);
-                        System.out.println(tool);
+                                path.toAbsolutePath().toString(), c.openTool, sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
 
                         break;
                     }
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        QueryResult<Tool> tool = catalogManager.getTool(c.id, sessionId);
-                        System.out.println(tool);
-
+                        QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
                         break;
                     }
                     default: {

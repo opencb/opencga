@@ -1043,7 +1043,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
-            int id;
+            String id;
         }
     }
 
