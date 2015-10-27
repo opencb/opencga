@@ -436,6 +436,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(749, numResults);
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "1:cohort1>0.2"), null);
         assertEquals(749, queryResult.getNumResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "1000g")
+                .append(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "cohort1>0.2"), null);
+        assertEquals(749, queryResult.getNumResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "1000g")
+                .append(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "10>0.2"), null);
+        assertEquals(749, queryResult.getNumResults());
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
+                .append(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), "10>0.2"), null);
+        assertEquals(749, queryResult.getNumResults());
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get("cohort1").getMaf() > 0.2));
 
@@ -463,6 +472,40 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 .forEach(map -> assertTrue(map.get("cohort2").getMaf() > 0.2 || map.get("cohort1").getMaf() < 0.2));
 
 
+    }
+
+    @Test
+    public void testGetAllVariants_cohorts() throws Exception {
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "1000g:cohort2"), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "1000g:cohort1"), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "1000g")
+                .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "cohort1"), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
+                .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "cohort1"), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
+                .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), 10), null);
+        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
+                .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "!cohort1"), null);
+        assertEquals(0, queryResult.getNumResults());
+
+    }
+
+    @Test
+    public void testGetAllVariants_cohorts_fail1() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
+                .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "!cohort5_dont_exists"), null);
     }
 
     @Test

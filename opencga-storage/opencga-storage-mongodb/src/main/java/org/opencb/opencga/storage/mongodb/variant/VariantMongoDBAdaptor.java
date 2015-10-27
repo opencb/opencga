@@ -796,36 +796,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
             }
 
-
-
-            /** STATS PARAMS **/
-
-            if (query.get(VariantQueryParams.STATS_MAF.key()) != null && !query.getString(VariantQueryParams.STATS_MAF.key()).isEmpty()) {
-                addStatsFilterList(DBObjectToVariantStatsConverter.MAF_FIELD, query.getString(VariantQueryParams.STATS_MAF.key()), builder);
-            }
-
-            if (query.get(VariantQueryParams.STATS_MGF.key()) != null && !query.getString(VariantQueryParams.STATS_MGF.key()).isEmpty()) {
-                addStatsFilterList(DBObjectToVariantStatsConverter.MGF_FIELD, query.getString(VariantQueryParams.STATS_MGF.key()), builder);
-            }
-
-            if (query.get(VariantQueryParams.MISSING_ALLELES.key()) != null && !query.getString(VariantQueryParams.MISSING_ALLELES.key()).isEmpty()) {
-                addStatsFilterList(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, query.getString(VariantQueryParams.MISSING_ALLELES.key()), builder);
-            }
-
-            if (query.get(VariantQueryParams.MISSING_GENOTYPES.key()) != null && !query.getString(VariantQueryParams.MISSING_GENOTYPES.key()).isEmpty()) {
-                addStatsFilterList(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder);
-            }
-
-            if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
-                for (String numgt : query.getAsStringList("numgt")) {
-                    String[] split = numgt.split(":");
-                    addCompQueryFilter(
-                            DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
-                            split[1], builder);
-                }
-            }
-
-
             /** STUDIES **/
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration;
@@ -970,6 +940,84 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (studyQuery.keySet().size() != 0) {
                 builder.and(DBObjectToVariantConverter.STUDIES_FIELD).elemMatch(studyQuery);
             }
+
+
+            /** STATS PARAMS **/
+            if (query.get(VariantQueryParams.COHORTS.key()) != null && !query.getString(VariantQueryParams.COHORTS.key()).isEmpty()) {
+                addQueryFilter(DBObjectToVariantConverter.STATS_FIELD
+                                + "." + DBObjectToVariantStatsConverter.COHORT_ID,
+                        query.getString(VariantQueryParams.COHORTS.key()), builder, QueryOperation.AND,
+                        s -> {
+                            try {
+                                return Integer.parseInt(s);
+                            } catch (NumberFormatException ignore) {
+                                String[] studyCohort = s.split(":");
+                                if (defaultStudyConfiguration == null && studyCohort.length != 2) {
+                                    throw new IllegalArgumentException("Bad cohort filter. \"" + s + "\". Requires study:cohort ");
+                                } else {
+                                    String study;
+                                    String cohort;
+                                    Integer studyId;
+                                    Integer cohortId;
+                                    if (defaultStudyConfiguration != null && studyCohort.length != 2) {
+                                        cohort = studyCohort[0];
+                                        cohortId = getInteger(cohort);
+                                        if (cohortId == null) {
+                                            cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
+                                        }
+                                    } else {
+                                        study = studyCohort[0];
+                                        cohort = studyCohort[1];
+                                        studyId = getInteger(study);
+                                        cohortId = getInteger(cohort);
+
+                                        if (studyId == null) {
+                                            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
+                                            studyId = studyConfiguration.getStudyId();
+                                            if (cohortId == null) {
+                                                cohortId = studyConfiguration.getCohortIds().get(cohort);
+                                            }
+                                        } else if (cohortId == null) {
+                                            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
+                                            cohortId = studyConfiguration.getCohortIds().get(cohort);
+                                        }
+                                    }
+                                    if (cohortId == null) {
+                                        throw new IllegalArgumentException("Unknown cohort \"" + s + "\"");
+                                    }
+                                    return cohortId;
+                                }
+                            }
+                        });
+            }
+
+            if (query.get(VariantQueryParams.STATS_MAF.key()) != null && !query.getString(VariantQueryParams.STATS_MAF.key()).isEmpty()) {
+                addStatsFilterList(DBObjectToVariantStatsConverter.MAF_FIELD, query.getString(VariantQueryParams.STATS_MAF.key()), builder, defaultStudyConfiguration);
+            }
+
+            if (query.get(VariantQueryParams.STATS_MGF.key()) != null && !query.getString(VariantQueryParams.STATS_MGF.key()).isEmpty()) {
+                addStatsFilterList(DBObjectToVariantStatsConverter.MGF_FIELD, query.getString(VariantQueryParams.STATS_MGF.key()), builder, defaultStudyConfiguration);
+            }
+
+            if (query.get(VariantQueryParams.MISSING_ALLELES.key()) != null && !query.getString(VariantQueryParams.MISSING_ALLELES.key()).isEmpty()) {
+                addStatsFilterList(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, query.getString(VariantQueryParams.MISSING_ALLELES.key()), builder, defaultStudyConfiguration);
+            }
+
+            if (query.get(VariantQueryParams.MISSING_GENOTYPES.key()) != null && !query.getString(VariantQueryParams.MISSING_GENOTYPES.key()).isEmpty()) {
+                addStatsFilterList(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, query.getString(VariantQueryParams.MISSING_GENOTYPES.key()), builder, defaultStudyConfiguration);
+            }
+
+            if (query.get("numgt") != null && !query.getString("numgt").isEmpty()) {
+                for (String numgt : query.getAsStringList("numgt")) {
+                    String[] split = numgt.split(":");
+                    addCompQueryFilter(
+                            DBObjectToVariantConverter.STATS_FIELD + "." + DBObjectToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
+                            split[1], builder);
+                }
+            }
+
+
+
         }
 
         logger.info("Find = " + builder.get());
@@ -1250,10 +1298,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new BasicDBObject(
                         DBObjectToStudyVariantEntryConverter.STUDYID_FIELD,
                         studyConfiguration.getStudyId())
-                .append(
-                        DBObjectToStudyVariantEntryConverter.FILES_FIELD + "." + DBObjectToStudyVariantEntryConverter.FILEID_FIELD,
-                        new BasicDBObject("$ne", fileId)
-                )
+                        .append(
+                                DBObjectToStudyVariantEntryConverter.FILES_FIELD + "." + DBObjectToStudyVariantEntryConverter.FILEID_FIELD,
+                                new BasicDBObject("$ne", fileId)
+                        )
         ));
 
         BasicDBObject push = new BasicDBObject()
@@ -1544,13 +1592,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     /**
      * Accepts filters separated with "," or ";" with the expression:
-     *      {STUDY}:{COHORT}{OPERATION}{VALUE}
+     *      [{STUDY}:]{COHORT}{OPERATION}{VALUE}
+     * Where STUDY is optional if defaultStudyConfiguration is provided
      *
      * @param key           Stats field to filter
      * @param values        Values to parse
      * @param builder       QueryBuilder
+     * @param defaultStudyConfiguration
      */
-    private void addStatsFilterList(String key, String values, QueryBuilder builder) {
+    private void addStatsFilterList(String key, String values, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
 
         QueryOperation op = checkOperator(values);
         List<String> valuesList = splitValue(values, op);
@@ -1558,7 +1608,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> statsQueries = new LinkedList<>();
 
         for (String value : valuesList) {
-            statsQueries.add(addStatsFilter(key, value, new QueryBuilder()).get());
+            statsQueries.add(addStatsFilter(key, value, new QueryBuilder(), defaultStudyConfiguration).get());
         }
 
         if (!statsQueries.isEmpty()) {
@@ -1572,35 +1622,49 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     /**
      * Accepts filters with the expresion:
-     *      {STUDY}:{COHORT}{OPERATION}{VALUE}
+     *      [{STUDY}:]{COHORT}{OPERATION}{VALUE}
+     * Where STUDY is optional if defaultStudyConfiguration is provided
      *
      * @param key           Stats field to filter
      * @param value         Value to parse
      * @param builder       QueryBuilder
+     * @param defaultStudyConfiguration
      */
-    private QueryBuilder addStatsFilter(String key, String value, QueryBuilder builder) {
-        if (value.contains(":")) {
-            String[] studyValue = value.split(":");
-            String[] cohortValue = splitKeyValue(studyValue[1]);
-            String operatorValue = cohortValue[1];
-            String study = studyValue[0];
-            String cohort = cohortValue[0];
+    private QueryBuilder addStatsFilter(String key, String value, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
+        if (value.contains(":") || defaultStudyConfiguration != null) {
+            Integer studyId;
+            Integer cohortId;
+            String operatorValue;
+            if (value.contains(":")) {
+                String[] studyValue = value.split(":");
+                String[] cohortValue = splitKeyValue(studyValue[1]);
+                String study = studyValue[0];
+                String cohort = cohortValue[0];
+                operatorValue = cohortValue[1];
 
-            Integer studyId = getInteger(study);
-            Integer cohortId = getInteger(cohort);
-            if (studyId == null) {
-                StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-                studyId = studyConfiguration.getStudyId();
-                if (cohortId == null) {
+                studyId = getInteger(study);
+                cohortId = getInteger(cohort);
+                if (studyId == null) {
+                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
+                    studyId = studyConfiguration.getStudyId();
+                    if (cohortId == null) {
+                        cohortId = studyConfiguration.getCohortIds().get(cohort);
+                    }
+                } else if (cohortId == null) {
+                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
                     cohortId = studyConfiguration.getCohortIds().get(cohort);
                 }
-            } else if (cohortId == null) {
-                StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                cohortId = studyConfiguration.getCohortIds().get(cohort);
+            } else {
+                String study = defaultStudyConfiguration.getStudyName();
+                studyId = defaultStudyConfiguration.getStudyId();
+                String[] cohortValue = splitKeyValue(value);
+                String cohort = cohortValue[0];
+                cohortId = getInteger(cohort);
+                if (cohortId == null) {
+                    cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
+                }
+                operatorValue = cohortValue[1];
             }
-//            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-//            int studyId = studyConfiguration.getStudyId();
-//            int cohortId = studyConfiguration.getCohortIds().get(cohort);
 
             QueryBuilder statsBuilder = new QueryBuilder();
             statsBuilder.and(DBObjectToVariantStatsConverter.STUDY_ID).is(studyId);
