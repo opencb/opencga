@@ -217,6 +217,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);

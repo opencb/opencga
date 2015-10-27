@@ -289,7 +289,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
 
             //Runner
-            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers, Collections.<Task<Variant>>emptyList(), batchSize);
+            VariantRunner vr = new VariantRunner(source, reader, pedReader, writers,
+                    Collections.<Task<Variant>>singletonList(new VariantGlobalStatsCalculator(source)), batchSize);
 
             logger.info("Single thread transform...");
             start = System.currentTimeMillis();
