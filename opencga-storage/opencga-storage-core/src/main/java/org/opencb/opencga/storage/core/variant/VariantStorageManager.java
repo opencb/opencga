@@ -130,6 +130,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         CALCULATE_STATS ("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS ("overwriteStats", false),          //Overwrite stats already present
+        UPDATE_STATS ("updateStats", false),                //Calculate missing stats
         ANNOTATE ("annotate", false);
 
         private final String key;
@@ -637,10 +638,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                             studyConfiguration.getInvalidStats().add(defaultCohortId);
                             statsOptions.put(Options.OVERWRITE_STATS.key(), true);
                         } else {
-                            logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.", defaultCohortName, defaultCohortId);
-                            studyConfiguration.getCalculatedStats().remove(defaultCohortId);
-                            studyConfiguration.getInvalidStats().add(defaultCohortId);
-                            statsOptions.put(Options.OVERWRITE_STATS.key(), false);
+                            logger.debug("Cohort \"{}\":{} was already calculated. Just update stats.", defaultCohortName, defaultCohortId);
+                            statsOptions.put(Options.UPDATE_STATS.key(), true);
                         }
                     }
                 }
