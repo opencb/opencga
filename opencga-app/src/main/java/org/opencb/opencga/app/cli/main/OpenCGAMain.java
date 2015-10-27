@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -108,6 +109,11 @@ public class OpenCGAMain {
         if(optionsParser.getCommonOptions().help) {
             optionsParser.printUsage();
             System.exit(1);
+        }
+        if (optionsParser.getGeneralOptions().version) {
+            System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
+            System.out.println("git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+            System.exit(0);
         }
 
         userConfigFile = loadUserFile();
