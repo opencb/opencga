@@ -62,6 +62,7 @@ public class VariantStorage {
         final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         String fileIdStr = options.getString(VariantStorageManager.Options.FILE_ID.key(), null);
+        boolean updateStats = options.getBoolean(VariantStorageManager.Options.UPDATE_STATS.key(), false);
         final Integer fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
         final long start = System.currentTimeMillis();
 
@@ -84,7 +85,7 @@ public class VariantStorage {
                 case INVALID:
                     break;
                 case READY:
-                    if (options.getBoolean("force", false)) {
+                    if (updateStats) {
                         catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.INVALID), sessionId);
                         break;
                     }
@@ -155,6 +156,9 @@ public class VariantStorage {
         }
         if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
+        }
+        if (updateStats) {
+            sb.append(" --update-stats ");
         }
 
         // if the study is aggregated and a mapping file is provided, pass it to storage 

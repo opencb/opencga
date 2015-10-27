@@ -504,6 +504,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
+        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. Assumes that existing stats are correct")
+        public boolean updateStats = false;
+
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
         public int studyId;
 
