@@ -28,23 +28,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogStudyConfigurationManager extends StudyConfigurationManager {
-    public static final String CATALOG_PROPERTIES_FILE = "catalogPropertiesFile";
+public class CatalogStudyConfigurationManager {
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
@@ -61,7 +56,6 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);
 
     private final CatalogManager catalogManager;
-    private final String sessionId;
 
     public static final String STUDY_CONFIGURATION_FIELD = "studyConfiguration";
     public static final QueryOptions STUDY_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList(
@@ -73,127 +67,50 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
     private final ObjectMapper objectMapper;
     private QueryOptions options;
 
-    public CatalogStudyConfigurationManager(ObjectMap objectMap) throws CatalogException {
-        super(objectMap);
-        Properties catalogProperties = null;
-        if (objectMap.containsKey(CATALOG_PROPERTIES_FILE)) {
-            try {
-                catalogProperties = new Properties();
-                catalogProperties.load(new FileInputStream(objectMap.getString(CATALOG_PROPERTIES_FILE)));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        if (catalogProperties == null){
-            if (Config.getOpenCGAHome() == null || Config.getOpenCGAHome().isEmpty()) {
-                Config.setOpenCGAHome();
-            }
-            catalogProperties = Config.getCatalogProperties();
-        }
-        catalogManager = new CatalogManager(catalogProperties);
-        sessionId = objectMap.getString("sessionId");
-        objectMapper = new ObjectMapper();
-    }
 
-    public CatalogStudyConfigurationManager(CatalogManager catalogManager, String sessionId) {
-        super(null);
+    public CatalogStudyConfigurationManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        this.sessionId = sessionId;
         objectMapper = new ObjectMapper();
     }
 
-    @Override
-    public void setDefaultQueryOptions(QueryOptions options) {
-        super.setDefaultQueryOptions(options);
-        this.options = options;
+    public StudyConfiguration getStudyConfiguration(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+        return getStudyConfiguration(studyId, null, options, sessionId);
     }
 
-    @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(null, studyName, timeStamp, options);
-    }
-
-    @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(studyId, null, timeStamp, options);
-    }
-
-    private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
-        if (options == null) {
-            options = this.options;
-        } else if (this.options != null) {
-            for (Map.Entry<String, Object> entry : this.options.entrySet()) {
-                options.add(entry.getKey(), entry.getValue());
-            }
-        }
-
-        // We need a valid sessionId. This can be passed in the constructor or in the options.
-        // If it is not valid then ~/.opencga/opencga.yml is examined
-        String sessionId = (options == null) ? this.sessionId : options.getString("sessionId", this.sessionId);
-        if (sessionId == null || sessionId.isEmpty()) {
-            sessionId = getLocalSessionId();
-        }
-
+    public StudyConfiguration getStudyConfiguration(int studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
+        Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
         StudyConfiguration studyConfiguration = null;
-        long start = System.currentTimeMillis();
-        try {
-            if (studyId == null) {
-                studyId = catalogManager.getStudyId(studyName);
-            }
-            logger.debug("Reading StudyConfiguration from Catalog. study: {}, studyId: {}", studyName, studyId);
-            logger.debug("CatalogStudyConfigurationManager - options = '{}'", ((options == null) ? null : options.toJson()));
-            Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
-            studyConfiguration = new StudyConfiguration(studyId, study.getAlias());
-
-            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
-            if (o != null && o instanceof Map) {
-                ObjectMapper objectMapper = new ObjectMapper();
-                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
-                logger.trace("Read StudyConfiguration from catalog");
-                if (timeStamp != null && Objects.equals(studyConfiguration.getTimeStamp(), timeStamp)) {
-                    logger.debug("Return empty StudyConfiguration");
-                    return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-                } else {
-                    logger.debug("Given timeStamp ({}) not equals to stored({}).", timeStamp, ((Map) o).get("timeStamp"));
-                }
-            }
-
-            if (studyConfiguration.getFileIds() == null || studyConfiguration.getFileIds().isEmpty() || options != null && options.getBoolean(FULL, false)) {
-                fillStudyConfiguration(studyConfiguration, study, sessionId);
-                logger.debug("Updating StudyConfiguration");
-                _updateStudyConfiguration(studyConfiguration, options);
-            }
-
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            logger.error("Unable to get StudyConfiguration from Catalog", e);
-        } catch (IOException e) {
-            logger.error("Unable to get StudyConfiguration from Catalog", e);
-            e.printStackTrace();
+        if (studyConfigurationManager != null) {
+            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
         }
+        studyConfiguration = fillStudyConfiguration(studyConfiguration, study, sessionId);
 
-        logger.debug("Created StudyConfiguration in {}ms", System.currentTimeMillis() - start);
-        if (studyConfiguration == null) {
-            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
-        } else {
-            return new QueryResult<>(studyName, (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(studyConfiguration));
-        }
+        return studyConfiguration;
     }
 
-    private void fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
+    private StudyConfiguration fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
         int studyId = study.getId();
+        if (studyConfiguration == null) {
+            studyConfiguration = new StudyConfiguration(0, "");
+        }
+        studyConfiguration.setStudyId(study.getId());
+        int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+        String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
+        String userId = catalogManager.getUserIdByProjectId(projectId);
+        studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
+
         fillNullMaps(studyConfiguration);
 
         //Clear maps
-        studyConfiguration.getIndexedFiles().clear();
-        studyConfiguration.getFileIds().clear();
-        studyConfiguration.getSamplesInFiles().clear();
-        studyConfiguration.getHeaders().clear();
-        studyConfiguration.getSampleIds().clear();
-        studyConfiguration.getCalculatedStats().clear();
-        studyConfiguration.getInvalidStats().clear();
-        studyConfiguration.getCohortIds().clear();
-        studyConfiguration.getCohorts().clear();
+//        studyConfiguration.getIndexedFiles().clear();
+//        studyConfiguration.getFileIds().clear();
+//        studyConfiguration.getSamplesInFiles().clear();
+//        studyConfiguration.getHeaders().clear();
+//        studyConfiguration.getSampleIds().clear();
+//        studyConfiguration.getCalculatedStats().clear();
+//        studyConfiguration.getInvalidStats().clear();
+//        studyConfiguration.getCohortIds().clear();
+//        studyConfiguration.getCohorts().clear();
 
         if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
             logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
@@ -204,26 +121,14 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         }
         logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation());
 
-//            Object o = study.getAttributes().get(STUDY_CONFIGURATION_FIELD);
-//            if (o == null ) {
-//                studyConfiguration = new StudyConfiguration(studyId, study.getName());
-//            } else if (o instanceof StudyConfiguration) {
-//                studyConfiguration = (StudyConfiguration) o;
-//            } else {
-//                studyConfiguration = objectMapper.readValue(objectMapper.writeValueAsString(o), StudyConfiguration.class);
-//            }
-
-        logger.debug("Get Indexed Files");
-        QueryResult<File> indexedFiles = catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId);
-        for (File file : indexedFiles.getResult()) {
-            studyConfiguration.getIndexedFiles().add(file.getId());
-        }
+        // DO NOT update "indexed files" list. This MUST be a sorted set.
+        // This field will never be modified from catalog to storage
 
         logger.debug("Get Files");
         QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
         for (File file : files.getResult()) {
 
-            studyConfiguration.getFileIds().put(file.getName(), file.getId());
+            studyConfiguration.getFileIds().forcePut(file.getName(), file.getId());
             studyConfiguration.getSamplesInFiles().put(file.getId(), new LinkedHashSet<>(file.getSampleIds()));
 
 
@@ -248,21 +153,28 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
 
         for (Sample sample : samples.getResult()) {
-            studyConfiguration.getSampleIds().put(sample.getName(), sample.getId());
+            studyConfiguration.getSampleIds().forcePut(sample.getName(), sample.getId());
         }
 
         logger.debug("Get Cohorts");
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
 
         for (Cohort cohort : cohorts.getResult()) {
-            studyConfiguration.getCohortIds().put(cohort.getName(), cohort.getId());
+            studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohort.getId());
             studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
             if (cohort.getStatus() == Cohort.Status.READY) {
                 studyConfiguration.getCalculatedStats().add(cohort.getId());
+                studyConfiguration.getInvalidStats().remove(cohort.getId());
             } else if (cohort.getStatus() == Cohort.Status.INVALID) {
+                studyConfiguration.getCalculatedStats().remove(cohort.getId());
                 studyConfiguration.getInvalidStats().add(cohort.getId());
+            } else { //CALCULATING || NONE
+                studyConfiguration.getCalculatedStats().remove(cohort.getId());
+                studyConfiguration.getInvalidStats().remove(cohort.getId());
             }
         }
+
+        return studyConfiguration;
     }
 
     private void fillNullMaps(StudyConfiguration studyConfiguration) {
@@ -286,77 +198,51 @@ public class CatalogStudyConfigurationManager extends StudyConfigurationManager 
         }
     }
 
-    @Override
-    public QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public void updateStudyConfigurationFromCatalog(int studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
+        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+    }
+
+    public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {
         if (options == null) {
             options = this.options;
         }
-        try {
-            logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
-//            StudyConfiguration smallStudyConfiguration = new StudyConfiguration(studyConfiguration.getStudyId(), studyConfiguration.getStudyName(), null, null, null, null);
-//            smallStudyConfiguration.setIndexedFiles(studyConfiguration.getIndexedFiles());
-//            smallStudyConfiguration.setCalculatedStats(studyConfiguration.getCalculatedStats());
-//            smallStudyConfiguration.setInvalidStats(studyConfiguration.getInvalidStats());
-//            smallStudyConfiguration.setAttributes(studyConfiguration.getAttributes());
-//            smallStudyConfiguration.setTimeStamp(studyConfiguration.getTimeStamp());
+        logger.info("Updating StudyConfiguration " + studyConfiguration.getStudyId());
 
-            //Check if any cohort stat has been updated
-            if (!studyConfiguration.getCalculatedStats().isEmpty()) {
-                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
-                    if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
-                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
-                        catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
-                    }
+        //Check if any cohort stat has been updated
+        if (!studyConfiguration.getCalculatedStats().isEmpty()) {
+            for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+                    new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
+                if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
                 }
             }
-
-            //Check if any cohort stat has been invalidated
-            if (!studyConfiguration.getInvalidStats().isEmpty()) {
-                for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getInvalidStats())), sessionId).getResult()) {
-                    if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.INVALID)) {
-                        logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.INVALID);
-                        catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), sessionId);
-                    }
-                }
-            }
-
-            if (!studyConfiguration.getIndexedFiles().isEmpty()) {
-                for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
-                        new QueryOptions("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), sessionId).getResult()) {
-                    if (file.getIndex() == null || !file.getIndex().getStatus().equals(Index.Status.READY)) {
-                        final Index index;
-                        index = file.getIndex() == null ? new Index() : file.getIndex();
-                        index.setStatus(Index.Status.READY);
-                        logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(), file.getIndex().getStatus(), Index.Status.READY);
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
-                    }
-                }
-            }
-
-            return catalogManager.modifyStudy(studyConfiguration.getStudyId(), new ObjectMap("attributes", new ObjectMap(STUDY_CONFIGURATION_FIELD, studyConfiguration)), options.getString("sessionId", sessionId));
-        } catch (CatalogException e) {
-            logger.error("Unable to update StudyConfiguration in Catalog", e);
-            return new QueryResult(Integer.toString(studyConfiguration.getStudyId()), -1, 0, 0, "", e.getMessage(), Collections.emptyList());
         }
-    }
 
-    private String getLocalSessionId() {
-        String sessionId = "";
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml"));
-            for (String line : lines) {
-                if (line.trim().startsWith("sessionId")) {
-                    sessionId = line.split(":")[1];
+        //Check if any cohort stat has been invalidated
+        if (!studyConfiguration.getInvalidStats().isEmpty()) {
+            for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
+                    new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getInvalidStats())), sessionId).getResult()) {
+                if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.INVALID)) {
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.INVALID);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), sessionId);
                 }
             }
-            sessionId = sessionId.trim().replace("\"", "");
-            logger.debug("Session id read from local file 'opencga.yml is: '{}'", sessionId);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-        return sessionId;
+
+        if (!studyConfiguration.getIndexedFiles().isEmpty()) {
+            for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
+                    new QueryOptions("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), sessionId).getResult()) {
+                if (file.getIndex() == null || !file.getIndex().getStatus().equals(Index.Status.READY)) {
+                    final Index index;
+                    index = file.getIndex() == null ? new Index() : file.getIndex();
+                    index.setStatus(Index.Status.READY);
+                    logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(), file.getIndex().getStatus(), Index.Status.READY);
+                    catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
+                }
+            }
+        }
     }
 
 }

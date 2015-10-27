@@ -31,6 +31,9 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,8 +149,8 @@ public class VariantStorage {
                 .append(" --study-id ").append(studyId)
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
                 .append(" --database ").append(dataStore.getDbName())
-                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
-                .append(" -D").append("sessionId").append("=").append(sessionId)
+//                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
+//                .append(" -D").append("sessionId").append("=").append(sessionId)
 //                .append(" --cohort-name ").append(cohort.getId())
 //                .append(" --cohort-samples ")
                 ;
@@ -189,6 +192,17 @@ public class VariantStorage {
 
         String commandLine = sb.toString();
         logger.debug("CommandLine to calculate stats {}" + commandLine);
+
+        /** Update StudyConfiguration **/
+        if (!simulate) {
+            try {
+                StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                        .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+                new CatalogStudyConfigurationManager(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
 
         /** create job **/
         String jobName = "calculate-stats";
@@ -254,6 +268,17 @@ public class VariantStorage {
         }
         String commandLine = sb.toString();
         logger.debug("CommandLine to annotate variants {}", commandLine);
+
+        /** Update StudyConfiguration **/
+        if (!simulate) {
+            try {
+                StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                        .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+                new CatalogStudyConfigurationManager(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
 
         /** create job **/
         String jobDescription = "Variant annotation";

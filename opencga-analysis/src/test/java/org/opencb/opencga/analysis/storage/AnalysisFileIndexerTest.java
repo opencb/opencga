@@ -103,8 +103,7 @@ public class AnalysisFileIndexerTest {
         beforeIndex();
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(0).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.NONE, getDefaultCohort().getStatus());
@@ -117,7 +116,7 @@ public class AnalysisFileIndexerTest {
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(2).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(1500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(3).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
@@ -129,7 +128,7 @@ public class AnalysisFileIndexerTest {
         assertEquals(2504, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
 
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
     }
     
 
@@ -141,8 +140,7 @@ public class AnalysisFileIndexerTest {
     public void testIndexBySteps() throws Exception {
         beforeIndex();
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         queryOptions.append(AnalysisFileIndexer.TRANSFORM, true);
         queryOptions.append(AnalysisFileIndexer.LOAD, false);
@@ -176,7 +174,9 @@ public class AnalysisFileIndexerTest {
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
         assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), dbName, catalogPropertiesFile, sessionId);
+        Cohort defaultCohort = catalogManager.getAllCohorts(studyId,
+                new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first();
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
     }
     
     public void beforeAggregatedIndex(String file, VariantSource.Aggregation aggregation) throws Exception {
@@ -207,8 +207,7 @@ public class AnalysisFileIndexerTest {
         beforeAggregatedIndex("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        QueryOptions queryOptions = new QueryOptions(AnalysisFileIndexer.PARAMETERS, "-D" + CatalogStudyConfigurationManager.CATALOG_PROPERTIES_FILE + "=" + catalogPropertiesFile)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC);
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);

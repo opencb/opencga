@@ -7,6 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -44,6 +45,7 @@ public class CatalogStudyConfigurationManagerTest {
     private String catalogPropertiesFile;
     private final String userId = "user";
     private List<File> files = new ArrayList<>();
+    private LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
 
     @Before
     public void before() throws Exception {
@@ -84,17 +86,27 @@ public class CatalogStudyConfigurationManagerTest {
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
             catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today", Index.Status.READY, 1234, Collections.emptyMap())), sessionId);
+            indexedFiles.add(file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
 
     @Test
     public void getStudyConfiguration() throws Exception {
-        StudyConfigurationManager studyConfigurationManager = new CatalogStudyConfigurationManager(catalogManager, sessionId);
+        CatalogStudyConfigurationManager studyConfigurationManager = new CatalogStudyConfigurationManager(catalogManager);
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions("sessionId", sessionId)).first();
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        assertEquals(study.getAlias(), studyConfiguration.getStudyName());
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
+            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+                StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
+                studyConfiguration.setIndexedFiles(indexedFiles);
+                return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+            }
+
+        }, new QueryOptions(), sessionId);
+        assertEquals("user@p1:s1", studyConfiguration.getStudyName());
         assertEquals(study.getId(), studyConfiguration.getStudyId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());
