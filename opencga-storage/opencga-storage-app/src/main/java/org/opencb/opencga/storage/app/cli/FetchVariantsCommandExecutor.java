@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -93,6 +94,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 //        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
 
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
+        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = new Query();
         QueryOptions options = new QueryOptions(new HashMap<>(queryVariantsCommandOptions.params));
@@ -131,8 +133,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         // If the studies to be returned is empty then we return the studies being queried
-        if (queryVariantsCommandOptions.returnStudy == null || queryVariantsCommandOptions.returnStudy.isEmpty()) {
-
+        if (queryVariantsCommandOptions.returnStudy != null && !queryVariantsCommandOptions.returnStudy.isEmpty()) {
+            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.returnStudy.split(",")));
+        } else {
+            if (query.containsKey(VariantDBAdaptor.VariantQueryParams.STUDIES.key())) {
+                query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), query.get(VariantDBAdaptor.VariantQueryParams.STUDIES.key()));
+            }
         }
 
         if (queryVariantsCommandOptions.file != null && !queryVariantsCommandOptions.file.isEmpty()) {
@@ -241,14 +247,24 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                     break;
                 default:
                     logger.error("Format '{}' not supported", queryVariantsCommandOptions.outputFormat);
-                    throw new ParameterException("Format '"+queryVariantsCommandOptions.outputFormat+"' not supported");
+                    throw new ParameterException("Format '" + queryVariantsCommandOptions.outputFormat + "' not supported");
             }
         }
 
-        if (outputFormat.equalsIgnoreCase("vcf")) {
-            if (queryVariantsCommandOptions.returnStudy == null || queryVariantsCommandOptions.returnStudy.split(",").length > 1) {
-                logger.error("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study");
-                System.exit(1);
+        boolean returnVariants = !queryVariantsCommandOptions.count
+                                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
+                                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
+
+        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+            int returnedStudiesSize = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()).size();
+            if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
+                    || returnedStudiesSize > 1) {     // Or is required more than one returned study
+                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study. " +
+                        "Available studies: [ " + String.join(", ", studyNames) + " ]");
+            } else {
+                if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
+                    query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyNames.get(0));
+                }
             }
         }
 
@@ -300,10 +316,10 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        if (queryVariantsCommandOptions.rank != null && !queryVariantsCommandOptions.rank.isEmpty()) {
+        if (StringUtils.isNotEmpty(queryVariantsCommandOptions.rank)) {
             executeRank(query, variantDBAdaptor);
         } else {
-            if (queryVariantsCommandOptions.groupBy != null && !queryVariantsCommandOptions.groupBy.isEmpty()) {
+            if (StringUtils.isNotEmpty(queryVariantsCommandOptions.groupBy)) {
                 QueryResult groupBy = variantDBAdaptor.groupBy(query, queryVariantsCommandOptions.groupBy, options);
                 System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
             } else {
