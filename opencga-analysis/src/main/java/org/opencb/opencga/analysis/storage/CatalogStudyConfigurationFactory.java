@@ -39,7 +39,7 @@ import java.util.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogStudyConfigurationManager {
+public class CatalogStudyConfigurationFactory {
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
@@ -53,7 +53,7 @@ public class CatalogStudyConfigurationManager {
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
             .append(CatalogSampleDBAdaptor.CohortFilterOption.status.toString(), Cohort.Status.INVALID)
             .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
-    protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactory.class);
 
     private final CatalogManager catalogManager;
 
@@ -68,7 +68,7 @@ public class CatalogStudyConfigurationManager {
     private QueryOptions options;
 
 
-    public CatalogStudyConfigurationManager(CatalogManager catalogManager) {
+    public CatalogStudyConfigurationFactory(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
         objectMapper = new ObjectMapper();
     }

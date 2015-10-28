@@ -247,7 +247,7 @@ public class AnalysisFileIndexer {
                 if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
                     StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                             .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                    new CatalogStudyConfigurationManager(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
+                    new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
                 }
             } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();

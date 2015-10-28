@@ -272,10 +272,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
                 IOUtils.deleteDirectory(folderPath);
                 try {
-                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                    QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
                             File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(),
                             description, parents, sessionId
                     );
+                    File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
+                            queryOptions, sessionId, false);
+                    queryResult.setResult(Collections.singletonList(file));
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());

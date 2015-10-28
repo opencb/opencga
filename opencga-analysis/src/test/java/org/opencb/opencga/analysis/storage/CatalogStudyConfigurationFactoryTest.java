@@ -31,7 +31,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
 /**
  * Created by hpccoll1 on 16/07/15.
  */
-public class CatalogStudyConfigurationManagerTest {
+public class CatalogStudyConfigurationFactoryTest {
 
 
     private CatalogManager catalogManager;
@@ -93,7 +93,7 @@ public class CatalogStudyConfigurationManagerTest {
 
     @Test
     public void getStudyConfiguration() throws Exception {
-        CatalogStudyConfigurationManager studyConfigurationManager = new CatalogStudyConfigurationManager(catalogManager);
+        CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {

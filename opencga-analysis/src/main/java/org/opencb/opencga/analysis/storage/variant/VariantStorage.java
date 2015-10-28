@@ -23,7 +23,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
+import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -198,7 +198,7 @@ public class VariantStorage {
             try {
                 StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                         .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                new CatalogStudyConfigurationManager(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+                new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -274,7 +274,7 @@ public class VariantStorage {
             try {
                 StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                         .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                new CatalogStudyConfigurationManager(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+                new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
             }

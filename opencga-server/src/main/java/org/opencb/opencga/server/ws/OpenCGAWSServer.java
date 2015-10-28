@@ -36,7 +36,6 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Config;
@@ -166,7 +165,6 @@ public class OpenCGAWSServer {
         try {
             logger.info("|  * Reading StorageConfiguration");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "storage-configuration.yml").toFile()));
-            storageConfiguration.setStudyMetadataManager(CatalogStudyConfigurationManager.class.getName());
             logger.info("|  * Initializing StorageManagerFactory");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
