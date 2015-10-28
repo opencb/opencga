@@ -347,33 +347,30 @@ public class FileManager extends AbstractManager implements IFileManager {
             parentPath = parent.toString() + "/";
         }
 
-        int fileId = fileDBAdaptor.getFileId(studyId, parentPath);
-        if (fileId < 0 && parent != null) {
+        int parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
+        if (parentFileId < 0 && parent != null) {
             if (parents) {
                 create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
                         file.getOwnerId(), file.getCreationDate(), "", File.Status.READY, 0, -1,
                         Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId);
-                fileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
+                parentFileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
             } else {
                 throw new CatalogDBException("Directory not found " + parent.toString());
             }
         }
 
         //Check permissions
-        if (fileId < 0) {
+        if (parentFileId < 0) {
             throw new CatalogException("Unable to create file without a parent file");
         } else {
-            authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
+            authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
         }
 
 
         //Check external file
-        boolean isExternal = false;
-        if (fileId > 0) {
-            isExternal = isExternal(fileDBAdaptor.getFile(fileId, null).first());
-        }
+        boolean isExternal = isExternal(file);
 
         if (file.getType() == File.Type.FOLDER && file.getStatus() == File.Status.READY && (!isExternal || isRoot)) {
             URI fileUri = getFileUri(studyId, file.getPath());
