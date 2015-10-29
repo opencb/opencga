@@ -12,7 +12,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.execution.AnalysisExecutionException;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil;

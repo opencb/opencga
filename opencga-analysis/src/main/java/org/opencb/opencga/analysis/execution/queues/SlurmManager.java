@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.data.source;
+package org.opencb.opencga.analysis.execution.queues;
 
-import java.io.InputStream;
-
-public interface Source {
-
-    InputStream getInputStream(String path);
-
+/**
+ * Created by imedina on 29/10/15.
+ */
+public class SlurmManager {
 }

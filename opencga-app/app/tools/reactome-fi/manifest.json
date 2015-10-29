@@ -19,15 +19,15 @@
             "id": "default",
             "name": "reactome-fi",
             "executable": "mcl.py",
-            "inputParams": [
+            "input": [
                 {
                     "name": "eFile",
                     "dataType": "txt"
                 }
             ],
             "inputParamsFromTxt": [],
-            "outputParam": "outDir",
-            "validParams": [
+            "output": "outDir",
+            "parameters": [
                 {
                     "name": "eFile",
                     "description": "Expression matrix (normalized)",

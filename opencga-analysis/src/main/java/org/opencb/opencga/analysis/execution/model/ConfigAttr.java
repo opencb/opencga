@@ -14,35 +14,35 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
+@Deprecated
+public class ConfigAttr {
+    private String name, value;
 
-public class ExampleOption {
-    private String paramName, value;
-
-    public ExampleOption() {
+    public ConfigAttr() {
 
     }
 
-    public ExampleOption(String executionId, String value) {
-        this.paramName = executionId;
+    public ConfigAttr(String name, String value) {
+        this.name = name;
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return "ExampleOption{" +
-                "paramName='" + paramName + '\'' +
-                ", defaultValue='" + value + '\'' +
+        return "ConfigAttr{" +
+                "name='" + name + '\'' +
+                ", value='" + value + '\'' +
                 '}';
     }
 
-    public String getParamName() {
-        return paramName;
+    public String getName() {
+        return name;
     }
 
-    public void setParamName(String paramName) {
-        this.paramName = paramName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getValue() {

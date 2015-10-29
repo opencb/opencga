@@ -1,22 +1,19 @@
 package org.opencb.opencga.analysis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.analysis.execution.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.model.Manifest;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -24,7 +21,6 @@ import java.util.Properties;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
  * Created by hpccoll1 on 21/07/15.
@@ -55,6 +51,14 @@ public class AnalysisJobExecutorTest {
         output = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first();
 
         temporalOutDirUri = catalogManager.createJobOutDir(studyId, "JOB_TMP", sessionId);
+    }
+
+    @Test
+    public void loadManifestTest() throws Exception {
+        Path inputPath = Paths.get(getClass().getResource("/manifest.json").toURI());
+        ObjectMapper objectMapper = new ObjectMapper();
+        Manifest manifest = objectMapper.readValue(inputPath.toFile(), Manifest.class);
+        assertNotNull("Manifest object is null", manifest);
     }
 
     @Test

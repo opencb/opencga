@@ -19,7 +19,7 @@
       "id": "default",
       "name": "default",
       "executable": "burden.sh",
-      "inputParams": [
+      "input": [
         {
           "name": "vcf",
           "dataType": "txt"
@@ -29,8 +29,8 @@
           "dataType": "txt"
         }
       ],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "vcf",
           "description": "",

@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
-public class ConfigAttr {
-    private String name, value;
+import java.util.List;
 
-    public ConfigAttr() {
+public class Example {
 
+    private String name;
+    private String executionId;
+    private List<ExampleOption> options;
+
+    public Example() {
     }
 
-    public ConfigAttr(String name, String value) {
+    public Example(String name, String executionId, List<ExampleOption> options) {
         this.name = name;
-        this.value = value;
+        this.executionId = executionId;
+        this.options = options;
     }
 
     @Override
     public String toString() {
-        return "ConfigAttr{" +
+        return "Example{" +
                 "name='" + name + '\'' +
-                ", value='" + value + '\'' +
+                ", executionId='" + executionId + '\'' +
+                ", options=" + options +
                 '}';
     }
 
@@ -44,11 +50,20 @@ public class ConfigAttr {
         this.name = name;
     }
 
-    public String getValue() {
-        return value;
+    public String getExecutionId() {
+        return executionId;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
     }
+
+    public List<ExampleOption> geOptions() {
+        return options;
+    }
+
+    public void setOptions(List<ExampleOption> options) {
+        this.options = options;
+    }
+
 }

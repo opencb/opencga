@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -27,9 +28,9 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.analysis.execution.model.Manifest;
+import org.opencb.opencga.analysis.execution.model.Execution;
+import org.opencb.opencga.analysis.execution.model.Option;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exec.Command;
@@ -61,7 +62,7 @@ public class AnalysisJobExecutor {
     protected Path manifestFile;
     protected Path resultsFile;
     protected String sessionId;
-    protected Analysis analysis;
+    protected Manifest manifest;
     protected Execution execution;
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
@@ -110,7 +111,7 @@ public class AnalysisJobExecutor {
         manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
         resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
-        analysis = getAnalysis();
+        manifest = getManifest();
         execution = getExecution();
     }
 
@@ -183,9 +184,9 @@ public class AnalysisJobExecutor {
         String binaryPath = analysisPath.resolve(executable).toString();
 
         // Check required params
-        List<Option> validParams = execution.getValidParams();
-        validParams.addAll(analysis.getGlobalParams());
-        validParams.add(new Option(execution.getOutputParam(), "Outdir", false));
+        List<Option> validParams = execution.getParameters();
+        validParams.addAll(manifest.getGlobalParams());
+        validParams.add(new Option(execution.getOutput(), "Outdir", false));
         if (checkRequiredParams(params, validParams)) {
             params = new HashMap<String, List<String>>(removeUnknownParams(params, validParams));
         } else {
@@ -233,7 +234,7 @@ public class AnalysisJobExecutor {
         // Create temporal Outdir
         String randomString = "J_" + StringUtils.randomString(10);
         URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-        params.put(getExecution().getOutputParam(), Arrays.asList(temporalOutDirUri.getPath()));
+        params.put(getExecution().getOutput(), Arrays.asList(temporalOutDirUri.getPath()));
 
         // Create commandLine
         String commandLine = createCommandLine(executable, params);
@@ -394,20 +395,20 @@ public class AnalysisJobExecutor {
         }
     }
 
-    public Analysis getAnalysis() throws IOException, AnalysisExecutionException {
-        if (analysis == null) {
-            analysis = jsonObjectMapper.readValue(manifestFile.toFile(), Analysis.class);
+    public Manifest getManifest() throws IOException, AnalysisExecutionException {
+        if (manifest == null) {
+            manifest = jsonObjectMapper.readValue(manifestFile.toFile(), Manifest.class);
 //            analysis = gson.fromJson(IOUtils.toString(manifestFile.toFile()), Analysis.class);
         }
-        return analysis;
+        return manifest;
     }
 
     public Execution getExecution() throws AnalysisExecutionException {
         if (execution == null) {
             if (executionName == null || executionName.isEmpty()) {
-                execution = analysis.getExecutions().get(0);
+                execution = manifest.getExecutions().get(0);
             } else {
-                for (Execution exe : analysis.getExecutions()) {
+                for (Execution exe : manifest.getExecutions()) {
                     if (exe.getId().equalsIgnoreCase(executionName)) {
                         execution = exe;
                         break;
@@ -431,15 +432,15 @@ public class AnalysisJobExecutor {
         if (executionName != null)
             execName = "." + executionName;
         StringBuilder sb = new StringBuilder();
-        sb.append("Analysis: " + analysis.getName() + "\n");
-        sb.append("Description: " + analysis.getDescription() + "\n");
-        sb.append("Version: " + analysis.getVersion() + "\n\n");
-        sb.append("Author: " + analysis.getAuthor().getName() + "\n");
-        sb.append("Email: " + analysis.getAuthor().getEmail() + "\n");
-        if (!analysis.getWebsite().equals(""))
-            sb.append("Website: " + analysis.getWebsite() + "\n");
-        if (!analysis.getPublication().equals(""))
-            sb.append("Publication: " + analysis.getPublication() + "\n");
+        sb.append("Analysis: " + manifest.getName() + "\n");
+        sb.append("Description: " + manifest.getDescription() + "\n");
+        sb.append("Version: " + manifest.getVersion() + "\n\n");
+        sb.append("Author: " + manifest.getAuthor().getName() + "\n");
+        sb.append("Email: " + manifest.getAuthor().getEmail() + "\n");
+        if (!manifest.getWebsite().equals(""))
+            sb.append("Website: " + manifest.getWebsite() + "\n");
+        if (!manifest.getPublication().equals(""))
+            sb.append("Publication: " + manifest.getPublication() + "\n");
         sb.append("\nUsage: \n");
         sb.append(baseUrl + "analysis/" + analysisName + execName + "/{action}?{params}\n\n");
         sb.append("\twhere: \n");
@@ -458,8 +459,8 @@ public class AnalysisJobExecutor {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Valid params for " + analysis.getName() + ":\n\n");
-        for (Option param : execution.getValidParams()) {
+        sb.append("Valid params for " + manifest.getName() + ":\n\n");
+        for (Option param : execution.getParameters()) {
             String required = "";
             if (param.isRequired())
                 required = "*";

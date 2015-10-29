@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
 import java.util.List;
 
-public class Analysis {
+public class Manifest {
+
+    private String id;
+    private String name;
+    private String version;
     private Author author;
-    private String version, id, name, description, website, publication;
+    private String description;
+    private String website;
+    private String publication;
     private Icon icon;
     private List<Option> globalParams;
     private List<Execution> executions;
+
+    // TODO move into Execution?
     private List<Example> examples;
     private List<Acl> acl;
 
-    public Analysis() {
+    public Manifest() {
 
     }
 
-    public Analysis(Author author, String version, String id, String name, String description,
+    public Manifest(Author author, String version, String id, String name, String description,
                     String website, String publication, Icon icon, List<Option> globalParams,
                     List<Execution> executions, List<Example> examples, List<Acl> acl) {
         this.author = author;
@@ -161,4 +169,5 @@ public class Analysis {
     public void setAcl(List<Acl> acl) {
         this.acl = acl;
     }
+
 }

@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "survival.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "dataset",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "censored-class",
                     "description": "",

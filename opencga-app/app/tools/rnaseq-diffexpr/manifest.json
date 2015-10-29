@@ -19,14 +19,14 @@
       "id": "default",
       "name": "default",
       "executable": "rna_diffexpr.sh ",
-      "inputParams": [
+      "input": [
         {
           "name": "datafile",
           "dataType": "txt"
         }
       ],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "norm",
           "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or QUAN",

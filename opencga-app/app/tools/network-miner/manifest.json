@@ -19,7 +19,7 @@
             "id": "default",
             "name": "default",
             "executable": "network-miner.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "list",
                     "dataType": "txt"
@@ -39,8 +39,8 @@
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "list",
                     "description": "An input file containing a node per line",

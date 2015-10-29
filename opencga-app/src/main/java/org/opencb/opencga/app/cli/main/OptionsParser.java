@@ -1001,12 +1001,14 @@ public class OptionsParser {
 
         final CreateCommand createCommand;
         final InfoCommand infoCommand;
+        final CheckCommand checkCommand;
 
         public ToolCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander tools = jcommander.getCommands().get("tools");
             tools.addCommand(this.createCommand = new CreateCommand());
             tools.addCommand(this.infoCommand = new InfoCommand());
+            tools.addCommand(this.checkCommand = new CheckCommand());
         }
 
         @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
@@ -1045,6 +1047,22 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
             String id;
         }
+
+        @Parameters(commandNames = {"check"}, commandDescription = "Check all manifest.json")
+        class CheckCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--tool-folder"}, description = "Tool folder to check", arity = 1)
+            String toolFolder;
+
+            @Parameter(names = {"--tools-folder"}, description = "Folder containing all tools", arity = 1)
+            String toolsFolder;
+        }
+
     }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share resource")

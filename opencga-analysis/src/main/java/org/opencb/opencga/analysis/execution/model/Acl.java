@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
+@Deprecated
 public class Acl {
     private String userId;
     private boolean read, write, execute;

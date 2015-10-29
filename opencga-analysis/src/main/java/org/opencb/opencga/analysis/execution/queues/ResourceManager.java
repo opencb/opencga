@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.execution.queues;
 
-
-public class AnalysisExecutionException extends Exception {
-
-    private static final long serialVersionUID = 1L;
-
-    public AnalysisExecutionException(String msg) {
-        super(msg);
-    }
-
-    public AnalysisExecutionException(Throwable cause) {
-        super(cause);
-    }
+/**
+ * Created by imedina on 29/10/15.
+ */
+public interface ResourceManager {
 }

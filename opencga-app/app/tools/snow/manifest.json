@@ -19,7 +19,7 @@
             "id": "default",
             "name": "default",
             "executable": "snow.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "list1",
                     "dataType": "txt"
@@ -39,8 +39,8 @@
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "list1",
                     "description": "An input file containing a node per line",

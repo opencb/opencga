@@ -19,7 +19,7 @@
       "id": "pathiways",
       "name": "Pathiways",
       "executable": "bin/pathiwaysANALYSIS.py --execution pathiways",
-      "inputParams": [
+      "input": [
         {
           "name": "norm-matrix",
           "dataType": "txt"
@@ -30,8 +30,8 @@
         }
       ],
       "inputParamsFromTxt": [],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "norm-matrix",
           "description": "Normalized matrix file.",
@@ -96,7 +96,7 @@
       "id": "pathipred",
       "name": "Pathipred",
       "executable": "bin/pathiwaysANALYSIS.py --execution pathipred",
-      "inputParams": [
+      "input": [
         {
           "name": "norm-matrix",
           "dataType": "txt"
@@ -107,8 +107,8 @@
         }
       ],
       "inputParamsFromTxt": [],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "norm-matrix",
           "description": "Normalized matrix file.",
@@ -178,7 +178,7 @@
       "id": "pathipred-prediction",
       "name": "Pathipred Prediction",
       "executable": "bin/pathiwaysANALYSIS.py --execution pathipred-prediction",
-      "inputParams": [
+      "input": [
         {
           "name": "norm-matrix",
           "dataType": "txt"
@@ -193,8 +193,8 @@
         }
       ],
       "inputParamsFromTxt": [],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "norm-matrix",
           "description": "Normalized matrix file.",
@@ -259,7 +259,7 @@
       "id": "pathivar",
       "name": "Pathivar",
       "executable": "bin/pathivarANALYSIS.py",
-      "inputParams": [
+      "input": [
         {
           "name": "vcfFile",
           "dataType": "txt"
@@ -270,8 +270,8 @@
         }
       ],
       "inputParamsFromTxt": [],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "annotvcf",
           "description": "",

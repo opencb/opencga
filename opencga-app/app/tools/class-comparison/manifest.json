@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "class-comparison.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "dataset",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "class-name",
                     "description": "",

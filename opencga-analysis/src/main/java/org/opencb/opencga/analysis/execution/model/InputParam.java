@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
-import java.util.List;
+@Deprecated
+public class InputParam {
+    private String name, dataType;
 
-public class Example {
-    private String name, executionId;
-    private List<ExampleOption> options;
-
-    public Example() {
+    public InputParam() {
 
     }
 
-    public Example(String name, String executionId, List<ExampleOption> options) {
+    public InputParam(String name, String dataType) {
         this.name = name;
-        this.executionId = executionId;
-        this.options = options;
+        this.dataType = dataType;
     }
 
     @Override
     public String toString() {
-        return "Example{" +
+        return "InputParam{" +
                 "name='" + name + '\'' +
-                ", executionId='" + executionId + '\'' +
-                ", options=" + options +
+                ", dataType='" + dataType + '\'' +
                 '}';
     }
 
@@ -49,19 +45,11 @@ public class Example {
         this.name = name;
     }
 
-    public String getExecutionId() {
-        return executionId;
+    public String getDataType() {
+        return dataType;
     }
 
-    public void setExecutionId(String executionId) {
-        this.executionId = executionId;
-    }
-
-    public List<ExampleOption> geOptions() {
-        return options;
-    }
-
-    public void setOptions(List<ExampleOption> options) {
-        this.options = options;
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 }

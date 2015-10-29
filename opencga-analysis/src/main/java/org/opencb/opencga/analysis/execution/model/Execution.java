@@ -14,32 +14,43 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
 import java.util.List;
 
 public class Execution {
-    private String id, name, executable, outputParam, testCmd, result;
-    private List<InputParam> inputParams;
+
+    private String id;
+    private String name;
+    private String executable;
+
+    private List<String> input;
+    private String output;
+
+    private List<Option> parameters;
+
+    private Display display;
+    private String result;
+
+    // TODO check this parameter
+    private String testCmd;
+
     private List<InputParam> inputParamsFromTxt;
-    private List<Option> validParams;
     private List<ConfigAttr> configAttr;
 
-
     public Execution() {
-
     }
 
-    public Execution(String id, String name, String executable,
-                     List<InputParam> inputParams, List<InputParam> inputParamsFromTxt, String outputParam,
-                     List<Option> validParams, List<ConfigAttr> configAttr, String testCmd, String result) {
+    public Execution(String id, String name, String executable, List<String> input,
+                     List<InputParam> inputParamsFromTxt, String output, List<Option> parameters,
+                     List<ConfigAttr> configAttr, String testCmd, String result) {
         this.id = id;
         this.name = name;
         this.executable = executable;
-        this.inputParams = inputParams;
+        this.input = input;
         this.inputParamsFromTxt = inputParamsFromTxt;
-        this.outputParam = outputParam;
-        this.validParams = validParams;
+        this.output = output;
+        this.parameters = parameters;
         this.configAttr = configAttr;
         this.testCmd = testCmd;
         this.result = result;
@@ -51,12 +62,12 @@ public class Execution {
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", executable='" + executable + '\'' +
-                ", outputParam='" + outputParam + '\'' +
+                ", output='" + output + '\'' +
                 ", testCmd='" + testCmd + '\'' +
                 ", result='" + result + '\'' +
-                ", inputParams=" + inputParams +
+                ", input=" + input +
                 ", inputParamsFromTxt=" + inputParamsFromTxt +
-                ", validParams=" + validParams +
+                ", parameters=" + parameters +
                 ", configAttr=" + configAttr +
                 '}';
     }
@@ -85,28 +96,28 @@ public class Execution {
         this.executable = executable;
     }
 
-    public String getOutputParam() {
-        return outputParam;
+    public String getOutput() {
+        return output;
     }
 
-    public void setOutputParam(String outputParam) {
-        this.outputParam = outputParam;
+    public void setOutput(String output) {
+        this.output = output;
     }
 
-    public List<InputParam> getInputParams() {
-        return inputParams;
+    public List<String> getInput() {
+        return input;
     }
 
-    public void setInputParams(List<InputParam> inputParams) {
-        this.inputParams = inputParams;
+    public void setInput(List<String> input) {
+        this.input = input;
     }
 
-    public List<Option> getValidParams() {
-        return validParams;
+    public List<Option> getParameters() {
+        return parameters;
     }
 
-    public void setValidParams(List<Option> validParams) {
-        this.validParams = validParams;
+    public void setParameters(List<Option> parameters) {
+        this.parameters = parameters;
     }
 
     public List<ConfigAttr> getConfigAttr() {
@@ -133,6 +144,14 @@ public class Execution {
         this.inputParamsFromTxt = inputParamsFromTxt;
     }
 
+    public Display getDisplay() {
+        return display;
+    }
+
+    public void setDisplay(Display display) {
+        this.display = display;
+    }
+
     public String getResult() {
         return result;
     }
@@ -140,4 +159,5 @@ public class Execution {
     public void setResult(String result) {
         this.result = result;
     }
+
 }

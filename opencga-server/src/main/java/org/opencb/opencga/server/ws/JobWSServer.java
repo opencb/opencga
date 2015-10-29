@@ -22,9 +22,9 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.analysis.execution.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.model.Execution;
+import org.opencb.opencga.analysis.execution.model.InputParam;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -153,11 +153,11 @@ public class JobWSServer extends OpenCGAWSServer {
 
             Execution ex = analysisJobExecutor.getExecution();
             // Set input param
-            for (InputParam inputParam : ex.getInputParams()) {
-                if (params.containsKey(inputParam.getName())) {
+            for (String inputParam : ex.getInput()) {
+                if (params.containsKey(inputParam)) {
 
                     List<String> filePaths = new LinkedList<>();
-                    for (String files : params.get(inputParam.getName())) {
+                    for (String files : params.get(inputParam)) {
                         for (String fileId : files.split(",")) {
                             if (fileId.startsWith("example_")) { // is a example
                                 fileId = fileId.replace("example_", "");
@@ -169,7 +169,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             }
                         }
                     }
-                    localParams.put(inputParam.getName(), filePaths);
+                    localParams.put(inputParam, filePaths);
                 }
             }
 
@@ -182,7 +182,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
-            String outputParam = analysisJobExecutor.getExecution().getOutputParam();
+            String outputParam = analysisJobExecutor.getExecution().getOutput();
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }

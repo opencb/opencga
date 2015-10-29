@@ -19,7 +19,7 @@
             "id": "fatigo",
             "name": "Fatigo",
             "executable": "fatigo.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "list1",
                     "dataType": "txt"
@@ -43,8 +43,8 @@
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "annotations",
                     "description": "",

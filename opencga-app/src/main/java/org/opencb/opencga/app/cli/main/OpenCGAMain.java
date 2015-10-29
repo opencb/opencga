@@ -19,7 +19,9 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -31,8 +33,9 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.model.Manifest;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -56,6 +59,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,7 +75,7 @@ public class OpenCGAMain {
     private static String shellSessionId;
     private static boolean interactive;
     private CatalogManager catalogManager;
-//    private String userId;
+    //    private String userId;
 //    private String sessionId;
     private boolean logoutAtExit = false;
     private static boolean sessionIdFromFile = false;
@@ -963,6 +967,41 @@ public class OpenCGAMain {
 
                         QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
                         System.out.println(createOutput(c.cOpt, tool, null));
+                        break;
+                    }
+                    case "check": {
+                        OptionsParser.ToolCommands.CheckCommand c = optionsParser.getToolCommands().checkCommand;
+                        if(c.toolFolder != null) {
+                            Path manifestPath= Paths.get(c.toolFolder).resolve("manifest.json");
+                            FileUtils.checkFile(manifestPath);
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            objectMapper.readValue(manifestPath.toFile(), Manifest.class);
+                        } else {
+                            if(c.toolsFolder != null) {
+                                Path toolsPath= Paths.get(c.toolsFolder);
+                                FileUtils.checkDirectory(toolsPath);
+
+                                ObjectMapper objectMapper = new ObjectMapper();
+                                try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(toolsPath)) {
+                                    Path manifestPath = null;
+                                    for (Path path : directoryStream) {
+                                        try {
+                                            manifestPath = path.resolve("manifest.json");
+                                            FileUtils.checkFile(manifestPath);
+                                            objectMapper.readValue(manifestPath.toFile(), Manifest.class);
+                                            System.out.println("Manifest file '" + manifestPath.toString() + "' is valid");
+                                        } catch (IOException e) {
+                                            System.out.println("Manifest file '" + manifestPath.toString() + "' does not exist or is not valid");
+                                            logger.error(e.toString());
+                                        }
+                                    }
+                                } catch (IOException ex) {
+                                    logger.error("Directory '{}' does not exist or is not valid", toolsPath.toString());
+                                }
+                            } else {
+                                logger.info("Need to write --tool-folder or --tools-folder");
+                            }
+                        }
                         break;
                     }
                     default: {

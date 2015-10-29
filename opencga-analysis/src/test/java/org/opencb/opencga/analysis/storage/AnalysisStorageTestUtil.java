@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.storage;
 
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.AnalysisExecutionException;
+import org.opencb.opencga.analysis.execution.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

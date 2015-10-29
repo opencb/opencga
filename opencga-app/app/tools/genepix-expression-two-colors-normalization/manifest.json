@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "genepix-expression-two-colors-normalization",
-            "inputParams": [
+            "input": [
                 {
                     "name": "compressed-file",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "ba-normalization",
                     "description": "",

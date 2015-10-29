@@ -19,7 +19,7 @@
             "id": "default",
             "name": "default",
             "executable": "rna_normalize.sh ",
-            "inputParams": [
+            "input": [
                 {
                     "name": "datafile",
                     "dataType": "txt"
@@ -29,8 +29,8 @@
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "method",
                     "description": "string, gives the name of the normalization method to apply, if any. Options: TMM or RPKM",

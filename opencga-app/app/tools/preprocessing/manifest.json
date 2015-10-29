@@ -19,7 +19,7 @@
       "id": "default",
       "name": "default",
       "executable": "preprocessing.sh",
-      "inputParams": [
+      "input": [
         {
           "name": "dataset",
           "dataType": "txt"
@@ -29,8 +29,8 @@
           "dataType": "txt"
         }
       ],
-      "outputParam": "outdir",
-      "validParams": [
+      "output": "outdir",
+      "parameters": [
         {
           "name": "convert-ids",
           "description": "",

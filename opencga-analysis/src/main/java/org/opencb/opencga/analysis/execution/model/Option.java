@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.analysis.execution.model;
 
-public class Author {
-    private String name, email;
+public class Option {
+    private String name, description;
+    private boolean required;
 
-    public Author() {
+    public Option() {
 
     }
 
-    public Author(String name, String email) {
+    public Option(String name, String description, boolean required) {
         this.name = name;
-        this.email = email;
+        this.description = description;
+        this.required = required;
     }
 
     @Override
     public String toString() {
-        return "Author{" +
+        return "Option{" +
                 "name='" + name + '\'' +
-                ", email='" + email + '\'' +
+                ", description='" + description + '\'' +
+                ", required=" + required +
                 '}';
     }
 
@@ -44,11 +47,19 @@ public class Author {
         this.name = name;
     }
 
-    public String getEmail() {
-        return email;
+    public boolean isRequired() {
+        return required;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setRequired(boolean required) {
+        this.required = required;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

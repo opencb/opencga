@@ -19,10 +19,10 @@
 	            	 id: "indexer",
 	            	 name: "indexer",
 	            	 executable: "indexerManager.py",
-	            	 inputParams: [{name:"norm-matrix", dataType:"txt"},{name:"exp-design", dataType:"txt"}],
+	            	 input: [{name:"norm-matrix", dataType:"txt"},{name:"exp-design", dataType:"txt"}],
 	            	 inputParamsFromTxt: [],
-	            	 outputParam: "outdir",
-	            	 validParams: [
+	            	 output: "outdir",
+	            	 parameters: [
 	            	           {name:"norm-matrix", description:"Normalized matrix file.", required:"true"},
 	            	           {name:"exp-design", description:"Experimental design file.", required:"true"},
 	            	           {name:"pathways", description:"List of pathways.", required:"true"},

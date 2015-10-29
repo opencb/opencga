@@ -52,12 +52,7 @@
             "id": "effect",
             "name": "Variant Effect",
             "executable": "bin/hpg-var-effect",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                }
-            ],
+            "input": ["vcf-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -127,12 +122,7 @@
             "id": "vcf-filter",
             "name": "Variant VCF",
             "executable": "bin/hpg-var-vcf filter",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                }
-            ],
+            "input": ["vcf-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -192,18 +182,25 @@
                 }
             ],
             "configAttr": [],
-            "testCmd": ""
+            "testCmd": "",
+            "display": {
+                "categories": [
+                    {
+                        "title": "Input data",
+                        "parameters": ["vcf-file"]
+                    },
+                    {
+                        "title": "Select VCF options",
+                        "parameters": ["coverage", "quality"]
+                    }
+                ]
+            }
         },
         {
             "id": "vcf-merge",
             "name": "Variant VCF",
             "executable": "bin/hpg-var-vcf merge",
-            "input": [
-                {
-                    "name": "vcf-list",
-                    "dataType": "vcf"
-                }
-            ],
+            "input": ["vcf-list"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-content",
@@ -253,16 +250,7 @@
             "id": "vcf-split",
             "name": "Variant VCF",
             "executable": "bin/hpg-var-vcf split",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                },
-                {
-                    "name": "ped-file",
-                    "dataType": "ped"
-                }
-            ],
+            "input": ["vcf-file", "ped-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -292,16 +280,7 @@
             "id": "vcf-stats",
             "name": "Variant VCF",
             "executable": "bin/hpg-var-vcf stats",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                },
-                {
-                    "name": "ped-file",
-                    "dataType": "ped"
-                }
-            ],
+            "input": ["vcf-file", "ped-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -355,12 +334,7 @@
             "id": "vcf-annot",
             "name": "Variant VCF",
             "executable": "bin/hpg-var-vcf annot",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                }
-            ],
+            "input": ["vcf-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -392,16 +366,7 @@
             "id": "gwas-assoc",
             "name": "Variant GWAS",
             "executable": "bin/hpg-var-gwas.py assoc",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                },
-                {
-                    "name": "ped-file",
-                    "dataType": "ped"
-                }
-            ],
+            "input": ["vcf-file", "ped-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -480,16 +445,7 @@
             "id": "gwas-tdt",
             "name": "Variant GWAS",
             "executable": "bin/hpg-var-gwas.py tdt",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                },
-                {
-                    "name": "ped-file",
-                    "dataType": "ped"
-                }
-            ],
+            "input": ["vcf-file", "ped-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",
@@ -560,16 +516,7 @@
             "id": "epistasis",
             "name": "Variant Epistasis",
             "executable": "bin/vcf-epi.py",
-            "input": [
-                {
-                    "name": "vcf-file",
-                    "dataType": "vcf"
-                },
-                {
-                    "name": "ped-file",
-                    "dataType": "ped"
-                }
-            ],
+            "input": ["vcf-file", "ped-file"],
             "inputParamsFromTxt": [
                 {
                     "name": "vcf-file-txt",

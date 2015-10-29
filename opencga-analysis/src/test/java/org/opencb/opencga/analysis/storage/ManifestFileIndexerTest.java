@@ -40,7 +40,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
 /**
  * Created by hpccoll1 on 13/07/15.
  */
-public class AnalysisFileIndexerTest {
+public class ManifestFileIndexerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -52,7 +52,7 @@ public class AnalysisFileIndexerTest {
     private FileMetadataReader fileMetadataReader;
     private CatalogFileUtils catalogFileUtils;
     private int outputId;
-    Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
+    Logger logger = LoggerFactory.getLogger(ManifestFileIndexerTest.class);
     private String catalogPropertiesFile;
     private final String userId = "user";
     private final String dbName = DB_NAME;

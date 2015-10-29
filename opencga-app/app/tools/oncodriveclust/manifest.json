@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "custom_oncodriveclust.sh ",
-            "inputParams": [
+            "input": [
                 {
                     "name": "vcf",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "vcf",
                     "description": "Input variants",

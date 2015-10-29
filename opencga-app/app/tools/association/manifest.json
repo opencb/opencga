@@ -19,7 +19,7 @@
             "id": "default",
             "name": "default",
             "executable": "association.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "zip-file",
                     "dataType": "txt"
@@ -29,8 +29,8 @@
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "maf",
                     "description": "",

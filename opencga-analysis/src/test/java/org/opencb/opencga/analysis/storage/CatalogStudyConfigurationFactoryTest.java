@@ -41,7 +41,7 @@ public class CatalogStudyConfigurationFactoryTest {
     private FileMetadataReader fileMetadataReader;
     private CatalogFileUtils catalogFileUtils;
     private int outputId;
-    Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
+    Logger logger = LoggerFactory.getLogger(ManifestFileIndexerTest.class);
     private String catalogPropertiesFile;
     private final String userId = "user";
     private List<File> files = new ArrayList<>();

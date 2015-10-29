@@ -26,6 +26,12 @@ import java.io.InputStream;
 
 public class S3Source implements Source {
 
+    private AWSCredentials myCredentials;
+
+    public S3Source(AWSCredentials myCredentials ) {
+        this.myCredentials = myCredentials;
+    }
+
     public InputStream getInputStream(String path) {
         String ak = "AKIAI3BZQ2VG6GPWQBVA";
         String sk = "oDDIv+OAQeQVj9sy1CcWeeJsOMAhbh9KIpJ7hiDK";

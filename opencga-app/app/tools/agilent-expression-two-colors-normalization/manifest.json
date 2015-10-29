@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "agilent-expression-two-colors-normalization.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "compressed-file",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "ba-normalization",
                     "description": "Between arrays normalization: none, quantiles, scale, vsn. Default between arrays normalization: scale. Only for Agilent or GenePix normalization",

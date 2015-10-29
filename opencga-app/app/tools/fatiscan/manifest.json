@@ -19,7 +19,7 @@
             "id": "fatiscan",
             "name": "Fatiscan",
             "executable": "fatiscan.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "ranked-list",
                     "dataType": "txt"
@@ -36,8 +36,8 @@
                 }
 
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "annotations",
                     "description": "",

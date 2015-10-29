@@ -13,9 +13,9 @@
 	            	 id: "sw",
 	            	 name: "Smith-Waterman",
 	            	 executable: "bin/sw-hpc",
-	            	 inputParam: ["q", "r"],
+	            	 input: ["q", "r"],
 	            	 outParam: "d",
-	            	 validParams: [
+	            	 parameters: [
 	            	           {name:"q", required:"true", description:"Filename containing the query sequences."},
 	            	           {name:"r", required:"true", description:"Filename containing the reference sequences."},
 	            	           {name:"o", required:"false", description:"Filename where the resulting alignments will be saved."},

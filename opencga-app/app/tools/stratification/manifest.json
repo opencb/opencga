@@ -19,14 +19,14 @@
             "id": "default",
             "name": "default",
             "executable": "stratification.sh",
-            "inputParams": [
+            "input": [
                 {
                     "name": "zip-file",
                     "dataType": "txt"
                 }
             ],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "ibs-test",
                     "description": "",

@@ -18,10 +18,10 @@
         "id": "variant",
         "name": "variant",
         "executable": "bin/variant.py",
-        "inputParams": [{"name":"vcf-file", "dataType":"txt"},{"name":"ped-file", "dataType":"txt"}],
+        "input": [{"name":"vcf-file", "dataType":"txt"},{"name":"ped-file", "dataType":"txt"}],
         "inputParamsFromTxt": [],
-        "outputParam": "outdir",
-        "validParams": [
+        "output": "outdir",
+        "parameters": [
             {"name":"vcf-file", "description":"Normalized matrix file.", "required":"true"},
             {"name":"ped-file", "description":"Normalized matrix file.", "required":"false"}
         ],

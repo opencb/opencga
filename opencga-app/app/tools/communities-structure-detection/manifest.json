@@ -19,15 +19,15 @@
             "id": "communities-structure-detection",
             "name": "communities-structure-detection",
             "executable": "communities-structure-detection.py",
-            "inputParams": [
+            "input": [
                 {
                     "name": "sifnetwork",
                     "dataType": "txt"
                 }
             ],
             "inputParamsFromTxt": [],
-            "outputParam": "outdir",
-            "validParams": [
+            "output": "outdir",
+            "parameters": [
                 {
                     "name": "sifnetwork",
                     "description": "sif network",
