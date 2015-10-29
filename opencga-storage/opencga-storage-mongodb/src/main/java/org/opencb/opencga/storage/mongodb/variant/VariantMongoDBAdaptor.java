@@ -688,6 +688,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             /** VARIANT PARAMS **/
 
+            if (query.get(VariantQueryParams.CHROMOSOME.key()) != null && !query.getString(VariantQueryParams.CHROMOSOME.key()).isEmpty()) {
+                List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
+                LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
+                regions.addAll(chromosomes);
+                query.put(VariantQueryParams.REGION.key(), regions);
+            }
+
             if (query.get(VariantQueryParams.REGION.key()) != null && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
                 List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
@@ -951,23 +958,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             try {
                                 return Integer.parseInt(s);
                             } catch (NumberFormatException ignore) {
-                                String[] studyCohort = s.split(":");
-                                if (defaultStudyConfiguration == null && studyCohort.length != 2) {
+                                int indexOf = s.lastIndexOf(":");
+                                if (defaultStudyConfiguration == null && indexOf < 0) {
                                     throw new IllegalArgumentException("Bad cohort filter. \"" + s + "\". Requires study:cohort ");
                                 } else {
                                     String study;
                                     String cohort;
                                     Integer studyId;
                                     Integer cohortId;
-                                    if (defaultStudyConfiguration != null && studyCohort.length != 2) {
-                                        cohort = studyCohort[0];
+                                    if (defaultStudyConfiguration != null && indexOf < 0) {
+                                        cohort = s;
                                         cohortId = getInteger(cohort);
                                         if (cohortId == null) {
                                             cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
                                         }
                                     } else {
-                                        study = studyCohort[0];
-                                        cohort = studyCohort[1];
+                                        study = s.substring(0, indexOf);
+                                        cohort = s.substring(indexOf + 1);
                                         studyId = getInteger(study);
                                         cohortId = getInteger(cohort);
 

@@ -606,9 +606,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             QueryOptions annotationOptions = new QueryOptions();
             Query annotationQuery = new Query();
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
-                annotationOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
             }
-            annotationOptions.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId));    // annotate just the indexed variants
+            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Collections.singletonList(studyConfiguration.getStudyId()));    // annotate just the indexed variants
+            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId));    // annotate just the indexed variants
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
