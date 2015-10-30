@@ -216,6 +216,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(query, options);
         assertEquals(64, queryResult.getNumResults());
 
+        query = new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(115, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(115, queryResult.getNumResults());
+
         options.put("sort", true);
         query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
