@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -252,8 +252,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         boolean returnVariants = !queryVariantsCommandOptions.count
-                                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
-                                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
+                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
+                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
 
         if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
             int returnedStudiesSize = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()).size();
@@ -329,7 +329,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                     QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
                             queryVariantsCommandOptions.returnStudy, null);
                     if (studyConfigurationResult.getResult().size() >= 1) {
-                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
+                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
+                        if(queryVariantsCommandOptions.annotations != null) {
+                            options.add("annotations", queryVariantsCommandOptions.annotations);
+                        }
+                        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
+                        variantVcfExporter.export(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
                     } else {
                         logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
                     }
@@ -372,7 +377,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
     }
 
     @Deprecated
-    @SuppressWarnings("deprecated")
     private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter printWriter) {
 
         Map<String, StudyConfiguration> studyConfigurationMap = null;

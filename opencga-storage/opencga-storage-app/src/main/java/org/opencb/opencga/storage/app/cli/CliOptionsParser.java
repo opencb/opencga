@@ -371,9 +371,11 @@ public class CliOptionsParser {
         public String type;
 
 
-        @Deprecated
-        @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
-        public String annot;
+        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
+        public boolean includeAnnotations;
+
+        @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column, ie. gene,biotype,consequenceType", required = false, arity = 1)
+        public String annotations;
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = " [CSV]", required = false, arity = 1)
         public String consequenceType;
