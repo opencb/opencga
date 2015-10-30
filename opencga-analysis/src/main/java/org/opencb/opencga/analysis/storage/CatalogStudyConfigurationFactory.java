@@ -90,8 +90,10 @@ public class CatalogStudyConfigurationFactory {
 
     private StudyConfiguration fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
         int studyId = study.getId();
+        boolean newStudyConfiguration = false;
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(0, "");
+            newStudyConfiguration = true;
         }
         studyConfiguration.setStudyId(study.getId());
         int projectId = catalogManager.getProjectIdByStudyId(study.getId());
@@ -121,8 +123,14 @@ public class CatalogStudyConfigurationFactory {
         }
         logger.debug("studyConfiguration aggregation: {}", studyConfiguration.getAggregation());
 
-        // DO NOT update "indexed files" list. This MUST be a sorted set.
+        // DO NOT update "indexed files" list. This MUST be modified only by storage.
         // This field will never be modified from catalog to storage
+        // *** Except if it is a new StudyConfiguration...
+        if (newStudyConfiguration) {
+            for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
+                studyConfiguration.getIndexedFiles().add(file.getId());
+            }
+        }
 
         logger.debug("Get Files");
         QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
