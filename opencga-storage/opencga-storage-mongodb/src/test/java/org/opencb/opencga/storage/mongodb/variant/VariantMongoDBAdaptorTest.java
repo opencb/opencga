@@ -94,6 +94,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
+        assertNotEquals(numVariantsChr1, NUM_VARIANTS);
         assertEquals(numVariantsChr1, numVariantsNoAnnotation);
     }
 

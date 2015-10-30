@@ -453,6 +453,9 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(5, paths.size());
         assertTrue(paths.contains("data/new/"));
         assertTrue(paths.contains("data/new/folder/"));
+
+        URI uri = catalogManager.getFileUri(folder);
+        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
     }
 
     @Test

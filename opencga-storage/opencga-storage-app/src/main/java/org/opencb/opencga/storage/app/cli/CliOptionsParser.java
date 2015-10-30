@@ -18,10 +18,13 @@ package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 02/03/15.
@@ -556,7 +559,7 @@ public class CliOptionsParser {
         if(getCommand().isEmpty()) {
             System.err.println("");
             System.err.println("Program:     OpenCGA Storage (OpenCB)");
-            System.err.println("Version:     0.6.0");
+            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
             System.err.println("Usage:       opencga-storage.sh [-h|--help] [--version] <command> [options]");
@@ -582,19 +585,50 @@ public class CliOptionsParser {
     }
 
     private void printCommandUsage(JCommander commander) {
-        for (ParameterDescription parameterDescription : commander.getParameters()) {
-            String type = "";
-            if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() > 0) {
-                type = parameterDescription.getParameterized().getGenericType().getTypeName().replace("java.lang.", "").toUpperCase();
-            }
-            System.err.printf("%5s %-20s %-10s %s [%s]\n",
+
+        Integer paramNameMaxSize = Math.max(commander.getParameters().stream()
+                .map(pd -> pd.getNames().length())
+                .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(20), 20);
+        Integer typeMaxSize = Math.max(commander.getParameters().stream()
+                .map(pd -> getType(pd).length())
+                .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(10), 10);
+
+        int nameAndTypeLength = paramNameMaxSize + typeMaxSize + 8;
+        int descriptionLength = 80;
+        int maxLineLength = nameAndTypeLength + descriptionLength;  //140
+
+//        commander.getParameters().stream().sorted((o1, o2) -> o1.getNames().compareTo(o2.getNames())).forEach(parameterDescription -> {
+        commander.getParameters().stream().forEach(parameterDescription -> {
+            String type = getType(parameterDescription);
+            String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s [%s]\n",
                     (parameterDescription.getParameterized().getParameter() != null
-                            && parameterDescription.getParameterized().getParameter().required()) ? "*": "",
+                            && parameterDescription.getParameterized().getParameter().required()) ? "*" : "",
                     parameterDescription.getNames(),
                     type,
                     parameterDescription.getDescription(),
                     parameterDescription.getDefault());
+
+            List<String> lines = new LinkedList<>();
+            while (usage.length() > maxLineLength + 1) {
+                int splitPosition = Math.min(1 + usage.lastIndexOf(" ", maxLineLength), usage.length());
+                lines.add(usage.substring(0, splitPosition) + "\n");
+                usage = String.format("%" + nameAndTypeLength + "s", "") + usage.substring(splitPosition);
+            }
+            lines.forEach(System.err::print);
+            System.err.print(usage);
+        });
+    }
+
+    private String getType(ParameterDescription parameterDescription) {
+        String type = "";
+        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() > 0) {
+            type = parameterDescription.getParameterized().getGenericType().getTypeName();
+            type = type.substring(1 + Math.max(type.lastIndexOf("."), type.lastIndexOf("$")));
+            type = Arrays.asList(StringUtils.splitByCharacterTypeCamelCase(type)).stream()
+                    .map(String::toUpperCase)
+                    .collect(Collectors.joining("_"));
         }
+        return type;
     }
 
 
