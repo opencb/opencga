@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -139,7 +140,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         addParam(query, FILES, queryVariantsCommandOptions.file);
         addParam(query, GENOTYPE, queryVariantsCommandOptions.sampleGenotype);
         addParam(query, RETURNED_SAMPLES, queryVariantsCommandOptions.returnSample);
-        addParam(query, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
+        addParam(options, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
 
         /**
          * Annotation parameters
@@ -309,6 +310,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                     QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
                             queryVariantsCommandOptions.returnStudy, null);
                     if (studyConfigurationResult.getResult().size() >= 1) {
+                        if (query.containsKey(RETURNED_SAMPLES.key())) {
+                            options.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
+                        }
                         VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
                     } else {
                         logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
@@ -323,9 +327,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         outputStream.close();
     }
 
-    private void addParam(Query query, VariantQueryParams key, String value) {
+    private void addParam(ObjectMap objectMap, VariantQueryParams key, String value) {
         if (value != null && !value.isEmpty()) {
-            query.put(key.key(), value);
+            objectMap.put(key.key(), value);
         }
     }
 
@@ -349,11 +353,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
     }
 
     private void printJsonResult(VariantDBIterator variantDBIterator, OutputStream outputStream) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectWriter objectWriter = objectMapper.writer();
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
-            outputStream.write(objectWriter.writeValueAsBytes(variant));
+            outputStream.write(variant.toJson().getBytes());
         }
     }
 
