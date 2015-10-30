@@ -284,13 +284,13 @@ public class CliOptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
 
-        @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-r","--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000", required = false)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
         public String gene;
 
         @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
@@ -299,13 +299,13 @@ public class CliOptionsParser {
         @Parameter(names = {"-e", "--exclude"}, description = "", required = false, arity = 1)
         public String exclude;
 
-        @Parameter(names = {"--skip"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
         public int skip;
 
-        @Parameter(names = {"--limit"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
 
-        @Parameter(names = {"--count"}, description = "", required = false, arity = 0)
+        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
 
         @Deprecated
@@ -348,19 +348,19 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
     public class QueryVariantsCommandOptions extends QueryCommandOptions {
 
-        @Parameter(names = {"--id"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--id"}, description = "CSV list of variant ids", required = false)
         public String id;
 
-        @Parameter(names = {"--group-by"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--group-by"}, description = "Group by gene, ensemblGene or consequence_type", required = false)
         public String groupBy;
 
-        @Parameter(names = {"--rank"}, description = " [CSV]", required = false)
+        @Parameter(names = {"--rank"}, description = "Rank variants by gene, ensemblGene or consequence_type", required = false)
         public String rank;
 
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
 
-        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, ie. NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
+        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, example: NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
         public String sampleGenotype;
 
         @Deprecated
@@ -377,16 +377,16 @@ public class CliOptionsParser {
         @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column, ie. gene,biotype,consequenceType", required = false, arity = 1)
         public String annotations;
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046", required = false, arity = 1)
         public String consequenceType;
 
-        @Parameter(names = {"--biotype"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--biotype"}, description = "Biotype CSV", required = false, arity = 1)
         public String biotype;
 
-        @Parameter(names = {"--pf", "--population-frequency"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}\"", required = false, arity = 1)
         public String populationFreqs;
 
-        @Parameter(names = {"--conservation"}, description = " [CSV]", required = false, arity = 1)
+        @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: phastCons>0.5,phylop<0.1", required = false, arity = 1)
         public String conservation;
 
         @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
@@ -407,26 +407,26 @@ public class CliOptionsParser {
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
 
-        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: --maf 1000g:all>0.4", required = false)
+        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4", required = false)
         public String maf;
 
-        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: --maf 1000g:all<=0.4", required = false)
+        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4", required = false)
         public String mgf;
 
-        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: --missing-allele 1000g:all=5", required = false)
+        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: 1000g:all=5", required = false)
         public String missingAlleleCount;
 
-        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, example: --missing-genotype 1000g:all!=0", required = false)
+        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, example: 1000g:all!=0", required = false)
         public String missingGenotypeCount;
 
 
-        @Parameter(names = {"--dominant"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by dominant segregation, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
         public String dominant;
 
-        @Parameter(names = {"--recessive"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by recessive segregation, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
         public String recessive;
 
-        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by compound heterozygous, example: --dominant 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
         public String compoundHeterozygous;
 
 
@@ -435,6 +435,9 @@ public class CliOptionsParser {
 
         @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
         public String returnSample;
+
+        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false)
+        public String unknownGenotype = "./.";
 
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
         public String outputFormat = "vcf";
@@ -602,13 +605,13 @@ public class CliOptionsParser {
 //        commander.getParameters().stream().sorted((o1, o2) -> o1.getNames().compareTo(o2.getNames())).forEach(parameterDescription -> {
         commander.getParameters().stream().forEach(parameterDescription -> {
             String type = getType(parameterDescription);
-            String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s [%s]\n",
+            String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s %s\n",
                     (parameterDescription.getParameterized().getParameter() != null
                             && parameterDescription.getParameterized().getParameter().required()) ? "*" : "",
                     parameterDescription.getNames(),
                     type,
                     parameterDescription.getDescription(),
-                    parameterDescription.getDefault());
+                    parameterDescription.getDefault() == null? "" : ("[" + parameterDescription.getDefault() + "]"));
 
             List<String> lines = new LinkedList<>();
             while (usage.length() > maxLineLength + 1) {
@@ -623,12 +626,15 @@ public class CliOptionsParser {
 
     private String getType(ParameterDescription parameterDescription) {
         String type = "";
-        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() > 0) {
+        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() != 0) {
             type = parameterDescription.getParameterized().getGenericType().getTypeName();
             type = type.substring(1 + Math.max(type.lastIndexOf("."), type.lastIndexOf("$")));
             type = Arrays.asList(StringUtils.splitByCharacterTypeCamelCase(type)).stream()
                     .map(String::toUpperCase)
                     .collect(Collectors.joining("_"));
+            if (type.equals("BOOLEAN") && parameterDescription.getParameterized().getParameter().arity() == -1) {
+                type = "";
+            }
         }
         return type;
     }

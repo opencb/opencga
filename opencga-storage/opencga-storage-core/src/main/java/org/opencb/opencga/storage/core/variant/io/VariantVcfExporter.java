@@ -324,7 +324,6 @@ public class VariantVcfExporter {
 //        for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
         for (int i = 0; i < variant.getAnnotation().getConsequenceTypes().size(); i++) {
             ConsequenceType consequenceType = variant.getAnnotation().getConsequenceTypes().get(i);
-            System.out.println(consequenceType.toString());
             for (int j = 0; j < annotations.size(); j++) {
                 switch (annotations.get(j)) {
                     case "allele":
