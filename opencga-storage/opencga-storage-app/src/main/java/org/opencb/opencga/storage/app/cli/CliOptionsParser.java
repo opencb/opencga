@@ -601,7 +601,7 @@ public class CliOptionsParser {
 
         int nameAndTypeLength = paramNameMaxSize + typeMaxSize + 8;
         int descriptionLength = 100;
-        int maxLineLength = nameAndTypeLength + descriptionLength;  //140
+        int maxLineLength = nameAndTypeLength + descriptionLength;  //160
 
         Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
         commander.getParameters().stream().sorted(parameterDescriptionComparator).forEach(parameterDescription -> {
@@ -614,13 +614,16 @@ public class CliOptionsParser {
                     parameterDescription.getDescription(),
                     parameterDescription.getDefault() == null ? "" : ("[" + parameterDescription.getDefault() + "]"));
 
+            // if lines are longer than the maximum they are trimmed and printed in several lines
             List<String> lines = new LinkedList<>();
             while (usage.length() > maxLineLength + 1) {
                 int splitPosition = Math.min(1 + usage.lastIndexOf(" ", maxLineLength), usage.length());
                 lines.add(usage.substring(0, splitPosition) + "\n");
                 usage = String.format("%" + nameAndTypeLength + "s", "") + usage.substring(splitPosition);
             }
+            // this is empty for short lines and so no prints anything
             lines.forEach(System.err::print);
+            // in long lines this prints the last trimmed line
             System.err.print(usage);
         });
     }
