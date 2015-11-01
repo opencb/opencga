@@ -48,6 +48,9 @@ public class VariantVcfExporter {
     private static String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop" +
             "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
 
+    private static String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop" +
+            "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
+
     private DecimalFormat df3 = new DecimalFormat("#.###");
 
     static {
@@ -117,8 +120,20 @@ public class VariantVcfExporter {
 
         // check if variant annotations are exported in the INFO column
         List<String> annotations = null;
-        if (queryOptions != null && queryOptions.getBoolean("includeAnnotations", false)) {
-            String annotationString = queryOptions.getString("annotations", DEFAULT_ANNOTATIONS).replaceAll(",", "|");
+        if (queryOptions != null && queryOptions.getString("annotations") != null && !queryOptions.getString("annotations").isEmpty()) {
+            String annotationString;
+            switch (queryOptions.getString("annotations")) {
+                case "all":
+                    annotationString = ALL_ANNOTATIONS.replaceAll(",", "|");
+                    break;
+                case "default":
+                    annotationString = DEFAULT_ANNOTATIONS.replaceAll(",", "|");
+                    break;
+                default:
+                    annotationString = queryOptions.getString("annotations").replaceAll(",", "|");
+                    break;
+            }
+//            String annotationString = queryOptions.getString("annotations", DEFAULT_ANNOTATIONS).replaceAll(",", "|");
             annotations = Arrays.asList(annotationString.split("\\|"));
             header.addMetaDataLine(new VCFInfoHeaderLine("CSQ", 1, VCFHeaderLineType.String, "Consequence annotations from CellBase. Format: " + annotationString));
         }

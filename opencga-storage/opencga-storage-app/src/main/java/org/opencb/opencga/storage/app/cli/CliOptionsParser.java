@@ -371,10 +371,11 @@ public class CliOptionsParser {
         public String type;
 
 
-        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
-        public boolean includeAnnotations;
+//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
+//        public boolean includeAnnotations;
 
-        @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column, ie. gene,biotype,consequenceType", required = false, arity = 1)
+        @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
+                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
         public String annotations;
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046", required = false, arity = 1)
@@ -602,7 +603,7 @@ public class CliOptionsParser {
         int descriptionLength = 80;
         int maxLineLength = nameAndTypeLength + descriptionLength;  //140
 
-//        commander.getParameters().stream().sorted((o1, o2) -> o1.getNames().compareTo(o2.getNames())).forEach(parameterDescription -> {
+//        Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
         commander.getParameters().stream().forEach(parameterDescription -> {
             String type = getType(parameterDescription);
             String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s %s\n",
@@ -611,7 +612,7 @@ public class CliOptionsParser {
                     parameterDescription.getNames(),
                     type,
                     parameterDescription.getDescription(),
-                    parameterDescription.getDefault() == null? "" : ("[" + parameterDescription.getDefault() + "]"));
+                    parameterDescription.getDefault() == null ? "" : ("[" + parameterDescription.getDefault() + "]"));
 
             List<String> lines = new LinkedList<>();
             while (usage.length() > maxLineLength + 1) {

@@ -315,7 +315,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                             options.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
                         }
 
-                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
+//                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
                         if(queryVariantsCommandOptions.annotations != null) {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
