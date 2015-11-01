@@ -600,11 +600,11 @@ public class CliOptionsParser {
                 .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(10), 10);
 
         int nameAndTypeLength = paramNameMaxSize + typeMaxSize + 8;
-        int descriptionLength = 80;
+        int descriptionLength = 100;
         int maxLineLength = nameAndTypeLength + descriptionLength;  //140
 
-//        Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
-        commander.getParameters().stream().forEach(parameterDescription -> {
+        Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
+        commander.getParameters().stream().sorted(parameterDescriptionComparator).forEach(parameterDescription -> {
             String type = getType(parameterDescription);
             String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s %s\n",
                     (parameterDescription.getParameterized().getParameter() != null
