@@ -72,7 +72,7 @@ public class MongoDBVariantWriteResult {
         return "MongoDBVariantWriteResult{" +
                 "newDocuments=" + newDocuments +
                 ", updatedObjects=" + updatedObjects +
-                ", skipedVariants=" + skippedVariants +
+                ", skippedVariants=" + skippedVariants +
                 ", nonInsertedVariants=" + nonInsertedVariants +
                 '}';
     }

@@ -363,26 +363,18 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 ptr.run();
                 writers.forEach(DataWriter::post);
                 writers.forEach(DataWriter::close);
-                MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
-                for (VariantMongoDBWriter writer : writers) {
-                    writeResult.merge(writer.getWriteResult());
-                }
-                logger.info("Write result: {}", writeResult);
             } catch (ExecutionException e) {
                 e.printStackTrace();
                 throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
             }
 
-//            SimpleThreadRunner threadRunner = new SimpleThreadRunner(
-//                    variantJsonReader,
-//                    Collections.<Task>emptyList(),
-//                    writerList,
-//                    batchSize,
-//                    loadThreads * 2,
-//                    0);
-//            threadRunner.run();
-
         }
+        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+        for (VariantMongoDBWriter writer : writers) {
+            writeResult.merge(writer.getWriteResult());
+        }
+        logger.info("Write result: {}", writeResult);
+        options.put("writeResult", writeResult);
 
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -394,6 +386,46 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         return super.postLoad(input, output);
+    }
+
+    @Override
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException {
+        VariantSource variantSource = readVariantSource(Paths.get(input.getPath()), null);
+
+        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
+        Long count = dbAdaptor.count(new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+        long expectedCount = 0;
+        long expectedSkippedVariants = 0;
+        for (Map.Entry<String, Integer> entry : variantSource.getStats().getVariantTypeCounts().entrySet()) {
+            if (!entry.getKey().equals(VariantType.SYMBOLIC.toString()) && !entry.getKey().equals(VariantType.NO_VARIATION.toString())) {
+                expectedCount += entry.getValue();
+            } else {
+                expectedSkippedVariants += entry.getValue();
+            }
+        }
+        MongoDBVariantWriteResult writeResult = options.get("writeResult", MongoDBVariantWriteResult.class);
+
+        logger.info("============================================================");
+        if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
+            logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult.getSkippedVariants());
+        } else if (writeResult.getSkippedVariants() > 0) {
+            int symbolicVariants = variantSource.getStats().getVariantTypeCounts().getOrDefault(VariantType.SYMBOLIC.toString(), 0);
+            logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants." + (symbolicVariants > 0 ? " Where " + symbolicVariants + " are symbolic variants" : ""));
+        }
+
+        if (writeResult.getNonInsertedVariants() != 0) {
+            logger.error("There were {} variants not inserted.", writeResult.getNonInsertedVariants());
+            expectedCount -= writeResult.getNonInsertedVariants();
+        }
+
+        if (expectedCount != count) {
+            throw new StorageManagerException("Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count);
+        } else {
+            logger.info("Correct number of loaded variants: {}", count);
+        }
+        logger.info("============================================================");
     }
 
     @Override

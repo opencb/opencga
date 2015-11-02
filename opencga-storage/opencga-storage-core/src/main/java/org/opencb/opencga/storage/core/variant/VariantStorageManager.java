@@ -588,7 +588,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
 
-//        VariantSource variantSource = params.get(VARIANT_SOURCE, VariantSource.class);
+        checkLoadedVariants(input, fileId, studyConfiguration, options);
 
         if (annotate) {
 
@@ -657,6 +657,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         return input;
     }
+
+    protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException;
 
     @Override
     public boolean testConnection(String dbName) {
