@@ -140,7 +140,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         addParam(query, FILES, queryVariantsCommandOptions.file);
         addParam(query, GENOTYPE, queryVariantsCommandOptions.sampleGenotype);
         addParam(query, RETURNED_SAMPLES, queryVariantsCommandOptions.returnSample);
-        addParam(options, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
+        addParam(query, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
 
         /**
          * Annotation parameters
@@ -238,7 +238,10 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 
         if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
-            if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
+            List<String> studies = query.getAsStringList(STUDIES.key());
+            if (returnedStudiesSize == 0 && studies.size() == 1) {
+                query.put(RETURNED_STUDIES.key(), studies.get(0));
+            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
                 throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study. " +
                         "Available studies: [ " + String.join(", ", studyNames) + " ]");
