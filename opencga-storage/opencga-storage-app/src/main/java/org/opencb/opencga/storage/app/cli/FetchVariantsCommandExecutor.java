@@ -124,16 +124,22 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         addParam(query, TYPE, queryVariantsCommandOptions.type);
 
 
+        List<String> studies = new LinkedList<>();
         if (queryVariantsCommandOptions.study != null && !queryVariantsCommandOptions.study.isEmpty()) {
-            query.put(STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.study.split(",")));
+            query.put(STUDIES.key(), queryVariantsCommandOptions.study);
+            for (String study : queryVariantsCommandOptions.study.split(",|;")) {
+                if (!study.startsWith("!")) {
+                    studies.add(study);
+                }
+            }
         }
 
         // If the studies to be returned is empty then we return the studies being queried
         if (queryVariantsCommandOptions.returnStudy != null && !queryVariantsCommandOptions.returnStudy.isEmpty()) {
             query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.returnStudy.split(",")));
         } else {
-            if (query.containsKey(STUDIES.key())) {
-                query.put(RETURNED_STUDIES.key(), query.get(STUDIES.key()));
+            if (!studies.isEmpty()) {
+                query.put(RETURNED_STUDIES.key(), studies);
             }
         }
 
@@ -238,7 +244,6 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 
         if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
-            List<String> studies = query.getAsStringList(STUDIES.key());
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
             } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
@@ -311,7 +316,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 if (outputFormat.equalsIgnoreCase("vcf")) {
                     StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
                     QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
-                            queryVariantsCommandOptions.returnStudy, null);
+                            query.getAsStringList(RETURNED_STUDIES.key()).get(0), null);
                     if (studyConfigurationResult.getResult().size() >= 1) {
                         // Samples to be returned
                         if (query.containsKey(RETURNED_SAMPLES.key())) {
@@ -323,9 +328,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
                         VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-                        variantVcfExporter.export(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
+                        variantVcfExporter.export(iterator, studyConfigurationResult.first(), outputStream, options);
                     } else {
-                        logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
+                        logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                     }
 //                    printVcfResult(iterator, studyConfigurationManager, printWriter);
                 } else {

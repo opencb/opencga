@@ -336,6 +336,9 @@ public class VariantVcfExporter {
     private Map<String, Object> getAnnotations(Variant variant, List<String> annotations) {
         Map<String, Object> infoAnnotations = new HashMap<>();
         StringBuilder stringBuilder = new StringBuilder();
+        if (variant.getAnnotation() == null) {
+            return infoAnnotations;
+        }
 //        for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
         for (int i = 0; i < variant.getAnnotation().getConsequenceTypes().size(); i++) {
             ConsequenceType consequenceType = variant.getAnnotation().getConsequenceTypes().get(i);
