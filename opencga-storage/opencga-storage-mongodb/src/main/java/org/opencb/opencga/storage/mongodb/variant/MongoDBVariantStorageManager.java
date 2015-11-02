@@ -22,12 +22,15 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -37,6 +40,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,7 +278,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Writers
-        List<VariantWriter> writers = new LinkedList<>();
+        List<VariantMongoDBWriter> writers = new LinkedList<>();
         List<DataWriter> writerList = new LinkedList<>();
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
@@ -300,7 +304,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Runner
         if (loadThreads == 1) {
             logger.info("Single thread load...");
-            VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, writers, taskList, batchSize);
+            VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, (List) writers, taskList, batchSize);
             vr.run();
         } else {
             logger.info("Multi thread load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
@@ -359,6 +363,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 ptr.run();
                 writers.forEach(DataWriter::post);
                 writers.forEach(DataWriter::close);
+                MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+                for (VariantMongoDBWriter writer : writers) {
+                    writeResult.merge(writer.getWriteResult());
+                }
+                logger.info("Write result: {}", writeResult);
             } catch (ExecutionException e) {
                 e.printStackTrace();
                 throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
@@ -417,6 +426,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     /**
+     * Check if the samples from the selected file can be loaded.
      * Check if the samples from the selected file can be loaded.
      *
      * MongoDB storage plugin is not able to load batches of samples in a unordered way.

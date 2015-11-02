@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import com.mongodb.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -47,6 +51,7 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -66,6 +71,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
     private final ObjectMap configuration;
     private final StorageEngineConfiguration storageEngineConfiguration;
+    private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
 
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -202,7 +208,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         options.put(MongoDBCollection.TIMEOUT, timeout);
 
-
+        if (options.getBoolean("mongodb.explain", false)) {
+            try (DBCursor dbCursor = variantsCollection.nativeQuery().find(qb.get(), projection, options)) {
+                DBObject explain = dbCursor.explain();
+                try {
+                    System.err.println("mongodb.explain = " + new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(explain));
+                } catch (JsonProcessingException ignore) {
+                    System.err.println("mongodb.explain = " + explain);
+                }
+            }
+        }
         QueryResult<Variant> queryResult = variantsCollection.find(qb.get(), projection, getDbObjectToVariantConverter(query, options), options);
         // set query Id?
 
@@ -1152,19 +1167,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @param loadedSampleIds Other loaded sampleIds EXCEPT those that are going to be loaded
      * @param data  Variants to insert
      */
-    QueryResult insert(List<Variant> data, int fileId, DBObjectToVariantConverter variantConverter,
+    QueryResult<MongoDBVariantWriteResult> insert(List<Variant> data, int fileId, DBObjectToVariantConverter variantConverter,
                        DBObjectToStudyVariantEntryConverter variantSourceEntryConverter, StudyConfiguration studyConfiguration, List<Integer> loadedSampleIds) {
+
+        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+        long startTime = System.currentTimeMillis();
         if (data.isEmpty()) {
-            return new QueryResult("insertVariants");
+            return new QueryResult<>("insertVariants", 0, 1, 1, "", "", Collections.singletonList(writeResult));
         }
         List<DBObject> queries = new ArrayList<>(data.size());
         List<DBObject> updates = new ArrayList<>(data.size());
-        Set<String> nonInsertedVariants;
+        // Use a multiset instead of a normal set, to keep tracking of duplicated variants
+        Multiset<String> nonInsertedVariants = HashMultiset.create();
         String fileIdStr = Integer.toString(fileId);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
 
         {
-            nonInsertedVariants = new HashSet<>();
             Map missingSamples = Collections.emptyMap();
             String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
             if (defaultGenotype.equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
@@ -1179,9 +1197,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             for (Variant variant : data) {
                 if (variant.getType().equals(VariantType.NO_VARIATION)) {
                     //Storage-MongoDB is not able to store NON VARIANTS
+                    writeResult.setSkippedVariants(writeResult.getSkippedVariants() + 1);
                     continue;
                 } else if (variant.getType().equals(VariantType.SYMBOLIC)) {
                     logger.warn("Skip symbolic variant " + variant.toString());
+                    writeResult.setSkippedVariants(writeResult.getSkippedVariants() + 1);
                     continue;
                 }
                 String id = variantConverter.buildStorageId(variant);
@@ -1217,17 +1237,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (!queries.isEmpty()) {
                 QueryOptions options = new QueryOptions("upsert", true);
                 options.put("multi", false);
+                BulkWriteResult bulkWriteResult;
                 try {
-                    variantsCollection.update(queries, updates, options);
+                    bulkWriteResult = variantsCollection.update(queries, updates, options).first();
                 } catch (BulkWriteException e) {
+                    bulkWriteResult = e.getWriteResult();
                     for (BulkWriteError writeError : e.getWriteErrors()) {
                         if (writeError.getCode() == 11000) { //Dup Key error code
-                            nonInsertedVariants.add(writeError.getMessage().split("dup key")[1].split("\"")[1]);
+                            Matcher matcher = writeResultErrorPattern.matcher(writeError.getMessage());
+                            if (matcher.find()) {
+                                String id = matcher.group(1);
+                                nonInsertedVariants.add(id);
+                            } else {
+                                throw e;
+                            }
                         } else {
                             throw e;
                         }
                     }
                 }
+
+                writeResult.setNewDocuments(bulkWriteResult.getUpserts().size());
+                writeResult.setUpdatedObjects(bulkWriteResult.getModifiedCount());
+//                writeResult.setNewDocuments(data.size() - nonInsertedVariants.size() - writeResult.getSkippedVariants());
                 queries.clear();
                 updates.clear();
             }
@@ -1265,19 +1297,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
 
 
-                queries.add(new BasicDBObject("_id", id).append(DBObjectToVariantConverter.STUDIES_FIELD + "." + DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, studyConfiguration.getStudyId()));
+                queries.add(new BasicDBObject("_id", id)
+                        .append(DBObjectToVariantConverter.STUDIES_FIELD
+                                + '.' + DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, studyConfiguration.getStudyId())
+                        .append(DBObjectToVariantConverter.STUDIES_FIELD
+                                + '.' + DBObjectToStudyVariantEntryConverter.FILES_FIELD
+                                + '.' + DBObjectToStudyVariantEntryConverter.FILEID_FIELD, new BasicDBObject("$ne", fileId))
+                );
                 updates.add(update);
 
             }
 
         }
-        if (queries.isEmpty()) {
-            return new QueryResult();
-        } else {
+
+        if (!queries.isEmpty()) {
             QueryOptions options = new QueryOptions("upsert", false);
             options.put("multi", false);
-            return variantsCollection.update(queries, updates, options);
+            QueryResult<BulkWriteResult> update = variantsCollection.update(queries, updates, options);
+            // Can happen that nonInsertedVariantsNum != queries.size() != nonInsertedVariants.size() if there was
+            // a duplicated variant.
+            writeResult.setNonInsertedVariants(nonInsertedVariants.size() - update.first().getMatchedCount());
+            writeResult.setUpdatedObjects(writeResult.getUpdatedObjects() + update.first().getModifiedCount());
         }
+
+        return new QueryResult<>("insertVariants", ((int) (System.currentTimeMillis() - startTime)), 1, 1, "", "", Collections.singletonList(writeResult));
     }
 
     QueryResult<WriteResult> fillFileGaps(int fileId, List<String> chromosomes, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
