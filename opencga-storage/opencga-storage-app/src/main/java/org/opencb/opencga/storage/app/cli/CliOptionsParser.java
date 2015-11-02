@@ -371,9 +371,12 @@ public class CliOptionsParser {
         public String type;
 
 
-        @Deprecated
-        @Parameter(names = {"--annot"}, description = " [CSV]", required = false, arity = 1)
-        public String annot;
+//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
+//        public boolean includeAnnotations;
+
+        @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
+                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
+        public String annotations;
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046", required = false, arity = 1)
         public String consequenceType;
@@ -597,11 +600,11 @@ public class CliOptionsParser {
                 .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(10), 10);
 
         int nameAndTypeLength = paramNameMaxSize + typeMaxSize + 8;
-        int descriptionLength = 80;
-        int maxLineLength = nameAndTypeLength + descriptionLength;  //140
+        int descriptionLength = 100;
+        int maxLineLength = nameAndTypeLength + descriptionLength;  //160
 
-//        commander.getParameters().stream().sorted((o1, o2) -> o1.getNames().compareTo(o2.getNames())).forEach(parameterDescription -> {
-        commander.getParameters().stream().forEach(parameterDescription -> {
+        Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
+        commander.getParameters().stream().sorted(parameterDescriptionComparator).forEach(parameterDescription -> {
             String type = getType(parameterDescription);
             String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s %s\n",
                     (parameterDescription.getParameterized().getParameter() != null
@@ -609,15 +612,18 @@ public class CliOptionsParser {
                     parameterDescription.getNames(),
                     type,
                     parameterDescription.getDescription(),
-                    parameterDescription.getDefault() == null? "" : ("[" + parameterDescription.getDefault() + "]"));
+                    parameterDescription.getDefault() == null ? "" : ("[" + parameterDescription.getDefault() + "]"));
 
+            // if lines are longer than the maximum they are trimmed and printed in several lines
             List<String> lines = new LinkedList<>();
             while (usage.length() > maxLineLength + 1) {
                 int splitPosition = Math.min(1 + usage.lastIndexOf(" ", maxLineLength), usage.length());
                 lines.add(usage.substring(0, splitPosition) + "\n");
                 usage = String.format("%" + nameAndTypeLength + "s", "") + usage.substring(splitPosition);
             }
+            // this is empty for short lines and so no prints anything
             lines.forEach(System.err::print);
+            // in long lines this prints the last trimmed line
             System.err.print(usage);
         });
     }
