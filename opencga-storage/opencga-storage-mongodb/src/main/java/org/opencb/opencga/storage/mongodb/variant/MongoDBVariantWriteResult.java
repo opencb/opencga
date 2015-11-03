@@ -7,15 +7,15 @@ package org.opencb.opencga.storage.mongodb.variant;
  */
 public class MongoDBVariantWriteResult {
 
-    private int newDocuments;
-    private int updatedObjects;
-    private int skippedVariants;
-    private int nonInsertedVariants;
+    private long newDocuments;
+    private long updatedObjects;
+    private long skippedVariants;
+    private long nonInsertedVariants;
 
     public MongoDBVariantWriteResult() {
     }
 
-    public MongoDBVariantWriteResult(int newDocuments, int updatedObjects, int skippedVariants, int nonInsertedVariants) {
+    public MongoDBVariantWriteResult(long newDocuments, long updatedObjects, long skippedVariants, long nonInsertedVariants) {
         this.newDocuments = newDocuments;
         this.updatedObjects = updatedObjects;
         this.skippedVariants = skippedVariants;
@@ -31,38 +31,38 @@ public class MongoDBVariantWriteResult {
         }
     }
 
-    public int getNewDocuments() {
+    public long getNewDocuments() {
         return newDocuments;
     }
 
-    public MongoDBVariantWriteResult setNewDocuments(int newDocuments) {
+    public MongoDBVariantWriteResult setNewDocuments(long newDocuments) {
         this.newDocuments = newDocuments;
         return this;
     }
 
-    public int getUpdatedObjects() {
+    public long getUpdatedObjects() {
         return updatedObjects;
     }
 
-    public MongoDBVariantWriteResult setUpdatedObjects(int updatedObjects) {
+    public MongoDBVariantWriteResult setUpdatedObjects(long updatedObjects) {
         this.updatedObjects = updatedObjects;
         return this;
     }
 
-    public int getSkippedVariants() {
+    public long getSkippedVariants() {
         return skippedVariants;
     }
 
-    public MongoDBVariantWriteResult setSkippedVariants(int skippedVariants) {
+    public MongoDBVariantWriteResult setSkippedVariants(long skippedVariants) {
         this.skippedVariants = skippedVariants;
         return this;
     }
 
-    public int getNonInsertedVariants() {
+    public long getNonInsertedVariants() {
         return nonInsertedVariants;
     }
 
-    public MongoDBVariantWriteResult setNonInsertedVariants(int nonInsertedVariants) {
+    public MongoDBVariantWriteResult setNonInsertedVariants(long nonInsertedVariants) {
         this.nonInsertedVariants = nonInsertedVariants;
         return this;
     }
@@ -93,10 +93,10 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public int hashCode() {
-        int result = newDocuments;
-        result = 31 * result + updatedObjects;
-        result = 31 * result + skippedVariants;
-        result = 31 * result + nonInsertedVariants;
+        int result = (int) (newDocuments ^ (newDocuments >>> 32));
+        result = 31 * result + (int) (updatedObjects ^ (updatedObjects >>> 32));
+        result = 31 * result + (int) (skippedVariants ^ (skippedVariants >>> 32));
+        result = 31 * result + (int) (nonInsertedVariants ^ (nonInsertedVariants >>> 32));
         return result;
     }
 }

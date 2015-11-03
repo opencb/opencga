@@ -184,24 +184,24 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         ETLResult etlResult = new ETLResult();
 
         if (doExtract) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(extractParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(extractParams);
             inputUri = variantStorageManager.extract(inputUri, outputUri);
             etlResult.extractResult = inputUri;
         }
 
         if (doTransform) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(preTransformParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(preTransformParams);
             inputUri = variantStorageManager.preTransform(inputUri);
             etlResult.preTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(transformParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(transformParams);
             inputUri = variantStorageManager.transform(inputUri, null, outputUri);
             etlResult.transformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(postTransformParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(postTransformParams);
             inputUri = variantStorageManager.postTransform(inputUri);
             etlResult.postTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
@@ -209,19 +209,19 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
         if (doLoad) {
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(preLoadParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(preLoadParams);
             inputUri = variantStorageManager.preLoad(inputUri, outputUri);
             etlResult.preLoadResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(loadParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(loadParams);
             inputUri = variantStorageManager.load(inputUri);
             etlResult.loadResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().setOptions(postLoadParams);
+            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(postLoadParams);
             variantStorageManager.postLoad(inputUri, outputUri);
         }
         return etlResult;

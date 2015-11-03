@@ -86,6 +86,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String COLLECTION_STUDIES    = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
+    public static final String ALREADY_LOADED_VARIANTS = "alreadyLoadedVariants";
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
@@ -206,6 +207,15 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                            .append(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), genotypes)).first();
 //                }
 //            }
+        }
+
+        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
+        QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
+        Long count = countResult.first();
+        if (count != 0) {
+            logger.warn("Resume mode. There are already loaded variants from the file " + studyConfiguration.getFileIds().inverse().get(fileId) + " : " + fileId + " ");
+            options.put(ALREADY_LOADED_VARIANTS, count);
         }
 
         return uri;
@@ -398,32 +408,55 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
         long expectedCount = 0;
         long expectedSkippedVariants = 0;
+        int symbolicVariants = 0;
+        int nonVariants = 0;
+        long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS, 0L);
+
         for (Map.Entry<String, Integer> entry : variantSource.getStats().getVariantTypeCounts().entrySet()) {
-            if (!entry.getKey().equals(VariantType.SYMBOLIC.toString()) && !entry.getKey().equals(VariantType.NO_VARIATION.toString())) {
-                expectedCount += entry.getValue();
-            } else {
+            if (entry.getKey().equals(VariantType.SYMBOLIC.toString())) {
                 expectedSkippedVariants += entry.getValue();
+                symbolicVariants = entry.getValue();
+            } else if (entry.getKey().equals(VariantType.NO_VARIATION.toString())) {
+                expectedSkippedVariants += entry.getValue();
+                nonVariants = entry.getValue();
+            } else {
+                expectedCount += entry.getValue();
             }
         }
         MongoDBVariantWriteResult writeResult = options.get("writeResult", MongoDBVariantWriteResult.class);
+
+        if (alreadyLoadedVariants != 0) {
+            writeResult.setNonInsertedVariants(writeResult.getNonInsertedVariants() - alreadyLoadedVariants);
+        }
+        if (writeResult.getNonInsertedVariants() != 0) {
+            expectedCount -= writeResult.getNonInsertedVariants();
+        }
 
         logger.info("============================================================");
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
             logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult.getSkippedVariants());
         } else if (writeResult.getSkippedVariants() > 0) {
-            int symbolicVariants = variantSource.getStats().getVariantTypeCounts().getOrDefault(VariantType.SYMBOLIC.toString(), 0);
-            logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants." + (symbolicVariants > 0 ? " Where " + symbolicVariants + " are symbolic variants" : ""));
+            logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
+            if (symbolicVariants > 0) {
+                logger.info("  * Of which " + symbolicVariants + " are " + VariantType.SYMBOLIC.toString() + " variants.");
+            }
+            if (nonVariants > 0) {
+                logger.info("  * Of which " + nonVariants + " are " + VariantType.NO_VARIATION.toString() + " variants.");
+            }
         }
 
         if (writeResult.getNonInsertedVariants() != 0) {
-            logger.error("There were {} variants not inserted.", writeResult.getNonInsertedVariants());
-            expectedCount -= writeResult.getNonInsertedVariants();
+            logger.error("There were " + writeResult.getNonInsertedVariants() + " duplicated variants not inserted. ");
+        }
+
+        if (alreadyLoadedVariants != 0) {
+            logger.info("Resume mode. Previously loaded variants: " + alreadyLoadedVariants);
         }
 
         if (expectedCount != count) {
             throw new StorageManagerException("Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count);
         } else {
-            logger.info("Correct number of loaded variants: {}", count);
+            logger.info("Final number of loaded variants: " + count);
         }
         logger.info("============================================================");
     }
