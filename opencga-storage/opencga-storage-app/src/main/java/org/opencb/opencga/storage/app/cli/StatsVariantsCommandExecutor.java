@@ -68,6 +68,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
             options.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
         }
         options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+        options.put(VariantStorageManager.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
         if (statsVariantsCommandOptions.fileId != 0) {
             options.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
         }

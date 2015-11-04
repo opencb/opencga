@@ -3,7 +3,6 @@ defaultStorageEngineId: "${OPENCGA.STORAGE.ENGINE.DEFAULT}"
 logLevel: "info"
 logFile: ""
 
-## For OpenCGA installation use 'org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager'
 ## This value can be set up using maven profiles in your .m2/settings.xml
 studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
 

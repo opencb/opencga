@@ -328,7 +328,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 putNotNull(ct, CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
                 putNotNull(ct, BIOTYPE_FIELD, consequenceType.getBiotype());
-                putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getCDnaPosition());
+                putNotNull(ct, C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CDS_POSITION_FIELD, consequenceType.getCdsPosition());
 
                 if (consequenceType.getSequenceOntologyTerms() != null) {

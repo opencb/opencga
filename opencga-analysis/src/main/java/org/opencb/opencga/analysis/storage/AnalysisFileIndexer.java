@@ -32,6 +32,7 @@ import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,6 +241,19 @@ public class AnalysisFileIndexer {
             }
         }
 
+        /** Update StudyConfiguration **/
+        if (!simulate) {
+            try {
+                if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
+                    StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                            .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+                    new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
+                }
+            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
         /** Create index information **/
         Index indexInformation = originalFile.getIndex();
         if (indexInformation == null) {
@@ -407,8 +421,8 @@ public class AnalysisFileIndexer {
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --outdir ").append(outDirUri)
-                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
-                    .append(" -D").append("sessionId").append("=").append(sessionId)
+//                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
+//                    .append(" -D").append("sessionId").append("=").append(sessionId)
 //                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;

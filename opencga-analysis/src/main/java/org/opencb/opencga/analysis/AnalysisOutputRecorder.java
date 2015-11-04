@@ -20,10 +20,11 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -99,6 +100,8 @@ public class AnalysisOutputRecorder {
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            job.setOutput(fileIds);
+            job.setEndTime(parameters.getLong("endTime"));
 
             //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
         } catch (CatalogException | IOException e) {
@@ -134,6 +137,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.TRANSFORMED);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                         case LOADING:
@@ -152,6 +156,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.READY);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                     }

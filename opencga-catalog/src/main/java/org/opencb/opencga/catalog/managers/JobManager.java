@@ -270,4 +270,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         //TODO: Check ACLs
         return jobDBAdaptor.getTool(id);
     }
+
+    @Override
+    public QueryResult<Tool> readAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobDBAdaptor.getAllTools(queryOptions);
+    }
 }

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +44,9 @@ public class Command extends RunnableProcess {
     protected static Logger logger = LoggerFactory.getLogger(Command.class);
     private StringBuffer outputBuffer = new StringBuffer();
     private StringBuffer errorBuffer = new StringBuffer();
+    private OutputStream outputOutputStream = null;
+    private OutputStream errorOutputStream = null;
+
     private final String[] cmdArray;
 
     public Command(String commandLine) {
@@ -146,6 +150,10 @@ public class Command extends RunnableProcess {
                             System.err.print(new String(buffer));
                         }
                         outputBuffer.append(new String(buffer));
+                        if (outputOutputStream != null) {
+                            outputOutputStream.write(buffer);
+                            outputOutputStream.flush();
+                        }
                         Thread.sleep(500);
                         logger.debug("stdout - Sleep (last bytesRead = " + bytesRead + ")");
                     }
@@ -185,6 +193,10 @@ public class Command extends RunnableProcess {
                             System.err.print(new String(buffer));
                         }
                         errorBuffer.append(new String(buffer));
+                        if (errorOutputStream != null) {
+                            errorOutputStream.write(buffer);
+                            errorOutputStream.flush();
+                        }
                         Thread.sleep(500);
                         logger.debug("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
@@ -260,4 +272,21 @@ public class Command extends RunnableProcess {
         return environment;
     }
 
+    public OutputStream getOutputOutputStream() {
+        return outputOutputStream;
+    }
+
+    public Command setOutputOutputStream(OutputStream outputOutputStream) {
+        this.outputOutputStream = outputOutputStream;
+        return this;
+    }
+
+    public OutputStream getErrorOutputStream() {
+        return errorOutputStream;
+    }
+
+    public Command setErrorOutputStream(OutputStream errorOutputStream) {
+        this.errorOutputStream = errorOutputStream;
+        return this;
+    }
 }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app;
 
 import com.beust.jcommander.ParameterException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.*;
 
 import java.io.IOException;
@@ -25,8 +26,6 @@ import java.io.IOException;
  * Created by imedina on 02/03/15.
  */
 public class StorageMain {
-
-    public static final String VERSION = "0.6.0-SNAPSHOT";
 
     public static void main(String[] args) {
         System.exit(Main(args));
@@ -46,7 +45,9 @@ public class StorageMain {
         String parsedCommand = cliOptionsParser.getCommand();
         if(parsedCommand == null || parsedCommand.isEmpty()) {
             if(cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + VERSION);
+                System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
+                System.out.println("git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+//                System.out.println(GitRepositoryState.get());
                 return 0;
             } else if(cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
