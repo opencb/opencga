@@ -29,13 +29,14 @@ calculateStats=""
 log_level=info
 input_files=()
 input_files_len=0
+database=""
 
 function getFileId() {
     $OPENCGA_BIN files search --study-id $user@${project_alias}:${study_alias} -u $user -p $password --name $1 --output-format IDS --log-level ${log_level}
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:qacxTL" opt; do
+while getopts "htu:s:i:p:l:U:d:qacxTL" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
@@ -47,6 +48,7 @@ while getopts "htu:s:i:p:l:U:qacxTL" opt; do
 	    echo "       -x             : Link file instead of copy  "
 	    echo "       -p ped_file    : Pedigree input file  "
 	    echo "       -l log_level   : error, warn, info, debug [info] "
+	    echo "       -d database    : database name [opencga_test_<userId>] "
 	    echo "       -T             : If present it only runs the transform stage. Loading requires -L "
 	    echo "       -L             : If present only the load stage is executed. Transformation requires -T "
 	    echo "       -t             : Transform and Load in 2 steps [DEPRECATED] "
@@ -90,6 +92,10 @@ while getopts "htu:s:i:p:l:U:qacxTL" opt; do
         if [ $log_level == "debug" ]; then
             set -x
         fi
+	    ;;
+	d)
+	    database=$OPTARG
+	    echo "Using database "$log_level
 	    ;;
 	t)
 	    split_index_job=true
@@ -143,7 +149,14 @@ fi
 $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log-level ${log_level}
 $OPENCGA_BIN projects create -a ${project_alias} -d "1000 genomes" -n "1000 Genomes" -u $user -p $password --log-level ${log_level}
 $OPENCGA_BIN users list -u $user -p $password -R
-$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d "Default study" --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:opencga_test_$user"
+
+if [ "$database" == "" ]; then
+	database="opencga_test_${user}"
+fi
+
+$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d "Default study" --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:${database}"
+$OPENCGA_BIN files create-folder -s $user@${project_alias}:${study_alias} -u $user -p $password --log-level ${log_level} --path data/jobs/
+
 
 $OPENCGA_BIN users list -u $user -p $password -R
 
@@ -182,7 +195,7 @@ for input_file in ${input_files[@]}; do
 		#Transform file
 		if [ $transform_file == true ]; then
 			echo "Transforming file $input_file"
-			$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform
+			$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform -o $user@${project_alias}:${study_alias}:data:jobs:
 			$OPENCGA_BIN users list -u $user -p $password -R
 			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 		fi
@@ -191,11 +204,11 @@ for input_file in ${input_files[@]}; do
 		if [ $load_file == true ]; then
 			echo "Loading file $input_file"
 			TRANSFORMED_VARIANTS_FILE_ID=$(getFileId ^$FILE_NAME".variants")
-			$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats
+			$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
 			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 		fi
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats
+		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
 		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done
