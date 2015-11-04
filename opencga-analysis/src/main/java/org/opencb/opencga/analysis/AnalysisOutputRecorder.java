@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.analysis;
 
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -99,6 +100,8 @@ public class AnalysisOutputRecorder {
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            job.setOutput(fileIds);
+            job.setEndTime(parameters.getLong("endTime"));
 
             //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
         } catch (CatalogException | IOException e) {
@@ -134,6 +137,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.TRANSFORMED);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                         case LOADING:
@@ -152,6 +156,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.READY);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                     }
@@ -162,7 +167,7 @@ public class AnalysisOutputRecorder {
                 }
                 catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
                 if (index.getStatus().equals(Index.Status.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), StudyEntry.DEFAULT_COHORT), sessionId);
                     if (queryResult.getNumResults() != 0) {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();

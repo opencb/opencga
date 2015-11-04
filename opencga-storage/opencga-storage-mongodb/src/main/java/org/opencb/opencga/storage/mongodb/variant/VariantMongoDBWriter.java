@@ -69,7 +69,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;
     private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToVariantSourceEntryConverter sourceEntryConverter;
+    private DBObjectToStudyVariantEntryConverter sourceEntryConverter;
     private DBObjectToSamplesConverter sampleConverter;
 
 //    private long numVariantsWritten;
@@ -90,6 +90,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    private VariantSource source;
 
     private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+    private MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
     private HashSet<String> coveredChromosomes = new HashSet<>();
     private List<Integer> fileSampleIds;
     private List<Integer> loadedSampleIds;
@@ -187,7 +188,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (!data.isEmpty()) {
             coveredChromosomes.add(data.get(0).getChromosome());
         }
-        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+
+        MongoDBVariantWriteResult batchWriteResult = queryResult.first();
+        logger.debug("New batch of {} elements. WriteResult: {}", data.size(), batchWriteResult);
+        writeResult.merge(batchWriteResult);
+
         insertionTime += queryResult.getDbTime();
         return true;
     }
@@ -230,7 +236,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            if (!existingVariants.contains(id)) {
 //                DBObject variantDocument = variantConverter.convertToStorageType(variant);
 //                List<DBObject> mongoFiles = new LinkedList<>();
-//                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//                for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                    if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                        continue;
 //                    }
@@ -241,7 +247,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //                bulk.insert(variantDocument);
 //                currentBulkSize++;
 //            } else {
-//                for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//                for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                    if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                        continue;
 //                    }
@@ -276,7 +282,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            variant.setAnnotation(null);
 //            String id = variantConverter.buildStorageId(variant);
 //
-//            for (VariantSourceEntry variantSourceEntry : variant.getSourceEntries().values()) {
+//            for (VariantSourceEntry variantSourceEntry : variant.getStudies()) {
 //                if (!variantSourceEntry.getFileId().equals(fileId)) {
 //                    continue;
 //                }
@@ -430,7 +436,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         statsConverter = includeStats ? new DBObjectToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
         sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
 
-        sourceEntryConverter = new DBObjectToVariantSourceEntryConverter(includeSrc, sampleConverter);
+        sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc, sampleConverter);
 
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
@@ -469,5 +475,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public void setWriteStudyConfiguration(boolean writeStudyConfiguration) {
         this.writeStudyConfiguration = writeStudyConfiguration;
+    }
+
+    public MongoDBVariantWriteResult getWriteResult() {
+        return writeResult;
     }
 }

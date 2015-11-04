@@ -50,8 +50,8 @@ public class AuditRecord {
                 "id=" + id +
                 ", resource=" + resource +
                 ", action=" + action +
-                ", before=" + (before == null? "null" : before.toJson()) +
-                ", after=" + (after == null? "null" : after.toJson()) +
+                ", before=" + (before == null? "null" : before) +
+                ", after=" + (after == null? "null" : after) +
                 ", timeStamp=" + timeStamp +
                 ", userId='" + userId + '\'' +
                 ", description='" + description + '\'' +

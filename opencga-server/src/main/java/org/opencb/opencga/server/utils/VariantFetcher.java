@@ -1,11 +1,12 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.utils;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -15,8 +16,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,7 +23,6 @@ import java.util.List;
  */
 public class VariantFetcher {
 
-    private final OpenCGAWSServer wsServer;
     private final CatalogManager catalogManager;
     private final StorageManagerFactory storageManagerFactory;
     private final Logger logger;
@@ -32,20 +30,19 @@ public class VariantFetcher {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantFetcher(OpenCGAWSServer wsServer) {
-        this.wsServer = wsServer;
-        catalogManager = OpenCGAWSServer.catalogManager;
-        storageManagerFactory = OpenCGAWSServer.storageManagerFactory;
+    public VariantFetcher(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
+        this.catalogManager = catalogManager;
+        this.storageManagerFactory = storageManagerFactory;
         logger = LoggerFactory.getLogger(VariantFetcher.class);
     }
 
-    public QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId)
+    public QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
             throws Exception {
         QueryResult result;
         int fileIdNum;
 
         fileIdNum = catalogManager.getFileId(fileId);
-        File file = catalogManager.getFile(fileIdNum, wsServer.sessionId).first();
+        File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
         if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
             throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
@@ -57,23 +54,22 @@ public class VariantFetcher {
         }
 
         int studyId = catalogManager.getStudyIdByFileId(file.getId());
-        result = variantsStudy(studyId, region, histogram, groupBy, interval, fileIdNum);
+        result = variantsStudy(studyId, region, histogram, groupBy, interval, fileIdNum, sessionId, queryOptions);
         return result;
     }
 
-    public QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval) throws Exception {
-        return variantsStudy(studyId, region, histogram, groupBy, interval, null);
+    public QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
+        return variantsStudy(studyId, region, histogram, groupBy, interval, null, sessionId, queryOptions);
     }
 
-    public QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum)
+    public QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum, String sessionId, QueryOptions queryOptions)
             throws Exception {
         QueryResult result;
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, wsServer.sessionId);
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
 
-        QueryOptions queryOptions = wsServer.queryOptions;
         int limit = queryOptions.getInt("limit", -1);
         if (limit > LIMIT_MAX) {
             logger.info("Unable to return more than {} variants. Change limit from {} to {}", LIMIT_MAX, limit, LIMIT_MAX);
@@ -92,7 +88,7 @@ public class VariantFetcher {
 
         logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
-        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, wsServer.sessionId));
+//        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
 
         String[] regions;
         if (regionStr != null) {
@@ -106,14 +102,24 @@ public class VariantFetcher {
                 throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
             }
             result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
-        } else if (!groupBy.isEmpty()) {
+        } else if (groupBy != null && !groupBy.isEmpty()) {
             result = dbAdaptor.groupBy(query, groupBy, queryOptions);
         } else {
             logger.debug("getVariants {}, {}", query, queryOptions);
             result = dbAdaptor.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
+            if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
+                result = convertToGA4GH(result);
+            }
         }
         return result;
+    }
+
+    private QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {
+        GAVariantFactory factory = new GAVariantFactory();
+        List<org.ga4gh.models.Variant> gaVariants = factory.create(result.getResult());
+        QueryResult<org.ga4gh.models.Variant> gaResult = new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(), gaVariants);
+        return gaResult;
     }
 
     public static Query getVariantQuery(QueryOptions queryOptions) {

@@ -16,12 +16,17 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.avro.generic.GenericRecord;
 import org.junit.*;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
-import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -30,15 +35,20 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -60,6 +70,20 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     }
 
     @Test
+    public void avroBasicIndex() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro"));
+        assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.avro.gz'",
+                Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.avro.gz"));
+
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
+        VariantSource variantSource = checkTransformedVariants(etlResult.transformResult, studyConfiguration);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false, getExpectedNumLoadedVariants(variantSource));
+    }
+
+    @Test
     public void multiIndex() throws Exception {
         clearDB(DB_NAME);
         int expectedNumVariants = NUM_VARIANTS - 37; //37 variants have been removed from this dataset because had the genotype 0|0 for each sample
@@ -71,7 +95,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
-        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(VariantSourceEntry.DEFAULT_COHORT);
+        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
         assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
         assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
@@ -110,8 +134,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         for (; iterator.hasNext();) {
             Variant variant = iterator.next();
             numVariants++;
-//            Map<String, VariantSourceEntry> map = variant.getSourceEntries().values().stream().collect(Collectors.toMap(VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
-            Map<String, VariantSourceEntry> map = variant.getSourceEntries();
+//            Map<String, VariantSourceEntry> map = variant.getStudies().stream().collect(Collectors.toMap(VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
+            Map<String, StudyEntry> map = variant.getStudiesMap();
 
             assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyName()));
             assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyName()));
@@ -121,6 +145,67 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
     }
 
+
+    @Test
+    public void multiRegionIndex() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+
+        ETLResult etlResult;
+        ObjectMap options = new ObjectMap()
+                .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+
+        runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager,
+                studyConfiguration, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
+        Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+        assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
+        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
+        assertTrue(studyConfiguration.getIndexedFiles().contains(5));
+        checkLoadedVariants(getVariantStorageManager().getDBAdaptor(DB_NAME), studyConfiguration, true, false, -1);
+
+        runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager,
+//        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
+                studyConfiguration, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
+        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
+        assertTrue(studyConfiguration.getIndexedFiles().contains(6));
+        checkLoadedVariants(getVariantStorageManager().getDBAdaptor(DB_NAME), studyConfiguration, true, false, -1);
+
+        assertEquals(studyConfiguration.getSamplesInFiles().get(5), studyConfiguration.getSamplesInFiles().get(6));
+
+        //Check generated stats files
+        File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) ->
+                name1.startsWith(VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), 5))
+                        && name1.contains("variants"));
+        File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) ->
+                name1.startsWith(VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), 6))
+                        && name1.contains("variants"));
+        assertEquals(statsFile1.length, 1);
+        assertEquals(statsFile2.length, 1);
+
+
+        JsonFactory jsonFactory = new JsonFactory();
+        ObjectMapper jsonObjectMapper = new ObjectMapper(jsonFactory);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        try (JsonParser parser = jsonFactory.createParser(new GZIPInputStream(new FileInputStream(statsFile1[0])))) {
+            while (parser.nextToken() != null) {
+                VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
+                assertEquals("1", variantStatsWrapper.getChromosome());
+            }
+        }
+        try (JsonParser parser = jsonFactory.createParser(new GZIPInputStream(new FileInputStream(statsFile2[0])))) {
+            while (parser.nextToken() != null) {
+                VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
+                assertEquals("22", variantStatsWrapper.getChromosome());
+            }
+        }
+
+
+
+
+    }
     /**
      * Single Thread indexation. "Old Style" indexation
      *  With samples and "src"
@@ -132,6 +217,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
         params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
@@ -172,12 +258,12 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         ETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
-        assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.json.snappy'",
-                Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.json.snappy"));
+        assertTrue("Incorrect transform file extension " + etlResult.transformResult + ". Expected 'variants.avro.snappy'",
+                Paths.get(etlResult.transformResult).toFile().getName().endsWith("variants.avro.snappy"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        checkTransformedVariants(etlResult.transformResult, studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, false, false);
+        VariantSource variantSource = checkTransformedVariants(etlResult.transformResult, studyConfiguration);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, false, false, getExpectedNumLoadedVariants(variantSource));
 
     }
 
@@ -199,18 +285,29 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         ETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration,
                 new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DS", "GL"))
-                        .append(VariantStorageManager.Options.FILE_ID.key(), 2));
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
 
         checkTransformedVariants(etlResult.transformResult, studyConfiguration, 999);
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, 999);
 
-        VariantVcfReader reader = new VariantVcfReader(new VariantSource("", "2", Integer.toString(STUDY_ID), STUDY_NAME), smallInputUri.getPath());
+        VariantVcfReader reader = new VariantVcfReader(new VariantSource("", "2", STUDY_NAME, STUDY_NAME), smallInputUri.getPath());
         reader.open();
         reader.pre();
         for (Variant variant : reader.read(999)) {
+            variant.getStudy(STUDY_NAME).getAttributes().remove("src");
             Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd()), new QueryOptions()).first();
-            assertEquals(variant, loadedVariant);
+            loadedVariant.setAnnotation(null);                                          //Remove annotation
+            loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
+            loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
+                values.set(0, values.get(0).replace("0/0", "0|0"));
+                while(values.get(1).length() < 5) values.set(1, values.get(1) + "0");   //Set lost zeros
+
+            });
+            assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant, loadedVariant);
+
         }
         reader.post();
         reader.close();
@@ -369,12 +466,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     protected VariantSource createVariantSource(StudyConfiguration studyConfiguration, Integer fileId) {
         studyConfiguration.getFileIds().put("fileName", fileId);
         VariantSource source = new VariantSource("fileName", fileId.toString(), studyConfiguration.getStudyId() + "" , studyConfiguration.getStudyName());
-        source.getSamplesPosition().put("s0", 0);
-        source.getSamplesPosition().put("s1", 1);
-        source.getSamplesPosition().put("s2", 2);
-        source.getSamplesPosition().put("s3", 3);
-        source.getSamplesPosition().put("s4", 4);
-        source.getSamplesPosition().put("s5", 5);
+        Map<String, Integer> samplesPosition = new HashMap<>();
+        samplesPosition.put("s0", 0);
+        samplesPosition.put("s1", 1);
+        samplesPosition.put("s2", 2);
+        samplesPosition.put("s3", 3);
+        samplesPosition.put("s4", 4);
+        samplesPosition.put("s5", 5);
+        source.setSamplesPosition(samplesPosition);
         return source;
     }
 
@@ -383,58 +482,67 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     /* ---------------------------------------------------- */
 
 
-    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) {
-        checkTransformedVariants(variantsJson, studyConfiguration, NUM_VARIANTS);
+    private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageManagerException {
+        return checkTransformedVariants(variantsJson, studyConfiguration, NUM_VARIANTS);
     }
 
-    private void checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants) {
+    private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants) throws StorageManagerException {
         long start = System.currentTimeMillis();
-        VariantJsonReader variantJsonReader = new VariantJsonReader(new VariantSource(VCF_TEST_FILE_NAME, "6", "", ""),
-                variantsJson.getPath(),
-                variantsJson.getPath().replace("variants", "file"));
+        VariantSource source = new VariantSource(VCF_TEST_FILE_NAME, "6", "", "");
+        VariantReader variantReader = VariantStorageManager.getVariantReader(Paths.get(variantsJson.getPath()), source);
 
-        variantJsonReader.open();
-        variantJsonReader.pre();
+        variantReader.open();
+        variantReader.pre();
 
         List<Variant> read;
         int numVariants = 0;
-        while ((read = variantJsonReader.read(100)) != null && !read.isEmpty()) {
+        while ((read = variantReader.read(100)) != null && !read.isEmpty()) {
             numVariants += read.size();
         }
 
-        variantJsonReader.post();
-        variantJsonReader.close();
+        variantReader.post();
+        variantReader.close();
 
+        assertEquals(expectedNumVariants, source.getStats().getNumRecords()); //9792
         assertEquals(expectedNumVariants, numVariants); //9792
         logger.info("checkTransformedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
+
+        return source;
     }
 
     private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, boolean includeSamples, boolean includeSrc) {
         checkLoadedVariants(dbAdaptor, studyConfiguration, includeSamples, includeSrc, NUM_VARIANTS/*9792*/);
     }
 
-    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, boolean includeSamples, boolean includeSrc, int expectedNumVariants) {
+    private void checkLoadedVariants(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+                                     boolean includeSamples, boolean includeSrc, int expectedNumVariants) {
         long start = System.currentTimeMillis();
         int numVariants = 0;
         String expectedStudyId = studyConfiguration.getStudyName();
         QueryResult<Long> count = dbAdaptor.count(new Query());
         assertEquals(1, count.getNumResults());
-        assertEquals(expectedNumVariants, count.first().intValue());
+        if (expectedNumVariants >= 0) {
+            assertEquals(expectedNumVariants, count.first().intValue());
+        }
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
             assertTrue(studyConfiguration.getHeaders().containsKey(fileId));
         }
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
-                    Assert.assertNotNull(entry.getValue().getSamplesData());
-                    Assert.assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
+                    assertNotNull(entry.getValue().getSamplesData());
+                    assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
 
                     assertEquals(studyConfiguration.getSampleIds().size(), entry.getValue().getSamplesData().size());
                     assertEquals(studyConfiguration.getSampleIds().keySet(), entry.getValue().getSamplesDataAsMap().keySet());
                 }
-                if (includeSrc) {
-                    Assert.assertNotNull(entry.getValue().getAttribute("src"));
+                for (FileEntry fileEntry : entry.getValue().getFiles()) {
+                    if (includeSrc) {
+                        assertNotNull(fileEntry.getAttributes().get(VariantVcfFactory.SRC));
+                    } else {
+                        assertNull(fileEntry.getAttributes().getOrDefault(VariantVcfFactory.SRC, null));
+                    }
                 }
                 for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
                     String cohortName = StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId);
@@ -446,7 +554,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             }
             numVariants++;
         }
-        assertEquals(expectedNumVariants, numVariants);
+        if (expectedNumVariants >= 0) {
+            assertEquals(expectedNumVariants, numVariants);
+        }
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start)/1000.0 + "s");
     }
 

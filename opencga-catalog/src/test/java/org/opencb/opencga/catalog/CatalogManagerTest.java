@@ -453,6 +453,9 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(5, paths.size());
         assertTrue(paths.contains("data/new/"));
         assertTrue(paths.contains("data/new/folder/"));
+
+        URI uri = catalogManager.getFileUri(folder);
+        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
     }
 
     @Test
@@ -1251,7 +1254,30 @@ public class CatalogManagerTest extends GenericTest {
 
         annotations.put("NAME", "Lucas");
         thrown.expect(CatalogException.class);
+        thrown.expectMessage("unique");
         catalogManager.annotateSample(sampleId, "annotation2", vs1.getId(), annotations, null, sessionIdUser);
+    }
+
+    @Test
+    public void testAnnotateIndividualUnique () throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+        int individualId = catalogManager.createIndividual(study.getId(), "INDIVIDUAL_1", "", -1, -1, Individual.Gender.UNKNOWN, new QueryOptions(), sessionIdUser).first().getId();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()));
+        VariableSet vs1 = catalogManager.createVariableSet(study.getId(), "vs1", true, "", null, variables, sessionIdUser).first();
+
+
+        HashMap<String, Object> annotations = new HashMap<>();
+        annotations.put("NAME", "Luke");
+        QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.annotateIndividual(individualId, "annotation1", vs1.getId(), annotations, null, sessionIdUser);
+        assertEquals(1, annotationSetQueryResult.getNumResults());
+
+        annotations.put("NAME", "Lucas");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("unique");
+        catalogManager.annotateIndividual(individualId, "annotation2", vs1.getId(), annotations, null, sessionIdUser);
     }
 
     @Test

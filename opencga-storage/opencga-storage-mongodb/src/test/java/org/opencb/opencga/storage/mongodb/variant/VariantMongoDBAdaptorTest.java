@@ -18,17 +18,13 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
-import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -37,24 +33,14 @@ import static org.junit.Assert.*;
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
-
-    @Override
-    protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
-    }
-
-    @Override
-    protected void clearDB(String dbName) throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB(dbName);
-    }
+public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoVariantStorageManagerTestUtils {
 
     @Test
     public void deleteStudyTest() throws Exception {
         fileIndexed = false;
         dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", false));
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
@@ -67,7 +53,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         fileIndexed = false;
         dbAdaptor.deleteStudy(studyConfiguration.getStudyName(), new QueryOptions("purge", true));
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
+            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
                 assertFalse(entry.getValue().getStudyId().equals(studyConfiguration.getStudyId() + ""));
             }
         }
@@ -82,8 +68,8 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         dbAdaptor.deleteStats(studyConfiguration.getStudyName(), deletedCohort, new QueryOptions());
 
         for (Variant variant : dbAdaptor) {
-            for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
-                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue().getCohortStats().keySet().contains(deletedCohort));
+            for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
+                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue().getStats().keySet().contains(deletedCohort));
             }
         }
         QueryResult<Long> allVariants = dbAdaptor.count(new Query());
@@ -108,6 +94,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest {
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         long numVariantsNoAnnotation = dbAdaptor.count(query).first();
 
+        assertNotEquals(numVariantsChr1, NUM_VARIANTS);
         assertEquals(numVariantsChr1, numVariantsNoAnnotation);
     }
 

@@ -16,6 +16,35 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.google.common.collect.BiMap;
+import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.commons.containers.list.SortedList;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.config.DataStoreServerAddress;
+import org.opencb.datastore.mongodb.MongoDataStore;
+import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -24,36 +53,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.BiMap;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.config.DataStoreServerAddress;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-
-import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.core.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 13/08/14.
@@ -87,6 +86,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public static final String COLLECTION_STUDIES    = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
+    public static final String ALREADY_LOADED_VARIANTS = "alreadyLoadedVariants";
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
@@ -119,7 +119,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String filesCollection = options.getString(COLLECTION_FILES, "files");
         try {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection, studyConfigurationManager);
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection,
+                    studyConfigurationManager, configuration.getStorageEngine(STORAGE_ENGINE_ID));
         } catch (UnknownHostException e) {
             e.printStackTrace();
             return null;
@@ -208,6 +209,15 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //            }
         }
 
+        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
+        QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
+        Long count = countResult.first();
+        if (count != 0) {
+            logger.warn("Resume mode. There are already loaded variants from the file " + studyConfiguration.getFileIds().inverse().get(fileId) + " : " + fileId + " ");
+            options.put(ALREADY_LOADED_VARIANTS, count);
+        }
+
         return uri;
     }
 
@@ -270,15 +280,15 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
 
         //Reader
-        VariantReader variantJsonReader;
-        variantJsonReader = getVariantJsonReader(input, source);
+        VariantReader variantReader;
+        variantReader = getVariantReader(input, source);
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
 
 
         //Writers
-        List<VariantWriter> writers = new LinkedList<>();
+        List<VariantMongoDBWriter> writers = new LinkedList<>();
         List<DataWriter> writerList = new LinkedList<>();
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
@@ -304,7 +314,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Runner
         if (loadThreads == 1) {
             logger.info("Single thread load...");
-            VariantRunner vr = new VariantRunner(source, variantJsonReader, null, writers, taskList, batchSize);
+            VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, (List) writers, taskList, batchSize);
             vr.run();
         } else {
             logger.info("Multi thread load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
@@ -348,7 +358,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 }
 
                 ptr = new ParallelTaskRunner<>(
-                        variantJsonReader,
+                        variantReader,
                         tasks,
                         null,
                         new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
@@ -368,16 +378,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
             }
 
-//            SimpleThreadRunner threadRunner = new SimpleThreadRunner(
-//                    variantJsonReader,
-//                    Collections.<Task>emptyList(),
-//                    writerList,
-//                    batchSize,
-//                    loadThreads * 2,
-//                    0);
-//            threadRunner.run();
-
         }
+        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+        for (VariantMongoDBWriter writer : writers) {
+            writeResult.merge(writer.getWriteResult());
+        }
+        logger.info("Write result: {}", writeResult);
+        options.put("writeResult", writeResult);
 
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -389,6 +396,69 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         return super.postLoad(input, output);
+    }
+
+    @Override
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException {
+        VariantSource variantSource = readVariantSource(Paths.get(input.getPath()), null);
+
+        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
+        Long count = dbAdaptor.count(new Query()
+                .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
+        long expectedCount = 0;
+        long expectedSkippedVariants = 0;
+        int symbolicVariants = 0;
+        int nonVariants = 0;
+        long alreadyLoadedVariants = options.getLong(ALREADY_LOADED_VARIANTS, 0L);
+
+        for (Map.Entry<String, Integer> entry : variantSource.getStats().getVariantTypeCounts().entrySet()) {
+            if (entry.getKey().equals(VariantType.SYMBOLIC.toString())) {
+                expectedSkippedVariants += entry.getValue();
+                symbolicVariants = entry.getValue();
+            } else if (entry.getKey().equals(VariantType.NO_VARIATION.toString())) {
+                expectedSkippedVariants += entry.getValue();
+                nonVariants = entry.getValue();
+            } else {
+                expectedCount += entry.getValue();
+            }
+        }
+        MongoDBVariantWriteResult writeResult = options.get("writeResult", MongoDBVariantWriteResult.class);
+
+        if (alreadyLoadedVariants != 0) {
+            writeResult.setNonInsertedVariants(writeResult.getNonInsertedVariants() - alreadyLoadedVariants);
+        }
+        if (writeResult.getNonInsertedVariants() != 0) {
+            expectedCount -= writeResult.getNonInsertedVariants();
+        }
+
+        logger.info("============================================================");
+        if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
+            logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult.getSkippedVariants());
+        } else if (writeResult.getSkippedVariants() > 0) {
+            logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
+            if (symbolicVariants > 0) {
+                logger.info("  * Of which " + symbolicVariants + " are " + VariantType.SYMBOLIC.toString() + " variants.");
+            }
+            if (nonVariants > 0) {
+                logger.info("  * Of which " + nonVariants + " are " + VariantType.NO_VARIATION.toString() + " variants.");
+            }
+        }
+
+        if (writeResult.getNonInsertedVariants() != 0) {
+            logger.error("There were " + writeResult.getNonInsertedVariants() + " duplicated variants not inserted. ");
+        }
+
+        if (alreadyLoadedVariants != 0) {
+            logger.info("Resume mode. Previously loaded variants: " + alreadyLoadedVariants);
+        }
+
+        if (expectedCount != count) {
+            throw new StorageManagerException("Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count);
+        } else {
+            logger.info("Final number of loaded variants: " + count);
+        }
+        logger.info("============================================================");
     }
 
     @Override
@@ -421,6 +491,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     /**
+     * Check if the samples from the selected file can be loaded.
      * Check if the samples from the selected file can be loaded.
      *
      * MongoDB storage plugin is not able to load batches of samples in a unordered way.

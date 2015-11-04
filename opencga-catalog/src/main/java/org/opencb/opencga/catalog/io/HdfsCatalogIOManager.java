@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.io;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -135,6 +136,11 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 
     @Override
     public DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOException {
+        return null;
+    }
+
+    @Override
+    public DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException {
         return null;
     }
 

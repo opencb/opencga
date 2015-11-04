@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.analysis.storage;
 
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -33,6 +32,7 @@ import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 16/10/14.
@@ -213,17 +214,18 @@ public class AnalysisFileIndexer {
         }
         if (!simulate) {
             Cohort defaultCohort = null;
-            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+            QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), StudyEntry.DEFAULT_COHORT), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, VariantSourceEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
 
+            //Samples are the already indexed plus those that are going to be indexed
             Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
-            samples.addAll(originalFile.getSampleIds());
+            samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
-                logger.debug("Updating \"{}\" cohort", VariantSourceEntry.DEFAULT_COHORT);
+                logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
                 catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
             }
         }
@@ -236,6 +238,19 @@ public class AnalysisFileIndexer {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
                 commandLine += " " + extraParam;
+            }
+        }
+
+        /** Update StudyConfiguration **/
+        if (!simulate) {
+            try {
+                if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
+                    StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                            .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+                    new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
+                }
+            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
             }
         }
 
@@ -406,8 +421,8 @@ public class AnalysisFileIndexer {
                     .append(" --database ").append(dataStore.getDbName())
                     .append(" --input ").append(catalogManager.getFileUri(inputFile))
                     .append(" --outdir ").append(outDirUri)
-                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
-                    .append(" -D").append("sessionId").append("=").append(sessionId)
+//                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
+//                    .append(" -D").append("sessionId").append("=").append(sessionId)
 //                    .append(" --sample-ids ").append(sampleIdsString)
 //                    .append(" --credentials ")
                     ;

@@ -22,7 +22,7 @@ import com.mongodb.DBObject;
 
 import java.util.*;
 
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.utils.CryptoUtils;
@@ -51,6 +51,9 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
     public final static String ANNOTATION_FIELD = "annotation";
     public final static String STATS_FIELD = "stats";
 
+    public static final String _AT_FIELD = "_at";
+    public static final String CHUNK_IDS_FIELD = "chunkIds";
+
 //    public final static String ID_FIELD = "id";
 //    public final static String FILES_FIELD = "files";
 //    public final static String EFFECTS_FIELD = "effs";
@@ -77,7 +80,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
     }
 
-    private DBObjectToVariantSourceEntryConverter variantSourceEntryConverter;
+    private DBObjectToStudyVariantEntryConverter variantSourceEntryConverter;
     private DBObjectToVariantAnnotationConverter variantAnnotationConverter;
     private DBObjectToVariantStatsConverter statsConverter;
 
@@ -97,7 +100,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
      * @param variantSourceEntryConverter The object used to convert the files
      * @param statsConverter
      */
-    public DBObjectToVariantConverter(DBObjectToVariantSourceEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
+    public DBObjectToVariantConverter(DBObjectToStudyVariantEntryConverter variantSourceEntryConverter, DBObjectToVariantStatsConverter statsConverter) {
         this.variantSourceEntryConverter = variantSourceEntryConverter;
         this.variantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
@@ -118,7 +121,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
         // Transform HGVS: List of map entries -> Map of lists
-        BasicDBList mongoHgvs = (BasicDBList) object.get(HGVS_FIELD);
+        List mongoHgvs = (List) object.get(HGVS_FIELD);
         if (mongoHgvs != null) {
             for (Object o : mongoHgvs) {
                 DBObject dbo = (DBObject) o;
@@ -128,11 +131,11 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Files
         if (variantSourceEntryConverter != null) {
-            BasicDBList mongoFiles = (BasicDBList) object.get(STUDIES_FIELD);
+            List mongoFiles = (List) object.get(STUDIES_FIELD);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     DBObject dbo = (DBObject) o;
-                    variant.addSourceEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
+                    variant.addStudyEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
                 }
             }
         }
@@ -155,7 +158,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());
             annotation.setStart(variant.getStart());
-//            variant.setAnnotation(annotation);  //TODO feature/variant-avro: Fix annotation
+            variant.setAnnotation(annotation);
         }
 
         // Statistics
@@ -181,7 +184,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Internal fields used for query optimization (dictionary named "_at")
         BasicDBObject _at = new BasicDBObject();
-        mongoVariant.append("_at", _at);
+        mongoVariant.append(_AT_FIELD, _at);
 
         // Two different chunk sizes are calculated for different resolution levels: 1k and 10k
         BasicDBList chunkIds = new BasicDBList();
@@ -189,7 +192,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         String chunkBig = variant.getChromosome() + "_" + variant.getStart() / VariantMongoDBWriter.CHUNK_SIZE_BIG + "_" + VariantMongoDBWriter.CHUNK_SIZE_BIG / 1000 + "k";
         chunkIds.add(chunkSmall);
         chunkIds.add(chunkBig);
-        _at.append("chunkIds", chunkIds);
+        _at.append(CHUNK_IDS_FIELD, chunkIds);
 
         // Transform HGVS: Map of lists -> List of map entries
         BasicDBList hgvs = new BasicDBList();
@@ -203,7 +206,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         // Files
         if (variantSourceEntryConverter != null) {
             BasicDBList mongoFiles = new BasicDBList();
-            for (VariantSourceEntry archiveFile : variant.getSourceEntries().values()) {
+            for (StudyEntry archiveFile : variant.getStudies()) {
                 mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
@@ -220,7 +223,7 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
 
         // Statistics
         if (statsConverter != null) {
-            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getSourceEntries());
+            List mongoStats = statsConverter.convertCohortsToStorageType(variant.getStudiesMap());
             mongoVariant.put(STATS_FIELD, mongoStats);
         }
 
