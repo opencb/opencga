@@ -27,6 +27,7 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class VariantStatsToHbaseConverter implements ComplexTypeConverter<VariantStats, VariantStatsProtos.VariantStats> {
     
     @Override

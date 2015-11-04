@@ -88,6 +88,6 @@ storageEngines:
       database.name: "opencga"
     database:
       hosts:
-      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
-      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+      - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD}"

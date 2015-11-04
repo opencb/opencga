@@ -45,11 +45,22 @@ public class GenomeVariantHelper extends GenomeHelper {
 
     /**
      * @throws IOException
-     * 
      */
-    public GenomeVariantHelper (Configuration conf) throws IOException {
+    public GenomeVariantHelper(Configuration conf) throws IOException {
         super(conf);
-        this.meta.set(loadMetaData(conf, (InputStream in)-> VcfMeta.parseFrom(in)));
+        this.meta.set(loadMetaData(conf, (InputStream in) -> VcfMeta.parseFrom(in)));
+        column = Bytes.toBytes(getMeta().getFileId());
+    }
+
+    public GenomeVariantHelper(GenomeHelper helper, byte[] meta) throws IOException {
+        super(helper);
+        this.meta.set(VcfMeta.parseFrom(meta));
+        column = Bytes.toBytes(getMeta().getFileId());
+    }
+
+    public GenomeVariantHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
+        super(helper);
+        this.meta.set(meta);
         column = Bytes.toBytes(getMeta().getFileId());
     }
 
@@ -129,20 +140,5 @@ public class GenomeVariantHelper extends GenomeHelper {
     public Put getMetaAsPut(){
         return wrapMetaAsPut(getColumn(), getMeta());
     }
-
-    /**
-     * Changes the String from {@link #generateBlockId(String, long)} to bytes
-     * 
-     * @param chrom
-     *            Chromosome
-     * @param start
-     *            Position
-     * @return {@link Byte} array
-     */
-    public byte[] generateBlockIdAsBytes (String chrom, long start) {
-        return Bytes.toBytes(generateBlockId(chrom, start));
-    }
-
-
 
 }

@@ -371,6 +371,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
             outputStream.write(variant.toJson().getBytes());
+            outputStream.write('\n');
         }
     }
 

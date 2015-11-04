@@ -105,7 +105,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         try {
-            return new VariantHadoopDBAdaptor(buildCredentials(dbName));
+            return new VariantHadoopDBAdaptor(buildCredentials(dbName), configuration.getStorageEngine(storageEngineId));
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter",e);
         }
@@ -138,6 +138,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         return input; // TODO 
+    }
+
+    @Override
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException {
+        // TODO
     }
 
     @Override
