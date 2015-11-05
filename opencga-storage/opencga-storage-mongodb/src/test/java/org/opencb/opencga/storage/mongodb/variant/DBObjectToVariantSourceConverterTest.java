@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
@@ -42,21 +44,23 @@ public class DBObjectToVariantSourceConverterTest {
     @BeforeClass
     public static void setUpClass() {
         source = new VariantSource("file.vcf", "f", "s1", "study1");
-        source.getSamplesPosition().put("NA000.A", 0);
-        source.getSamplesPosition().put("NA001.B", 1);
-        source.getSamplesPosition().put("NA002", 2);
-        source.getSamplesPosition().put("NA003", 3);
+        Map<String, Integer> samplesPosition = new LinkedHashMap<>();
+        samplesPosition.put("NA000.A", 0);
+        samplesPosition.put("NA001.B", 1);
+        samplesPosition.put("NA002", 2);
+        samplesPosition.put("NA003", 3);
+        source.setSamplesPosition(samplesPosition);
         source.addMetadata("header", "##fileformat=v4.1");
         source.addMetadata("FORMAT.A", new VcfFormatHeader("id", "1", "Integer", "description"));
         VariantGlobalStats global = new VariantGlobalStats(10, 4, 7, 3, 0, 9, 4, 4, -1, 20.5f, null);
         source.setStats(global);
-        source.setType(VariantStudy.StudyType.CASE_CONTROL);
+//        source.setType(VariantStudy.StudyType.CASE_CONTROL);
         
         mongoSource = new BasicDBObject(DBObjectToVariantSourceConverter.FILENAME_FIELD, source.getFileName())
                 .append(DBObjectToVariantSourceConverter.FILEID_FIELD, source.getFileId())
                 .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, source.getStudyName())
                 .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, source.getStudyId())
-                .append(DBObjectToVariantSourceConverter.STUDYTYPE_FIELD, source.getType())
+//                .append(DBObjectToVariantSourceConverter.STUDYTYPE_FIELD, source.getType())
                 .append(DBObjectToVariantSourceConverter.DATE_FIELD, Calendar.getInstance().getTime())
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, new BasicDBObject()
                         .append("NA000" + DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS + "A", 0)

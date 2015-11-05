@@ -79,6 +79,14 @@
                 <!--</exclusion>-->
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>
             <artifactId>mrunit</artifactId>

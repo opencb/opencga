@@ -43,7 +43,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     public final static String FILENAME_FIELD = "fname";
     public final static String STUDYID_FIELD = "sid";
     public final static String STUDYNAME_FIELD = "sname";
-    public final static String STUDYTYPE_FIELD = "stype";
+//    public final static String STUDYTYPE_FIELD = "stype";
     public final static String DATE_FIELD = "date";
     public final static String SAMPLES_FIELD = "samp";
     
@@ -65,9 +65,8 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     
     @Override
     public VariantSource convertToDataModelType(DBObject object) {
-        VariantStudy.StudyType studyType = VariantStudy.StudyType.fromString(object.get(STUDYTYPE_FIELD).toString());
         VariantSource source = new VariantSource((String) object.get(FILENAME_FIELD), (String) object.get(FILEID_FIELD),
-                (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), studyType, VariantSource.Aggregation.NONE);
+                (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), null, VariantSource.Aggregation.NONE);
         
         // Samples
         if (object.containsField(SAMPLES_FIELD)) {
@@ -86,8 +85,9 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                     (int) statsObject.get(NUMSNPS_FIELD), (int) statsObject.get(NUMINDELS_FIELD), 
                     0, // TODO Add structural variants to schema!
                     (int) statsObject.get(NUMPASSFILTERS_FIELD), 
-                    (int) statsObject.get(NUMTRANSITIONS_FIELD), (int) statsObject.get(NUMTRANSVERSIONS_FIELD), 
-                    -1, ((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue(), null
+                    (int) statsObject.get(NUMTRANSITIONS_FIELD),
+                    (int) statsObject.get(NUMTRANSVERSIONS_FIELD),
+                    -1, ((Double) statsObject.get(MEANQUALITY_FIELD)).doubleValue(), null
             );
 //            stats.setSamplesCount((int) statsObject.get(NUMSAMPLES_FIELD));
 //            stats.setVariantsCount((int) statsObject.get(NUMVARIANTS_FIELD));
@@ -115,8 +115,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
                 .append(FILEID_FIELD, object.getFileId())
                 .append(STUDYNAME_FIELD, object.getStudyName())
                 .append(STUDYID_FIELD, object.getStudyId())
-                .append(DATE_FIELD, Calendar.getInstance().getTime())
-                .append(STUDYTYPE_FIELD, object.getType().toString());
+                .append(DATE_FIELD, Calendar.getInstance().getTime());
 
         Map<String, Integer> samplesPosition = object.getSamplesPosition();
         if (samplesPosition != null) {

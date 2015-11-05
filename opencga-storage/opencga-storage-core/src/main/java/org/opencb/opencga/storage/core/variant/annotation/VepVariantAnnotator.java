@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.formats.annotation.io.VepFormatReader;
+import org.opencb.biodata.formats.variant.annotation.io.VepFormatReader;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;

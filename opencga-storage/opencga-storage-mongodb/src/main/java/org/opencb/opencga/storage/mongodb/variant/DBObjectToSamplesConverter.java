@@ -20,6 +20,8 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -40,7 +42,6 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantE
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
     public static final String UNKNOWN_GENOTYPE = "?/?";
-    @Deprecated public static final List<String> OTHER_FIELDS = Arrays.asList("GQX", "DP");   //TODO: Save this information on the StudyConfiguration
     public static final Object UNKNOWN_FIELD = -1;
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
@@ -312,19 +313,23 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             sampleIdx = 0;
             if (studyEntry.getFormatPositions().containsKey(extraField)) {
                 Integer fieldIdx = studyEntry.getFormatPositions().get(extraField);
-                String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
                 for (List<String> sampleData : studyEntry.getSamplesData()) {
+                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
                     Integer index = samplesPosition.get(sampleName);
                     Object value;
                     String stringValue = sampleData.get(fieldIdx);
-                    try {
-                        value = Integer.parseInt(stringValue);
-                    } catch (NumberFormatException e) {
+                    if (NumberUtils.isNumber(stringValue)) {
                         try {
-                            value = Double.parseDouble(stringValue);
-                        } catch (NumberFormatException e2) {
-                            value = stringValue;
+                            value = Integer.parseInt(stringValue);
+                        } catch (NumberFormatException e) {
+                            try {
+                                value = Double.parseDouble(stringValue);
+                            } catch (NumberFormatException e2) {
+                                value = stringValue;
+                            }
                         }
+                    } else {
+                        value = stringValue;
                     }
                     values.set(index, value);
                     sampleIdx++;

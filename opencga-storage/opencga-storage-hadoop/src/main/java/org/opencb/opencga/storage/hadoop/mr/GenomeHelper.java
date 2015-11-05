@@ -60,7 +60,7 @@ public class GenomeHelper {
     }
 
     /**
-     * 
+     *
      */
     public GenomeHelper (Configuration conf) {
         this.conf = conf;
@@ -68,6 +68,13 @@ public class GenomeHelper {
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
         this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
+    }
+
+    /**
+     *
+     */
+    public GenomeHelper (GenomeHelper other) {
+        this(other.getConf());
     }
 
     public static Logger getLog() {
@@ -192,6 +199,19 @@ public class GenomeHelper {
     }
     
     /**
+     * Changes the String from {@link #generateBlockId(String, long)} to bytes
+     *
+     * @param chrom
+     *            Chromosome
+     * @param start
+     *            Position
+     * @return {@link Byte} array
+     */
+    public byte[] generateBlockIdAsBytes (String chrom, long start) {
+        return Bytes.toBytes(generateBlockId(chrom, start));
+    }
+
+    /**
      * Generates a Row key based on Chromosome, position, ref and alt <br>
      * <ul>
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
@@ -259,12 +279,15 @@ public class GenomeHelper {
         return wrapAsPut(column,getMetaRowKey(),meta);
     }
 
+    @FunctionalInterface
     interface HBaseTableConsumer<T>{
         void accept(Table table) throws IOException;
     }
+    @FunctionalInterface
     interface HBaseTableFunction<T>{
         T function(Table table) throws IOException;
     }
+    @FunctionalInterface
     interface HBaseTableAdminFunction<T>{
         T function(Table table, Admin admin) throws IOException;
     }

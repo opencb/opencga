@@ -90,6 +90,62 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+                <configuration>
+                    <!-- ... -->
+
+                    <!-- this is false by default, forces the plugin to generate the git.properties file -->
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+
+                    <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
+                    <generateGitPropertiesFilename>src/main/resources/git.properties</generateGitPropertiesFilename>
+                    <gitDescribe>
+
+                        <!-- don't generate the describe property -->
+                        <skip>false</skip>
+
+                        <!--
+                            if no tag was found "near" this commit, just print the commit's id instead,
+                            helpful when you always expect this field to be not-empty
+                        -->
+                        <always>false</always>
+                        <!--
+                             how many chars should be displayed as the commit object id?
+                             7 is git's default,
+                             0 has a special meaning (see end of this README.md),
+                             and 40 is the maximum value here
+                        -->
+                        <abbrev>7</abbrev>
+
+                        <!-- when the build is triggered while the repo is in "dirty state", append this suffix -->
+                        <dirty>-DEV</dirty>
+
+                        <!-- Only consider tags matching the given pattern. This can be used to avoid leaking private tags from the repository. -->
+                        <match>*</match>
+
+                        <!--
+                             always print using the "tag-commits_from_tag-g_commit_id-maybe_dirty" format, even if "on" a tag.
+                             The distance will always be 0 if you're "on" the tag.
+                        -->
+                        <forceLongFormat>false</forceLongFormat>
+                    </gitDescribe>
+                </configuration>
+
+            </plugin>
+        </plugins>
     </build>
 
 </project>

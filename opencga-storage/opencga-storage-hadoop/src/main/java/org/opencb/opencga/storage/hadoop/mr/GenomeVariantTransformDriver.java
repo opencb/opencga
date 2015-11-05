@@ -120,8 +120,8 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
 
         VariantCallMeta meta = new VariantCallMeta();
         if(!out_exist){
-            HBaseUtils.createTableIfNeeded(gh.getTableAsString(), gh.getColumnFamily(), conf);
-            LOG.info(String.format("Create table '%s' in hbase!", gh.getTableAsString()));
+            HBaseUtils.createTableIfNeeded(gh.getOutputTableAsString(), gh.getColumnFamily(), conf);
+            LOG.info(String.format("Create table '%s' in hbase!", gh.getOutputTableAsString()));
         } else{
             meta = new VariantCallMeta(gh.loadMeta());
         }

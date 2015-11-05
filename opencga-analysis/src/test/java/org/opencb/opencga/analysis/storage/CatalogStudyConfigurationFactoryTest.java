@@ -4,9 +4,11 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -30,23 +32,24 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
 /**
  * Created by hpccoll1 on 16/07/15.
  */
-public class CatalogStudyConfigurationManagerTest {
+public class CatalogStudyConfigurationFactoryTest {
 
 
-    private CatalogManager catalogManager;
-    private String sessionId;
-    private int projectId;
-    private int studyId;
-    private FileMetadataReader fileMetadataReader;
-    private CatalogFileUtils catalogFileUtils;
-    private int outputId;
-    Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
-    private String catalogPropertiesFile;
-    private final String userId = "user";
-    private List<File> files = new ArrayList<>();
+    static private CatalogManager catalogManager;
+    static private String sessionId;
+    static private int projectId;
+    static private int studyId;
+    static private FileMetadataReader fileMetadataReader;
+    static private CatalogFileUtils catalogFileUtils;
+    static private int outputId;
+    static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
+    static private String catalogPropertiesFile;
+    static private final String userId = "user";
+    static private List<File> files = new ArrayList<>();
+    static private LinkedHashSet<Integer> indexedFiles = new LinkedHashSet<>();
 
-    @Before
-    public void before() throws Exception {
+    @BeforeClass
+    public static void beforeClass() throws Exception {
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
@@ -73,28 +76,72 @@ public class CatalogStudyConfigurationManagerTest {
 
     }
 
-    public File create(String resourceName) throws IOException, CatalogException {
+    public static File create(String resourceName) throws IOException, CatalogException {
         return create(resourceName, false);
     }
 
-    public File create(String resourceName, boolean indexed) throws IOException, CatalogException {
+    public static File create(String resourceName, boolean indexed) throws IOException, CatalogException {
         File file;
         URI uri = getResourceUri(resourceName);
         file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
             catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today", Index.Status.READY, 1234, Collections.emptyMap())), sessionId);
+            indexedFiles.add(file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
 
     @Test
-    public void getStudyConfiguration() throws Exception {
-        StudyConfigurationManager studyConfigurationManager = new CatalogStudyConfigurationManager(catalogManager, sessionId);
+    public void getNewStudyConfiguration() throws Exception {
+        CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new QueryOptions("sessionId", sessionId)).first();
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        assertEquals(study.getAlias(), studyConfiguration.getStudyName());
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
+            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+                StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
+                studyConfiguration.setIndexedFiles(indexedFiles);
+                return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
+            }
+
+        }, new QueryOptions(), sessionId);
+
+        checkStudyConfiguration(study, studyConfiguration);
+    }
+
+    @Test
+    public void getNewStudyConfigurationNullManager() throws Exception {
+        CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
+
+        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null, new QueryOptions(), sessionId);
+
+        checkStudyConfiguration(study, studyConfiguration);
+    }
+
+    @Test
+    public void getStudyConfiguration() throws Exception {
+        CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
+
+        Study study = catalogManager.getStudy(studyId, sessionId).first();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
+            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+                StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
+                studyConfiguration.setIndexedFiles(indexedFiles);
+                return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+            }
+
+        }, new QueryOptions(), sessionId);
+
+        checkStudyConfiguration(study, studyConfiguration);
+    }
+
+    private void checkStudyConfiguration(Study study, StudyConfiguration studyConfiguration) throws CatalogException {
+        assertEquals("user@p1:s1", studyConfiguration.getStudyName());
         assertEquals(study.getId(), studyConfiguration.getStudyId());
 
         assertTrue(studyConfiguration.getInvalidStats().isEmpty());

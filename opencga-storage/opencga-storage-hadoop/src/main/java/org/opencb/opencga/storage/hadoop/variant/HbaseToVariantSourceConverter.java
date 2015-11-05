@@ -24,6 +24,7 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class HbaseToVariantSourceConverter implements ComplexTypeConverter<VariantSource, Result> {
 
     @Override

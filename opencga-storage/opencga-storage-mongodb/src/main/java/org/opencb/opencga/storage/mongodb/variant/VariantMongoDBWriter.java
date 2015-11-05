@@ -90,6 +90,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //    private VariantSource source;
 
     private AtomicBoolean variantSourceWritten = new AtomicBoolean(false);
+    private MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
     private HashSet<String> coveredChromosomes = new HashSet<>();
     private List<Integer> fileSampleIds;
     private List<Integer> loadedSampleIds;
@@ -187,7 +188,12 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (!data.isEmpty()) {
             coveredChromosomes.add(data.get(0).getChromosome());
         }
-        QueryResult queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+
+        MongoDBVariantWriteResult batchWriteResult = queryResult.first();
+        logger.debug("New batch of {} elements. WriteResult: {}", data.size(), batchWriteResult);
+        writeResult.merge(batchWriteResult);
+
         insertionTime += queryResult.getDbTime();
         return true;
     }
@@ -469,5 +475,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     public void setWriteStudyConfiguration(boolean writeStudyConfiguration) {
         this.writeStudyConfiguration = writeStudyConfiguration;
+    }
+
+    public MongoDBVariantWriteResult getWriteResult() {
+        return writeResult;
     }
 }

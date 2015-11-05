@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.core.adaptors.StudyDBAdaptor;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class ArchivedVariantFileToHbaseConverter implements ComplexTypeConverter<StudyEntry, Put> {
 
     private boolean includeSamples;

@@ -482,6 +482,7 @@ public abstract class CatalogIOManager {
 //
 //    public abstract InputStream getJobZipped(Path jobPath, String jobId) throws CatalogIOManagerException, IOException;
 
+    public abstract DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException;
 
     public abstract String calculateChecksum(URI file) throws CatalogIOException;
 

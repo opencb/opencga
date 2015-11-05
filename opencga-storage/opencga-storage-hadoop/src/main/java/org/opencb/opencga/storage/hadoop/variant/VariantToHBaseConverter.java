@@ -33,6 +33,7 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class VariantToHBaseConverter implements ComplexTypeConverter<Variant, Put> {
 
     public final static byte[] COLUMN_FAMILY = Bytes.toBytes("d");

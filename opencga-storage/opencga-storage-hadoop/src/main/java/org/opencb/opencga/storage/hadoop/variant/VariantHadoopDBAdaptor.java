@@ -1,40 +1,37 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Consumer;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.mr.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.mr.GenomeVariantHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -46,18 +43,44 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     private final Connection con;
     private final Table table;
+    private GenomeHelper genomeHelper;
 
-    public VariantHadoopDBAdaptor(HadoopCredentials credentials) throws IOException {
+    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration) throws IOException {
         Configuration conf = HBaseConfiguration.create();
+        for (Map.Entry<String, Object> entry : configuration.getVariant().getOptions().entrySet()) {
+            conf.set(entry.getKey(), entry.getValue().toString());
+        }
 
         // HBase configuration
         conf.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
         conf.set("hbase.zookeeper.quorum", credentials.getHost());
 //        conf.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
 //        conf.set("zookeeper.znode.parent", "/hbase");
+        genomeHelper = new GenomeHelper(conf);
 
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
+    }
+
+    public QueryResult<VcfSliceProtos.VcfMeta> getMeta(byte[] study) {
+        Get get = new Get(genomeHelper.getMetaRowKey());
+        get.addColumn(getColumnFamily(), study);
+        try {
+            Result result = table.get(get);
+            byte[] value = result.getValue(getColumnFamily(), study);
+            VcfSliceProtos.VcfMeta vcfMeta = VcfSliceProtos.VcfMeta.parseFrom(value);
+            return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(vcfMeta));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public GenomeVariantHelper getGenomeVariantHelper(byte[] studyIdBytes) {
+        try {
+            return new GenomeVariantHelper(genomeHelper, getMeta(studyIdBytes).first());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -169,9 +192,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     private byte[] buildRowkey(String chromosome, long position) {
-        String key = HBaseUtils.buildStoragePosition(chromosome, position);
-        byte[] bKey = Bytes.toBytes(key);
-        return bKey;
+        return genomeHelper.generateBlockIdAsBytes(chromosome, position);
     }
 
     private byte[] getColumnFamily(){
@@ -244,14 +265,33 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator() {
-        // TODO Auto-generated method stub
-        return null;
+        return iterator(new Query(), new QueryOptions());
     }
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
+        long start = System.currentTimeMillis();
+        Region region = Region.parseRegion(query.getString(VariantQueryParams.REGION.key()));
+        String studyId = query.getString(VariantQueryParams.STUDIES.key());
+        byte[] studyIdBytes = studyId.getBytes();
+
+        Scan scan = new Scan();
+        scan.addFamily(getColumnFamily());
+        scan.setStartRow(buildRowkey(region.getChromosome(),region.getStart()));
+        scan.setStopRow(buildRowkey(region.getChromosome(),region.getEnd()));
+        logger.debug(new String(scan.getStartRow()));
+        logger.debug(new String(scan.getStopRow()));
+
+        logger.debug("region = " + region);
+        logger.debug("Created iterator");
+
+        try {
+            ResultScanner resScan = table.getScanner(scan);
+            final Iterator<Result> iter = resScan.iterator();
+            return new VariantHadoopDBIterator(iter, getColumnFamily(), studyIdBytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -360,7 +400,27 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
         // TODO Auto-generated method stub
-        return null;
+        return new StudyConfigurationManager(new ObjectMap()) {
+            @Override
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+                return null;
+            }
+
+            @Override
+            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+                return null;
+            }
+
+            @Override
+            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+                return null;
+            }
+
+            @Override
+            public List<String> getStudyNames(QueryOptions options) {
+                return Collections.emptyList();
+            }
+        };
     }
 
     @Override

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
@@ -39,12 +38,14 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -108,6 +109,11 @@ public class OpenCGAMain {
         if(optionsParser.getCommonOptions().help) {
             optionsParser.printUsage();
             System.exit(1);
+        }
+        if (optionsParser.getGeneralOptions().version) {
+            System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
+            System.out.println("git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+            System.exit(0);
         }
 
         userConfigFile = loadUserFile();
@@ -425,19 +431,14 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        int studyId = catalogManager.getStudyId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
+
+                        queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
 
                         break;
                     }
@@ -889,6 +890,48 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "status": {
+                        OptionsParser.JobsCommands.StatusCommand c = optionsParser.getJobsCommands().statusCommand;
+
+                        final List<Integer> studyIds;
+                        if (c.studyId == null || c.studyId.isEmpty()) {
+                            studyIds = catalogManager.getAllStudies(new QueryOptions("include", "id"), sessionId)
+                                    .getResult().stream().map(Study::getId).collect(Collectors.toList());
+                        } else {
+                            studyIds = new LinkedList<>();
+                            for (String s : c.studyId.split(",")) {
+                                studyIds.add(catalogManager.getStudyId(s));
+                            }
+                        }
+                        for (Integer studyId : studyIds) {
+                            QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
+                                    new QueryOptions("status", Collections.singletonList(Job.Status.RUNNING.toString())), sessionId);
+
+                            for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
+                                Job job = iterator.next();
+                                System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
+                                URI tmpOutDirUri = job.getTmpOutDirUri();
+                                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+                                ioManager.listFilesStream(tmpOutDirUri)
+                                        .sorted()
+                                        .forEach(uri -> {
+                                                    String count;
+                                                    try {
+                                                        long fileSize = ioManager.getFileSize(uri);
+                                                        count = humanReadableByteCount(fileSize, false);
+                                                    } catch (CatalogIOException e) {
+                                                        count = "ERROR";
+                                                    }
+                                                    System.out.format("\t%s [%s]\n", tmpOutDirUri.relativize(uri), count);
+                                                }
+                                        );
+                                if (iterator.hasNext()) {
+                                    System.out.println("-----------------------------------------");
+                                }
+                            }
+                        }
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;
@@ -901,18 +944,20 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.ToolCommands.CreateCommand c = optionsParser.getToolCommands().createCommand;
 
+                        Path path = Paths.get(c.path);
+                        FileUtils.checkDirectory(path);
+
                         QueryResult<Tool> tool = catalogManager.createTool(c.alias, c.description, null, null,
-                                c.path, c.openTool, sessionId);
-                        System.out.println(tool);
+                                path.toAbsolutePath().toString(), c.openTool, sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
 
                         break;
                     }
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        QueryResult<Tool> tool = catalogManager.getTool(c.id, sessionId);
-                        System.out.println(tool);
-
+                        QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
                         break;
                     }
                     default: {

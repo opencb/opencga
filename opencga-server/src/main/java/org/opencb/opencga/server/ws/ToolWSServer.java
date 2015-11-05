@@ -76,6 +76,26 @@ public class ToolWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "Search tools", position = 2)
+    public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
+                           @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
+                           @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
+        try {
+            catalogManager.getAllTools(queryOptions, sessionId);
+            QueryResult<Tool> toolResult = catalogManager.getAllTools(queryOptions, sessionId);
+            for (Tool tool : toolResult.getResult()) {
+                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
+                tool.setManifest(analysisJobExecutor.getAnalysis());
+                tool.setResult(analysisJobExecutor.getResult());
+            }
+            return createOkResponse(toolResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{toolId}/help")
     @ApiOperation(value = "Tool help", position = 3)
     public Response help(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
@@ -114,7 +134,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]", position = 5)
+    @ApiOperation(value = "Delete a tool", position = 5)
     public Response delete(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) {
         return createErrorResponse("delete", "PENDING");
     }
