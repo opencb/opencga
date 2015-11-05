@@ -56,7 +56,7 @@ public class VariantCallMeta {
     
     private void updateCol(Integer sampleId, ByteString byteString){
         id2col.put(sampleId, byteString);
-        col2id.put(byteString.toString(), sampleId);
+        col2id.put(byteString.toStringUtf8(), sampleId);
     }
 
     public void addSample(String name, Integer id, ByteString bs){
