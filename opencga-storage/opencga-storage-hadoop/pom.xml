@@ -99,7 +99,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.opencb.opencga.storage.hadoop.mr.GenomeVariantDriver</mainClass>
+                            <mainClass>org.opencb.opencga.storage.hadoop.mr.GenomeVariantTransformDriver</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
