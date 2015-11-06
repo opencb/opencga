@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 
 /**
@@ -23,14 +25,22 @@ import org.slf4j.Logger;
  */
 public abstract class BenchmarkRunner {
 
+    protected String storageEngine;
+    protected StorageConfiguration storageConfiguration;
+
+    protected VariantDBAdaptor variantDBAdaptor;
+
     protected Logger logger;
 
     public BenchmarkRunner() {
-
     }
 
 
-    public abstract BenchmarkStats run();
 
+    public abstract BenchmarkStats insert();
+
+    public abstract BenchmarkStats query();
+
+    public abstract BenchmarkStats query(int numRepetitions);
 
 }

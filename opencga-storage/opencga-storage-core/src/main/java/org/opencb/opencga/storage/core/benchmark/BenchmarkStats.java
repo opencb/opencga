@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import java.util.HashMap;
+
 /**
  * Created by imedina on 16/06/15.
  */
-public class BenchmarkStats {
+public class BenchmarkStats extends HashMap{
 
 }

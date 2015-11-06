@@ -86,7 +86,7 @@ storageEngines:
       user: "user"
       password: "password"
   variant:
-    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
     options: {}
     database:
       hosts:
