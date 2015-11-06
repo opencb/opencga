@@ -95,7 +95,6 @@ public class GenomeVariantConverter extends Mapper<AvroKey<VariantAvro>, NullWri
     public VcfSlice convert (Variant variant) {
         VcfRecord rec = getConverter().convert(variant, this.getChunkSize());
         long slicePosition = getSlicePosition(variant);
-        slicePosition = slicePosition * this.getChunkSize(); // add missing 0s at the end e.g. 123 -> 12300 (for chunk size 100)
         VcfSlice slice = VcfSlice.newBuilder()
                 .addRecords(rec)
                 .setChromosome(extractChromosome(variant))
