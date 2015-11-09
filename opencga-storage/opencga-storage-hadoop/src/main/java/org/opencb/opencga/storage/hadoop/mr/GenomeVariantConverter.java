@@ -79,6 +79,7 @@ public class GenomeVariantConverter extends Mapper<AvroKey<VariantAvro>, NullWri
         VcfSlice slice = convert(variant);
         Put put = getHelper().wrap(slice);
         ImmutableBytesWritable rowKey = new ImmutableBytesWritable(put.getRow());
+        context.getCounter("OPENCGA.HBASE", "VCF_CONVERT").increment(1);
         context.write(rowKey, put);
     }
 

@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
-import org.opencb.opencga.storage.hadoop.mr.GenomeVariantLoadDriver;
+import org.opencb.opencga.storage.hadoop.mr.GenomeVariantDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,9 +79,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         if (jar == null) {
             throw new StorageManagerException("Missing option " + jarOption);
         }
+        
+        
 
         // "Usage: %s [generic options] <avro> <avro-meta> <output-table>
-        String commandLine = hadoopRoute + " jar " + jar + " " + input + " " + vcfMeta + " " + db.getTable();
+        Class<GenomeVariantDriver> execClass = GenomeVariantDriver.class;
+        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName() + " " + input + " " + vcfMeta + " " + db.getTable();
 
 
         logger.debug("------------------------------------------------------");

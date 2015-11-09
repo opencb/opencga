@@ -9,11 +9,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.file.DataFileStream;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapreduce.AvroJob;
 import org.apache.avro.mapreduce.AvroKeyInputFormat;
@@ -25,12 +21,20 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.MutationSerialization;
+import org.apache.hadoop.hbase.mapreduce.ResultSerialization;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableReducer;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -42,12 +46,12 @@ import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVcfMeta;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.GeneratedMessage;
-import com.sun.tools.internal.jxc.gen.config.Config;
 
 public class GenomeVariantDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(GenomeVariantDriver.class);
@@ -81,7 +85,8 @@ public class GenomeVariantDriver extends Configured implements Tool {
         /* JOB setup */
         Job job = Job.getInstance(conf, "Genome Variant to HBase");
         job.setJarByClass(getClass());
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
+        conf = job.getConfiguration();
+        conf.set("mapreduce.job.user.classpath.first", "true");
 
         // input
         FileInputFormat.addInputPath(job, new Path(inputFile));
@@ -94,17 +99,10 @@ public class GenomeVariantDriver extends Configured implements Tool {
 
         // combiner
         job.setCombinerClass(GenomeVariantCombiner.class);
+      
 
-        // output -> using utils
         TableMapReduceUtil.initTableReducerJob(tablename, null, job);
-
-        // If utils is not used
-        // conf.set(TableOutputFormat.OUTPUT_TABLE, tablename);
-        // job.setOutputKeyClass(ImmutableBytesWritable.class);
-        // job.setOutputValueClass(Writable.class);
-        // TableMapReduceUtil.addDependencyJars(job);
-
-        job.setNumReduceTasks(0);
+        job.setMapOutputValueClass(Put.class);
 
         if( HBaseUtils.createTableIfNeeded(tablename, variantHelper.getColumnFamily(), job.getConfiguration())){
             LOG.info(String.format("Create table '%s' in hbase!", tablename));
