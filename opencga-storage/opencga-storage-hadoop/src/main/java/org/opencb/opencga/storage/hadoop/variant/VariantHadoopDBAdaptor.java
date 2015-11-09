@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -42,6 +41,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
     private final Connection con;
+    // FIXME: Pooling or caching this object is not recommended.
+    // Should create for each query and close it at the end.
     private final Table table;
     private GenomeHelper genomeHelper;
 
@@ -62,22 +63,24 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         table = con.getTable(TableName.valueOf(credentials.getTable()));
     }
 
-    public QueryResult<VcfSliceProtos.VcfMeta> getMeta(byte[] study) {
+    public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(byte[] column) {
         Get get = new Get(genomeHelper.getMetaRowKey());
-        get.addColumn(getColumnFamily(), study);
+        get.addColumn(getColumnFamily(), column);
         try {
+            long startTime = System.currentTimeMillis();
             Result result = table.get(get);
-            byte[] value = result.getValue(getColumnFamily(), study);
+            byte[] value = result.getValue(getColumnFamily(), column);
             VcfSliceProtos.VcfMeta vcfMeta = VcfSliceProtos.VcfMeta.parseFrom(value);
-            return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(vcfMeta));
+            return new QueryResult<>("getVcfMeta", (int)(System.currentTimeMillis() - startTime), 1, 1, "", "",
+                    Collections.singletonList(vcfMeta));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public GenomeVariantHelper getGenomeVariantHelper(byte[] studyIdBytes) {
+    public GenomeVariantHelper getGenomeVariantHelper(byte[] column) {
         try {
-            return new GenomeVariantHelper(genomeHelper, getMeta(studyIdBytes).first());
+            return new GenomeVariantHelper(genomeHelper, getVcfMeta(column).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -270,7 +273,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        long start = System.currentTimeMillis();
         Region region = Region.parseRegion(query.getString(VariantQueryParams.REGION.key()));
         String studyId = query.getString(VariantQueryParams.STUDIES.key());
         byte[] studyIdBytes = studyId.getBytes();
@@ -288,7 +290,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         try {
             ResultScanner resScan = table.getScanner(scan);
             final Iterator<Result> iter = resScan.iterator();
-            return new VariantHadoopDBIterator(iter, getColumnFamily(), studyIdBytes);
+            return new VariantHadoopArchiveDBIterator(iter, getColumnFamily(), studyIdBytes, getVcfMeta(studyIdBytes).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
