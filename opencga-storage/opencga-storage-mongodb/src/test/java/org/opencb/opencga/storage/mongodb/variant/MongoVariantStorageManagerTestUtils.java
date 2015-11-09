@@ -17,20 +17,14 @@ import java.io.InputStream;
  */
 public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest {
 
-    class Manager {
-        static public MongoDBVariantStorageManager manager = null;
-    }
-
     Logger logger = LoggerFactory.getLogger(MongoVariantStorageManagerTestUtils.class);
 
     default MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        if (Manager.manager == null) {
-            Manager.manager = new MongoDBVariantStorageManager();
-            InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            Manager.manager.setConfiguration(storageConfiguration, "mongodb");
-        }
-        return Manager.manager;
+        MongoDBVariantStorageManager manager = new MongoDBVariantStorageManager();
+        InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+        manager.setConfiguration(storageConfiguration, "mongodb");
+        return manager;
     }
 
     default void clearDB(String dbName) throws Exception {

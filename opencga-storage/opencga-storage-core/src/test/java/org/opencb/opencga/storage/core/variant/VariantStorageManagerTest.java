@@ -274,7 +274,12 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     public void corruptedIndexTest() throws Exception {
 
         thrown.expect(StorageManagerException.class);
-        runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
+        try {
+            runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
+        } catch (Exception e) {
+            System.out.println("e.getClass().getName() = " + e.getClass().getName());
+            throw e;
+        }
 
     }
 
