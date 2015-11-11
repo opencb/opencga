@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,6 +63,7 @@ public class VariantAnnotationManager {
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
+    public static final String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;
@@ -199,7 +201,8 @@ public class VariantAnnotationManager {
     public enum AnnotationSource {
         CELLBASE_DB_ADAPTOR,
         CELLBASE_REST,
-        VEP
+        VEP,
+        OTHER
     }
 
 
@@ -207,7 +210,9 @@ public class VariantAnnotationManager {
             throws VariantAnnotatorException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
         AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(
-                options.getString(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()).toUpperCase()
+                options.getString(ANNOTATION_SOURCE, options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+                        ? AnnotationSource.OTHER.name()
+                        : VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()).toUpperCase()
         );
 
         logger.info("Annotating with {}", annotationSource);
@@ -219,9 +224,20 @@ public class VariantAnnotationManager {
                 return new CellBaseVariantAnnotator(configuration, options, true);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
+            case OTHER:
             default:
-                //TODO: Reflexion?
-                throw new VariantAnnotatorException("Unknown annotation source: " + annotationSource);
+                String className = options.getString(VARIANT_ANNOTATOR_CLASSNAME);
+                try {
+                    Class<?> clazz = Class.forName(className);
+                    if (VariantAnnotator.class.isAssignableFrom(clazz)) {
+                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class).newInstance(configuration, options);
+                    } else {
+                        throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
+                    }
+                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                    throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
+                }
         }
 
     }
