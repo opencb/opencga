@@ -14,12 +14,14 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
@@ -50,8 +52,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         }
 
-//        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
-//        options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
+//        VariantSource variantSource = readVariantSource(Paths.get(input), null);
+//        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+//        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         //TODO: CopyFromLocal input to HDFS
         if (!input.getScheme().equals("hdfs")) {
@@ -115,7 +118,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         // "Usage: %s [generic options] <avro> <avro-meta> <output-table>
         Class<GenomeVariantDriver> execClass = GenomeVariantDriver.class;
-        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName() + " " + input + " " + vcfMeta + " " + db.getTable();
+        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName() + " " + input + " " + vcfMeta + " " + db.toUri();
 
 
         logger.debug("------------------------------------------------------");
@@ -171,7 +174,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return input; // TODO 
+        return super.postLoad(input, output); // TODO
     }
 
     @Override
@@ -190,5 +193,17 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     public static Logger getLogger() {
         return logger;
+    }
+
+    @Override
+    protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
+        try {
+            HadoopCredentials dbCredentials = getDbCredentials();
+            Configuration configuration = VariantHadoopDBAdaptor.getHadoopConfiguration(dbCredentials, this.configuration.getStorageEngine(storageEngineId));
+            return new HBaseStudyConfigurationManager(dbCredentials, configuration, options);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return super.buildStudyConfigurationManager(options);
+        }
     }
 }

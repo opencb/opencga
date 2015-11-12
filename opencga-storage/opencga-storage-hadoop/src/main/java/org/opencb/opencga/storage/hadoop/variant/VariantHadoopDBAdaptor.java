@@ -50,11 +50,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private GenomeHelper genomeHelper;
 
     public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration) throws IOException {
-        Configuration conf = HBaseConfiguration.create();
-        for (Map.Entry<String, Object> entry : configuration.getVariant().getOptions().entrySet()) {
-            conf.set(entry.getKey(), entry.getValue().toString());
-        }
-
+        Configuration conf = getHadoopConfiguration(credentials, configuration);
         // HBase configuration
 //        conf.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
         conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
@@ -65,6 +61,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
         studyConfigurationManager = new HBaseStudyConfigurationManager(new ObjectMap());
+    }
+
+    static Configuration getHadoopConfiguration(HadoopCredentials credentials, StorageEngineConfiguration configuration) {
+        Configuration conf = HBaseConfiguration.create();
+        configuration.getVariant().getOptions().entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .forEach(entry -> conf.set(entry.getKey(), entry.getValue().toString()));
+        conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        return conf;
     }
 
     public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(String tableName, byte[] column) {

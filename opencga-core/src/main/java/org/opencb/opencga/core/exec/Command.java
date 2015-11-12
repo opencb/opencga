@@ -155,7 +155,7 @@ public class Command extends RunnableProcess {
                             outputOutputStream.flush();
                         }
                         Thread.sleep(500);
-                        logger.debug("stdout - Sleep (last bytesRead = " + bytesRead + ")");
+                        logger.trace("stdout - Sleep (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadOutputStream - Exit while");
                 } catch (Exception ex) {
@@ -198,7 +198,7 @@ public class Command extends RunnableProcess {
                             errorOutputStream.flush();
                         }
                         Thread.sleep(500);
-                        logger.debug("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
+                        logger.trace("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadErrorStream - Exit while");
                 } catch (Exception ex) {
