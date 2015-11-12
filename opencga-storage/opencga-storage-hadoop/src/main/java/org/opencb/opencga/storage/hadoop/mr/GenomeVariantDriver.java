@@ -21,20 +21,13 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.MutationSerialization;
-import org.apache.hadoop.hbase.mapreduce.ResultSerialization;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.hbase.mapreduce.TableReducer;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -57,7 +50,6 @@ public class GenomeVariantDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(GenomeVariantDriver.class);
 
     public static final String HBASE_MASTER = "hbase.master";
-    public static final String HBASE_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
     public static final String OPT_TABLE_NAME = "opencga.table.name";
     public static final String OPT_VCF_FILE = "opencga.file.vcf";
     public static final String OPT_VCF_META_FILE = "opencga.file.vcfmeta";
@@ -176,7 +168,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
         String master = String.join(":", server, port.toString());
 
-        conf.set(HBASE_ZOOKEEPER_QUORUM, server);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, server);
         conf.set(HBASE_MASTER, master);
         conf.set(OPT_TABLE_NAME,tablename);
     }

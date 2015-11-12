@@ -11,6 +11,7 @@ import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
@@ -40,7 +41,6 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     public static final String OPENCGA_VARIANT_TRANSFORM_OUTPUT = "opencga.variant.transform.output";
     public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
     public static final String HBASE_MASTER = "hbase.master";
-    public static final String HBASE_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
 
     public GenomeVariantTransformDriver () { /* nothing */}
 
@@ -145,7 +145,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         String server = uri.getHost();
         Integer port = uri.getPort() > 0?uri.getPort() : 60000;
         String master = String.join(":", server, port.toString());
-        conf.set(HBASE_ZOOKEEPER_QUORUM, server);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, server);
         conf.set(HBASE_MASTER, master);
     }
 

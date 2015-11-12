@@ -27,10 +27,10 @@ public class VcfRecordComparatorTest {
      */
     @Before
     public void setUp () throws Exception {
-        a1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).setAlternate("a").build();
-        a2 = VcfRecord.newBuilder().setRelativeStart(2).setRelativeEnd(2).setAlternate("a").build();
-        b1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(3).setAlternate("b").build();
-        b2 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).setAlternate("b").build();
+        a1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).addAlternate("a").build();
+        a2 = VcfRecord.newBuilder().setRelativeStart(2).setRelativeEnd(2).addAlternate("a").build();
+        b1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(3).addAlternate("b").build();
+        b2 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).addAlternate("b").build();
         vcfRecordComparator = new VcfRecordComparator();
     }
 

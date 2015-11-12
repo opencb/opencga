@@ -3,10 +3,15 @@ package org.opencb.opencga.storage.hadoop.variant;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.datastore.core.ObjectMap;
@@ -50,7 +55,33 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         //TODO: CopyFromLocal input to HDFS
         if (!input.getScheme().equals("hdfs")) {
-            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
+            if (!output.getScheme().equals("hdfs")) {
+                throw new StorageManagerException("Output must be in HDFS");
+            }
+
+            try {
+                Configuration conf = new HdfsConfiguration();
+                for (Map.Entry<String, Object> entry : options.entrySet()) {
+                    if (entry.getValue() != null) {
+                        conf.set(entry.getKey(), options.getString(entry.getKey()));
+                    }
+                }
+                FileSystem fs = FileSystem.get(conf);
+                Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
+                fs.copyFromLocalFile(false, new Path(input), variantsOutputPath);
+
+                URI fileInput = URI.create(input.toString().replace("variants.avro", "file.json"));
+                Path fileOutputPath = new Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                logger.info("Copy from {} to {}", new Path(fileInput).toUri(), fileOutputPath.toUri());
+                fs.copyFromLocalFile(false, new Path(fileInput), fileOutputPath);
+
+                input = variantsOutputPath.toUri();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+//            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
         }
 
         return input;  // TODO 

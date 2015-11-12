@@ -1,35 +1,15 @@
 /**
- * 
+ *
  */
 package org.opencb.opencga.storage.hadoop.mr;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -44,7 +24,11 @@ import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCall
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -58,7 +42,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     private final AtomicReference<GenomeVariantTransformHelper> helper = new AtomicReference<>();
     private final AtomicReference<VariantCallMeta> meta = new AtomicReference<>();
     private final Map<Integer, VcfMeta> vcfMetaMap = new ConcurrentHashMap<>();
-    
+
     public Logger getLog() {
         return LOG;
     }
@@ -70,7 +54,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         // Setup configuration
         helper.set(loadHelper(context));;
         meta.set(loadMeta());
-        
+
         // Load VCF meta data for columns
         initVcfMetaMap(context.getConfiguration());
         super.setup(context);
@@ -112,26 +96,26 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     public GenomeVariantTransformHelper getHelper() {
         return helper.get();
     }
-    
+
     public VariantCallMeta getMeta() {
         return meta.get();
     }
-    
+
     @Override
-    protected void map(ImmutableBytesWritable key, Result value, 
+    protected void map(ImmutableBytesWritable key, Result value,
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
-        
+
         Map<String, Map<String, List<Integer>>> summary = new HashMap<>();
         try{
-            
+
             String blockId = Bytes.toString(key.get());
-            
+
             GenomeVariantTransformHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
 //            Long sliceReg = h.extractPositionFromBlockId(blockId);
 //            Long startPos = h.getStartPositionFromSlice(sliceReg);
 //            Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
-            
+
             NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
             for (Entry<byte[], byte[]> x : fm.entrySet()) {
                 Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
@@ -139,14 +123,14 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
                 List<VcfRecord> lst = vcfSlice.getRecordsList();
                 for(VcfRecord rec : lst){
                     int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
-                    
-                    String row_key = generateKey(chr,vcfPos,rec.getReference(),rec.getAlternate());
-                    String gt = extractGt(id,rec);
+
+                    String row_key = generateKey(chr, vcfPos, rec.getReference(), rec.getAlternate(0));
+                    String gt = extractGt(id, rec);
                     updateSummary(summary, id, row_key, gt);
                 }
             }
             Map<String, Result> currRes = fetchCurrentValues(context, summary.keySet());
-            updateOutputTable(context,summary, currRes);
+            updateOutputTable(context, summary, currRes);
         }catch(InvalidProtocolBufferException e){
             throw new IOException(e);
         }
@@ -160,7 +144,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         ) {
             for(String rowKey : keySet){
                 byte[] rkBytes = Bytes.toBytes(rowKey);
-                Result res = table.get(new Get(rkBytes)); 
+                Result res = table.get(new Get(rkBytes));
                 resMap.put(rowKey, res);
             }
         }
@@ -171,18 +155,18 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
      * Load (if available) current data, merge information and store new object in DB
      * @param context
      * @param summary
-     * @param currRes 
-     * @throws IOException 
-     * @throws InterruptedException 
+     * @param currentResults
+     * @throws IOException
+     * @throws InterruptedException
      */
-    private void updateOutputTable(Context context, Map<String, Map<String, List<Integer>>> summary, Map<String, Result> currentResults) 
+    private void updateOutputTable(Context context, Map<String, Map<String, List<Integer>>> summary, Map<String, Result> currentResults)
             throws IOException, InterruptedException {
         for(String rowKey : summary.keySet()){
             byte[] rkBytes = Bytes.toBytes(rowKey);
             // Wrap data
             Put put = wrapData(context, summary, rowKey, rkBytes);
             // Load possible Row
-            Result res = currentResults.get(rowKey); 
+            Result res = currentResults.get(rowKey);
             if(res.isEmpty()){
                 context.write(new ImmutableBytesWritable(rkBytes), put);
                 context.getCounter("OPENCGA.HBASE", "VCF_ROW_NEW").increment(1);
@@ -204,7 +188,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     private Put mergetData(Result res, Put put) throws IOException {
         byte[] columnFamily = getHelper().getColumnFamily();
         Put nPut = new Put(put.getRow());
-        
+
         NavigableMap<byte[], byte[]> resMap = res.getFamilyMap(columnFamily);
         Set<String> mergedColumns = new HashSet<>();
         for(Entry<byte[], byte[]> e : resMap.entrySet()){
@@ -282,7 +266,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             summary.put(row_key, rkmap);
         }
         List<Integer> idlst = rkmap.get(gt);
-        
+
         if(null == idlst){
             idlst = new ArrayList<Integer>();
             rkmap.put(gt, idlst);
@@ -309,7 +293,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         VcfMeta meta = getVcfMeta(id);
         return findIndex("GT",meta.getFormatDefaultList());
     }
-    
+
     private VcfMeta getVcfMeta(Integer id) {
         return this.vcfMetaMap.get(id);
     }
@@ -324,6 +308,6 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     private VcfSlice asSlice(byte[] data) throws InvalidProtocolBufferException {
         return VcfSlice.parseFrom(data);
     }
-    
+
 
 }

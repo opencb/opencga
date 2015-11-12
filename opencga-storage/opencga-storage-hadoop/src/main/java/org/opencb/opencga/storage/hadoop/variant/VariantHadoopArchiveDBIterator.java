@@ -20,29 +20,29 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator {
     private final VcfRecordToVariantConverter converter;
     private Iterator<VcfSliceProtos.VcfRecord> vcfRecordIterator = Collections.emptyIterator();
     private VcfSliceProtos.VcfSlice vcfSlice;
-    private final Iterator<Result> iter;
+    private final Iterator<Result> iterator;
     private final byte[] columnFamily;
-    private final byte[] studyIdBytes;
+    private final byte[] fileIdBytes;
 
-    public VariantHadoopArchiveDBIterator(Iterator<Result> iter, byte[] columnFamily, byte[] studyIdBytes, VcfSliceProtos.VcfMeta meta) {
-        this.iter = iter;
+    public VariantHadoopArchiveDBIterator(Iterator<Result> iterator, byte[] columnFamily, byte[] fileIdBytes, VcfSliceProtos.VcfMeta meta) {
+        this.iterator = iterator;
         this.columnFamily = columnFamily;
-        this.studyIdBytes = studyIdBytes;
+        this.fileIdBytes = fileIdBytes;
         converter = new VcfRecordToVariantConverter(meta);
     }
 
     @Override
     public boolean hasNext() {
-        return vcfRecordIterator.hasNext() || iter.hasNext();
+        return vcfRecordIterator.hasNext() || iterator.hasNext();
     }
 
     @Override
     public Variant next() {
         if (!vcfRecordIterator.hasNext()) {
-            Result result = iter.next();
+            Result result = iterator.next();
             byte[] rid = result.getRow();
             try {
-                byte[] value = result.getValue(columnFamily, studyIdBytes);
+                byte[] value = result.getValue(columnFamily, fileIdBytes);
                 vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
                 vcfRecordIterator = vcfSlice.getRecordsList().iterator();
 
@@ -51,6 +51,18 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator {
             }
         }
         VcfSliceProtos.VcfRecord vcfRecord = vcfRecordIterator.next();
-        return converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
+
+        Variant variant = null;
+        try {
+            variant = converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
+        } catch (IllegalArgumentException e ){
+            e.printStackTrace(System.err);
+            System.err.println("vcfSlice.getPosition() = " + vcfSlice.getPosition());
+            System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
+            System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
+            variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(), vcfRecord.getReference(), vcfRecord.getAlternate(0));
+            System.err.println("variant " + variant.toString());
+        }
+        return variant;
     }
 }

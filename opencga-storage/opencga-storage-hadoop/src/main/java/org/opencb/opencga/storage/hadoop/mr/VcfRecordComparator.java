@@ -5,6 +5,7 @@ package org.opencb.opencga.storage.hadoop.mr;
 
 import java.util.Comparator;
 
+import com.google.protobuf.ProtocolStringList;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 
 /**
@@ -12,7 +13,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
  * <ul>
  * <li>first {@link VcfRecord#getRelativeStart()}
  * <li>first {@link VcfRecord#getRelativeEnd()()}
- * <li>string compare {@link VcfRecord#getAlternate()}
+ * <li>string compare {@link VcfRecord#getAlternateList()}
  * <ul>
  * 
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -28,7 +29,7 @@ public class VcfRecordComparator implements Comparator<VcfRecord> {
         compare = Integer.compare(o1.getRelativeEnd(), o2.getRelativeEnd());
         if (compare != 0)
             return compare;
-        return o1.getAlternate().compareTo(o2.getAlternate());
+        return o1.getAlternateList().equals(o2.getAlternateList()) ? 0 : 1;
     }
 
 }

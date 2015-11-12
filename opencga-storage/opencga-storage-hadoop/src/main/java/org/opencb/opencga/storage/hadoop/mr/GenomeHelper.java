@@ -183,31 +183,27 @@ public class GenomeHelper {
      * <ul>
      * e.g. using chunk size 100, separator _ with chr2 and 1234 would result in
      * 2_12
-     * 
-     * @param chrom
-     *            Chromosome name
-     * @param position
-     *            Genomic position
+     *
+     * @param chrom    Chromosome name
+     * @param position Genomic position
      * @return {@link String} Row key string
      */
-    protected String generateBlockId (String chrom, long position) {
+    protected String generateBlockId(String chrom, long position) {
         long slicePosition = getSlicePosition(position);
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());
         sb.append(String.format("%012d", slicePosition));
         return sb.toString();
     }
-    
+
     /**
      * Changes the String from {@link #generateBlockId(String, long)} to bytes
      *
-     * @param chrom
-     *            Chromosome
-     * @param start
-     *            Position
+     * @param chrom Chromosome
+     * @param start Position
      * @return {@link Byte} array
      */
-    public byte[] generateBlockIdAsBytes (String chrom, long start) {
+    public byte[] generateBlockIdAsBytes(String chrom, long start) {
         return Bytes.toBytes(generateBlockId(chrom, start));
     }
 
@@ -217,14 +213,14 @@ public class GenomeHelper {
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
      * name
      * <ul>
-     * 
-     * @param chrom Chromosome name
+     *
+     * @param chrom    Chromosome name
      * @param position Genomic position
-     * @param ref Reference name
-     * @param ref Alt name
+     * @param ref      Reference name
+     * @param ref      Alt name
      * @return {@link String} Row key string
      */
-    protected String generateVcfRowId (String chrom, long position,String ref,String alt) {
+    protected String generateVcfRowId(String chrom, long position, String ref, String alt) {
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());
         sb.append(String.format("%012d", position));
@@ -254,12 +250,11 @@ public class GenomeHelper {
 
     /**
      * Creates a standard chromosome name from the provided string
-     * 
-     * @param chrom
-     *            Chromosome string
+     *
+     * @param chrom Chromosome string
      * @return String chromosome name
      */
-    public String standardChromosome (String chrom) {
+    public String standardChromosome(String chrom) {
         if (chrom.length() > 2) {
             if (chrom.substring(0, 2).equals("chr")) {
                 chrom = chrom.substring(2);
