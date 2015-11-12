@@ -38,8 +38,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     HBaseStudyConfigurationManager(ObjectMap options) {
         super(options);
-//        throw new UnsupportedOperationException();
-        objectMapper = new ObjectMapper();
+        throw new UnsupportedOperationException();
     }
 
     public HBaseStudyConfigurationManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
@@ -61,7 +60,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     @Override
     protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         long startTime = System.currentTimeMillis();
-        String error = "";
+        String error;
         logger.info("Get StudyConfiguration {}", studyName);
         Get get = new Get(STUDIES_ROW);
         byte[] columnQualifier = Bytes.toBytes(studyName);

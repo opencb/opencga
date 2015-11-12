@@ -76,7 +76,8 @@ storageEngines:
   options: {}
   alignment:
     manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
-    options: {}
+    options:
+      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
@@ -85,7 +86,12 @@ storageEngines:
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
     options: 
+      #Generic options
       database.name: "opencga"
+      #Plugin specific options
+      hadoop.env: "HADOOP_USER_CLASSPATH_FIRST=true,HADOOP_CLASSPATH=${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-3.0.0-beta-1.jar"
+      opencga.storage.hadoop.jar-with-dependencies: "${OPENCGA.INSTALLATION.DIR}/opencga-storage-hadoop-0.7-dev-jar-with-dependencies.jar"
+      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
       - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"

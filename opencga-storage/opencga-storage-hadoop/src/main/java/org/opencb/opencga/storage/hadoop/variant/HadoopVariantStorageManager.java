@@ -1,14 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
@@ -53,8 +55,24 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
 
 //        VariantSource variantSource = readVariantSource(Paths.get(input), null);
-//        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
-//        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        VariantSource source = readVariantSource(input, options);
+
+        int fileId;
+        String fileName = source.getFileName();
+        try {
+            fileId = Integer.parseInt(source.getFileId());
+        } catch (NumberFormatException e) {
+            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
+        }
+        options.put(Options.FILE_ID.key(), fileId);
+        checkNewFile(studyConfiguration, fileId, fileName);
+        studyConfiguration.getFileIds().put(fileName, fileId);
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
+
+        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+
+
 
         //TODO: CopyFromLocal input to HDFS
         if (!input.getScheme().equals("hdfs")) {
@@ -63,12 +81,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             }
 
             try {
-                Configuration conf = new HdfsConfiguration();
-                for (Map.Entry<String, Object> entry : options.entrySet()) {
-                    if (entry.getValue() != null) {
-                        conf.set(entry.getKey(), options.getString(entry.getKey()));
-                    }
-                }
+                Configuration conf = getHadoopConfiguration(options);
                 FileSystem fs = FileSystem.get(conf);
                 Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
                 logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
@@ -87,15 +100,31 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 //            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
         }
 
-        return input;  // TODO 
+        return input;
+    }
+
+    //TODO: Generalize this
+    VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+        VariantSource source;
+        Configuration conf = getHadoopConfiguration(options);
+        try (
+                FileSystem fs = FileSystem.get(conf);
+                InputStream inputStream = new GZIPInputStream(fs.open(new Path(input.toString().replace("variants.avro", "file.json"))))
+        ) {
+            source = new ObjectMapper().readValue(inputStream, VariantSource.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new StorageManagerException("Unable to read VariantSource", e);
+        }
+        return source;
     }
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        logger.info("Pretransform: " + input);
+        logger.info("PreTransform: " + input);
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        options.put("transform.format", "avro");
-        return super.preTransform(input);  // TODO
+        options.put(Options.TRANSFORM_FORMAT.key(), "avro");
+        return super.preTransform(input);
     }
 
 
@@ -104,7 +133,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public URI load(URI input) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(input.toString().replace("variants.avro", "file.json"));
-        
+
         HadoopCredentials db = getDbCredentials();
 
         String hadoopRoute = options.getString("hadoop.bin", "hadoop");
@@ -129,7 +158,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         logger.debug("------------------------------------------------------");
         logger.debug("Exit value: {}", command.getExitValue());
 
-        return input; // TODO  change return value
+        return input; // TODO  change return value?
     }
 
     private HadoopCredentials getDbCredentials() throws StorageManagerException{
@@ -142,7 +171,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         try {
-            return new VariantHadoopDBAdaptor(buildCredentials(dbName), configuration.getStorageEngine(storageEngineId));
+            return new VariantHadoopDBAdaptor(buildCredentials(dbName), configuration.getStorageEngine(storageEngineId),
+                    getHadoopConfiguration(configuration.getStorageEngine(storageEngineId).getOptions()));
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter",e);
         }
@@ -199,11 +229,27 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         try {
             HadoopCredentials dbCredentials = getDbCredentials();
-            Configuration configuration = VariantHadoopDBAdaptor.getHadoopConfiguration(dbCredentials, this.configuration.getStorageEngine(storageEngineId));
+            Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
             return new HBaseStudyConfigurationManager(dbCredentials, configuration, options);
         } catch (IOException e) {
             e.printStackTrace();
             return super.buildStudyConfigurationManager(options);
         }
+    }
+
+    private Configuration getHadoopConfiguration(ObjectMap options) throws StorageManagerException {
+        Configuration conf = new HdfsConfiguration();
+        // This is the only key needed to connect to HDFS:
+        //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
+        //
+
+        if (conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY) == null) {
+            throw new StorageManagerException("Missing configuration parameter \"" + CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY + "\"");
+        }
+
+        options.entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .forEach(entry -> conf.set(entry.getKey(), options.getString(entry.getKey())));
+        return conf;
     }
 }

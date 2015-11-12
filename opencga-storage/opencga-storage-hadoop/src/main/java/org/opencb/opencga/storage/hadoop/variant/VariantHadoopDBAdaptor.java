@@ -11,7 +11,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -49,28 +48,28 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final HBaseStudyConfigurationManager studyConfigurationManager;
     private GenomeHelper genomeHelper;
 
-    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration) throws IOException {
-        Configuration conf = getHadoopConfiguration(credentials, configuration);
-        // HBase configuration
-//        conf.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
-        conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
-//        conf.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-//        conf.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
+                                  Configuration conf) throws IOException {
+        conf = getHbaseConfiguration(conf, credentials);
+
         genomeHelper = new GenomeHelper(conf);
 
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
-        studyConfigurationManager = new HBaseStudyConfigurationManager(new ObjectMap());
+        studyConfigurationManager = new HBaseStudyConfigurationManager(credentials,  conf, configuration.getVariant().getOptions());
     }
 
-    static Configuration getHadoopConfiguration(HadoopCredentials credentials, StorageEngineConfiguration configuration) {
-        Configuration conf = HBaseConfiguration.create();
-        configuration.getVariant().getOptions().entrySet().stream()
-                .filter(entry -> entry.getValue() != null)
-                .forEach(entry -> conf.set(entry.getKey(), entry.getValue().toString()));
-        conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
-        return conf;
+    static Configuration getHbaseConfiguration(Configuration configuration, HadoopCredentials credentials) {
+        configuration = HBaseConfiguration.create(configuration);
+
+        // HBase configuration
+        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+//        configuration.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
+//        configuration.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+        return configuration;
     }
+
 
     public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(String tableName, byte[] column) {
         Get get = new Get(genomeHelper.getMetaRowKey());
