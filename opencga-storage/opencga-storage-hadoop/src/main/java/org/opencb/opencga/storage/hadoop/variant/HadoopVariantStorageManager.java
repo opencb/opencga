@@ -1,18 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
@@ -28,14 +20,27 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.mr.GenomeVariantDriver;
+import org.opencb.opencga.storage.hadoop.mr.GenomeVariantTransformDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by mh719 on 16/06/15.
  */
 public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String STORAGE_ENGINE_ID = "hadoop";
+
+    public static final String HADOOP_BIN = "hadoop.bin";
+    public static final String HADOOP_ENV = "hadoop.env";
+    public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
@@ -136,24 +141,45 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         HadoopCredentials db = getDbCredentials();
 
-        String hadoopRoute = options.getString("hadoop.bin", "hadoop");
-        String jarOption = "opencga.storage.hadoop.jar-with-dependencies";
+        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String jarOption = OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES;
         String jar = options.getString(jarOption, null);
         if (jar == null) {
             throw new StorageManagerException("Missing option " + jarOption);
         }
-        
-        
 
-        // "Usage: %s [generic options] <avro> <avro-meta> <output-table>
-        Class<GenomeVariantDriver> execClass = GenomeVariantDriver.class;
-        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName() + " " + input + " " + vcfMeta + " " + db.toUri();
+
+
+        // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
+        Class execClass = GenomeVariantDriver.class;
+        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
+                + " " + input
+                + " " + vcfMeta
+                + " " + db.getHostAndPort()
+                + " " + db.getTable();
 
 
         logger.debug("------------------------------------------------------");
         logger.debug(commandLine);
         logger.debug("------------------------------------------------------");
-        Command command = new Command(commandLine, options.getAsStringList("hadoop.env"));
+        Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
+        command.run();
+        logger.debug("------------------------------------------------------");
+        logger.debug("Exit value: {}", command.getExitValue());
+
+
+        // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
+        execClass = GenomeVariantTransformDriver.class;
+        commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
+                + " " + db.getHostAndPort()
+                + " " + db.getTable()
+                + " " + db.getTable()
+                + " " + options.getString(VariantStorageManager.Options.FILE_ID.key());
+
+        logger.debug("------------------------------------------------------");
+        logger.debug(commandLine);
+        logger.debug("------------------------------------------------------");
+        command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
         command.run();
         logger.debug("------------------------------------------------------");
         logger.debug("Exit value: {}", command.getExitValue());

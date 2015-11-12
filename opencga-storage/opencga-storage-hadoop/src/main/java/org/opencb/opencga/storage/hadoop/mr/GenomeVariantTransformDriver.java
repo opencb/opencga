@@ -4,7 +4,6 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
@@ -51,10 +50,10 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        String in_table = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT,StringUtils.EMPTY);
-        String out_table = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT,StringUtils.EMPTY);
-        String[] column_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR,new String[0]);
-        String[] sample_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR,column_arr);
+        String in_table = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
+        String out_table = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT, StringUtils.EMPTY);
+        String[] column_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, new String[0]);
+        String[] sample_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, column_arr);
 
         /* -------------------------------*/
         // Validate parameters CHECK
@@ -140,11 +139,11 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         }
     }
 
-    private static void addServerSettings(Configuration conf, String uriString) throws URISyntaxException{
-        URI uri = new URI(uriString);
-        String server = uri.getHost();
-        Integer port = uri.getPort() > 0?uri.getPort() : 60000;
-        String master = String.join(":", server, port.toString());
+    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException{
+        String[] hostPort = hostPortString.split(":");
+        String server = hostPort[0];
+        String port = hostPort.length > 0 ? hostPort[1] : "60000";
+        String master = String.join(":", server, port);
         conf.set(HConstants.ZOOKEEPER_QUORUM, server);
         conf.set(HBASE_MASTER, master);
     }
@@ -172,10 +171,10 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         }
 
         String[] cols = toolArgs[3].split(",");
-        
-        addServerSettings(conf,toolArgs[0]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT,toolArgs[1]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT,toolArgs[2]);
+
+        addHBaseSettings(conf, toolArgs[0]);
+        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
+        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
         conf.setStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, cols);
 
         //set the configuration back, so that Tool can configure itself

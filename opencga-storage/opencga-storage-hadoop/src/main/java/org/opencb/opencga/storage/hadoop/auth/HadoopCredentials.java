@@ -47,6 +47,10 @@ public class HadoopCredentials implements OpenCGACredentials {
         return host;
     }
 
+    public String getHostAndPort() {
+        return host + ":" + getHbasePort();
+    }
+
     public int getHbasePort() {
         return hbasePort;
     }
