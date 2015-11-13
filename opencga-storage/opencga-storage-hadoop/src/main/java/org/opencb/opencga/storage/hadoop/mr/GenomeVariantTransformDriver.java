@@ -90,6 +90,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         // JOB setup
         Job job = Job.getInstance(conf, "Genome Variant Transform from & to HBase");
         job.setJarByClass(GenomeVariantTransformMapper.class);    // class that contains mapper
+        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         
         Scan scan = new Scan();
         scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
@@ -156,6 +157,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
      * @throws Exception 
      */
     public static void main(String[] args) throws Exception {
+        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
         Configuration conf = new Configuration();
         GenomeVariantTransformDriver driver = new GenomeVariantTransformDriver();
         GenericOptionsParser parser = new GenericOptionsParser(conf, args);
