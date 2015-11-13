@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt.Builder;
 
 import com.google.protobuf.ByteString;
 
@@ -18,20 +17,26 @@ import com.google.protobuf.ByteString;
  */
 public class VariantCallMeta {
 
+    //TODO: Use a BiMap
     private final Map<String, Integer> name2id = new HashMap<>();
     private final Map<Integer, String> id2name = new HashMap<>();
 
+    //TODO: Use a BiMap
     private final Map<String, Integer> col2id = new HashMap<>();
     private final Map<Integer, ByteString> id2col = new HashMap<>();
-    private Builder builder;
+    private VariantCallMetaProt.Builder builder;
 
     public VariantCallMeta(){
         builder = VariantCallMetaProt.newBuilder();
     }
 
     public VariantCallMeta (VariantCallMetaProt prot) {
-        builder = VariantCallMetaProt.newBuilder(prot);
-        init(prot);
+        if (prot == null) {
+            builder = VariantCallMetaProt.newBuilder();
+        } else {
+            builder = VariantCallMetaProt.newBuilder(prot);
+            init(prot);
+        }
     }
 
     public VariantCallMetaProt build(){
@@ -44,16 +49,16 @@ public class VariantCallMeta {
             int sampleId = prot.getSampleId(i);
             String sampleName = prot.getSampleNames(i);
             updateName(sampleId, sampleName);
-            
+
             updateCol(sampleId, prot.getSampleColumn(i));
         }
     }
-    
+
     private void updateName(Integer sampleId, String name){
         name2id.put(name, sampleId);
         id2name.put(sampleId, name);
     }
-    
+
     private void updateCol(Integer sampleId, ByteString byteString){
         id2col.put(sampleId, byteString);
         col2id.put(byteString.toStringUtf8(), sampleId);
@@ -65,7 +70,7 @@ public class VariantCallMeta {
         builder.addSampleNames(name);
         builder.addSampleId(id);
         builder.addSampleColumn(bs);
-        
+
         updateName(id, name);
         updateCol(id, bs);
     }

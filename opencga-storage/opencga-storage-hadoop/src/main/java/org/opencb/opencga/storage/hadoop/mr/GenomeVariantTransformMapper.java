@@ -14,6 +14,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.htrace.commons.logging.LogFactory;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
@@ -52,7 +53,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             InterruptedException {
         getLog().debug("Setup configuration");
         // Setup configuration
-        helper.set(loadHelper(context));;
+        helper.set(loadHelper(context));
         meta.set(loadMeta());
 
         // Load VCF meta data for columns
@@ -106,49 +107,51 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
 
         Map<String, Map<String, List<Integer>>> summary = new HashMap<>();
-        try{
+        try {
 
             String blockId = Bytes.toString(key.get());
 
             GenomeVariantTransformHelper h = getHelper();
-            String chr = h.extractChromosomeFromBlockId(blockId );
+            String chr = h.extractChromosomeFromBlockId(blockId);
 //            Long sliceReg = h.extractPositionFromBlockId(blockId);
 //            Long startPos = h.getStartPositionFromSlice(sliceReg);
 //            Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
-            NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
-            for (Entry<byte[], byte[]> x : fm.entrySet()) {
-                Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
-                VcfSlice vcfSlice = asSlice(x.getValue());
-                List<VcfRecord> lst = vcfSlice.getRecordsList();
-                for(VcfRecord rec : lst){
-                    int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
+            NavigableMap<byte[], byte[]> familyMap = value.getFamilyMap(h.getColumnFamily());
+            for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
+                Integer id = getMeta().getIdFromColumn(Bytes.toString(entry.getKey()));
+                VcfSlice vcfSlice = asSlice(entry.getValue());
+                List<VcfRecord> records = vcfSlice.getRecordsList();
+                for (VcfRecord record : records) {
+                    int vcfPos = vcfSlice.getPosition() + record.getRelativeStart();
 
-                    String row_key = generateKey(chr, vcfPos, rec.getReference(), rec.getAlternate(0));
-                    String gt = extractGt(id, rec);
+                    String row_key = generateKey(chr, vcfPos, record.getReference(), record.getAlternate(0));
+                    String gt = extractGt(id, record);
                     updateSummary(summary, id, row_key, gt);
                 }
             }
-            Map<String, Result> currRes = fetchCurrentValues(context, summary.keySet());
+            Map<String, Result> currRes = fetchCurrentValues(summary.keySet());
             updateOutputTable(context, summary, currRes);
-        }catch(InvalidProtocolBufferException e){
+        } catch (InvalidProtocolBufferException e) {
             throw new IOException(e);
         }
     }
 
-    protected Map<String, Result> fetchCurrentValues(Context context, Set<String> keySet) throws IOException {
-        Map<String, Result> resMap = new HashMap<String, Result>();
-        try (
-                Connection con = ConnectionFactory.createConnection(context.getConfiguration());
-                Table table = con.getTable(TableName.valueOf(getHelper().getOutputTable()));
-        ) {
+    protected Map<String, Result> fetchCurrentValues(Set<String> keySet) throws IOException {
+        //TODO: Reuse a connection
+        return getHelper().getHBaseManager().act(getHelper().getOutputTable(), table -> {
+            Map<String, Result> resMap = new HashMap<>();
+            List<Get> gets = new ArrayList<>(keySet.size());
             for(String rowKey : keySet){
                 byte[] rkBytes = Bytes.toBytes(rowKey);
-                Result res = table.get(new Get(rkBytes));
-                resMap.put(rowKey, res);
+                gets.add(new Get(rkBytes));
             }
-        }
-        return resMap ;
+            Result[] results = table.get(gets);
+            for (Result result : results) {
+                resMap.put(Bytes.toString(result.getRow()), result);
+            }
+            return resMap ;
+        });
     }
 
     /**
@@ -171,7 +174,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
                 context.write(new ImmutableBytesWritable(rkBytes), put);
                 context.getCounter("OPENCGA.HBASE", "VCF_ROW_NEW").increment(1);
             } else {
-                Put mergedPut = mergetData(res,put);
+                Put mergedPut = mergeData(res,put);
                 context.write(new ImmutableBytesWritable(rkBytes), mergedPut);
                 context.getCounter("OPENCGA.HBASE", "VCF_ROW_MERGED").increment(1);
             }
@@ -185,7 +188,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
      * @return Put object with merged data
      * @throws IOException
      */
-    private Put mergetData(Result res, Put put) throws IOException {
+    private Put mergeData(Result res, Put put) throws IOException {
         byte[] columnFamily = getHelper().getColumnFamily();
         Put nPut = new Put(put.getRow());
 
@@ -279,23 +282,19 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     }
 
     private String extractGt(Integer id, VcfRecord rec) {
-        int gtidx = findGtIndex(id,rec);
+        int gtIdx = findGtIndex(id,rec);
         if(rec.getSamplesCount() != 1)
             throw new NotImplementedException("Only one Sample per VCF record supported at the moment");
         VcfSample sample = rec.getSamples(0);
-        return sample.getSampleValues(gtidx);
+        return sample.getSampleValues(gtIdx);
     }
 
     private int findGtIndex(Integer id, VcfRecord rec) {
         if(rec.getSampleFormatNonDefaultCount() > 0){
-            return findIndex("GT",rec.getSampleFormatNonDefaultList());
+            return findIndex("GT", rec.getSampleFormatNonDefaultList());
         }
         VcfMeta meta = getVcfMeta(id);
-        return findIndex("GT",meta.getFormatDefaultList());
-    }
-
-    private VcfMeta getVcfMeta(Integer id) {
-        return this.vcfMetaMap.get(id);
+        return findIndex("GT", meta.getFormatDefaultList());
     }
 
     private int findIndex(String str,List<String> list){
@@ -303,6 +302,10 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         if(idx < 0)
             throw new IllegalStateException(String.format("String %s not found in index!!!",str));
         return idx;
+    }
+
+    private VcfMeta getVcfMeta(Integer id) {
+        return this.vcfMetaMap.get(id);
     }
 
     private VcfSlice asSlice(byte[] data) throws InvalidProtocolBufferException {

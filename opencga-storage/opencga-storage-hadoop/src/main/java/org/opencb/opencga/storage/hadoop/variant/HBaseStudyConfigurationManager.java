@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.mr.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
 import java.io.IOException;
 import java.util.*;
@@ -25,9 +26,9 @@ import java.util.*;
  */
 public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
-    public static final byte[] COLUMN_FAMILY = Bytes.toBytes("d");
     public static final byte[] STUDIES_ROW = Bytes.toBytes("STUDIES");
     public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes("SUMMARY");
+    final byte[] columnFamily;
 
     private HadoopCredentials credentials;
     private Configuration configuration;
@@ -36,10 +37,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private Connection connection;
     private final ObjectMapper objectMapper;
 
-    HBaseStudyConfigurationManager(ObjectMap options) {
-        super(options);
-        throw new UnsupportedOperationException();
-    }
+    private final HBaseManager hBaseManager;
 
     public HBaseStudyConfigurationManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
             throws IOException {
@@ -48,8 +46,10 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         this.configuration = configuration;
         this.options = options;
         genomeHelper = new GenomeHelper(configuration);
+        columnFamily = genomeHelper.getColumnFamily();
         connection = ConnectionFactory.createConnection(configuration);
         objectMapper = new ObjectMapper();
+        hBaseManager = new HBaseManager(configuration);
     }
 
     @Override
@@ -60,11 +60,12 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     @Override
     protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         long startTime = System.currentTimeMillis();
-        String error;
+        String error = null;
+        List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.info("Get StudyConfiguration {}", studyName);
         Get get = new Get(STUDIES_ROW);
         byte[] columnQualifier = Bytes.toBytes(studyName);
-        get.addColumn(COLUMN_FAMILY, columnQualifier);
+        get.addColumn(columnFamily, columnQualifier);
         if (timeStamp != null) {
             try {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
@@ -73,21 +74,24 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
                 throw new IllegalArgumentException(e);
             }
         }
-        try(Table table = connection.getTable(TableName.valueOf(credentials.getTable()))) {
-            Result result = table.get(get);
-            if (result.isEmpty()) {
-                return new QueryResult<>();
-            } else {
-                byte[] value = result.getValue(COLUMN_FAMILY, columnQualifier);
-                StudyConfiguration studyConfiguration = objectMapper.readValue(value, StudyConfiguration.class);
-                return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime), 1, 1, "", "",
-                        Collections.singletonList(studyConfiguration));
-            }
+
+        try {
+            studyConfigurationList = hBaseManager.act(connection, credentials.getTable(), table -> {
+                Result result = table.get(get);
+                if (result.isEmpty()) {
+                    return Collections.emptyList();
+                } else {
+                    byte[] value = result.getValue(columnFamily, columnQualifier);
+                    StudyConfiguration studyConfiguration = objectMapper.readValue(value, StudyConfiguration.class);
+                    return Collections.singletonList(studyConfiguration);
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
             error = e.getMessage();
         }
-        return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime), 0, 0, "", error, Collections.emptyList());
+        return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
+                studyConfigurationList.size(), studyConfigurationList.size(), "", error, studyConfigurationList);
     }
 
     @Override
@@ -98,11 +102,13 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
-        try(Table table = connection.getTable(TableName.valueOf(credentials.getTable()))) {
-            byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
-            Put put = new Put(STUDIES_ROW);
-            put.addColumn(COLUMN_FAMILY, columnQualifier, studyConfiguration.getTimeStamp(), bytes);
-            table.put(put);
+        try {
+            hBaseManager.act(connection, credentials.getTable(), table -> {
+                byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
+                Put put = new Put(STUDIES_ROW);
+                put.addColumn(columnFamily, columnQualifier, studyConfiguration.getTimeStamp(), bytes);
+                table.put(put);
+            });
         } catch (IOException e) {
             e.printStackTrace();
             error = e.getMessage();
@@ -118,18 +124,20 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     private BiMap<String, Integer> getStudiesSummary(QueryOptions options) {
         Get get = new Get(STUDIES_ROW);
-        get.addColumn(COLUMN_FAMILY, STUDIES_SUMMARY_COLUMN);
-        try(Table table = connection.getTable(TableName.valueOf(credentials.getTable()))) {
-            Result result = table.get(get);
-            if (result.isEmpty()) {
-                return HashBiMap.create();
-            } else {
-                byte[] value = result.getValue(COLUMN_FAMILY, STUDIES_SUMMARY_COLUMN);
-                Map<String, Integer> map = objectMapper.readValue(value, Map.class);
-                logger.info("Get StudyConfiguration summary {}", map);
+        get.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN);
+        try {
+            return hBaseManager.act(connection, credentials.getTable(), table -> {
+                Result result = table.get(get);
+                if (result.isEmpty()) {
+                    return HashBiMap.create();
+                } else {
+                    byte[] value = result.getValue(columnFamily, STUDIES_SUMMARY_COLUMN);
+                    Map<String, Integer> map = objectMapper.readValue(value, Map.class);
+                    logger.info("Get StudyConfiguration summary {}", map);
 
-                return HashBiMap.create(map);
-            }
+                    return HashBiMap.create(map);
+                }
+            });
         } catch (IOException e) {
             e.printStackTrace();
             return HashBiMap.create();
@@ -151,7 +159,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         try(Table table = connection.getTable(TableName.valueOf(credentials.getTable()))) {
             byte[] bytes = objectMapper.writeValueAsBytes(studies);
             Put put = new Put(STUDIES_ROW);
-            put.addColumn(COLUMN_FAMILY, STUDIES_SUMMARY_COLUMN, bytes);
+            put.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN, bytes);
             table.put(put);
         } catch (IOException e) {
             e.printStackTrace();

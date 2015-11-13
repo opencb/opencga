@@ -139,7 +139,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(input.toString().replace("variants.avro", "file.json"));
 
-        HadoopCredentials db = getDbCredentials();
+        HadoopCredentials archiveTable = buildCredentials(options.getString(Options.STUDY_NAME.key()));
+        HadoopCredentials variantsTable = getDbCredentials();
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
         String jarOption = OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES;
@@ -155,8 +156,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
                 + " " + input
                 + " " + vcfMeta
-                + " " + db.getHostAndPort()
-                + " " + db.getTable();
+                + " " + archiveTable.getHostAndPort()
+                + " " + archiveTable.getTable();
 
 
         logger.debug("------------------------------------------------------");
@@ -171,9 +172,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
         execClass = GenomeVariantTransformDriver.class;
         commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
-                + " " + db.getHostAndPort()
-                + " " + db.getTable()
-                + " " + db.getTable()
+                + " " + variantsTable.getHostAndPort()
+                + " " + archiveTable.getTable()
+                + " " + variantsTable.getTable()
                 + " " + options.getString(VariantStorageManager.Options.FILE_ID.key());
 
         logger.debug("------------------------------------------------------");

@@ -23,6 +23,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +58,23 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // Validate parameters CHECK
-        if(StringUtils.isEmpty(in_table)) throw new IllegalArgumentException("No input hbase table specified!!!");
-        if(StringUtils.isEmpty(out_table)) throw new IllegalArgumentException("No output hbase table specified!!!");
+        if (StringUtils.isEmpty(in_table)) {
+            throw new IllegalArgumentException("No input hbase table specified!!!");
+        }
+        if (StringUtils.isEmpty(out_table)) {
+            throw new IllegalArgumentException("No output hbase table specified!!!");
+        }
+        if (in_table.equals(out_table)) {
+            throw new IllegalArgumentException("Input and Output tables must be different");
+        }
         int colCnt = column_arr.length;
-        if(colCnt == 0) throw new IllegalArgumentException("No columns specified");
-        if(Integer.compare(colCnt, sample_arr.length) != 0)  throw new IllegalArgumentException(
-                String.format("Difference in number of sample names (%s) and column names",colCnt,sample_arr.length));
+        if (colCnt == 0) {
+            throw new IllegalArgumentException("No columns specified");
+        }
+        if (Integer.compare(colCnt, sample_arr.length) != 0)  {
+            throw new IllegalArgumentException(
+                    String.format("Difference in number of sample names (%s) and column names", colCnt, sample_arr.length));
+        }
 
         GenomeVariantTransformHelper.setOutputTableName(conf, out_table);
         GenomeVariantTransformHelper.setInputTableName(conf, in_table);
@@ -71,12 +83,13 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // Validate input CHECK
-        boolean in_exist = gh.actOnTable(in_table, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin)));
-        if(!in_exist)
+        HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin));
+        if(!gh.hBaseManager.act(in_table, func)) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!",in_table));
+        }
 
         /* -------------------------------*/
-        /* INIT META Data */
+        // INIT META Data
         VariantCallMeta meta = initMetaData(conf, gh);
         
         Integer nextId = meta.nextId();
@@ -115,7 +128,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     }
 
     private VariantCallMeta initMetaData(Configuration conf, GenomeVariantTransformHelper gh) throws IOException {
-        boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin)));
+        boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)));
 
         VariantCallMeta meta = new VariantCallMeta();
         if(!out_exist){

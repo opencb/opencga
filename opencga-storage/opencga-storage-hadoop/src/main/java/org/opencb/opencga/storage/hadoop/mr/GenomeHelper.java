@@ -14,13 +14,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +50,7 @@ public class GenomeHelper {
 
     private final Configuration conf;
 
+    protected final HBaseManager hBaseManager;
     
     public interface MetadataAction<T>{
         T parse(InputStream is) throws IOException;
@@ -68,6 +65,7 @@ public class GenomeHelper {
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
         this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
+        this.hBaseManager = new HBaseManager(conf);
     }
 
     /**
@@ -83,6 +81,10 @@ public class GenomeHelper {
     
     private Configuration getConf() {
         return conf;
+    }
+
+    public HBaseManager getHBaseManager() {
+        return hBaseManager;
     }
 
     public static String printClassJarPath(Class<?> clazz) {
@@ -274,50 +276,4 @@ public class GenomeHelper {
         return wrapAsPut(column,getMetaRowKey(),meta);
     }
 
-    @FunctionalInterface
-    interface HBaseTableConsumer<T>{
-        void accept(Table table) throws IOException;
-    }
-    @FunctionalInterface
-    interface HBaseTableFunction<T>{
-        T function(Table table) throws IOException;
-    }
-    @FunctionalInterface
-    interface HBaseTableAdminFunction<T>{
-        T function(Table table, Admin admin) throws IOException;
-    }
-    
-    public void act(byte[] tablename, HBaseTableConsumer<Table> func) throws IOException{
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-        ) {
-            func.accept(table);
-        }
-    }
-
-    public <T> T actOnTable(String tablename, HBaseTableFunction<T> func) throws IOException {
-        return actOnTable(Bytes.toBytes(tablename), func);
-    }
-
-    public <T> T actOnTable(byte[] tablename, HBaseTableFunction<T> func) throws IOException {
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-        ) {
-            return func.function(table);
-        }
-    }
-    public <T> T actOnTable(String tablename, HBaseTableAdminFunction<T> func) throws IOException {
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-                Admin admin = con.getAdmin();
-        ) {
-            return func.function(table,admin);
-        }
-    }
 }

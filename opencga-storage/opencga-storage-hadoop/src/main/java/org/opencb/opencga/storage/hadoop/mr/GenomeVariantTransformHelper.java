@@ -14,6 +14,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -32,8 +33,8 @@ public class GenomeVariantTransformHelper extends GenomeHelper {
      */
     public GenomeVariantTransformHelper (Configuration conf) {
         super(conf);
-        String outTable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT,StringUtils.EMPTY);
-        String intable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT,StringUtils.EMPTY);
+        String outTable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY);
+        String intable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY);
         if(StringUtils.isEmpty(outTable)){
             throw new IllegalArgumentException("Property for Output Table name missing or empty!!!");
         }
@@ -47,9 +48,11 @@ public class GenomeVariantTransformHelper extends GenomeHelper {
     public VariantCallMetaProt loadMeta() throws IOException{
         final Get get = new Get(getMetaRowKey());
         get.addColumn(getColumnFamily(), getMetaColumnKey());
-        Result res = actOnTable(getOutputTable(), (Table table)-> table.get(new Get(getMetaRowKey())));
-        if(res.isEmpty())
+        HBaseManager.HBaseTableFunction<Result> func = (Table table)-> table.get(new Get(getMetaRowKey()));
+        Result res = hBaseManager.act(getOutputTable(), func);
+        if(res.isEmpty() || !res.containsColumn(getColumnFamily(), getMetaRowKey())) {
             return null;
+        }
         byte[] val = res.getValue(getColumnFamily(), getMetaRowKey());
         return VariantCallMetaProt.parseFrom(val);
     }
@@ -58,7 +61,7 @@ public class GenomeVariantTransformHelper extends GenomeHelper {
     // http://grokbase.com/t/hbase/user/1169nsvfcx/does-put-support-dont-put-if-row-exists
     public void storeMeta(VariantCallMetaProt meta) throws IOException{
         final Put put = wrapMetaAsPut(meta);
-        act(getOutputTable(), (Table t) -> t.put(put));
+        hBaseManager.act(getOutputTable(), (Table t) -> t.put(put));
     }
 
     public Put wrapMetaAsPut(VariantCallMetaProt meta){
@@ -77,12 +80,12 @@ public class GenomeVariantTransformHelper extends GenomeHelper {
         return intable.get();
     }
 
-    public void act(HBaseTableConsumer<Table> func) throws IOException {
-        super.act(getOutputTable(), func);
+    public void act(HBaseManager.HBaseTableConsumer<Table> func) throws IOException {
+        hBaseManager.act(getOutputTable(), func);
     }
 
-    public <T> T actOnTable(HBaseTableAdminFunction<T> func) throws IOException {
-        return super.actOnTable(getOutputTableAsString(), func);
+    public <T> T actOnTable(HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
+        return hBaseManager.act(getOutputTableAsString(), func);
     }
 
     public String getOutputTableAsString() {
