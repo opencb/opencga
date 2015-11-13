@@ -210,6 +210,14 @@ public class GenomeHelper {
     public byte[] generateBlockIdAsBytes (String chrom, long start) {
         return Bytes.toBytes(generateBlockId(chrom, start));
     }
+    
+    public String generateRowPositionKey(String chrom, long position){
+        StringBuilder sb = new StringBuilder(standardChromosome(chrom));
+        sb.append(getSeparator());
+        sb.append(String.format("%012d", position));
+        sb.append(getSeparator());
+        return sb.toString();
+    }
 
     /**
      * Generates a Row key based on Chromosome, position, ref and alt <br>
@@ -224,11 +232,8 @@ public class GenomeHelper {
      * @param ref Alt name
      * @return {@link String} Row key string
      */
-    protected String generateVcfRowId (String chrom, long position,String ref,String alt) {
-        StringBuilder sb = new StringBuilder(standardChromosome(chrom));
-        sb.append(getSeparator());
-        sb.append(String.format("%012d", position));
-        sb.append(getSeparator());
+    public String generateVcfRowId (String chrom, long position,String ref,String alt) {
+        StringBuilder sb = new StringBuilder(generateRowPositionKey(chrom, position));
         sb.append(ref);
         sb.append(getSeparator());
         sb.append(alt);
@@ -242,6 +247,10 @@ public class GenomeHelper {
     public Long extractPositionFromBlockId (String blockId) {
         return Long.valueOf(splitBlockId(blockId)[1]);
     }
+    
+    public Long extractPositionFromVariantRowkey(String variantRowkey){
+        return Long.valueOf(splitVariantRowkey(variantRowkey)[1]);
+    }
 
     public String[] splitBlockId (String blockId) {
         char sep = getSeparator();
@@ -249,6 +258,15 @@ public class GenomeHelper {
         if (split.length != 2)
             throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
                     blockId));
+        return split;
+    }
+    
+    public String[] splitVariantRowkey (String rowkey) {
+        char sep = getSeparator();
+        String[] split = StringUtils.split(rowkey, sep);
+        if (split.length < 2)
+            throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value `%s`", sep,
+                    rowkey));
         return split;
     }
 
