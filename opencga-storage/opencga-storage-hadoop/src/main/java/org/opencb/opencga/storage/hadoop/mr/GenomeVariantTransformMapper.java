@@ -29,7 +29,10 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -41,6 +44,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt.Builder;
+import org.opencb.opencga.storage.hadoop.mr.VariantTransformWrapper.CallStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +110,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
                 vcfMetaMap.put(id, VcfMeta.parseFrom(e.getValue()));
             }
         }
-        getLog().debug(String.format("Loaded %s VcfMETA data!!!", vcfMetaMap.size()));
+        getLog().info(String.format("Loaded %s VcfMETA data!!!", vcfMetaMap.size()));
     }
 
     public GenomeVariantTransformHelper getHelper() {
@@ -120,48 +124,138 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     @Override
     protected void map(ImmutableBytesWritable key, Result value, 
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
-        
+        context.getCounter("OPENCGA.HBASE", "VCF_BLOCK_READ").increment(1);
+        // TODO count and look for reference blocks if there is one variant
         Map<String, Map<String, List<Integer>>> summary = new HashMap<>();
         try{
+            if(Bytes.equals(key.get(), getHelper().getMetaColumnKey()))
+                return; // ignore metadata column
             
             String blockId = Bytes.toString(key.get());
             
             GenomeVariantTransformHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
-//            Long sliceReg = h.extractPositionFromBlockId(blockId);
-//            Long startPos = h.getStartPositionFromSlice(sliceReg);
-//            Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
+            Long sliceReg = h.extractPositionFromBlockId(blockId);
+            Long startPos = h.getStartPositionFromSlice(sliceReg);
+            Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
+            String nextSliceKey = h.generateBlockId(chr, nextStartPos);
+            if(value.isEmpty()){
+                context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
+                return;
+            }
+//            for(Cell cell : value.listCells()){
+//                Integer id = getMeta().getIdFromColumn(Bytes.toString(cell.getQualifierArray()));
+//                VcfSlice vcfSlice = asSlice(cell.getValueArray());
+//            }
+            Map<Integer, List<VariantTransformWrapper>> positionMap = unpack(value, context);
+            
+            Map<Integer,Result> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
+            
             
             NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
             for (Entry<byte[], byte[]> x : fm.entrySet()) {
                 Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
                 VcfSlice vcfSlice = asSlice(x.getValue());
+                context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
                 List<VcfRecord> lst = vcfSlice.getRecordsList();
+                context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
                 for(VcfRecord rec : lst){
-                    int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
-                    
-                    String row_key = generateKey(chr,vcfPos,rec.getReference(),rec.getAlternate());
+                    VariantTransformWrapper wrapper = new VariantTransformWrapper(id);
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
                     String gt = extractGt(id,rec);
+                    wrapper.setGenotype(gt);
+                    String alternate = rec.getAlternate();
+                    wrapper.setStatus(CallStatus.VARIANT);
+                    if(isReference(gt)){
+                        wrapper.setStatus(CallStatus.REF);
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_REF").increment(1);
+                    } else if(isNoCall(gt)){
+                        wrapper.setStatus(CallStatus.NOCALL);
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_NO").increment(1);
+                    } else if( ! isVariant(gt)){ // should not be called (if not ref or no-call -> should be variant)
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_OTHER-unknown").increment(1);
+                        getLog().warn(String.format("Found Genotype with '%s'",gt));
+                        continue; // TODO monitor if this happens
+                    }   
+                    
+                    int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
+                    wrapper.setPosition(vcfPos);
+                    wrapper.setReference(rec.getReference());
+                    wrapper.setChromosome(chr);
+                    
+                    String row_key = generateKey(chr,vcfPos,rec.getReference(),alternate);
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_UPDATE").increment(1);
                     updateSummary(summary, id, row_key, gt);
                 }
             }
-            Map<String, Result> currRes = fetchCurrentValues(context, summary.keySet());
+            Map<String, Result> currRes = new HashMap<String, Result>();
+//                    fetchCurrentValues(context, summary.keySet());
             updateOutputTable(context,summary, currRes);
         }catch(InvalidProtocolBufferException e){
             throw new IOException(e);
         }
     }
+    
+    private Map<Integer, List<VariantTransformWrapper>> unpack(Result value, Context context) throws InvalidProtocolBufferException {
+        Map<Integer, List<VariantTransformWrapper>> resMap = new HashMap<Integer, List<VariantTransformWrapper>>();
+        NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
+        for (Entry<byte[], byte[]> x : fm.entrySet()) {
+            Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
+            VcfSlice vcfSlice = asSlice(x.getValue());
+            context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
+            List<VcfRecord> lst = vcfSlice.getRecordsList();
+            context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
+            for(VcfRecord rec : lst){
+                VariantTransformWrapper wrapper = new VariantTransformWrapper(id, vcfSlice, rec);
+                context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
+                String gt = extractGt(id,rec);
+                wrapper.setGenotype(gt);
+                if(wrapper.isHaploid()){
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-haploid").increment(1);
+                } else if(wrapper.isMultiAlternates()){
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-multi-ignore").increment(1);
+                } else if(wrapper.hasNoCall()){
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-no-call").increment(1);
+                } else if(wrapper.isAllelesRef()){
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-ref").increment(1);
+                } else if(wrapper.hasVariant()){
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-variant").increment(1);
+                } else{
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-unknown-PROBLEM").increment(1);
+                    getLog().warn(String.format("Found Genotype with '%s'",gt));
+                }
+                int vcfPos = wrapper.getPosition();
+                List<VariantTransformWrapper> list = resMap.get(vcfPos);
+                if(list == null){
+                    list = new ArrayList<VariantTransformWrapper>();
+                    resMap.put(vcfPos, list);
+                }
+                list.add(wrapper);
+            }
+        }
+        return resMap;
+    }
 
-    protected Map<String, Result> fetchCurrentValues(Context context, Set<String> keySet) throws IOException {
-        Map<String, Result> resMap = new HashMap<String, Result>();
+
+    protected Map<Integer, Result> loadCurrentVariantsRegion(Context context, byte[] sliceKey, String endKey) throws IOException {
+        Map<Integer, Result> resMap = new HashMap<Integer, Result>();
         try (
                 Connection con = ConnectionFactory.createConnection(context.getConfiguration());
                 Table table = con.getTable(TableName.valueOf(getHelper().getOutputTable()));
         ) {
-            for(String rowKey : keySet){
-                byte[] rkBytes = Bytes.toBytes(rowKey);
-                Result res = table.get(new Get(rkBytes)); 
-                resMap.put(rowKey, res);
+            GenomeVariantTransformHelper h = getHelper();
+//                String key = generatePositionKey(chr,pos);
+//                String ekey = generatePositionKey(chr, pos+1);
+//                byte[] rkBytes = Bytes.toBytes(key);
+            Scan scan = new Scan(sliceKey, Bytes.toBytes(endKey));
+            scan.setFilter(new PrefixFilter(sliceKey));
+            ResultScanner rs = table.getScanner(scan); 
+            for(Result r : rs){
+                Long pos = h.extractPositionFromVariantRowkey(Bytes.toString(r.getRow()));
+                context.getCounter("OPENCGA.HBASE", "VCF_TABLE_SCAN-result").increment(1);
+                if(!r.isEmpty()){ // only non empty rows
+                    resMap.put(pos.intValue(), r);
+                }
             }
         }
         return resMap ;
@@ -183,7 +277,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             Put put = wrapData(context, summary, rowKey, rkBytes);
             // Load possible Row
             Result res = currentResults.get(rowKey); 
-            if(res.isEmpty()){
+            if(null == res || res.isEmpty()){
                 context.write(new ImmutableBytesWritable(rkBytes), put);
                 context.getCounter("OPENCGA.HBASE", "VCF_ROW_NEW").increment(1);
             } else {
@@ -293,8 +387,12 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
     private String generateKey(String chr, int vcfPos, String reference, String alternate) {
         return getHelper().generateVcfRowId(chr, (long) vcfPos, reference, alternate);
     }
+    
+    private String generatePositionKey(String chrom, int pos){
+        return getHelper().generateRowPositionKey(chrom, (long) pos);
+    }
 
-    private String extractGt(Integer id, VcfRecord rec) {
+    private String extractGt(Integer id,VcfRecord rec) {
         int gtidx = findGtIndex(id,rec);
         if(rec.getSamplesCount() != 1)
             throw new NotImplementedException("Only one Sample per VCF record supported at the moment");
