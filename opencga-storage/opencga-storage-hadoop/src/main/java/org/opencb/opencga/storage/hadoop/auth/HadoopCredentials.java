@@ -3,6 +3,9 @@ package org.opencb.opencga.storage.hadoop.auth;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.auth.OpenCGACredentials;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * Created by mh719 on 16/06/15.
  */
@@ -44,6 +47,10 @@ public class HadoopCredentials implements OpenCGACredentials {
         return host;
     }
 
+    public String getHostAndPort() {
+        return host + ":" + getHbasePort();
+    }
+
     public int getHbasePort() {
         return hbasePort;
     }
@@ -55,5 +62,13 @@ public class HadoopCredentials implements OpenCGACredentials {
 
     @Override
     public String toJson() {throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public URI toUri() {
+        try {
+            return new URI("hbase", null, getHost(), getHbasePort(), "/" + getTable(), null, null);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 }

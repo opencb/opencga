@@ -4,13 +4,13 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
@@ -23,6 +23,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     public static final String OPENCGA_VARIANT_TRANSFORM_OUTPUT = "opencga.variant.transform.output";
     public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
     public static final String HBASE_MASTER = "hbase.master";
-    public static final String HBASE_ZOOKEEPER_QUORUM = "hbase.zookeeper.quorum";
 
     public GenomeVariantTransformDriver () { /* nothing */}
 
@@ -51,19 +51,30 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        String in_table = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT,StringUtils.EMPTY);
-        String out_table = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT,StringUtils.EMPTY);
-        String[] column_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR,new String[0]);
-        String[] sample_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR,column_arr);
+        String in_table = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
+        String out_table = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT, StringUtils.EMPTY);
+        String[] column_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, new String[0]);
+        String[] sample_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, column_arr);
 
         /* -------------------------------*/
         // Validate parameters CHECK
-        if(StringUtils.isEmpty(in_table)) throw new IllegalArgumentException("No input hbase table specified!!!");
-        if(StringUtils.isEmpty(out_table)) throw new IllegalArgumentException("No output hbase table specified!!!");
+        if (StringUtils.isEmpty(in_table)) {
+            throw new IllegalArgumentException("No input hbase table specified!!!");
+        }
+        if (StringUtils.isEmpty(out_table)) {
+            throw new IllegalArgumentException("No output hbase table specified!!!");
+        }
+        if (in_table.equals(out_table)) {
+            throw new IllegalArgumentException("Input and Output tables must be different");
+        }
         int colCnt = column_arr.length;
-        if(colCnt == 0) throw new IllegalArgumentException("No columns specified");
-        if(Integer.compare(colCnt, sample_arr.length) != 0)  throw new IllegalArgumentException(
-                String.format("Difference in number of sample names (%s) and column names",colCnt,sample_arr.length));
+        if (colCnt == 0) {
+            throw new IllegalArgumentException("No columns specified");
+        }
+        if (Integer.compare(colCnt, sample_arr.length) != 0)  {
+            throw new IllegalArgumentException(
+                    String.format("Difference in number of sample names (%s) and column names", colCnt, sample_arr.length));
+        }
 
         GenomeVariantTransformHelper.setOutputTableName(conf, out_table);
         GenomeVariantTransformHelper.setInputTableName(conf, in_table);
@@ -72,12 +83,13 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // Validate input CHECK
-        boolean in_exist = gh.actOnTable(in_table, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin)));
-        if(!in_exist)
+        HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin));
+        if(!gh.hBaseManager.act(in_table, func)) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!",in_table));
+        }
 
         /* -------------------------------*/
-        /* INIT META Data */
+        // INIT META Data
         VariantCallMeta meta = initMetaData(conf, gh);
         
         Integer nextId = meta.nextId();
@@ -117,7 +129,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     }
 
     private VariantCallMeta initMetaData(Configuration conf, GenomeVariantTransformHelper gh) throws IOException {
-        boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin)));
+        boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)));
 
         VariantCallMeta meta = new VariantCallMeta();
         if(!out_exist){
@@ -141,12 +153,12 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         }
     }
 
-    private static void addServerSettings(Configuration conf, String uriString) throws URISyntaxException{
-        URI uri = new URI(uriString);
-        String server = uri.getHost();
-        Integer port = uri.getPort() > 0?uri.getPort() : 60000;
-        String master = String.join(":", server, port.toString());
-        conf.set(HBASE_ZOOKEEPER_QUORUM, server);
+    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException{
+        String[] hostPort = hostPortString.split(":");
+        String server = hostPort[0];
+        String port = hostPort.length > 0 ? hostPort[1] : "60000";
+        String master = String.join(":", server, port);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, server);
         conf.set(HBASE_MASTER, master);
     }
 
@@ -174,10 +186,10 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         }
 
         String[] cols = toolArgs[3].split(",");
-        
-        addServerSettings(conf,toolArgs[0]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT,toolArgs[1]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT,toolArgs[2]);
+
+        addHBaseSettings(conf, toolArgs[0]);
+        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
+        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
         conf.setStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, cols);
 
         //set the configuration back, so that Tool can configure itself

@@ -44,7 +44,6 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt;
 import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt.Builder;
-import org.opencb.opencga.storage.hadoop.mr.VariantTransformWrapper.CallStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,47 +146,47 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
 //                Integer id = getMeta().getIdFromColumn(Bytes.toString(cell.getQualifierArray()));
 //                VcfSlice vcfSlice = asSlice(cell.getValueArray());
 //            }
-            Map<Integer, List<VariantTransformWrapper>> positionMap = unpack(value, context);
+            Map<Integer, List<VariantTransformWrapper>> positionMap = unpack(value, context,false);
             
             Map<Integer,Result> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
             
             
-            NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
-            for (Entry<byte[], byte[]> x : fm.entrySet()) {
-                Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
-                VcfSlice vcfSlice = asSlice(x.getValue());
-                context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
-                List<VcfRecord> lst = vcfSlice.getRecordsList();
-                context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
-                for(VcfRecord rec : lst){
-                    VariantTransformWrapper wrapper = new VariantTransformWrapper(id);
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
-                    String gt = extractGt(id,rec);
-                    wrapper.setGenotype(gt);
-                    String alternate = rec.getAlternate();
-                    wrapper.setStatus(CallStatus.VARIANT);
-                    if(isReference(gt)){
-                        wrapper.setStatus(CallStatus.REF);
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_REF").increment(1);
-                    } else if(isNoCall(gt)){
-                        wrapper.setStatus(CallStatus.NOCALL);
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_NO").increment(1);
-                    } else if( ! isVariant(gt)){ // should not be called (if not ref or no-call -> should be variant)
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_OTHER-unknown").increment(1);
-                        getLog().warn(String.format("Found Genotype with '%s'",gt));
-                        continue; // TODO monitor if this happens
-                    }   
-                    
-                    int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
-                    wrapper.setPosition(vcfPos);
-                    wrapper.setReference(rec.getReference());
-                    wrapper.setChromosome(chr);
-                    
-                    String row_key = generateKey(chr,vcfPos,rec.getReference(),alternate);
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_UPDATE").increment(1);
-                    updateSummary(summary, id, row_key, gt);
-                }
-            }
+//            NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
+//            for (Entry<byte[], byte[]> x : fm.entrySet()) {
+//                Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
+//                VcfSlice vcfSlice = asSlice(x.getValue());
+//                context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
+//                List<VcfRecord> lst = vcfSlice.getRecordsList();
+//                context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
+//                for(VcfRecord rec : lst){
+//                    VariantTransformWrapper wrapper = new VariantTransformWrapper(id);
+//                    context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
+//                    String gt = extractGt(id,rec);
+//                    wrapper.setGenotype(gt);
+//                    String alternate = rec.getAlternates();
+//                    wrapper.setStatus(CallStatus.VARIANT);
+//                    if(isReference(gt)){
+//                        wrapper.setStatus(CallStatus.REF);
+//                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_REF").increment(1);
+//                    } else if(isNoCall(gt)){
+//                        wrapper.setStatus(CallStatus.NOCALL);
+//                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_NO").increment(1);
+//                    } else if( ! isVariant(gt)){ // should not be called (if not ref or no-call -> should be variant)
+//                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL_OTHER-unknown").increment(1);
+//                        getLog().warn(String.format("Found Genotype with '%s'",gt));
+//                        continue; // TODO monitor if this happens
+//                    }   
+//                    
+//                    int vcfPos = vcfSlice.getPosition() + rec.getRelativeStart();
+//                    wrapper.setPosition(vcfPos);
+//                    wrapper.setReference(rec.getReference());
+//                    wrapper.setChromosome(chr);
+//                    
+//                    String row_key = generateKey(chr,vcfPos,rec.getReference(),alternate);
+//                    context.getCounter("OPENCGA.HBASE", "VCF_REC_UPDATE").increment(1);
+//                    updateSummary(summary, id, row_key, gt);
+//                }
+//            }
             Map<String, Result> currRes = new HashMap<String, Result>();
 //                    fetchCurrentValues(context, summary.keySet());
             updateOutputTable(context,summary, currRes);
@@ -195,36 +194,48 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             throw new IOException(e);
         }
     }
-    
-    private Map<Integer, List<VariantTransformWrapper>> unpack(Result value, Context context) throws InvalidProtocolBufferException {
+
+    /**
+     * 
+     * @param value   {@link Result} object from Archive table
+     * @param context
+     * @param reload  TRUE, if values are reloaded from Archive table on demand to fill gaps - otherwise FALSE
+     * @return
+     * @throws InvalidProtocolBufferException
+     */
+    private Map<Integer, List<VariantTransformWrapper>> unpack(Result value, Context context, boolean reload) throws InvalidProtocolBufferException {
         Map<Integer, List<VariantTransformWrapper>> resMap = new HashMap<Integer, List<VariantTransformWrapper>>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
             Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
             VcfSlice vcfSlice = asSlice(x.getValue());
-            context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             List<VcfRecord> lst = vcfSlice.getRecordsList();
-            context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
+            if( ! reload){ // count for map-reduce, not for reload
+                context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
+                context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
+            }
             for(VcfRecord rec : lst){
                 VariantTransformWrapper wrapper = new VariantTransformWrapper(id, vcfSlice, rec);
-                context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
                 String gt = extractGt(id,rec);
                 wrapper.setGenotype(gt);
-                if(wrapper.isHaploid()){
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-haploid").increment(1);
-                } else if(wrapper.isMultiAlternates()){
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-multi-ignore").increment(1);
-                } else if(wrapper.hasNoCall()){
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-no-call").increment(1);
-                } else if(wrapper.isAllelesRef()){
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-ref").increment(1);
-                } else if(wrapper.hasVariant()){
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-variant").increment(1);
-                } else{
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-unknown-PROBLEM").increment(1);
-                    getLog().warn(String.format("Found Genotype with '%s'",gt));
+                if(! reload){ // only show count if Map reduce and not reload
+                    context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
+                    if(wrapper.isHaploid()){
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-haploid").increment(1);
+                    } else if(wrapper.isMultiAlternates()){
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-multi-ignore").increment(1);
+                    } else if(wrapper.hasNoCall()){
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-no-call").increment(1);
+                    } else if(wrapper.isAllelesRef()){
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-ref").increment(1);
+                    } else if(wrapper.hasVariant()){
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-variant").increment(1);
+                    } else{
+                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-unknown-PROBLEM").increment(1);
+                        getLog().warn(String.format("Found Genotype with '%s'",gt));
+                    }
                 }
-                int vcfPos = wrapper.getPosition();
+                int vcfPos = wrapper.getStartPosition();
                 List<VariantTransformWrapper> list = resMap.get(vcfPos);
                 if(list == null){
                     list = new ArrayList<VariantTransformWrapper>();
@@ -392,12 +403,12 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         return getHelper().generateRowPositionKey(chrom, (long) pos);
     }
 
-    private String extractGt(Integer id,VcfRecord rec) {
-        int gtidx = findGtIndex(id,rec);
+    private String extractGt(Integer id, VcfRecord rec) {
+        int gtIdx = findGtIndex(id,rec);
         if(rec.getSamplesCount() != 1)
             throw new NotImplementedException("Only one Sample per VCF record supported at the moment");
         VcfSample sample = rec.getSamples(0);
-        return sample.getSampleValues(gtidx);
+        return sample.getSampleValues(gtIdx);
     }
 
     private int findGtIndex(Integer id, VcfRecord rec) {

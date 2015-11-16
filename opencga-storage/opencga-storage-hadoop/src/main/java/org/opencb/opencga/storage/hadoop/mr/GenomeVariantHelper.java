@@ -87,10 +87,10 @@ public class GenomeVariantHelper extends GenomeHelper {
 
             byte[] skey = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
             // Consistency check
-            if (!Bytes.equals(skey, key)) // Address doesn't match up -> should
-                                          // never happen
+            if (!Bytes.equals(skey, key)) { // Address doesn't match up -> should never happen
                 throw new IllegalStateException(String.format("Row keys don't match up!!! %s != %s", Bytes.toString(key),
                         Bytes.toString(skey)));
+            }
 
             if (isFirst) { // init new slice
                 sliceBuilder.setChromosome(slice.getChromosome()).setPosition(slice.getPosition());
@@ -133,6 +133,7 @@ public class GenomeVariantHelper extends GenomeHelper {
     }
 
     public Put wrap (VcfSlice slice) {
+//        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart() * 100);
         byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition());
         return wrapAsPut(getColumn(), rowId, slice);
     }

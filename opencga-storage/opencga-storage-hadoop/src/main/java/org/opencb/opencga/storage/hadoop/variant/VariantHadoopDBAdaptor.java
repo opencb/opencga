@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -10,7 +11,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -43,31 +43,40 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final Connection con;
     // FIXME: Pooling or caching this object is not recommended.
     // Should create for each query and close it at the end.
+    @Deprecated
     private final Table table;
+    private final HBaseStudyConfigurationManager studyConfigurationManager;
     private GenomeHelper genomeHelper;
 
-    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration) throws IOException {
-        Configuration conf = HBaseConfiguration.create();
-        for (Map.Entry<String, Object> entry : configuration.getVariant().getOptions().entrySet()) {
-            conf.set(entry.getKey(), entry.getValue().toString());
-        }
+    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
+                                  Configuration conf) throws IOException {
+        conf = getHbaseConfiguration(conf, credentials);
 
-        // HBase configuration
-        conf.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
-        conf.set("hbase.zookeeper.quorum", credentials.getHost());
-//        conf.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-//        conf.set("zookeeper.znode.parent", "/hbase");
         genomeHelper = new GenomeHelper(conf);
 
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
+        studyConfigurationManager = new HBaseStudyConfigurationManager(credentials,  conf, configuration.getVariant().getOptions());
     }
 
-    public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(byte[] column) {
+    static Configuration getHbaseConfiguration(Configuration configuration, HadoopCredentials credentials) {
+        configuration = HBaseConfiguration.create(configuration);
+
+        // HBase configuration
+        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+//        configuration.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
+//        configuration.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+        return configuration;
+    }
+
+
+    public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(String tableName, byte[] column) {
         Get get = new Get(genomeHelper.getMetaRowKey());
         get.addColumn(getColumnFamily(), column);
         try {
             long startTime = System.currentTimeMillis();
+            Table table = con.getTable(TableName.valueOf(tableName));
             Result result = table.get(get);
             byte[] value = result.getValue(getColumnFamily(), column);
             VcfSliceProtos.VcfMeta vcfMeta = VcfSliceProtos.VcfMeta.parseFrom(value);
@@ -78,9 +87,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    public GenomeVariantHelper getGenomeVariantHelper(byte[] column) {
+    public GenomeVariantHelper getGenomeVariantHelper(String study, byte[] file) {
         try {
-            return new GenomeVariantHelper(genomeHelper, getVcfMeta(column).first());
+            return new GenomeVariantHelper(genomeHelper, getVcfMeta(study, file).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -274,23 +283,27 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         Region region = Region.parseRegion(query.getString(VariantQueryParams.REGION.key()));
+        String fileId = query.getString(VariantQueryParams.FILES.key());
         String studyId = query.getString(VariantQueryParams.STUDIES.key());
-        byte[] studyIdBytes = studyId.getBytes();
+        byte[] fileIdBytes = fileId.getBytes();
 
         Scan scan = new Scan();
         scan.addFamily(getColumnFamily());
         scan.setStartRow(buildRowkey(region.getChromosome(),region.getStart()));
         scan.setStopRow(buildRowkey(region.getChromosome(),region.getEnd()));
+
         logger.debug(new String(scan.getStartRow()));
         logger.debug(new String(scan.getStopRow()));
-
         logger.debug("region = " + region);
+        logger.debug("Table name = " + studyId);
+        logger.debug("Column name = " + fileId);
         logger.debug("Created iterator");
 
         try {
+            Table table = con.getTable(TableName.valueOf(studyId));
             ResultScanner resScan = table.getScanner(scan);
-            final Iterator<Result> iter = resScan.iterator();
-            return new VariantHadoopArchiveDBIterator(iter, getColumnFamily(), studyIdBytes, getVcfMeta(studyIdBytes).first());
+            final Iterator<Result> resultIterator = resScan.iterator();
+            return new VariantHadoopArchiveDBIterator(resultIterator, getColumnFamily(), fileIdBytes, getVcfMeta(studyId, fileIdBytes).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -402,27 +415,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
         // TODO Auto-generated method stub
-        return new StudyConfigurationManager(new ObjectMap()) {
-            @Override
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-                return null;
-            }
-
-            @Override
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-                return null;
-            }
-
-            @Override
-            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-                return null;
-            }
-
-            @Override
-            public List<String> getStudyNames(QueryOptions options) {
-                return Collections.emptyList();
-            }
-        };
+        return studyConfigurationManager;
     }
 
     @Override

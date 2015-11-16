@@ -14,13 +14,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +50,7 @@ public class GenomeHelper {
 
     private final Configuration conf;
 
+    protected final HBaseManager hBaseManager;
     
     public interface MetadataAction<T>{
         T parse(InputStream is) throws IOException;
@@ -68,6 +65,7 @@ public class GenomeHelper {
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
         this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
+        this.hBaseManager = new HBaseManager(conf);
     }
 
     /**
@@ -83,6 +81,10 @@ public class GenomeHelper {
     
     private Configuration getConf() {
         return conf;
+    }
+
+    public HBaseManager getHBaseManager() {
+        return hBaseManager;
     }
 
     public static String printClassJarPath(Class<?> clazz) {
@@ -183,31 +185,27 @@ public class GenomeHelper {
      * <ul>
      * e.g. using chunk size 100, separator _ with chr2 and 1234 would result in
      * 2_12
-     * 
-     * @param chrom
-     *            Chromosome name
-     * @param position
-     *            Genomic position
+     *
+     * @param chrom    Chromosome name
+     * @param position Genomic position
      * @return {@link String} Row key string
      */
-    protected String generateBlockId (String chrom, long position) {
+    protected String generateBlockId(String chrom, long position) {
         long slicePosition = getSlicePosition(position);
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());
         sb.append(String.format("%012d", slicePosition));
         return sb.toString();
     }
-    
+
     /**
      * Changes the String from {@link #generateBlockId(String, long)} to bytes
      *
-     * @param chrom
-     *            Chromosome
-     * @param start
-     *            Position
+     * @param chrom Chromosome
+     * @param start Position
      * @return {@link Byte} array
      */
-    public byte[] generateBlockIdAsBytes (String chrom, long start) {
+    public byte[] generateBlockIdAsBytes(String chrom, long start) {
         return Bytes.toBytes(generateBlockId(chrom, start));
     }
     
@@ -225,14 +223,14 @@ public class GenomeHelper {
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
      * name
      * <ul>
-     * 
-     * @param chrom Chromosome name
+     *
+     * @param chrom    Chromosome name
      * @param position Genomic position
-     * @param ref Reference name
-     * @param ref Alt name
+     * @param ref      Reference name
+     * @param ref      Alt name
      * @return {@link String} Row key string
      */
-    public String generateVcfRowId (String chrom, long position,String ref,String alt) {
+    public String generateVcfRowId (String chrom, long position, String ref, String alt) {
         StringBuilder sb = new StringBuilder(generateRowPositionKey(chrom, position));
         sb.append(ref);
         sb.append(getSeparator());
@@ -272,12 +270,11 @@ public class GenomeHelper {
 
     /**
      * Creates a standard chromosome name from the provided string
-     * 
-     * @param chrom
-     *            Chromosome string
+     *
+     * @param chrom Chromosome string
      * @return String chromosome name
      */
-    public String standardChromosome (String chrom) {
+    public String standardChromosome(String chrom) {
         if (chrom.length() > 2) {
             if (chrom.substring(0, 2).equals("chr")) {
                 chrom = chrom.substring(2);
@@ -297,50 +294,4 @@ public class GenomeHelper {
         return wrapAsPut(column,getMetaRowKey(),meta);
     }
 
-    @FunctionalInterface
-    interface HBaseTableConsumer<T>{
-        void accept(Table table) throws IOException;
-    }
-    @FunctionalInterface
-    interface HBaseTableFunction<T>{
-        T function(Table table) throws IOException;
-    }
-    @FunctionalInterface
-    interface HBaseTableAdminFunction<T>{
-        T function(Table table, Admin admin) throws IOException;
-    }
-    
-    public void act(byte[] tablename, HBaseTableConsumer<Table> func) throws IOException{
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-        ) {
-            func.accept(table);
-        }
-    }
-
-    public <T> T actOnTable(String tablename, HBaseTableFunction<T> func) throws IOException {
-        return actOnTable(Bytes.toBytes(tablename), func);
-    }
-
-    public <T> T actOnTable(byte[] tablename, HBaseTableFunction<T> func) throws IOException {
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-        ) {
-            return func.function(table);
-        }
-    }
-    public <T> T actOnTable(String tablename, HBaseTableAdminFunction<T> func) throws IOException {
-        TableName tname = TableName.valueOf(tablename);
-        try (
-                Connection con = ConnectionFactory.createConnection(getConf());
-                Table table = con.getTable(tname);
-                Admin admin = con.getAdmin();
-        ) {
-            return func.function(table,admin);
-        }
-    }
 }

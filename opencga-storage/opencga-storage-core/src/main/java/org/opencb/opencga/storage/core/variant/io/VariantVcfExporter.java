@@ -7,10 +7,7 @@ import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFilterHeaderLine;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.vcf.*;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -115,6 +112,7 @@ public class VariantVcfExporter {
                       QueryOptions queryOptions) throws Exception {
 
         final VCFHeader header = getVcfHeader(studyConfiguration, queryOptions);
+        header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
