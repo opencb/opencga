@@ -80,6 +80,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
             checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+            buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
             //TODO: CopyFromLocal input to HDFS
