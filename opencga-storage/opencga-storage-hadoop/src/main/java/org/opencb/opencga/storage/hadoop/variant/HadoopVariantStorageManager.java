@@ -59,51 +59,57 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()), options.getString(Options.STUDY_NAME.key()));
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         }
+        boolean loadArch = options.getBoolean("hadoop.load.archive");
+        boolean loadVar = options.getBoolean("hadoop.load.variant");
 
+
+        if(loadArch) {
 //        VariantSource variantSource = readVariantSource(Paths.get(input), null);
-        VariantSource source = readVariantSource(input, options);
+            VariantSource source = readVariantSource(input, options);
 
-        int fileId;
-        String fileName = source.getFileName();
-        try {
-            fileId = Integer.parseInt(source.getFileId());
-        } catch (NumberFormatException e) {
-            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
-        }
-        options.put(Options.FILE_ID.key(), fileId);
-        checkNewFile(studyConfiguration, fileId, fileName);
-        studyConfiguration.getFileIds().put(fileName, fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
-
-        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
-
-
-        //TODO: CopyFromLocal input to HDFS
-        if (!input.getScheme().equals("hdfs")) {
-            if (!output.getScheme().equals("hdfs")) {
-                throw new StorageManagerException("Output must be in HDFS");
-            }
-
+            int fileId;
+            String fileName = source.getFileName();
             try {
-                Configuration conf = getHadoopConfiguration(options);
-                FileSystem fs = FileSystem.get(conf);
-                Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
-                logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
-                fs.copyFromLocalFile(false, new Path(input), variantsOutputPath);
+                fileId = Integer.parseInt(source.getFileId());
+            } catch (NumberFormatException e) {
+                throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
+            }
+            options.put(Options.FILE_ID.key(), fileId);
+            checkNewFile(studyConfiguration, fileId, fileName);
+            studyConfiguration.getFileIds().put(fileName, fileId);
+            studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
-                URI fileInput = URI.create(input.toString().replace("variants.avro", "file.json"));
-                Path fileOutputPath = new Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
-                logger.info("Copy from {} to {}", new Path(fileInput).toUri(), fileOutputPath.toUri());
-                fs.copyFromLocalFile(false, new Path(fileInput), fileOutputPath);
+            checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
-                input = variantsOutputPath.toUri();
-            } catch (IOException e) {
-                e.printStackTrace();
+            //TODO: CopyFromLocal input to HDFS
+            if (!input.getScheme().equals("hdfs")) {
+                if (!output.getScheme().equals("hdfs")) {
+                    throw new StorageManagerException("Output must be in HDFS");
+                }
+
+                try {
+                    Configuration conf = getHadoopConfiguration(options);
+                    FileSystem fs = FileSystem.get(conf);
+                    Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                    logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
+                    fs.copyFromLocalFile(false, new Path(input), variantsOutputPath);
+
+                    URI fileInput = URI.create(input.toString().replace("variants.avro", "file.json"));
+                    Path fileOutputPath = new Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                    logger.info("Copy from {} to {}", new Path(fileInput).toUri(), fileOutputPath.toUri());
+                    fs.copyFromLocalFile(false, new Path(fileInput), fileOutputPath);
+
+                    input = variantsOutputPath.toUri();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
 //            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
+        }
+        if (loadVar) {
+            // TODO
         }
 
         return input;
@@ -151,40 +157,44 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
 
 
+        boolean loadArch = options.getBoolean("hadoop.load.archive");
+        boolean loadVar = options.getBoolean("hadoop.load.variant");
 
-        // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
-        Class execClass = ArchiveDriver.class;
-        String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
-                + " " + input
-                + " " + vcfMeta
-                + " " + archiveTable.getHostAndPort()
-                + " " + archiveTable.getTable();
+        if (loadArch) {
+            // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
+            Class execClass = ArchiveDriver.class;
+            String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
+                    + " " + input
+                    + " " + vcfMeta
+                    + " " + archiveTable.getHostAndPort()
+                    + " " + archiveTable.getTable();
 
+            logger.debug("------------------------------------------------------");
+            logger.debug(commandLine);
+            logger.debug("------------------------------------------------------");
+            Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
+            command.run();
+            logger.debug("------------------------------------------------------");
+            logger.debug("Exit value: {}", command.getExitValue());
+        }
 
-        logger.debug("------------------------------------------------------");
-        logger.debug(commandLine);
-        logger.debug("------------------------------------------------------");
-        Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
-        command.run();
-        logger.debug("------------------------------------------------------");
-        logger.debug("Exit value: {}", command.getExitValue());
+        if (loadVar) {
+            // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
+            Class execClass = VariantTableDriver.class;
+            String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
+                    + " " + variantsTable.getHostAndPort()
+                    + " " + archiveTable.getTable()
+                    + " " + variantsTable.getTable()
+                    + " " + options.getString(VariantStorageManager.Options.FILE_ID.key());
 
-
-        // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
-        execClass = VariantTableDriver.class;
-        commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
-                + " " + variantsTable.getHostAndPort()
-                + " " + archiveTable.getTable()
-                + " " + variantsTable.getTable()
-                + " " + options.getString(VariantStorageManager.Options.FILE_ID.key());
-
-        logger.debug("------------------------------------------------------");
-        logger.debug(commandLine);
-        logger.debug("------------------------------------------------------");
-        command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
-        command.run();
-        logger.debug("------------------------------------------------------");
-        logger.debug("Exit value: {}", command.getExitValue());
+            logger.debug("------------------------------------------------------");
+            logger.debug(commandLine);
+            logger.debug("------------------------------------------------------");
+            Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
+            command.run();
+            logger.debug("------------------------------------------------------");
+            logger.debug("Exit value: {}", command.getExitValue());
+        }
 
         return input; // TODO  change return value?
     }
