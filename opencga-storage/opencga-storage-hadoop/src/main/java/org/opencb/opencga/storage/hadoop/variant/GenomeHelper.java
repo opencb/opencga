@@ -30,6 +30,8 @@ import com.google.protobuf.MessageLite;
 public class GenomeHelper {
     private final static Logger log = LoggerFactory.getLogger(GenomeHelper.class);
 
+    public static final String OPENCGA_STORAGE_HADOOP_STUDY_ID = "opencga.storage.hadoop.study.id";
+
     public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
     public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
     public static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
@@ -50,6 +52,7 @@ public class GenomeHelper {
     private final Configuration conf;
 
     protected final HBaseManager hBaseManager;
+    private int studyId;
     
     public interface MetadataAction<T>{
         T parse(InputStream is) throws IOException;
@@ -64,6 +67,7 @@ public class GenomeHelper {
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
         this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
+        this.studyId = conf.getInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, -1);
         this.hBaseManager = new HBaseManager(conf);
     }
 
@@ -107,21 +111,29 @@ public class GenomeHelper {
         conf.iterator().forEachRemaining(e -> sb.append(e.getKey() + " - " + e.getValue()).append(nl));
         return sb.toString();
     }
-    
-//    public static byte[] getDefaultColumnFamily(){
-//        return DEFAULT_COLUMN_FAMILY;
-//    }
-    
+
     public static void setChunkSize (Configuration conf, Integer size) {
         conf.setInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, size);
     }
-    
+
     public static void setMetaRowKey(Configuration conf, String rowkey){
         conf.set(CONFIG_META_ROW_KEY, rowkey);
     }
 
     public static void setMetaProtoString (Configuration conf, String utfString) {
         conf.set(CONFIG_VCF_META_PROTO_STRING, utfString);
+    }
+
+    public static void setStudyId(Configuration conf, Integer studyId){
+        conf.setInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, studyId);
+    }
+
+    public static String getArchiveTableName(String prefix,Integer studyId){
+        return prefix+"_"+studyId;
+    }
+
+    public int getStudyId(){
+        return this.studyId;
     }
 
     public char getSeparator () {
