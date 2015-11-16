@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

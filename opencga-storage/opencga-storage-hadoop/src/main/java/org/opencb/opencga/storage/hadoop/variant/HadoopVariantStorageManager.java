@@ -82,6 +82,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
             // updates object with file ID and generate sample IDs
             checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+            buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
             //TODO: CopyFromLocal input to HDFS

@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
