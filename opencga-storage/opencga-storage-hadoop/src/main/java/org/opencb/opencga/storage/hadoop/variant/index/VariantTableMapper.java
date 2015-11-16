@@ -46,6 +46,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager.HBaseTableFunction;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +70,6 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     public Logger getLog() {
         return LOG;
     }
-    
-    
 
     @Override
     protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
@@ -89,16 +88,13 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         super.setup(context);
     }
 
-
     @Override
     protected void cleanup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
             InterruptedException {
-        if(null != this.dbConnection){
+        if (null != this.dbConnection) {
             dbConnection.close();
         }
     }
-
-
 
     protected StudyConfiguration loadStudyConf() throws IOException {
         return getHelper().loadMeta();
@@ -147,31 +143,37 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
         context.getCounter("OPENCGA.HBASE", "VCF_BLOCK_READ").increment(1);
         // TODO count and look for reference blocks if there is one variant
+        if(value.isEmpty()){
+            context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
+            return; // TODO search backwards?
+        }
         Map<String, Map<String, List<Integer>>> summary = new HashMap<>();
         try{
             if(Bytes.equals(key.get(), getHelper().getMetaRowKey()))
                 return; // ignore metadata column
-            
+
+            // Calculate various positions
             String blockId = Bytes.toString(key.get());
-            
             VariantTableHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
             Long sliceReg = h.extractPositionFromBlockId(blockId);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
             String nextSliceKey = h.generateBlockId(chr, nextStartPos);
-            if(value.isEmpty()){
-                context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
-                return;
-            }
-//            for(Cell cell : value.listCells()){
-//                Integer id = getMeta().getIdFromColumn(Bytes.toString(cell.getQualifierArray()));
-//                VcfSlice vcfSlice = asSlice(cell.getValueArray());
-//            }
-            Map<Integer, List<Pair<List<String>, Variant>>> position2GtVariantMap = unpack(value, context,false);
-            
+
+            // Load Archive data (selection only
+            Map<Integer, List<Pair<List<String>, Variant>>> position2GtVariantMap = 
+                    unpack(value, context,startPos.intValue(), nextStartPos.intValue(),false);
+
+            Set<Integer> positionWithVariant = filterForVariant(value);
+
+            // Load Variant data (For study)
             Map<Integer,Result> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
             
+            // Done per position -> 1 position can have > 1 variant
+            // TODO check for new variants
+            // TODO update current variants
+
             
 //            NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
 //            for (Entry<byte[], byte[]> x : fm.entrySet()) {
@@ -217,15 +219,23 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
+    private Set<Integer> filterForVariant(Result value) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * 
      * @param value   {@link Result} object from Archive table
      * @param context
+     * @param sliceStartPos 
+     * @param nextSliceStartPos 
      * @param reload  TRUE, if values are reloaded from Archive table on demand to fill gaps - otherwise FALSE
      * @return
-     * @throws InvalidProtocolBufferException
+     * @throws IOException 
      */
-    private Map<Integer, List<Pair<List<String>, Variant>>> unpack(Result value, Context context, boolean reload) throws InvalidProtocolBufferException {
+    private Map<Integer, List<Pair<List<String>, Variant>>> unpack(Result value, Context context, int sliceStartPos, 
+            int nextSliceStartPos, boolean reload) throws IOException {
         Map<Integer, List<Pair<List<String>, Variant>>> resMap = new HashMap<Integer, List<Pair<List<String>,Variant>>>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
@@ -235,13 +245,41 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             
             List<Variant> varList = converter.convert(vcfSlice);
-            
-            for(Variant var : varList){
-                VariantType vtype = var.getType();
+            int minStartPos = addVariants(context, varList, resMap, sliceStartPos, nextSliceStartPos, reload);
+            if(minStartPos > sliceStartPos){ // more information in previous region
+                context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
+                querySliceBreak(context,resMap,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
+            }
+        }
+        return resMap;
+    }
+
+    private void querySliceBreak(Context context,Map<Integer, List<Pair<List<String>, Variant>>> resMap, 
+            byte[] row, byte[] col, int sliceStartPos, int nextSliceStartPos) throws IOException {
+        Get get = new Get(row);
+        get.addColumn(getHelper().getColumnFamily(), col);
+        Result res = getHelper().getHBaseManager().act(getDbConnection(),getHelper().getIntputTable(), table -> {return table.get(get);});
+        // TODO check if sufficient 
+    }
+
+    private byte[] previousArchiveSliceRK(byte[] currRk){
+        return null; //TODO
+    }
+
+    private int addVariants(Context context, List<Variant> varList, Map<Integer, List<Pair<List<String>, Variant>>> resMap, 
+            int sliceStartPos, int nextSliceStartPos, boolean reload) {
+        int minStartPos = nextSliceStartPos;
+        for(Variant var : varList){
+            VariantType vtype = var.getType();
+            if(! reload){
                 logCount(context, vtype); // update Count for output
-                List<String> gtLst = extractGts(var);
-                Pair<List<String>, Variant> pair = new Pair<List<String>, Variant>(gtLst,var);
-                Integer vcfPos = var.getStart();
+            }
+            List<String> gtLst = extractGts(var);
+            Pair<List<String>, Variant> pair = new Pair<List<String>, Variant>(gtLst,var);
+            int start = Math.max(sliceStartPos, var.getStart()); // get max start pos (in case of backwards search)
+            int end = Math.min(nextSliceStartPos, var.getEnd()); // Don't go over the edge of the slice
+            // One entry per position in region
+            for(int vcfPos = start; vcfPos <= end; ++vcfPos){
                 List<Pair<List<String>, Variant>> list = resMap.get(vcfPos);
                 if(list == null){
                     list = new ArrayList<Pair<List<String>, Variant>>();
@@ -249,8 +287,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 }
                 list.add(pair);
             }
+            minStartPos = Math.min(minStartPos,start); // update overall min
         }
-        return resMap;
+        return minStartPos;
     }
 
 
