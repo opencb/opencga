@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
@@ -13,7 +14,6 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
-import org.opencb.opencga.storage.hadoop.mr.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
 import java.io.IOException;

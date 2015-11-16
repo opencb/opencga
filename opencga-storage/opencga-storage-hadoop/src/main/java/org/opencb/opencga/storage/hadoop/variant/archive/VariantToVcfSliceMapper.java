@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,27 +39,27 @@ import org.slf4j.LoggerFactory;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantConverter extends Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put> {
+public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put> {
 
-    private final static Logger log = LoggerFactory.getLogger(GenomeVariantConverter.class);
+    private final static Logger log = LoggerFactory.getLogger(VariantToVcfSliceMapper.class);
 
     private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
-    private final AtomicReference<GenomeVariantHelper> helper = new AtomicReference<GenomeVariantHelper>();
+    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<ArchiveHelper>();
 
     DatumWriter<VariantAvro> variantDatumWriter = new SpecificDatumWriter<VariantAvro>(VariantAvro.class);
 
-    public GenomeVariantConverter () {
+    public VariantToVcfSliceMapper () {
     }
 
     @Override
     protected void setup (Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
             InterruptedException {        
-        this.helper.set(new GenomeVariantHelper(context.getConfiguration()));
+        this.helper.set(new ArchiveHelper(context.getConfiguration()));
         converter.updateVcfMeta(getHelper().getMeta());
         super.setup(context);
     }
 
-    public GenomeVariantHelper getHelper () {
+    public ArchiveHelper getHelper () {
         return helper.get();
     }
 

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,17 +13,18 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallMetaProt;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantTransformHelper extends GenomeHelper {
+public class VariantTableHelper extends GenomeHelper {
 
-    protected static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT = "opencga.storage.hadoop.vcf.transform.table.output";
-    protected static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
+    public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT = "opencga.storage.hadoop.vcf.transform.table.output";
+    public static final String OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT = "opencga.storage.hadoop.vcf.transform.table.input";
     private final AtomicReference<byte[]> outtable = new AtomicReference<>();
     private final AtomicReference<byte[]> intable = new AtomicReference<>();
 
@@ -31,7 +32,7 @@ public class GenomeVariantTransformHelper extends GenomeHelper {
      * 
      * @param conf
      */
-    public GenomeVariantTransformHelper (Configuration conf) {
+    public VariantTableHelper (Configuration conf) {
         super(conf);
         String outTable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY);
         String intable = conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY);

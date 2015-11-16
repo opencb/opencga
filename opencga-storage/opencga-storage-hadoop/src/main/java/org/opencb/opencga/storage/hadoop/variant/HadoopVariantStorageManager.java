@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -19,8 +20,8 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
-import org.opencb.opencga.storage.hadoop.mr.GenomeVariantDriver;
-import org.opencb.opencga.storage.hadoop.mr.GenomeVariantTransformDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
 
         // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
-        Class execClass = GenomeVariantDriver.class;
+        Class execClass = ArchiveDriver.class;
         String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
                 + " " + input
                 + " " + vcfMeta
@@ -170,7 +171,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
 
         // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
-        execClass = GenomeVariantTransformDriver.class;
+        execClass = VariantTableDriver.class;
         commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
                 + " " + variantsTable.getHostAndPort()
                 + " " + archiveTable.getTable()

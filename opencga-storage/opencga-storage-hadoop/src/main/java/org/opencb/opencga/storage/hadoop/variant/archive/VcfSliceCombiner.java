@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,14 +17,14 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantCombiner extends Reducer<ImmutableBytesWritable, Put, ImmutableBytesWritable, Put> {
+public class VcfSliceCombiner extends Reducer<ImmutableBytesWritable, Put, ImmutableBytesWritable, Put> {
 
-    private final AtomicReference<GenomeVariantHelper> helper = new AtomicReference<GenomeVariantHelper>();
+    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<ArchiveHelper>();
 
     @Override
     protected void setup (Reducer<ImmutableBytesWritable, Put, ImmutableBytesWritable, Put>.Context context) throws IOException,
             InterruptedException {
-        this.helper.set(new GenomeVariantHelper(context.getConfiguration()));
+        this.helper.set(new ArchiveHelper(context.getConfiguration()));
     }
 
     @Override
@@ -42,7 +42,7 @@ public class GenomeVariantCombiner extends Reducer<ImmutableBytesWritable, Put, 
         cxt.write(key, joinedPut);
     }
 
-    public GenomeVariantHelper getHelper () {
+    public ArchiveHelper getHelper () {
         return helper.get();
     }
 }

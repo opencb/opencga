@@ -1,7 +1,7 @@
 syntax = "proto3";
 // repeated int32 samples = 4 [packed=true];
-package org.opencb.opencga.storage.hadoop.models.variantcall.protobuf;
-option java_package = "org.opencb.opencga.storage.hadoop.models.variantcall.protobuf";
+package org.opencb.opencga.storage.hadoop.variant.index.models.protobuf;
+option java_package = "org.opencb.opencga.storage.hadoop.variant.index.models.protobuf";
 option java_outer_classname = "VariantCallProtos";
 
 message VariantCallMetaProt {

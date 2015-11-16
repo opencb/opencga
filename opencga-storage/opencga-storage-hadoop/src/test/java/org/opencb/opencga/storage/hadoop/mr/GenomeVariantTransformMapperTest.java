@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.mr;
 
 import com.google.protobuf.HBaseZeroCopyByteString;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
@@ -18,16 +19,18 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
 
 import java.io.IOException;
 import java.util.*;
 
 public class GenomeVariantTransformMapperTest {
-    private GenomeVariantTransformMapper mapper;
+    private VariantTableMapper mapper;
     private MapDriver<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put> mapDriver;
 
-    public static class TestHelper extends GenomeVariantTransformHelper{
+    public static class TestHelper extends VariantTableHelper{
 
         public TestHelper (Configuration conf) {
             super(conf);
@@ -39,9 +42,9 @@ public class GenomeVariantTransformMapperTest {
     public void setUp() throws Exception {
         final VariantCallMeta variantCallMeta = new VariantCallMeta();
         variantCallMeta.addSample("a", 1, HBaseZeroCopyByteString.copyFrom(Bytes.toBytes("a")));
-        mapper = new GenomeVariantTransformMapper(){
+        mapper = new VariantTableMapper(){
             @Override
-            protected GenomeVariantTransformHelper loadHelper(
+            protected VariantTableHelper loadHelper(
                     Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
                 return new TestHelper(context.getConfiguration());
             }
@@ -54,16 +57,6 @@ public class GenomeVariantTransformMapperTest {
             @Override
             protected void initVcfMetaMap(Configuration conf) throws IOException {
                 // do nothing
-            }
-
-            @Override
-            protected Map<String, Result> fetchCurrentValues(Set<String> keySet)
-                    throws IOException {
-                Map<String, Result> res = new HashMap<>();
-                for(String s : keySet) {
-                    res.put(s, Result.EMPTY_RESULT);
-                }
-                return res;
             }
 
         };
@@ -88,8 +81,8 @@ public class GenomeVariantTransformMapperTest {
         conf.setStrings("io.serializations", conf.get("io.serializations"), MutationSerialization.class.getName(),
                 ResultSerialization.class.getName());
 
-        conf.setStrings(GenomeVariantTransformHelper.OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, "TEST-out");
-        conf.setStrings(GenomeVariantTransformHelper.OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, "TEST-in");
+        conf.setStrings(VariantTableHelper.OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, "TEST-out");
+        conf.setStrings(VariantTableHelper.OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, "TEST-in");
     }
 
     @After
@@ -117,7 +110,7 @@ public class GenomeVariantTransformMapperTest {
 
         byte[] vcf = vcfSliceBuilder.build().toByteArray();
 
-        KeyValue cell = new KeyValue(key.get(), Bytes.toBytes(GenomeVariantTransformHelper.DEFAULT_COLUMN_FAMILY), Bytes.toBytes("a"), vcf);
+        KeyValue cell = new KeyValue(key.get(), Bytes.toBytes(VariantTableHelper.DEFAULT_COLUMN_FAMILY), Bytes.toBytes("a"), vcf);
         List<Cell> cellLst = Arrays.asList(cell);
         Result val = Result.create(cellLst);
         mapDriver.setInput(key, val);

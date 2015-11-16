@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +39,7 @@ import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVcfMeta;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,18 +47,18 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.GeneratedMessage;
 
-public class GenomeVariantDriver extends Configured implements Tool {
-    private static final Logger LOG = LoggerFactory.getLogger(GenomeVariantDriver.class);
+public class ArchiveDriver extends Configured implements Tool {
+    private static final Logger LOG = LoggerFactory.getLogger(ArchiveDriver.class);
 
     public static final String HBASE_MASTER = "hbase.master";
     public static final String OPT_TABLE_NAME = "opencga.table.name";
     public static final String OPT_VCF_FILE = "opencga.file.vcf";
     public static final String OPT_VCF_META_FILE = "opencga.file.vcfmeta";
 
-    public GenomeVariantDriver () {
+    public ArchiveDriver () {
     }
 
-    public GenomeVariantDriver (Configuration conf) {
+    public ArchiveDriver (Configuration conf) {
         super(conf);
     }
 
@@ -71,7 +72,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         
         // add metadata config as string
         addMetaData(conf,inputMetaFile); // TODO store in HBase
-        GenomeVariantHelper variantHelper = new GenomeVariantHelper(conf);
+        ArchiveHelper variantHelper = new ArchiveHelper(conf);
         VcfMeta meta = variantHelper.getMeta(); // testing
 
         /* JOB setup */
@@ -87,10 +88,10 @@ public class GenomeVariantDriver extends Configured implements Tool {
         job.setInputFormatClass(AvroKeyInputFormat.class);
 
         // mapper
-        job.setMapperClass(GenomeVariantConverter.class);
+        job.setMapperClass(VariantToVcfSliceMapper.class);
 
         // combiner
-        job.setCombinerClass(GenomeVariantCombiner.class);
+        job.setCombinerClass(VcfSliceCombiner.class);
       
 
         TableMapReduceUtil.initTableReducerJob(tablename, null, job);
@@ -103,7 +104,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         return job.waitForCompletion(true) ? 0 : 1;
     }
 
-    private void storeMetaData(GenomeVariantHelper variantHelper, String tablename, Configuration conf) throws IOException {
+    private void storeMetaData(ArchiveHelper variantHelper, String tablename, Configuration conf) throws IOException {
         Put put = variantHelper.getMetaAsPut();
         TableName tname = TableName.valueOf(tablename);
         try (
@@ -125,7 +126,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         try(FSDataOutputStream os = fs.create(to,true);){
             os.write(meta.toByteArray());
         }
-        GenomeVariantHelper.setMetaProtoFile(conf, URI.create(protocFile));
+        ArchiveHelper.setMetaProtoFile(conf, URI.create(protocFile));
 //        GenomeVariantHelper.setMetaProtoString(conf, meta.getStudyIdBytes().toStringUtf8());
     }
 
@@ -163,7 +164,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
 
     public static void main (String[] args) throws Exception {
         Configuration conf = new Configuration();
-        GenomeVariantDriver driver = new GenomeVariantDriver();
+        ArchiveDriver driver = new ArchiveDriver();
         GenericOptionsParser parser = new GenericOptionsParser(conf, args);
         
         //get the args w/o generic hadoop args
@@ -171,7 +172,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
         
         if (toolArgs.length != 4) {
             System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>\n",
-                    GenomeVariantDriver.class.getSimpleName());
+                    ArchiveDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             System.exit(-1);
@@ -179,7 +180,7 @@ public class GenomeVariantDriver extends Configured implements Tool {
 
         conf.set(OPT_VCF_FILE, toolArgs[0]);
         conf.set(OPT_VCF_META_FILE, toolArgs[1]);
-        GenomeVariantTransformDriver.addHBaseSettings(conf, toolArgs[2]);
+        VariantTableDriver.addHBaseSettings(conf, toolArgs[2]);
         conf.set(OPT_TABLE_NAME, toolArgs[3]);
 
         //set the configuration back, so that Tool can configure itself

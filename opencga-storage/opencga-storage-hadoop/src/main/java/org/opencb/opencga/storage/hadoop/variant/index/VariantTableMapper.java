@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,13 +37,16 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallProt.Builder;
+import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +56,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWritable, Put>{
+public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>{
     private static final String _TABLE_COUNT_COLUMN = "0/0";
 
-    private final Logger LOG = LoggerFactory.getLogger(GenomeVariantTransformDriver.class);
+    private final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
-    private final AtomicReference<GenomeVariantTransformHelper> helper = new AtomicReference<>();
+    private final AtomicReference<VariantTableHelper> helper = new AtomicReference<>();
     private final AtomicReference<VariantCallMeta> meta = new AtomicReference<>();
     private final Map<Integer, VcfMeta> vcfMetaMap = new ConcurrentHashMap<>();
     
@@ -71,11 +74,12 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             InterruptedException {
         getLog().debug("Setup configuration");
         // Setup configuration
-        helper.set(loadHelper(context));;
-        meta.set(loadMeta());
-        
+        helper.set(loadHelper(context));
+        meta.set(loadMeta()); // Variant meta
+//        HBaseStudyConfigurationManager studyConfigurationManager = new HBaseStudyConfigurationManager(null, context.getConfiguration(), new ObjectMap());
+//        studyConfigurationManager.getStudyConfiguration(studyId, options);
         // Load VCF meta data for columns
-        initVcfMetaMap(context.getConfiguration());
+        initVcfMetaMap(context.getConfiguration()); // Archive meta
         super.setup(context);
     }
 
@@ -83,8 +87,8 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         return new VariantCallMeta(getHelper().loadMeta());
     }
 
-    protected GenomeVariantTransformHelper loadHelper(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
-        return new GenomeVariantTransformHelper(context.getConfiguration());
+    protected VariantTableHelper loadHelper(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
+        return new VariantTableHelper(context.getConfiguration());
     }
 
     /**
@@ -112,7 +116,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         getLog().info(String.format("Loaded %s VcfMETA data!!!", vcfMetaMap.size()));
     }
 
-    public GenomeVariantTransformHelper getHelper() {
+    public VariantTableHelper getHelper() {
         return helper.get();
     }
     
@@ -132,7 +136,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
             
             String blockId = Bytes.toString(key.get());
             
-            GenomeVariantTransformHelper h = getHelper();
+            VariantTableHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
             Long sliceReg = h.extractPositionFromBlockId(blockId);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
@@ -146,7 +150,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
 //                Integer id = getMeta().getIdFromColumn(Bytes.toString(cell.getQualifierArray()));
 //                VcfSlice vcfSlice = asSlice(cell.getValueArray());
 //            }
-            Map<Integer, List<VariantTransformWrapper>> positionMap = unpack(value, context,false);
+            Map<Integer, List<VcfRecordWrapper>> positionMap = unpack(value, context,false);
             
             Map<Integer,Result> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
             
@@ -203,19 +207,27 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
      * @return
      * @throws InvalidProtocolBufferException
      */
-    private Map<Integer, List<VariantTransformWrapper>> unpack(Result value, Context context, boolean reload) throws InvalidProtocolBufferException {
-        Map<Integer, List<VariantTransformWrapper>> resMap = new HashMap<Integer, List<VariantTransformWrapper>>();
+    private Map<Integer, List<VcfRecordWrapper>> unpack(Result value, Context context, boolean reload) throws InvalidProtocolBufferException {
+        Map<Integer, List<VcfRecordWrapper>> resMap = new HashMap<Integer, List<VcfRecordWrapper>>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
             Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
+            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(id));
             VcfSlice vcfSlice = asSlice(x.getValue());
+            
+            List<Variant> varList = converter.convert(vcfSlice);
+            
+            for(Variant var : varList){
+                
+            }
+            
             List<VcfRecord> lst = vcfSlice.getRecordsList();
             if( ! reload){ // count for map-reduce, not for reload
                 context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
                 context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
             }
             for(VcfRecord rec : lst){
-                VariantTransformWrapper wrapper = new VariantTransformWrapper(id, vcfSlice, rec);
+                VcfRecordWrapper wrapper = new VcfRecordWrapper(id, vcfSlice, rec);
                 String gt = extractGt(id,rec);
                 wrapper.setGenotype(gt);
                 if(! reload){ // only show count if Map reduce and not reload
@@ -236,9 +248,9 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
                     }
                 }
                 int vcfPos = wrapper.getStartPosition();
-                List<VariantTransformWrapper> list = resMap.get(vcfPos);
+                List<VcfRecordWrapper> list = resMap.get(vcfPos);
                 if(list == null){
-                    list = new ArrayList<VariantTransformWrapper>();
+                    list = new ArrayList<VcfRecordWrapper>();
                     resMap.put(vcfPos, list);
                 }
                 list.add(wrapper);
@@ -254,7 +266,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
                 Connection con = ConnectionFactory.createConnection(context.getConfiguration());
                 Table table = con.getTable(TableName.valueOf(getHelper().getOutputTable()));
         ) {
-            GenomeVariantTransformHelper h = getHelper();
+            VariantTableHelper h = getHelper();
 //                String key = generatePositionKey(chr,pos);
 //                String ekey = generatePositionKey(chr, pos+1);
 //                byte[] rkBytes = Bytes.toBytes(key);
@@ -373,7 +385,7 @@ public class GenomeVariantTransformMapper extends TableMapper<ImmutableBytesWrit
         byte[] data = Bytes.toBytes(val.size());
         if(!StringUtils.equals(key, _TABLE_COUNT_COLUMN)){
             Collections.sort(val);
-            Builder b = VariantCallProt.newBuilder();
+            VariantCallProt.Builder b = VariantCallProt.newBuilder();
             b.addAllSampleIds(val);
             data = b.build().toByteArray();
         }

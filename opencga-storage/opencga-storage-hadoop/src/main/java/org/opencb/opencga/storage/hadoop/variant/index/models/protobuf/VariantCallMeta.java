@@ -1,13 +1,13 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.models.variantcall.protobuf;
+package org.opencb.opencga.storage.hadoop.variant.index.models.protobuf;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallMetaProt;
 
 import com.google.protobuf.ByteString;
 
@@ -15,6 +15,7 @@ import com.google.protobuf.ByteString;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
+@Deprecated
 public class VariantCallMeta {
 
     //TODO: Use a BiMap

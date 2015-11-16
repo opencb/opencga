@@ -8,6 +8,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
+import org.opencb.opencga.storage.hadoop.variant.archive.VcfRecordComparator;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -35,7 +36,7 @@ public class VcfRecordComparatorTest {
     }
 
     /**
-     * Test method for {@link org.opencb.opencga.storage.hadoop.mr.VcfRecordComparator#compare(org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord, org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord)}.
+     * Test method for {@link org.opencb.opencga.storage.hadoop.variant.archive.VcfRecordComparator#compare(org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord, org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord)}.
      */
     @Test
     public void testStart () {

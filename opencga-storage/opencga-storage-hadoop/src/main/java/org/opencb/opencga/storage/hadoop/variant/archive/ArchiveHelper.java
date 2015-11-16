@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +20,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +30,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantHelper extends GenomeHelper {
+public class ArchiveHelper extends GenomeHelper {
 
-    private final static Logger log = LoggerFactory.getLogger(GenomeVariantHelper.class);
+    private final static Logger log = LoggerFactory.getLogger(ArchiveHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
     private final byte[] column;
 
@@ -46,19 +47,19 @@ public class GenomeVariantHelper extends GenomeHelper {
     /**
      * @throws IOException
      */
-    public GenomeVariantHelper(Configuration conf) throws IOException {
+    public ArchiveHelper(Configuration conf) throws IOException {
         super(conf);
         this.meta.set(loadMetaData(conf, (InputStream in) -> VcfMeta.parseFrom(in)));
         column = Bytes.toBytes(getMeta().getFileId());
     }
 
-    public GenomeVariantHelper(GenomeHelper helper, byte[] meta) throws IOException {
+    public ArchiveHelper(GenomeHelper helper, byte[] meta) throws IOException {
         super(helper);
         this.meta.set(VcfMeta.parseFrom(meta));
         column = Bytes.toBytes(getMeta().getFileId());
     }
 
-    public GenomeVariantHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
+    public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
         super(helper);
         this.meta.set(meta);
         column = Bytes.toBytes(getMeta().getFileId());

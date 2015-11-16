@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,18 +30,17 @@ import com.google.protobuf.MessageLite;
 public class GenomeHelper {
     private final static Logger log = LoggerFactory.getLogger(GenomeHelper.class);
 
-    protected static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
-    protected static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
-//    protected static final String CONFIG_VCF_META_PROTO_TABLE = "opencga.storage.hadoop.vcf.meta.proto.string";
-    protected static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
-    protected static final String CONFIG_GENOME_VARIANT_COLUMN_FAMILY = "opencga.storage.hadoop.vcf.column_family";
-    protected static final String CONFIG_GENOME_VARIANT_ROW_KEY_SEP = "opencga.storage.hadoop.vcf.row_key_sep";
-    protected static final String CONFIG_META_ROW_KEY = "opencga.storage.hadoop.vcf.meta.key";
+    public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
+    public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+    public static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
+    public static final String CONFIG_GENOME_VARIANT_COLUMN_FAMILY = "opencga.storage.hadoop.vcf.column_family";
+    public static final String CONFIG_GENOME_VARIANT_ROW_KEY_SEP = "opencga.storage.hadoop.vcf.row_key_sep";
+    public static final String CONFIG_META_ROW_KEY = "opencga.storage.hadoop.vcf.meta.key";
 
-    protected static final String DEFAULT_META_ROW_KEY = "_METADATA";
-    protected static final String DEFAULT_ROWKEY_SEPARATOR = "_";
-    protected static final String DEFAULT_COLUMN_FAMILY = "d";
-    protected static Integer DEFAULT_CHUNK_SIZE = 100;
+    public static final String DEFAULT_META_ROW_KEY = "_METADATA";
+    public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
+    public static final String DEFAULT_COLUMN_FAMILY = "d";
+    public static Integer DEFAULT_CHUNK_SIZE = 100;
 
     private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
     private final char separator;
@@ -190,7 +189,7 @@ public class GenomeHelper {
      * @param position Genomic position
      * @return {@link String} Row key string
      */
-    protected String generateBlockId(String chrom, long position) {
+    public String generateBlockId(String chrom, long position) {
         long slicePosition = getSlicePosition(position);
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());

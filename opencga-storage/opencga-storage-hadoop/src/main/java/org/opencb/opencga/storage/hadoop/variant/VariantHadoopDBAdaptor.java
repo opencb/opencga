@@ -23,8 +23,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
-import org.opencb.opencga.storage.hadoop.mr.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.mr.GenomeVariantHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,9 +86,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    public GenomeVariantHelper getGenomeVariantHelper(String study, byte[] file) {
+    public ArchiveHelper getGenomeVariantHelper(String study, byte[] file) {
         try {
-            return new GenomeVariantHelper(genomeHelper, getVcfMeta(study, file).first());
+            return new ArchiveHelper(genomeHelper, getVcfMeta(study, file).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

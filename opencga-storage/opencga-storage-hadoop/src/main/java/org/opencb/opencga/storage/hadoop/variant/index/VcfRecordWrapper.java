@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,7 +16,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTransformWrapper {
+public class VcfRecordWrapper {
     
 //    public static enum CallStatus {REF,VARIANT,NOCALL,MULTI_ALLELIC}
 
@@ -31,7 +31,7 @@ public class VariantTransformWrapper {
      * @param vcfSlice 
      * 
      */
-    public VariantTransformWrapper (Integer id, VcfSlice vcfSlice, VcfRecord rec) {
+    public VcfRecordWrapper (Integer id, VcfSlice vcfSlice, VcfRecord rec) {
         this.id = id;
         this.slice = vcfSlice;
         this.rec = rec;

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.opencb.opencga.storage.hadoop.mr;
+package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -21,9 +21,9 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallMeta;
-import org.opencb.opencga.storage.hadoop.models.variantcall.protobuf.VariantCallProtos.VariantCallMetaProt;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
+import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallMetaProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +33,8 @@ import com.google.protobuf.ByteString;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class GenomeVariantTransformDriver extends Configured implements Tool {
-    private static final Logger LOG = LoggerFactory.getLogger(GenomeVariantTransformDriver.class);
+public class VariantTableDriver extends Configured implements Tool {
+    private static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
     public static final String OPENCGA_VARIANT_TRANSFORM_SAMPLE_ARR = "opencga.variant.transform.sample_arr";
     public static final String OPENCGA_VARIANT_TRANSFORM_COLUMNARR = "opencga.variant.transform.column_arr";
@@ -42,9 +42,9 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
     public static final String HBASE_MASTER = "hbase.master";
 
-    public GenomeVariantTransformDriver () { /* nothing */}
+    public VariantTableDriver () { /* nothing */}
 
-    public GenomeVariantTransformDriver(Configuration conf){
+    public VariantTableDriver(Configuration conf){
         super(conf);
     }
 
@@ -76,15 +76,15 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
                     String.format("Difference in number of sample names (%s) and column names", colCnt, sample_arr.length));
         }
 
-        GenomeVariantTransformHelper.setOutputTableName(conf, out_table);
-        GenomeVariantTransformHelper.setInputTableName(conf, in_table);
-        GenomeVariantTransformHelper gh = new GenomeVariantTransformHelper(conf);
+        VariantTableHelper.setOutputTableName(conf, out_table);
+        VariantTableHelper.setInputTableName(conf, in_table);
+        VariantTableHelper gh = new VariantTableHelper(conf);
 
 
         /* -------------------------------*/
         // Validate input CHECK
         HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin));
-        if(!gh.hBaseManager.act(in_table, func)) {
+        if(!gh.getHBaseManager().act(in_table, func)) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!",in_table));
         }
 
@@ -101,17 +101,20 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         /* -------------------------------*/
         // JOB setup
         Job job = Job.getInstance(conf, "Genome Variant Transform from & to HBase");
-        job.setJarByClass(GenomeVariantTransformMapper.class);    // class that contains mapper
+        job.setJarByClass(VariantTableMapper.class);    // class that contains mapper
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         
         Scan scan = new Scan();
         scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        
+//        scan.addColumn(family, qualifier) //TODO define columns to return
+        
         // set other scan attrs
         TableMapReduceUtil.initTableMapperJob(
             in_table,      // input table
             scan,             // Scan instance to control CF and attribute selection
-            GenomeVariantTransformMapper.class,   // mapper class
+            VariantTableMapper.class,   // mapper class
             null,             // mapper output key
             null,             // mapper output value
             job);
@@ -128,7 +131,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         return b?0:1;
     }
 
-    private VariantCallMeta initMetaData(Configuration conf, GenomeVariantTransformHelper gh) throws IOException {
+    private VariantCallMeta initMetaData(Configuration conf, VariantTableHelper gh) throws IOException {
         boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)));
 
         VariantCallMeta meta = new VariantCallMeta();
@@ -171,7 +174,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
     public static void main(String[] args) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
         Configuration conf = new Configuration();
-        GenomeVariantTransformDriver driver = new GenomeVariantTransformDriver();
+        VariantTableDriver driver = new VariantTableDriver();
         GenericOptionsParser parser = new GenericOptionsParser(conf, args);
         
         //get the args w/o generic hadoop args
@@ -179,7 +182,7 @@ public class GenomeVariantTransformDriver extends Configured implements Tool {
         
         if (toolArgs.length != 4) {
             System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <column>\n", 
-                    GenomeVariantTransformDriver.class.getSimpleName());
+                    VariantTableDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             System.exit(-1);
