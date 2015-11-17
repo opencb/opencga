@@ -5,9 +5,14 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import javax.ws.rs.NotSupportedException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.directory.api.util.exception.NotImplementedException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HConstants;
@@ -20,14 +25,15 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.protobuf.ByteString;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -36,8 +42,8 @@ import com.google.protobuf.ByteString;
 public class VariantTableDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
-    public static final String OPENCGA_VARIANT_TRANSFORM_SAMPLE_ARR = "opencga.variant.transform.sample_arr";
-    public static final String OPENCGA_VARIANT_TRANSFORM_COLUMNARR = "opencga.variant.transform.column_arr";
+    public static final String OPENCGA_VARIANT_TRANSFORM_FILE_ARR = "opencga.variant.transform.file_arr";
+    public static final String OPENCGA_VARIANT_TRANSFORM_STUDY = "opencga.variant.transform.study";
     public static final String OPENCGA_VARIANT_TRANSFORM_OUTPUT = "opencga.variant.transform.output";
     public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
     public static final String HBASE_MASTER = "hbase.master";
@@ -51,68 +57,72 @@ public class VariantTableDriver extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        String in_table = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
+        String inTablePrefix = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
         String out_table = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT, StringUtils.EMPTY);
-        String[] column_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, new String[0]);
-        String[] sample_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, column_arr);
+        String[] file_arr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, new String[0]);
+        Integer studyId = conf.getInt(OPENCGA_VARIANT_TRANSFORM_STUDY, -1);
 
         /* -------------------------------*/
         // Validate parameters CHECK
-        if (StringUtils.isEmpty(in_table)) {
-            throw new IllegalArgumentException("No input hbase table specified!!!");
+        if (StringUtils.isEmpty(inTablePrefix)) {
+            throw new IllegalArgumentException("No input hbase table basename specified!!!");
         }
         if (StringUtils.isEmpty(out_table)) {
             throw new IllegalArgumentException("No output hbase table specified!!!");
         }
-        if (in_table.equals(out_table)) {
+        if (inTablePrefix.equals(out_table)) {
             throw new IllegalArgumentException("Input and Output tables must be different");
         }
-        int colCnt = column_arr.length;
-        if (colCnt == 0) {
-            throw new IllegalArgumentException("No columns specified");
+        if (studyId < 0)  {
+            throw new IllegalArgumentException("No Study id specified!!!");
         }
-        if (Integer.compare(colCnt, sample_arr.length) != 0)  {
-            throw new IllegalArgumentException(
-                    String.format("Difference in number of sample names (%s) and column names", colCnt, sample_arr.length));
+        int fileCnt = file_arr.length;
+        if (fileCnt == 0) {
+            throw new IllegalArgumentException("No files specified");
         }
 
+        String inTable = GenomeHelper.getArchiveTableName(inTablePrefix, studyId);
+        LOG.info(String.format("Use table %s as input", inTable));
+
+        GenomeHelper.setStudyId(conf,studyId);
         VariantTableHelper.setOutputTableName(conf, out_table);
-        VariantTableHelper.setInputTableName(conf, in_table);
+        VariantTableHelper.setInputTableName(conf, inTable);
+        
         VariantTableHelper gh = new VariantTableHelper(conf);
 
 
         /* -------------------------------*/
         // Validate input CHECK
         HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(),admin));
-        if(!gh.getHBaseManager().act(in_table, func)) {
-            throw new IllegalArgumentException(String.format("Input table %s does not exist!!!",in_table));
+        if(!gh.getHBaseManager().act(inTable, func)) {
+            throw new IllegalArgumentException(String.format("Input table %s does not exist!!!",inTable));
         }
 
         /* -------------------------------*/
         // INIT META Data
-        VariantCallMeta meta = initMetaData(conf, gh);
-        
-        Integer nextId = meta.nextId();
-        for(int i = 0; i < colCnt; ++i){
-            meta.addSample(sample_arr[i], nextId+i, ByteString.copyFrom(column_arr[i].getBytes()));
-        }
-        gh.storeMeta(meta.build());
+        StudyConfiguration sconf = loadStudyConfiguration(conf, gh, studyId); // needed for query (column names)
+        // TODO check if this needs further work
 
         /* -------------------------------*/
         // JOB setup
         Job job = Job.getInstance(conf, "Genome Variant Transform from & to HBase");
         job.setJarByClass(VariantTableMapper.class);    // class that contains mapper
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-        
+
+        // QUERY design
         Scan scan = new Scan();
         scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
-        
-//        scan.addColumn(family, qualifier) //TODO define columns to return
-        
+
+        // specify return columns (file IDs)
+        for(String fname : file_arr){
+            Integer id = sconf.getFileIds().get(fname);
+            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(id));
+        }
+
         // set other scan attrs
         TableMapReduceUtil.initTableMapperJob(
-            in_table,      // input table
+            inTable,      // input table
             scan,             // Scan instance to control CF and attribute selection
             VariantTableMapper.class,   // mapper class
             null,             // mapper output key
@@ -131,29 +141,12 @@ public class VariantTableDriver extends Configured implements Tool {
         return b?0:1;
     }
 
-    private VariantCallMeta initMetaData(Configuration conf, VariantTableHelper gh) throws IOException {
-        boolean out_exist = gh.actOnTable(((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)));
-
-        VariantCallMeta meta = new VariantCallMeta();
-        if(!out_exist){
-            HBaseUtils.createTableIfNeeded(gh.getOutputTableAsString(), gh.getColumnFamily(), conf);
-            LOG.info(String.format("Create table '%s' in hbase!", gh.getOutputTableAsString()));
-        } else{
-            meta = new VariantCallMeta(gh.loadMeta());
-        }
-        return meta;
-    }
-
-    private void print(VariantCallMetaProt meta) {
-//        VariantCallMeta m = new VariantCallMeta(meta);
-        int maxField = meta.getSampleIdCount();
-        if(maxField == 0){
-            System.err.println("No data in Meta file");
-            return;
-        }
-        for(int i = 0; i < maxField; ++i){
-            System.err.printf("%s %s %s", meta.getSampleNames(i),meta.getSampleId(i),Bytes.toString(meta.getSampleColumn(i).toByteArray()));
-        }
+    private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, conf, null);
+        QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
+        if(res.getResult().size() != 1)
+            throw new NotSupportedException();
+        return res.first();
     }
 
     public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException{
@@ -193,7 +186,8 @@ public class VariantTableDriver extends Configured implements Tool {
         addHBaseSettings(conf, toolArgs[0]);
         conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
         conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
-        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_COLUMNARR, cols);
+        conf.setInt(OPENCGA_VARIANT_TRANSFORM_STUDY, 1);
+        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, cols);
 
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);

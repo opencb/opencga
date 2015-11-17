@@ -6,16 +6,19 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.ws.rs.NotSupportedException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallMetaProt;
+import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -46,33 +49,22 @@ public class VariantTableHelper extends GenomeHelper {
         setInputTable(intable);
     }
 
-    public VariantCallMetaProt loadMeta() throws IOException{
-        final Get get = new Get(getMetaRowKey());
-        get.addColumn(getColumnFamily(), getMetaColumnKey());
-        HBaseManager.HBaseTableFunction<Result> func = (Table table)-> table.get(new Get(getMetaRowKey()));
-        Result res = hBaseManager.act(getOutputTable(), func);
-        if(res.isEmpty() || !res.containsColumn(getColumnFamily(), getMetaRowKey())) {
-            return null;
+    public StudyConfiguration loadMeta() throws IOException{
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, this.hBaseManager.getConf(), null);
+        QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(),new QueryOptions());
+        if(query.getResult().size() != 1){
+            throw new NotSupportedException("Only one study configuration expected for study");
         }
-        byte[] val = res.getValue(getColumnFamily(), getMetaRowKey());
-        return VariantCallMetaProt.parseFrom(val);
+        return query.first();
     }
     // TODO for the future: 
     // Table locking
     // http://grokbase.com/t/hbase/user/1169nsvfcx/does-put-support-dont-put-if-row-exists
-    public void storeMeta(VariantCallMetaProt meta) throws IOException{
-        final Put put = wrapMetaAsPut(meta);
-        hBaseManager.act(getOutputTable(), (Table t) -> t.put(put));
+    public void storeMeta(StudyConfiguration studyConf) throws IOException{
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, this.hBaseManager.getConf(), null);
+        scm.updateStudyConfiguration(studyConf, new QueryOptions());
     }
 
-    public Put wrapMetaAsPut(VariantCallMetaProt meta){
-        return wrapMetaAsPut(getMetaColumnKey(), meta);
-    }
-    
-    public byte[] getMetaColumnKey(){
-        return getMetaRowKey();
-    }
-    
     public byte[] getOutputTable() {
         return outtable.get();
     }
@@ -81,12 +73,12 @@ public class VariantTableHelper extends GenomeHelper {
         return intable.get();
     }
 
-    public void act(HBaseManager.HBaseTableConsumer func) throws IOException {
-        hBaseManager.act(getOutputTable(), func);
+    public void act(Connection con, HBaseManager.HBaseTableConsumer func) throws IOException {
+        hBaseManager.act(con, getOutputTable(), func);
     }
 
-    public <T> T actOnTable(HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
-        return hBaseManager.act(getOutputTableAsString(), func);
+    public <T> T actOnTable(Connection con, HBaseManager.HBaseTableAdminFunction<T> func) throws IOException {
+        return hBaseManager.act(con, getOutputTableAsString(), func);
     }
 
     public String getOutputTableAsString() {

@@ -4,12 +4,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.models.protobuf;
 option java_package = "org.opencb.opencga.storage.hadoop.variant.index.models.protobuf";
 option java_outer_classname = "VariantCallProtos";
 
-message VariantCallMetaProt {
-  repeated string sample_names = 1;
-  repeated uint32 sample_id = 2 [packed=true];
-  repeated bytes sample_column = 3;
-}
-
 message VariantCallProt {
   repeated uint32 sample_ids = 1 [packed=true];
 }

@@ -16,8 +16,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -32,20 +30,23 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager.HBaseTableFunction;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +63,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     private final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
     private final AtomicReference<VariantTableHelper> helper = new AtomicReference<>();
-    private final AtomicReference<VariantCallMeta> meta = new AtomicReference<>();
+    private StudyConfiguration studyConfiguration = null;
     private final Map<Integer, VcfMeta> vcfMetaMap = new ConcurrentHashMap<>();
+    private Connection dbConnection = null;
     
     public Logger getLog() {
         return LOG;
@@ -75,16 +77,27 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         getLog().debug("Setup configuration");
         // Setup configuration
         helper.set(loadHelper(context));
-        meta.set(loadMeta()); // Variant meta
-//        HBaseStudyConfigurationManager studyConfigurationManager = new HBaseStudyConfigurationManager(null, context.getConfiguration(), new ObjectMap());
-//        studyConfigurationManager.getStudyConfiguration(studyId, options);
+        this.studyConfiguration = loadStudyConf(); // Variant meta
+
+        // Open DB connection
+        dbConnection = ConnectionFactory.createConnection(context.getConfiguration());
+
         // Load VCF meta data for columns
         initVcfMetaMap(context.getConfiguration()); // Archive meta
+
         super.setup(context);
     }
 
-    protected VariantCallMeta loadMeta() throws IOException {
-        return new VariantCallMeta(getHelper().loadMeta());
+    @Override
+    protected void cleanup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
+            InterruptedException {
+        if (null != this.dbConnection) {
+            dbConnection.close();
+        }
+    }
+
+    protected StudyConfiguration loadStudyConf() throws IOException {
+        return getHelper().loadMeta();
     }
 
     protected VariantTableHelper loadHelper(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
@@ -97,19 +110,20 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @throws IOException
      */
     protected void initVcfMetaMap(Configuration conf) throws IOException {
-        // TODO optimize to only required columns
         byte[] intputTable = getHelper().getIntputTable();
         getLog().debug("Load VcfMETA from " + Bytes.toString(intputTable));
         TableName tname = TableName.valueOf(intputTable);
+        Connection con = getDbConnection();
         try (
-                Connection con = ConnectionFactory.createConnection(conf);
                 Table table = con.getTable(tname);
         ) {
             Get get = new Get(getHelper().getMetaRowKey());
+            // Don't limit for only specific columns - will be needed in case of hole filling!!!
+            // TODO test if really needed
             Result res = table.get(get);
             NavigableMap<byte[], byte[]> map = res.getFamilyMap(getHelper().getColumnFamily());
             for(Entry<byte[], byte[]> e : map.entrySet()){
-                Integer id = getMeta().getIdFromColumn(Bytes.toString(e.getKey()));
+                Integer id = Bytes.toInt(e.getKey()); // file ID
                 vcfMetaMap.put(id, VcfMeta.parseFrom(e.getValue()));
             }
         }
@@ -119,41 +133,47 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     public VariantTableHelper getHelper() {
         return helper.get();
     }
-    
-    public VariantCallMeta getMeta() {
-        return meta.get();
+
+    protected Connection getDbConnection() {
+        return dbConnection;
     }
-    
+
     @Override
     protected void map(ImmutableBytesWritable key, Result value, 
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
         context.getCounter("OPENCGA.HBASE", "VCF_BLOCK_READ").increment(1);
         // TODO count and look for reference blocks if there is one variant
+        if(value.isEmpty()){
+            context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
+            return; // TODO search backwards?
+        }
         Map<String, Map<String, List<Integer>>> summary = new HashMap<>();
         try{
-            if(Bytes.equals(key.get(), getHelper().getMetaColumnKey()))
+            if(Bytes.equals(key.get(), getHelper().getMetaRowKey()))
                 return; // ignore metadata column
-            
+
+            // Calculate various positions
             String blockId = Bytes.toString(key.get());
-            
             VariantTableHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
             Long sliceReg = h.extractPositionFromBlockId(blockId);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
             String nextSliceKey = h.generateBlockId(chr, nextStartPos);
-            if(value.isEmpty()){
-                context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
-                return;
-            }
-//            for(Cell cell : value.listCells()){
-//                Integer id = getMeta().getIdFromColumn(Bytes.toString(cell.getQualifierArray()));
-//                VcfSlice vcfSlice = asSlice(cell.getValueArray());
-//            }
-            Map<Integer, List<VcfRecordWrapper>> positionMap = unpack(value, context,false);
-            
+
+            // Load Archive data (selection only
+            Map<Integer, List<Pair<List<String>, Variant>>> position2GtVariantMap = 
+                    unpack(value, context,startPos.intValue(), nextStartPos.intValue(),false);
+
+            Set<Integer> positionWithVariant = filterForVariant(value);
+
+            // Load Variant data (For study)
             Map<Integer,Result> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
             
+            // Done per position -> 1 position can have > 1 variant
+            // TODO check for new variants
+            // TODO update current variants
+
             
 //            NavigableMap<byte[], byte[]> fm = value.getFamilyMap(h.getColumnFamily());
 //            for (Entry<byte[], byte[]> x : fm.entrySet()) {
@@ -199,79 +219,127 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
+    private Set<Integer> filterForVariant(Result value) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * 
      * @param value   {@link Result} object from Archive table
      * @param context
+     * @param sliceStartPos 
+     * @param nextSliceStartPos 
      * @param reload  TRUE, if values are reloaded from Archive table on demand to fill gaps - otherwise FALSE
      * @return
-     * @throws InvalidProtocolBufferException
+     * @throws IOException 
      */
-    private Map<Integer, List<VcfRecordWrapper>> unpack(Result value, Context context, boolean reload) throws InvalidProtocolBufferException {
-        Map<Integer, List<VcfRecordWrapper>> resMap = new HashMap<Integer, List<VcfRecordWrapper>>();
+    private Map<Integer, List<Pair<List<String>, Variant>>> unpack(Result value, Context context, int sliceStartPos, 
+            int nextSliceStartPos, boolean reload) throws IOException {
+        Map<Integer, List<Pair<List<String>, Variant>>> resMap = new HashMap<Integer, List<Pair<List<String>,Variant>>>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
-            Integer id = getMeta().getIdFromColumn(Bytes.toString(x.getKey()));
-            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(id));
+            int fileId = Bytes.toInt(x.getKey());
+            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(fileId));
             VcfSlice vcfSlice = asSlice(x.getValue());
+            context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             
             List<Variant> varList = converter.convert(vcfSlice);
-            
-            for(Variant var : varList){
-                
-            }
-            
-            List<VcfRecord> lst = vcfSlice.getRecordsList();
-            if( ! reload){ // count for map-reduce, not for reload
-                context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
-                context.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(vcfSlice.getRecordsCount());
-            }
-            for(VcfRecord rec : lst){
-                VcfRecordWrapper wrapper = new VcfRecordWrapper(id, vcfSlice, rec);
-                String gt = extractGt(id,rec);
-                wrapper.setGenotype(gt);
-                if(! reload){ // only show count if Map reduce and not reload
-                    context.getCounter("OPENCGA.HBASE", "VCF_REC_READ").increment(1);
-                    if(wrapper.isHaploid()){
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-haploid").increment(1);
-                    } else if(wrapper.isMultiAlternates()){
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-multi-ignore").increment(1);
-                    } else if(wrapper.hasNoCall()){
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-no-call").increment(1);
-                    } else if(wrapper.isAllelesRef()){
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-ref").increment(1);
-                    } else if(wrapper.hasVariant()){
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-variant").increment(1);
-                    } else{
-                        context.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-unknown-PROBLEM").increment(1);
-                        getLog().warn(String.format("Found Genotype with '%s'",gt));
-                    }
-                }
-                int vcfPos = wrapper.getStartPosition();
-                List<VcfRecordWrapper> list = resMap.get(vcfPos);
-                if(list == null){
-                    list = new ArrayList<VcfRecordWrapper>();
-                    resMap.put(vcfPos, list);
-                }
-                list.add(wrapper);
+            int minStartPos = addVariants(context, varList, resMap, sliceStartPos, nextSliceStartPos, reload);
+            if(minStartPos > sliceStartPos){ // more information in previous region
+                context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
+                querySliceBreak(context,resMap,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
             }
         }
         return resMap;
     }
 
+    private void querySliceBreak(Context context,Map<Integer, List<Pair<List<String>, Variant>>> resMap, 
+            byte[] row, byte[] col, int sliceStartPos, int nextSliceStartPos) throws IOException {
+        Get get = new Get(row);
+        get.addColumn(getHelper().getColumnFamily(), col);
+        Result res = getHelper().getHBaseManager().act(getDbConnection(),getHelper().getIntputTable(), table -> {return table.get(get);});
+        // TODO check if sufficient 
+    }
+
+    private byte[] previousArchiveSliceRK(byte[] currRk){
+        return null; //TODO
+    }
+
+    private int addVariants(Context context, List<Variant> varList, Map<Integer, List<Pair<List<String>, Variant>>> resMap, 
+            int sliceStartPos, int nextSliceStartPos, boolean reload) {
+        int minStartPos = nextSliceStartPos;
+        for(Variant var : varList){
+            VariantType vtype = var.getType();
+            if(! reload){
+                logCount(context, vtype); // update Count for output
+            }
+            List<String> gtLst = extractGts(var);
+            Pair<List<String>, Variant> pair = new Pair<List<String>, Variant>(gtLst,var);
+            int start = Math.max(sliceStartPos, var.getStart()); // get max start pos (in case of backwards search)
+            int end = Math.min(nextSliceStartPos, var.getEnd()); // Don't go over the edge of the slice
+            // One entry per position in region
+            for(int vcfPos = start; vcfPos <= end; ++vcfPos){
+                List<Pair<List<String>, Variant>> list = resMap.get(vcfPos);
+                if(list == null){
+                    list = new ArrayList<Pair<List<String>, Variant>>();
+                    resMap.put(vcfPos, list);
+                }
+                list.add(pair);
+            }
+            minStartPos = Math.min(minStartPos,start); // update overall min
+        }
+        return minStartPos;
+    }
+
+
+    private List<String> extractGts(Variant var) {
+      StudyEntry se = var.getStudies().get(0);
+      int gtpos = se.getFormatPositions().get("GT");
+      List<String> gtList = new ArrayList<String>();
+      for (List<String> sd : se.getSamplesData()) {
+          gtList.add(sd.get(gtpos));
+      }
+        return gtList;
+    }
+
+    private void logCount(Context ctx, VariantType vtype) {
+        ctx.getCounter("OPENCGA.HBASE", "VCF_Record_Count").increment(1);
+        switch (vtype) {
+        case NO_VARIATION:
+            ctx.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-no-variant    ").increment(1);
+            break;
+        case SNV:
+        case SNP:
+        case MNV:
+        case MNP:
+            ctx.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-variant").increment(1);
+            break;
+        case SYMBOLIC:
+        case MIXED:
+        case INDEL:
+        case SV:
+        case INSERTION:
+        case DELETION:
+        case TRANSLOCATION:
+        case INVERSION:
+        case CNV:
+            ctx.getCounter("OPENCGA.HBASE", "VCF_REC_CALL-ignore").increment(1);
+            break;
+        default:
+            break;
+        }
+    }
 
     protected Map<Integer, Result> loadCurrentVariantsRegion(Context context, byte[] sliceKey, String endKey) throws IOException {
         Map<Integer, Result> resMap = new HashMap<Integer, Result>();
         try (
-                Connection con = ConnectionFactory.createConnection(context.getConfiguration());
-                Table table = con.getTable(TableName.valueOf(getHelper().getOutputTable()));
+                Table table = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));
         ) {
             VariantTableHelper h = getHelper();
-//                String key = generatePositionKey(chr,pos);
-//                String ekey = generatePositionKey(chr, pos+1);
-//                byte[] rkBytes = Bytes.toBytes(key);
             Scan scan = new Scan(sliceKey, Bytes.toBytes(endKey));
             scan.setFilter(new PrefixFilter(sliceKey));
+            scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(getHelper().getStudyId() + "_")));
             ResultScanner rs = table.getScanner(scan); 
             for(Result r : rs){
                 Long pos = h.extractPositionFromVariantRowkey(Bytes.toString(r.getRow()));
@@ -383,7 +451,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      */
     private byte[] persist(String key, List<Integer> val) {
         byte[] data = Bytes.toBytes(val.size());
-        if(!StringUtils.equals(key, _TABLE_COUNT_COLUMN)){
+        if(!StringUtils.equals(key, _TABLE_COUNT_COLUMN)){ //TODO change
             Collections.sort(val);
             VariantCallProt.Builder b = VariantCallProt.newBuilder();
             b.addAllSampleIds(val);
@@ -410,41 +478,17 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     private String generateKey(String chr, int vcfPos, String reference, String alternate) {
         return getHelper().generateVcfRowId(chr, (long) vcfPos, reference, alternate);
     }
-    
+
     private String generatePositionKey(String chrom, int pos){
         return getHelper().generateRowPositionKey(chrom, (long) pos);
     }
 
-    private String extractGt(Integer id, VcfRecord rec) {
-        int gtIdx = findGtIndex(id,rec);
-        if(rec.getSamplesCount() != 1)
-            throw new NotImplementedException("Only one Sample per VCF record supported at the moment");
-        VcfSample sample = rec.getSamples(0);
-        return sample.getSampleValues(gtIdx);
-    }
-
-    private int findGtIndex(Integer id, VcfRecord rec) {
-        if(rec.getSampleFormatNonDefaultCount() > 0){
-            return findIndex("GT",rec.getSampleFormatNonDefaultList());
-        }
-        VcfMeta meta = getVcfMeta(id);
-        return findIndex("GT",meta.getFormatDefaultList());
-    }
-    
     private VcfMeta getVcfMeta(Integer id) {
         return this.vcfMetaMap.get(id);
-    }
-
-    private int findIndex(String str,List<String> list){
-        int idx = list.indexOf(str);
-        if(idx < 0)
-            throw new IllegalStateException(String.format("String %s not found in index!!!",str));
-        return idx;
     }
 
     private VcfSlice asSlice(byte[] data) throws InvalidProtocolBufferException {
         return VcfSlice.parseFrom(data);
     }
-    
 
 }

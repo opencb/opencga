@@ -11,6 +11,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -79,6 +80,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             studyConfiguration.getFileIds().put(fileName, fileId);
             studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
+            // updates object with file ID and generate sample IDs
             checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
             buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
