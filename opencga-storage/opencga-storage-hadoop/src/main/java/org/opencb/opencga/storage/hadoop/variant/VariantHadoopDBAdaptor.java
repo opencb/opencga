@@ -9,8 +9,9 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -24,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,18 +47,20 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     // Should create for each query and close it at the end.
     @Deprecated
     private final Table table;
-    private final HBaseStudyConfigurationManager studyConfigurationManager;
+    private StudyConfigurationManager studyConfigurationManager;
+    private final Configuration configuration;
     private GenomeHelper genomeHelper;
 
     public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
         conf = getHbaseConfiguration(conf, credentials);
 
-        genomeHelper = new GenomeHelper(conf);
+        this.configuration = conf;
+        genomeHelper = new GenomeHelper(this.configuration);
 
         con = ConnectionFactory.createConnection(conf);
         table = con.getTable(TableName.valueOf(credentials.getTable()));
-        studyConfigurationManager = new HBaseStudyConfigurationManager(credentials,  conf, configuration.getVariant().getOptions());
+        studyConfigurationManager = new HBaseStudyConfigurationManager(credentials, conf, configuration.getVariant().getOptions());
     }
 
     static Configuration getHbaseConfiguration(Configuration configuration, HadoopCredentials credentials) {
@@ -70,29 +74,40 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
-
-    public QueryResult<VcfSliceProtos.VcfMeta> getVcfMeta(String tableName, byte[] column) {
-        Get get = new Get(genomeHelper.getMetaRowKey());
-        get.addColumn(getColumnFamily(), column);
+    public ArchiveHelper getArchiveHelper(int studyId, int fileId) {
         try {
-            long startTime = System.currentTimeMillis();
-            Table table = con.getTable(TableName.valueOf(tableName));
-            Result result = table.get(get);
-            byte[] value = result.getValue(getColumnFamily(), column);
-            VcfSliceProtos.VcfMeta vcfMeta = VcfSliceProtos.VcfMeta.parseFrom(value);
-            return new QueryResult<>("getVcfMeta", (int)(System.currentTimeMillis() - startTime), 1, 1, "", "",
-                    Collections.singletonList(vcfMeta));
+            return new ArchiveHelper(genomeHelper, getVcfMeta(ArchiveHelper.getTableName(studyId), fileId, null).first());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public ArchiveHelper getGenomeVariantHelper(String study, byte[] file) {
-        try {
-            return new ArchiveHelper(genomeHelper, getVcfMeta(study, file).first());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public QueryResult<VcfMeta> getVcfMeta(String tableName, int fileId, ObjectMap options) throws IOException {
+        try (ArchiveFileMetadataManager manager = getArchiveFileMetadataManager(tableName, options)) {
+            return manager.getVcfMeta(fileId, options);
         }
+    }
+
+    /**
+     *
+     * @param tableName Use {@link ArchiveHelper#getTableName(int)} to get the table
+     * @param options   Extra options
+     * @throws IOException
+     */
+    public ArchiveFileMetadataManager getArchiveFileMetadataManager(String tableName, ObjectMap options)
+            throws IOException {
+        return new ArchiveFileMetadataManager(tableName, configuration, options);
+    }
+
+
+    @Override
+    public StudyConfigurationManager getStudyConfigurationManager() {
+        return studyConfigurationManager;
+    }
+
+    @Override
+    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
+        this.studyConfigurationManager = studyConfigurationManager;
     }
 
     @Override
@@ -104,7 +119,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         List<Variant> results = new LinkedList<>();
         Scan scan = new Scan();
 
-        scan.addFamily(getColumnFamily());
+        scan.addFamily(genomeHelper.getColumnFamily());
         scan.setStartRow(buildRowkey(region.getChromosome(),region.getStart()));
         scan.setStopRow(buildRowkey(region.getChromosome(),region.getEnd()));
 
@@ -207,10 +222,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return genomeHelper.generateBlockIdAsBytes(chromosome, position);
     }
 
-    private byte[] getColumnFamily(){
-        return COLUMN_FAMILY;
-    }
-
     public static Logger getLog() {
         return logger;
     }
@@ -283,12 +294,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         Region region = Region.parseRegion(query.getString(VariantQueryParams.REGION.key()));
-        String fileId = query.getString(VariantQueryParams.FILES.key());
-        String studyId = query.getString(VariantQueryParams.STUDIES.key());
-        byte[] fileIdBytes = fileId.getBytes();
+        int fileId = query.getInt(VariantQueryParams.FILES.key());
+        int studyId = query.getInt(VariantQueryParams.STUDIES.key());
 
         Scan scan = new Scan();
-        scan.addFamily(getColumnFamily());
+        scan.addFamily(genomeHelper.getColumnFamily());
         scan.setStartRow(buildRowkey(region.getChromosome(),region.getStart()));
         scan.setStopRow(buildRowkey(region.getChromosome(),region.getEnd()));
 
@@ -300,10 +310,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         logger.debug("Created iterator");
 
         try {
-            Table table = con.getTable(TableName.valueOf(studyId));
+            ArchiveHelper archiveHelper = getArchiveHelper(studyId, fileId);
+            Table table = con.getTable(TableName.valueOf(ArchiveHelper.getTableName(studyId)));
             ResultScanner resScan = table.getScanner(scan);
-            final Iterator<Result> resultIterator = resScan.iterator();
-            return new VariantHadoopArchiveDBIterator(resultIterator, getColumnFamily(), fileIdBytes, getVcfMeta(studyId, fileIdBytes).first());
+            return new VariantHadoopArchiveDBIterator(resScan, archiveHelper);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -410,18 +420,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    @Override
-    public StudyConfigurationManager getStudyConfigurationManager() {
-        // TODO Auto-generated method stub
-        return studyConfigurationManager;
-    }
-
-    @Override
-    public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
-        // TODO Auto-generated method stub
-        
     }
 
     @Override

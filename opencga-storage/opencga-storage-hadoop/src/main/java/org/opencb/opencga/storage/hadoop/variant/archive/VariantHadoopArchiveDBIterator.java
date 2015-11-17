@@ -2,11 +2,14 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -15,7 +18,7 @@ import java.util.Iterator;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopArchiveDBIterator extends VariantDBIterator {
+public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements AutoCloseable {
 
     private final VcfRecordToVariantConverter converter;
     private Iterator<VcfSliceProtos.VcfRecord> vcfRecordIterator = Collections.emptyIterator();
@@ -23,9 +26,19 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator {
     private final Iterator<Result> iterator;
     private final byte[] columnFamily;
     private final byte[] fileIdBytes;
+    private ResultScanner resultScanner;
 
-    public VariantHadoopArchiveDBIterator(Iterator<Result> iterator, byte[] columnFamily, byte[] fileIdBytes, VcfSliceProtos.VcfMeta meta) {
-        this.iterator = iterator;
+    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper) {
+        this.resultScanner = resultScanner;
+        this.iterator = this.resultScanner.iterator();
+        this.columnFamily = archiveHelper.getColumnFamily();
+        this.fileIdBytes = archiveHelper.getColumn();
+        converter = new VcfRecordToVariantConverter(archiveHelper.getMeta());
+    }
+
+    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, byte[] columnFamily, byte[] fileIdBytes, VcfMeta meta) {
+        this.resultScanner = resultScanner;
+        this.iterator = this.resultScanner.iterator();
         this.columnFamily = columnFamily;
         this.fileIdBytes = fileIdBytes;
         converter = new VcfRecordToVariantConverter(meta);
@@ -64,5 +77,11 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator {
             System.err.println("variant " + variant.toString());
         }
         return variant;
+    }
+
+
+    @Override
+    public void close() {
+        resultScanner.close();
     }
 }
