@@ -15,8 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created on 16/11/15
@@ -45,6 +44,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
             throws IOException {
         this(ConnectionFactory.createConnection(configuration), tableName, configuration, options);
     }
+
     public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration, ObjectMap options)
         throws IOException {
         this.tableName = tableName;
@@ -56,22 +56,40 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         hBaseManager = new HBaseManager(configuration);
     }
 
+    public QueryResult<VcfMeta> getAllVcfMetas(ObjectMap options) throws IOException {
+        return getVcfMeta(Collections.emptyList(), options);
+    }
+
     public QueryResult<VcfMeta> getVcfMeta(int fileId, ObjectMap options) throws IOException {
+        return getVcfMeta(Collections.singletonList(fileId), options);
+    }
+
+    public QueryResult<VcfMeta> getVcfMeta(List<Integer> fileIds, ObjectMap options) throws IOException {
         long start = System.currentTimeMillis();
         Get get = new Get(genomeHelper.getMetaRowKey());
-        byte[] columnName = Bytes.toBytes(Integer.toString(fileId));
-        get.addColumn(genomeHelper.getColumnFamily(), columnName);
+        if (fileIds == null || fileIds.isEmpty()) {
+            get.addFamily(genomeHelper.getColumnFamily());
+        } else {
+            for (Integer fileId : fileIds) {
+                byte[] columnName = Bytes.toBytes(ArchiveHelper.getColumnName(fileId));
+                get.addColumn(genomeHelper.getColumnFamily(), columnName);
+            }
+        }
         HBaseManager.HBaseTableFunction<Result> resultHBaseTableFunction = table -> table.get(get);
         Result result = hBaseManager.act(connection, tableName, resultHBaseTableFunction);
 
-        if (result.isEmpty() || !result.containsColumn(genomeHelper.getColumnFamily(), columnName)) {
-            return new QueryResult<>(Integer.toString(fileId), (int) (System.currentTimeMillis() - start), 0, 0, "", "",
+        if (result.isEmpty()) {
+            return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 0, 0, "", "",
                     Collections.emptyList());
         } else {
-            VariantSource variantSource = objectMapper.readValue(result.getValue(genomeHelper.getColumnFamily(), columnName), VariantSource.class);
-            VcfMeta vcfMetaWrapper = new VcfMeta(variantSource);
-            return new QueryResult<>(Integer.toString(fileId), (int) (System.currentTimeMillis() - start), 1, 1, "", "",
-                    Collections.singletonList(vcfMetaWrapper));
+            List<VcfMeta> metas = new ArrayList<>(result.size());
+            for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
+                VariantSource variantSource = objectMapper.readValue(entry.getValue(), VariantSource.class);
+                VcfMeta vcfMeta = new VcfMeta(variantSource);
+                metas.add(vcfMeta);
+            }
+            return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 1, 1, "", "",
+                    metas);
         }
     }
 

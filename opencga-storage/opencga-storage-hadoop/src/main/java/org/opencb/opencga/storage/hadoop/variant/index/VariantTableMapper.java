@@ -3,33 +3,12 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.commons.lang.NotImplementedException;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -40,18 +19,22 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
+import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager.HBaseTableFunction;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -110,21 +93,12 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @throws IOException
      */
     protected void initVcfMetaMap(Configuration conf) throws IOException {
-        byte[] intputTable = getHelper().getIntputTable();
-        getLog().debug("Load VcfMETA from " + Bytes.toString(intputTable));
-        TableName tname = TableName.valueOf(intputTable);
-        Connection con = getDbConnection();
-        try (
-                Table table = con.getTable(tname);
-        ) {
-            Get get = new Get(getHelper().getMetaRowKey());
-            // Don't limit for only specific columns - will be needed in case of hole filling!!!
-            // TODO test if really needed
-            Result res = table.get(get);
-            NavigableMap<byte[], byte[]> map = res.getFamilyMap(getHelper().getColumnFamily());
-            for(Entry<byte[], byte[]> e : map.entrySet()){
-                Integer id = Bytes.toInt(e.getKey()); // file ID
-                vcfMetaMap.put(id, VcfMeta.parseFrom(e.getValue()));
+        String tableName = Bytes.toString(getHelper().getIntputTable());
+        getLog().debug("Load VcfMETA from {}", tableName);
+        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf, null)) {
+            QueryResult<VcfMeta> allVcfMetas = metadataManager.getAllVcfMetas(new ObjectMap());
+            for (VcfMeta vcfMeta : allVcfMetas.getResult()) {
+                vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
             }
         }
         getLog().info(String.format("Loaded %s VcfMETA data!!!", vcfMetaMap.size()));
@@ -356,7 +330,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * Load (if available) current data, merge information and store new object in DB
      * @param context
      * @param summary
-     * @param currRes 
+     * @param currentResults
      * @throws IOException 
      * @throws InterruptedException 
      */
