@@ -205,10 +205,13 @@ public class GenomeHelper {
      * @return {@link String} Row key string
      */
     public String generateBlockId(String chrom, long position) {
-        long slicePosition = getSlicePosition(position);
+        return generateBlockIdFromSlice(chrom, getSlicePosition(position));
+    }
+
+    public String generateBlockIdFromSlice(String chrom, long slice){
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());
-        sb.append(String.format("%012d", slicePosition));
+        sb.append(String.format("%012d", slice));
         return sb.toString();
     }
 
@@ -256,7 +259,7 @@ public class GenomeHelper {
         return splitBlockId(blockId)[0];
     }
 
-    public Long extractPositionFromBlockId (String blockId) {
+    public Long extractSliceFromBlockId (String blockId) {
         return Long.valueOf(splitBlockId(blockId)[1]);
     }
     

@@ -18,7 +18,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
@@ -59,6 +63,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>{
     private static final String _TABLE_COUNT_COLUMN = "0/0";
+
+    private static final int MAX_REVERSE_SEARCH_ITER = 5;
+
+    private static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[]{VariantType.SNV, VariantType.SNP};
 
     private final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
@@ -148,25 +156,30 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             context.getCounter("OPENCGA.HBASE", "VCF_BLOCK_READ").increment(1);
 
             // Calculate various positions
-            String blockId = Bytes.toString(key.get());
+            byte[] currRowKey = key.get();
+            String blockId = Bytes.toString(currRowKey);
             VariantTableHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(blockId );
-            Long sliceReg = h.extractPositionFromBlockId(blockId);
+            Long sliceReg = h.extractSliceFromBlockId(blockId);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
             String nextSliceKey = h.generateBlockId(chr, nextStartPos);
 
             // Load Archive data (selection only
-            Map<Integer, List<Pair<List<Genotype>, Variant>>> position2GtVariantMap = 
+            List<Variant> variants = 
                     unpack(value, context,startPos.intValue(), nextStartPos.intValue(),false);
 
-            Set<Integer> positionWithVariant = filterForVariant(position2GtVariantMap);
+            Set<Integer> positionsWithVariants = 
+                    filterForVariant(variants.stream(), TARGET_VARIANT_TYPE)
+                        .map(v -> v.getStart()).collect(Collectors.toSet());
+            
+            Set<Integer> coveredPositions = coveredPositions(variants.stream());
 
             // Load Variant data (For study)
-            Map<Integer, Map<String, Result>> vartableMap = loadCurrentVariantsRegion(context,key.get(), nextSliceKey);
+            Map<Integer, Map<String, Result>> vartableMap = loadCurrentVariantsRegion(context,currRowKey, nextSliceKey);
 
             Set<Integer> archPosMissing = new HashSet<Integer>(vartableMap.keySet());
-            archPosMissing.removeAll(position2GtVariantMap.keySet());
+            archPosMissing.removeAll(coveredPositions);
             if(!archPosMissing.isEmpty()){
                 // should never happen - positions exist in variant table but not in archive table
                 context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-error-FIXME").increment(1);
@@ -176,15 +189,23 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             }
 
             // Positions already in VAR table -> update stats / add other variants
-            Set<Integer> varPosUpdate = new HashSet<Integer>(positionWithVariant);
+            Set<Integer> varPosUpdate = new HashSet<Integer>(positionsWithVariants);
             varPosUpdate.retainAll(vartableMap.keySet());
             
+            
+            List<Variant> varPosUpdateLst = 
+                    variants.stream()
+                        .filter(v -> {
+                            return varPosUpdate.stream().anyMatch(p -> p >= v.getStart() && p <= v.getEnd());
+                            })
+                        .collect(Collectors.toList());
+            
             Map<String, VariantTableStudyRow> updatedVar = merge(context,
-                            filterByPosition(position2GtVariantMap,varPosUpdate),
+                            varPosUpdateLst,
                             translate(filterByPosition(vartableMap,varPosUpdate)));
 
             // Missing positions in VAR table -> require Archive table fetch of all columns
-            Set<Integer> varPosMissing = new HashSet<Integer>(positionWithVariant);
+            Set<Integer> varPosMissing = new HashSet<Integer>(positionsWithVariants);
             varPosMissing.removeAll(vartableMap.keySet());
             // TODO Archive table - fetch all columns instead of just the current once
             Map<Integer,Collection<Variant>> archMissing = 
@@ -205,6 +226,21 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
+    private Set<Integer> coveredPositions(Stream<Variant> variants) {
+        return variants.map(v -> generate(v.getStart(),v.getEnd()))
+                .flatMap(l -> l.stream()) // hope this works
+                .collect(Collectors.toSet());
+    }
+    
+    private Set<Integer> generate(Integer start, Integer end){
+        int len = end-start;
+        Integer [] array = new Integer[len];
+        for (int a = 0; a < len; a++) {
+            array[a] = (start + 1);
+        }
+        return new HashSet<Integer>(Arrays.asList(array));
+    }
+
     private Map<String, VariantTableStudyRow> createNewVar(
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context,
             Map<Integer, Collection<Variant>> archMissing) {
@@ -212,14 +248,15 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         for(Entry<Integer, Collection<Variant>> entry : archMissing.entrySet()){
             Integer pos = entry.getKey();
             // find SNV/SNP variants 
-            List<Variant> varSnvp = entry.getValue().stream()
-                    .filter(v -> (v.getType().equals(VariantType.SNV) || v.getType().equals(VariantType.SNP)) && v.getStart().equals(pos))
+            List<Variant> varSnvp = 
+                    filterForVariant(entry.getValue().stream(), TARGET_VARIANT_TYPE)
+                    .filter(v -> v.getStart().equals(pos))
                     .collect(Collectors.toList());
-            
+
             if(varSnvp.isEmpty()){
                 continue;
             }
-            
+
             // TODO -> use all variants, not only the first!!!
             Variant chosenVar = varSnvp.get(0);
             VariantTableStudyRow row = new VariantTableStudyRow(
@@ -252,83 +289,92 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         return newVar;
     }
 
-    private Map<String, VariantTableStudyRow> merge(
-            Context context, Map<Integer, List<Pair<List<Genotype>, Variant>>> inArch,
-            Map<Integer, Map<String, VariantTableStudyRow>> rowMap) throws InvalidProtocolBufferException {
-        Map<String, VariantTableStudyRow> resMap = new HashMap<String, VariantTableStudyRow>();
-        // Update rows
-        for(Entry<Integer, List<Pair<List<Genotype>, Variant>>> entry : inArch.entrySet()){
-            Integer pos = entry.getKey();
-            Map<String, VariantTableStudyRow> varMap = rowMap.get(pos); //get variant row
-            if(varMap.size() > 1){
-                // ignore for the moment TODO implement for >1 variant on same position
-                context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-merge-ignore-multi-allelic").increment(1);
-                continue;
-            }
-            /* TODO -> update count of variants in the same position, but different variant
-             * -> currently these counts are only update for the first variant, other variants are just ignored.
-             */
-            String varRowKey = varMap.keySet().stream().findFirst().get();
-            // in case to fill counts for other rows - keep a copy of the first entry
-//            VariantTableStudyRow firstRow = new VariantTableStudyRow(varMap.get(varRowKey));
+    private Map<String, VariantTableStudyRow> merge(Context context, List<Variant> varPosUpdateLst,
+            Map<Integer, Map<String, VariantTableStudyRow>> positionMap) throws InvalidProtocolBufferException {
+        
+        /* For each position */
+        for(Entry<Integer, Map<String, VariantTableStudyRow>> positionEntry : positionMap.entrySet()){
+            Integer position = positionEntry.getKey();
+            Map<String, VariantTableStudyRow> rowMap = positionEntry.getValue();
             
-            for(Pair<List<Genotype>, Variant> pair : entry.getValue()){
-                Variant var = pair.getSecond();
+            /* Find Variants covering this position */
+            List<Variant> inPosition = 
+                    varPosUpdateLst.stream().filter(v -> position >= v.getStart() && position <=v.getEnd()).collect(Collectors.toList());
+            
+            /* For each Variant */
+            for(Variant var : inPosition){
+                // using row key, since this is "start" position specific and not based on the current position (e.g. if region)
+                String rowKey = getHelper().generateVcfRowId(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
                 Map<String, List<Integer>> gtToSampleIds = createGenotypeIndex(var);
-                String rowKey = getHelper().generateVcfRowId(var.getChromosome(), pos.longValue(), var.getReference(), var.getAlternate());
-                if(!StringUtils.equalsIgnoreCase(rowKey, varRowKey)){
-                    // ignore different variants at the same position
-                    // just update statistics
-                    VariantTableStudyRow row = varMap.get(varRowKey);
-                    context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-merge-ignore-multi-allelic_update").increment(1);
-                    row.addHomeRefCount(gtToSampleIds.get(VariantTableStudyRow.HOM_REF).size());// add to 0/0
-                    // update as other
-                    row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
-                    row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
+
+                /* For each Row (ref_alt) combination -> update the count*/
+                for(Entry<String, VariantTableStudyRow> rowEntry : rowMap.entrySet()) {
+                    VariantTableStudyRow row = rowEntry.getValue();
+                    row.addHomeRefCount(gtToSampleIds.get(VariantTableStudyRow.HET_REF).size());
                     row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.OTHER));
-                    continue;
+                    if(rowEntry.getKey().equals(rowKey)){ // If same variant
+                        context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-var-same").increment(1);
+                        row.addSampleId(VariantTableStudyRow.HOM_VAR, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
+                        row.addSampleId(VariantTableStudyRow.HET_REF, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
+                    } else { // different variant
+                        context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-var-different").increment(1);
+                        row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
+                        row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
+                    }
                 }
-                
-                VariantTableStudyRow row = varMap.get(rowKey);
-                context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-update").increment(1);
-                // update -> should be default
-                row.addHomeRefCount(gtToSampleIds.get(VariantTableStudyRow.HOM_REF).size());// add to 0/0
-                row.addSampleId(VariantTableStudyRow.HET_REF, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
-                row.addSampleId(VariantTableStudyRow.HOM_VAR, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
-                row.addSampleId(VariantTableStudyRow.OTHER, gtToSampleIds.get(VariantTableStudyRow.OTHER));
-
-                resMap.put(rowKey, row);
-
-//                if(row == null){  // not sure if this works TODO test
-//                    context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-null").increment(1);
-//                    row = new VariantTableStudyRow(
-//                            getHelper().getStudyId(), var.getChromosome(),pos.longValue(),var.getReference(),var.getAlternate());
-//                    row.setHomRefCount(anyRow.getHomRefCount()); //always the same
-//                    // move  0/1 1/1 to 'other'
-//                    row.addSampleId(VariantTableStudyRow.OTHER, row.getSampleIds(VariantTableStudyRow.HET_REF));
-//                    row.addSampleId(VariantTableStudyRow.OTHER, row.getSampleIds(VariantTableStudyRow.HOM_VAR));
-//
-//                    // check 'other' for current 0/1 1/1 
-//                    Set<Integer> other = row.getSampleIds(VariantTableStudyRow.OTHER);
-//                    other.removeAll(gtToSampleIds.get(VariantTableStudyRow.HET_REF));
-//                    other.removeAll(gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
-//                    
-//                    // update
-//                    row.addHomeRefCount(gtToSampleIds.get(VariantTableStudyRow.HOM_REF).size());// add to 0/0
-//                    row.addSampleId(VariantTableStudyRow.HET_REF, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
-//                    row.addSampleId(VariantTableStudyRow.HOM_VAR, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
-//                    row.addSampleId(VariantTableStudyRow.OTHER, other);
-//                }
             }
         }
+
+        /* For each Variant (SNP/SNV) that does not exist yet */
+        Map<String,List<Variant>> variantsWithVar = filterForVariant(varPosUpdateLst.stream(), TARGET_VARIANT_TYPE)
+                .collect(Collectors.groupingBy(
+                        v -> getHelper().generateVcfRowId(
+                                v.getChromosome(), v.getStart().longValue(), v.getReference(), v.getAlternate())));
+        for(Entry<String, List<Variant>> varEntry : variantsWithVar.entrySet()){
+            String rowKey = varEntry.getKey();
+            Variant oneVar = varEntry.getValue().get(0);
+            Integer position = oneVar.getStart();
+            /* Sampe position but different variant (e.g. A_T instead of A_G) -> used to copy counts over */
+            VariantTableStudyRow diffVarSampePos = positionMap.get(position).values().stream().findFirst().get();
+
+            VariantTableStudyRow row = 
+                    new VariantTableStudyRow(
+                            getHelper().getStudyId(), oneVar.getChromosome(), position.longValue(), 
+                            oneVar.getReference(), oneVar.getAlternate());
+
+            Map<String, List<Integer>> gtToSampleIds = createGenotypeIndex(varEntry.getValue().toArray(new Variant[0]));
+
+            context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-new").increment(1);
+            context.getCounter("OPENCGA.HBASE", "VCF_VARIANT-row-new-vars").increment(varEntry.getValue().size());
+
+            /* Transfer full count */
+            row.addHomeRefCount(diffVarSampePos.getHomRefCount()); // Same for each position
+
+            /* Move different variants subject IDs to 'OTHER' */
+            row.addSampleId(VariantTableStudyRow.OTHER, diffVarSampePos.getSampleIds(VariantTableStudyRow.HOM_VAR));
+            row.addSampleId(VariantTableStudyRow.OTHER, diffVarSampePos.getSampleIds(VariantTableStudyRow.HET_REF));
+
+            /* Screen OTHER for sample Ids with current Variant */
+            Set<Integer> other = diffVarSampePos.getSampleIds(VariantTableStudyRow.OTHER);
+            other.removeAll(gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
+            other.removeAll(gtToSampleIds.get(VariantTableStudyRow.HET_REF));
+            row.addSampleId(VariantTableStudyRow.OTHER, other);
+
+            row.addSampleId(VariantTableStudyRow.HOM_VAR, gtToSampleIds.get(VariantTableStudyRow.HOM_VAR));
+            row.addSampleId(VariantTableStudyRow.HET_REF, gtToSampleIds.get(VariantTableStudyRow.HET_REF));
+
+            /* ADD new Variant row */
+            positionMap.get(position).put(rowKey, row);
+        }
+        Map<String, VariantTableStudyRow> resMap = 
+                positionMap.values().stream()
+                    .map(v -> v.values())
+                    .flatMap(v -> v.stream())
+                    .collect(Collectors.toMap(v -> v.generateRowKey(getHelper()), v -> v));
         return resMap;
     }
 
-    private Map<String, List<Integer>> createGenotypeIndex(Variant var) {
-        StudyEntry se = var.getStudies().get(0);
-        int gtpos = se.getFormatPositions().get("GT");
-        List<List<String>> sdList = se.getSamplesData();
-        
+    private Map<String, List<Integer>> createGenotypeIndex(Variant ... varArr) {
         // init
         Map<String, List<Integer>> gtToSampleIds = new HashMap<String, List<Integer>>();
         gtToSampleIds.put(VariantTableStudyRow.HOM_REF, new ArrayList<Integer>());
@@ -336,28 +382,34 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         gtToSampleIds.put(VariantTableStudyRow.HOM_VAR, new ArrayList<Integer>());
         gtToSampleIds.put(VariantTableStudyRow.OTHER, new ArrayList<Integer>());
         
-        // create GT - SampleId index
-        for(Entry<String, Integer> sample2pos : se.getSamplesPosition().entrySet()){
-            Integer sampleId = getStudyConfiguration().getSampleIds().get(sample2pos.getKey());
-            String gt= sdList.get(
-                    sample2pos.getValue())
-                    .get(gtpos);
-            // TODO Only consider 0/0, 0/1, 1/1 and ? (for others e.g. 1/2 ) for the moment.
-            switch (gt) {
-            case VariantTableStudyRow.HOM_REF:
-            case VariantTableStudyRow.HET_REF:
-            case VariantTableStudyRow.HOM_VAR:
-                break;
-            default:
-                gt = VariantTableStudyRow.OTHER;
-                break;
+        for(Variant var : varArr){
+            StudyEntry se = var.getStudies().get(0);
+            int gtpos = se.getFormatPositions().get("GT");
+            List<List<String>> sdList = se.getSamplesData();
+            
+            // create GT - SampleId index
+            for(Entry<String, Integer> sample2pos : se.getSamplesPosition().entrySet()){
+                Integer sampleId = getStudyConfiguration().getSampleIds().get(sample2pos.getKey());
+                String gt= sdList.get(
+                        sample2pos.getValue())
+                        .get(gtpos);
+                // TODO Only consider 0/0, 0/1, 1/1 and ? (for others e.g. 1/2 ) for the moment.
+                switch (gt) {
+                case VariantTableStudyRow.HOM_REF:
+                case VariantTableStudyRow.HET_REF:
+                case VariantTableStudyRow.HOM_VAR:
+                    break;
+                default:
+                    gt = VariantTableStudyRow.OTHER;
+                    break;
+                }
+                List<Integer> list = gtToSampleIds.get(gt);
+                if(list == null){
+                    list = new ArrayList<Integer>();
+                    gtToSampleIds.put(gt, list);
+                }
+                list.add(sampleId);
             }
-            List<Integer> list = gtToSampleIds.get(gt);
-            if(list == null){
-                list = new ArrayList<Integer>();
-                gtToSampleIds.put(gt, list);
-            }
-            list.add(sampleId);
         }
         return gtToSampleIds;
     }
@@ -375,86 +427,20 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         return rowMap;
     }
 
-    /**
-     * Merge Result set with Put object
-     * @param res
-     * @param put
-     * @return Put object with merged data
-     * @throws IOException
-     */
-    private Put mergetData(Result res, Put put) throws IOException {
-        byte[] columnFamily = getHelper().getColumnFamily();
-        Put nPut = new Put(put.getRow());
-        
-        NavigableMap<byte[], byte[]> resMap = res.getFamilyMap(columnFamily);
-        Set<String> mergedColumns = new HashSet<>();
-        for(Entry<byte[], byte[]> e : resMap.entrySet()){
-            byte[] colQual = e.getKey();
-            mergedColumns.add(Bytes.toString(colQual));
-            if(! put.has(columnFamily, colQual)){
-                nPut.addColumn(columnFamily, colQual, e.getValue());
-            }else {
-                byte[] valueArray = put.get(columnFamily, colQual).get(0).getValueArray();
-                if(StringUtils.equals(Bytes.toString(colQual), _TABLE_COUNT_COLUMN)){
-                    // Update count
-                    int dbVal = Bytes.toInt(e.getValue());
-                    int putVal = Bytes.toInt(valueArray);
-                    int newVal = dbVal + putVal;
-                    nPut.addColumn(columnFamily, colQual, Bytes.toBytes(newVal));
-                } else {
-                    // Merge lists
-                    VariantCallProt a = VariantCallProt.parseFrom(e.getValue());
-                    VariantCallProt b = VariantCallProt.parseFrom(valueArray);
-                    List<Integer> lst = new ArrayList<Integer>(a.getSampleIdsList());
-                    lst.addAll(b.getSampleIdsList());
-                    Collections.sort(lst);
-                    Set<Integer> set = new HashSet<Integer>(lst);
-                    if(set.size() < lst.size()) // Check for duplicates!!!
-                        throw new IllegalStateException(String.format("Duplicated samples in %s!!!", Arrays.toString(lst.toArray())));
-                    byte[] nval = VariantCallProt.newBuilder().addAllSampleIds(lst).build().toByteArray();
-                    nPut.addColumn(columnFamily, colQual, nval);
-                }
-            }
-        }
-        for(List<Cell> cl : put.getFamilyCellMap().values()){
-            for(Cell c : cl){
-                if(!mergedColumns.contains(Bytes.toString(c.getQualifierArray()))){
-                    nPut.add(c);
-                }
-            }
-        }
-        return nPut;
-    }
-
     private <T> Map<Integer,T> filterByPosition(Map<Integer,T> map,Set<Integer> filter){
         return map.entrySet().stream()
                 .filter(p -> filter.contains(p.getKey()))
                 .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
     }
 
-    private Set<Integer> filterForVariant(Map<Integer, List<Pair<List<Genotype>, Variant>>> position2GtVariantMap) {
-        Set<Integer> posList = new HashSet<Integer>();
-        for(Entry<Integer, List<Pair<List<Genotype>, Variant>>> entry : position2GtVariantMap.entrySet()){
-            Integer pos = entry.getKey();
-            for(Pair<List<Genotype>, Variant> pair : entry.getValue()){
-                Variant var = pair.getSecond();
-                List<Genotype> gtlst = pair.getFirst();
-                VariantType type = var.getType();
-                if(type.equals(VariantType.NO_VARIATION)){
-                    continue; // no variant
-                } else if(type.equals(VariantType.SNV) || type.equals(VariantType.SNP)){
-                    if(hasVariant(gtlst)){
-                        posList.add(pos);
-                        break; // no need to search further
-                    }
-                } else {
-                    continue; // ignore for the moment TODO for later
-                }
-            }
-        }
-        return posList;
+    private Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
+        Set<VariantType> whileList = new HashSet<VariantType>(Arrays.asList(types));
+       return variants
+                 // ignore others for the moment TODO for later
+                .filter(v -> whileList.contains(v.getType()))
+                .filter(v -> hasVariant(extractGts(v)));
     }
-    
+
     private boolean hasVariant(Collection<Genotype> genotypeColl){
         // TODO add the other variants as well later
         for(Genotype gt : genotypeColl){
@@ -481,24 +467,32 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @return
      * @throws IOException 
      */
-    private Map<Integer, List<Pair<List<Genotype>, Variant>>> unpack(Result value, Context context, int sliceStartPos, 
+    private List<Variant> unpack(Result value, Context context, int sliceStartPos, 
             int nextSliceStartPos, boolean reload) throws IOException {
-        Map<Integer, List<Pair<List<Genotype>, Variant>>> resMap = new HashMap<Integer, List<Pair<List<Genotype>,Variant>>>();
+        List<Variant> variantList = new ArrayList<Variant>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
-            int fileId = Bytes.toInt(x.getKey());
-            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(fileId));
-            VcfSlice vcfSlice = asSlice(x.getValue());
             context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
-            
-            List<Variant> varList = converter.convert(vcfSlice);
-            int minStartPos = addVariants(context, varList, resMap, sliceStartPos, nextSliceStartPos, reload);
-            if(minStartPos > sliceStartPos){ // more information in previous region
+            List<Variant> varList = archiveCellToVariants(x.getKey(),x.getValue());
+            variantList.addAll(varList);
+            Integer minStartPos = nextSliceStartPos;
+            if(!varList.isEmpty()){
+                minStartPos = varList.stream().map(v -> v.getStart()).collect(Collectors.minBy(Comparator.naturalOrder())).get();
+            }
+            int reverseSearchCnt = 0;
+            while(minStartPos >= sliceStartPos && (reverseSearchCnt++) < MAX_REVERSE_SEARCH_ITER){ // more information in previous region
                 context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
-//                querySliceBreak(context,resMap,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
+                List<Variant> var = querySliceBreakPerFile(context,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
+                if(!varList.isEmpty()){
+                    minStartPos = var.stream().map(v -> v.getStart()).collect(Collectors.minBy(Comparator.naturalOrder())).get();
+                }
+                variantList.addAll(var);
             }
         }
-        return resMap;
+        List<Variant> keepList = variantList.stream() // only keep variants in overlapping this region
+                .filter(v -> v.getEnd() > sliceStartPos && v.getStart() < nextSliceStartPos)
+                .collect(Collectors.toList());
+        return keepList;
     }
 
     /**
@@ -509,21 +503,39 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @param col
      * @param sliceStartPos
      * @param nextSliceStartPos
+     * @return 
      * @throws IOException
      */
-    private void querySliceBreak(Context context,Map<Integer, List<Pair<List<String>, Variant>>> resMap, 
-            byte[] row, byte[] col, int sliceStartPos, int nextSliceStartPos) throws IOException {
+    private List<Variant> querySliceBreakPerFile(Context context,byte[] row, byte[] col, int sliceStartPos, int nextSliceStartPos) throws IOException {
+        List<Variant> var = new ArrayList<Variant>();
         Get get = new Get(row);
         get.addColumn(getHelper().getColumnFamily(), col);
         Result res = getHelper().getHBaseManager().act(getDbConnection(),getHelper().getIntputTable(), table -> {return table.get(get);});
-        // TODO check if sufficient 
+        if(res.isEmpty()){
+            return var;
+        }
+        NavigableMap<byte[], byte[]> fm = res.getFamilyMap(getHelper().getColumnFamily());
+        for (Entry<byte[], byte[]> x : fm.entrySet()) {
+            var.addAll(archiveCellToVariants(x.getKey(),x.getValue()));
+        }
+        return var;
+    }
+
+    private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
+        int fileId = Bytes.toInt(key);
+        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(fileId));
+        VcfSlice vcfSlice = asSlice(value);
+        return converter.convert(vcfSlice);
     }
 
     private byte[] previousArchiveSliceRK(byte[] currRk){
-        return null; //TODO
+        String rk = Bytes.toString(currRk);
+        String chr = getHelper().extractChromosomeFromBlockId(rk);
+        Long slice = getHelper().extractSliceFromBlockId(rk);
+        return Bytes.toBytes(getHelper().generateBlockIdFromSlice(chr, slice-1)); 
     }
 
-    private int addVariants(Context context, List<Variant> varList, Map<Integer, List<Pair<List<Genotype>, Variant>>> resMap, 
+    private int addVariants(Context context, List<Variant> varList, Map<Integer, List<Variant>> resMap, 
             int sliceStartPos, int nextSliceStartPos, boolean reload) {
         int minStartPos = nextSliceStartPos;
         for(Variant var : varList){
@@ -531,18 +543,15 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             if(! reload){
                 logCount(context, vtype); // update Count for output
             }
-            List<Genotype> gtLst = extractGts(var);
-            Pair<List<Genotype>, Variant> pair = new Pair<List<Genotype>, Variant>(gtLst,var);
             int start = Math.max(sliceStartPos, var.getStart()); // get max start pos (in case of backwards search)
             int end = Math.min(nextSliceStartPos, var.getEnd()); // Don't go over the edge of the slice
             // One entry per position in region
             for(int vcfPos = start; vcfPos <= end; ++vcfPos){
-                List<Pair<List<Genotype>, Variant>> list = resMap.get(vcfPos);
+                List<Variant> list = resMap.get(vcfPos);
                 if(list == null){
-                    list = new ArrayList<Pair<List<Genotype>, Variant>>();
-                    resMap.put(vcfPos, list);
+                    list = new ArrayList<Variant>();
                 }
-                list.add(pair);
+                list.add(var);
             }
             minStartPos = Math.min(minStartPos,start); // update overall min
         }
