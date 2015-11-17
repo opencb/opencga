@@ -31,11 +31,11 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes("SUMMARY");
     final byte[] columnFamily;
 
-    private HadoopCredentials credentials;
-    private Configuration configuration;
-    private ObjectMap options;
-    private GenomeHelper genomeHelper;
-    private Connection connection;
+    private final HadoopCredentials credentials;
+    private final Configuration configuration;
+    private final ObjectMap options;
+    private final GenomeHelper genomeHelper;
+    private final Connection connection;
     private final ObjectMapper objectMapper;
 
     private final HBaseManager hBaseManager;

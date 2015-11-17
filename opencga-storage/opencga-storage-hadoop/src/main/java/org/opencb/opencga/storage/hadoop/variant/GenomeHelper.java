@@ -30,8 +30,12 @@ import com.google.protobuf.MessageLite;
 public class GenomeHelper {
     private final static Logger log = LoggerFactory.getLogger(GenomeHelper.class);
 
-    public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
-    public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+    @Deprecated public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
+    @Deprecated public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+
+    public static final String CONFIG_FILE_ID = "opencga.storage.hadoop.file_id";
+    public static final String CONFIG_ARCHIVE_TABLE = "opencga.storage.hadoop.archive_table";
+
     public static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
     public static final String CONFIG_GENOME_VARIANT_COLUMN_FAMILY = "opencga.storage.hadoop.vcf.column_family";
     public static final String CONFIG_GENOME_VARIANT_ROW_KEY_SEP = "opencga.storage.hadoop.vcf.row_key_sep";
@@ -290,7 +294,7 @@ public class GenomeHelper {
     }
 
     public <T extends MessageLite> Put wrapMetaAsPut(byte[] column, T meta){
-        return wrapAsPut(column,getMetaRowKey(),meta);
+        return wrapAsPut(column, getMetaRowKey(), meta);
     }
 
 }

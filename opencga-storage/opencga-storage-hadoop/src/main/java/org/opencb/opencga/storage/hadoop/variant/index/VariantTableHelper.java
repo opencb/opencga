@@ -81,7 +81,7 @@ public class VariantTableHelper extends GenomeHelper {
         return intable.get();
     }
 
-    public void act(HBaseManager.HBaseTableConsumer<Table> func) throws IOException {
+    public void act(HBaseManager.HBaseTableConsumer func) throws IOException {
         hBaseManager.act(getOutputTable(), func);
     }
 

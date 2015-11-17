@@ -4,7 +4,6 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,10 +15,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfMeta;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,27 +50,46 @@ public class ArchiveHelper extends GenomeHelper {
      */
     public ArchiveHelper(Configuration conf) throws IOException {
         super(conf);
-        this.meta.set(loadMetaData(conf, (InputStream in) -> VcfMeta.parseFrom(in)));
-        column = Bytes.toBytes(getMeta().getFileId());
+        int fileId = conf.getInt(CONFIG_FILE_ID, 0);
+        String archiveTable = conf.get(CONFIG_ARCHIVE_TABLE);
+        try(ArchiveFileMetadataManager metadataManager =  new ArchiveFileMetadataManager(archiveTable, conf, new ObjectMap())){
+            VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
+            this.meta.set(meta);
+        }
+        column = Bytes.toBytes(Integer.toString(fileId));
     }
 
-    public ArchiveHelper(GenomeHelper helper, byte[] meta) throws IOException {
-        super(helper);
-        this.meta.set(VcfMeta.parseFrom(meta));
-        column = Bytes.toBytes(getMeta().getFileId());
-    }
+//    public ArchiveHelper(GenomeHelper helper, byte[] meta) throws IOException {
+//        super(helper);
+//        this.meta.set(VcfMeta.parseFrom(meta));
+//        column = Bytes.toBytes(getMeta().getVariantSource().getFileId());
+//    }
 
     public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
         super(helper);
         this.meta.set(meta);
-        column = Bytes.toBytes(getMeta().getFileId());
+        column = Bytes.toBytes(getMeta().getVariantSource().getFileId());
     }
 
+    public ArchiveHelper(Configuration conf, VcfMeta meta) throws IOException {
+        super(conf);
+        this.meta.set(meta);
+        column = Bytes.toBytes(getMeta().getVariantSource().getFileId());
+    }
+
+    public ArchiveHelper(GenomeHelper helper, VariantSource source) throws IOException {
+        super(helper);
+        this.meta.set(new VcfMeta(source));
+        column = Bytes.toBytes(source.getFileId());
+    }
+
+    public static String getTableName(int studyId) {
+        return Integer.toString(studyId);
+    }
 
     public static void setMetaProtoFile (Configuration conf, URI filePath) {
         conf.set(CONFIG_VCF_META_PROTO_FILE, filePath.toString());
     }
-    
 
     public VcfMeta getMeta () {
         return meta.get();
@@ -137,10 +157,6 @@ public class ArchiveHelper extends GenomeHelper {
 //        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart() * 100);
         byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition());
         return wrapAsPut(getColumn(), rowId, slice);
-    }
-
-    public Put getMetaAsPut(){
-        return wrapMetaAsPut(getColumn(), getMeta());
     }
 
 }

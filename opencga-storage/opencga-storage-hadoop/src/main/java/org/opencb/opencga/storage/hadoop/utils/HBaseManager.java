@@ -23,7 +23,7 @@ public class HBaseManager extends Configured {
 
 
     @FunctionalInterface
-    public interface HBaseTableConsumer<T> {
+    public interface HBaseTableConsumer {
         void accept(Table table) throws IOException;
     }
 
@@ -57,7 +57,7 @@ public class HBaseManager extends Configured {
      * @param func      Action to perfor
      * @throws IOException
      */
-    public void act(byte[] tableName, HBaseTableConsumer<Table> func) throws IOException {
+    public void act(byte[] tableName, HBaseTableConsumer func) throws IOException {
         try (Connection con = ConnectionFactory.createConnection(getConf())) {
             act(con, tableName, func);
         }
@@ -70,7 +70,7 @@ public class HBaseManager extends Configured {
      * @param func      Action to perform
      * @throws IOException
      */
-    public void act(Connection con, byte[] tableName, HBaseTableConsumer<Table> func) throws IOException {
+    public void act(Connection con, byte[] tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             func.accept(table);
@@ -84,7 +84,7 @@ public class HBaseManager extends Configured {
      * @param func      Action to perform
      * @throws IOException
      */
-    public void act(Connection con, String tableName, HBaseTableConsumer<Table> func) throws IOException {
+    public void act(Connection con, String tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             func.accept(table);
@@ -206,7 +206,7 @@ public class HBaseManager extends Configured {
      * @return boolean True if a new table was created
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
-    public boolean createTableIfNeeded(Connection con, String tableName, String columnFamily) throws IOException {
+    public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
         TableName tName = TableName.valueOf(tableName);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
