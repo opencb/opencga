@@ -4,7 +4,9 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +34,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +84,9 @@ public class VariantTableDriver extends Configured implements Tool {
             throw new IllegalArgumentException("No files specified");
         }
 
-        String inTable = GenomeHelper.getArchiveTableName(inTablePrefix, studyId);
+//        String inTable = GenomeHelper.getArchiveTableName(inTablePrefix, studyId);
+//        String inTable = ArchiveHelper.getTableName(studyId);
+        String inTable = inTablePrefix;
         LOG.info(String.format("Use table %s as input", inTable));
 
         GenomeHelper.setStudyId(conf,studyId);
@@ -115,9 +120,9 @@ public class VariantTableDriver extends Configured implements Tool {
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
 
         // specify return columns (file IDs)
-        for(String fname : file_arr){
-            Integer id = sconf.getFileIds().get(fname);
-            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(id));
+        for(String fileIdStr : file_arr){
+            int id = Integer.parseInt(fileIdStr);
+            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
         }
 
         // set other scan attrs
@@ -142,7 +147,7 @@ public class VariantTableDriver extends Configured implements Tool {
     }
 
     private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, conf, null);
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(Bytes.toString(gh.getOutputTable()), conf, null);
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if(res.getResult().size() != 1)
             throw new NotSupportedException();
@@ -174,7 +179,7 @@ public class VariantTableDriver extends Configured implements Tool {
         String[] toolArgs = parser.getRemainingArgs();
         
         if (toolArgs.length != 4) {
-            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <column>\n", 
+            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <fileIds>\n",
                     VariantTableDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);

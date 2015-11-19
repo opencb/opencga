@@ -47,6 +47,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -483,7 +484,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             while(minStartPos >= sliceStartPos && (reverseSearchCnt++) < MAX_REVERSE_SEARCH_ITER){ // more information in previous region
                 context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
                 List<Variant> var = querySliceBreakPerFile(context,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
-                if(!varList.isEmpty()){
+                if(!var.isEmpty()){
                     minStartPos = var.stream().map(v -> v.getStart()).collect(Collectors.minBy(Comparator.naturalOrder())).get();
                 }
                 variantList.addAll(var);
@@ -498,7 +499,6 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     /**
      * Query slice break for the previous slice
      * @param context
-     * @param resMap
      * @param row
      * @param col
      * @param sliceStartPos
@@ -522,7 +522,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
 
     private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
-        int fileId = Bytes.toInt(key);
+        int fileId = ArchiveHelper.getFileIdFromColumnName(key);
+        //TODO: Reuse this converter
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(this.getVcfMeta(fileId));
         VcfSlice vcfSlice = asSlice(value);
         return converter.convert(vcfSlice);
@@ -628,10 +629,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     /**
      * Load (if available) current data, merge information and store new object in DB
      * @param context
-     * @param variants 
-     * @param summary
-     * @param currentResults
-     * @throws IOException 
+     * @param variants
+     * @throws IOException
      * @throws InterruptedException 
      */
     private void updateOutputTable(Context context, Map<String, VariantTableStudyRow> variants) 

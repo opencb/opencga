@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_BIN = "hadoop.bin";
     public static final String HADOOP_ENV = "hadoop.env";
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
+    public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
+    public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
@@ -60,30 +63,37 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()), options.getString(Options.STUDY_NAME.key()));
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         }
-        boolean loadArch = options.getBoolean("hadoop.load.archive");
-        boolean loadVar = options.getBoolean("hadoop.load.variant");
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+
+        if (!loadArch && !loadVar) {
+            options.put(HADOOP_LOAD_ARCHIVE, true);
+            options.put(HADOOP_LOAD_VARIANT, true);
+        }
 
 
-        if(loadArch) {
 //        VariantSource variantSource = readVariantSource(Paths.get(input), null);
-            VariantSource source = readVariantSource(input, options);
+        VariantSource source = readVariantSource(input, options);
 
-            int fileId;
-            String fileName = source.getFileName();
-            try {
-                fileId = Integer.parseInt(source.getFileId());
-            } catch (NumberFormatException e) {
-                throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
-            }
-            options.put(Options.FILE_ID.key(), fileId);
-            checkNewFile(studyConfiguration, fileId, fileName);
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
+        int fileId;
+        String fileName = source.getFileName();
+        try {
+            fileId = Integer.parseInt(source.getFileId());
+        } catch (NumberFormatException e) {
+            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
+        }
+        options.put(Options.FILE_ID.key(), fileId);
+        checkNewFile(studyConfiguration, fileId, fileName);
+        studyConfiguration.getFileIds().put(fileName, fileId);
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
-            // updates object with file ID and generate sample IDs
-            checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
-            buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        // updates object with file ID and generate sample IDs
+        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
+        buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+
+
+        if (loadArch) {
 
             //TODO: CopyFromLocal input to HDFS
             if (!input.getScheme().equals("hdfs")) {
@@ -121,10 +131,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     //TODO: Generalize this
     VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         VariantSource source;
+
         Configuration conf = getHadoopConfiguration(options);
+        Path metaPath = new Path(input.toString().replace("variants.avro", "file.json"));
+        logger.debug("Loading meta file: {}", metaPath.toString());
         try (
                 FileSystem fs = FileSystem.get(conf);
-                InputStream inputStream = new GZIPInputStream(fs.open(new Path(input.toString().replace("variants.avro", "file.json"))))
+                InputStream inputStream = new GZIPInputStream(fs.open(metaPath))
         ) {
             source = new ObjectMapper().readValue(inputStream, VariantSource.class);
         } catch (IOException e) {
@@ -149,7 +162,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(input.toString().replace("variants.avro", "file.json"));
 
-        HadoopCredentials archiveTable = buildCredentials(options.getString(Options.STUDY_NAME.key()));
+        HadoopCredentials archiveTable = buildCredentials(ArchiveHelper.getTableName(options.getInt(Options.STUDY_ID.key())));
         HadoopCredentials variantsTable = getDbCredentials();
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
@@ -160,8 +173,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
 
 
-        boolean loadArch = options.getBoolean("hadoop.load.archive");
-        boolean loadVar = options.getBoolean("hadoop.load.variant");
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (loadArch) {
             // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
@@ -232,7 +245,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         try{
             URI uri = new URI(target);
             String server = uri.getHost();
-            Integer port = uri.getPort() > 0?uri.getPort() : 60000;
+            Integer port = uri.getPort() > 0 ? uri.getPort() : 60000;
     //        String tablename = uri.getPath();
     //        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
     //        String master = String.join(":", server, port.toString());
@@ -245,7 +258,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return super.postLoad(input, output); // TODO
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            return super.postLoad(input, output);
+        } else {
+            return input;
+        }
     }
 
     @Override

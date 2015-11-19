@@ -19,9 +19,9 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallMeta;
 
 import java.io.IOException;
 import java.util.*;
@@ -40,18 +40,24 @@ public class GenomeVariantTransformMapperTest {
 
     @Before
     public void setUp() throws Exception {
-        final VariantCallMeta variantCallMeta = new VariantCallMeta();
-        variantCallMeta.addSample("a", 1, HBaseZeroCopyByteString.copyFrom(Bytes.toBytes("a")));
-        mapper = new VariantTableMapper(){
+//        final VariantCallMeta variantCallMeta = new VariantCallMeta();
+//        variantCallMeta.addSample("a", 1, HBaseZeroCopyByteString.copyFrom(Bytes.toBytes("a")));
+        final StudyConfiguration studyConf = new StudyConfiguration(5, "study");
+        mapper = new VariantTableMapper() {
             @Override
             protected VariantTableHelper loadHelper(
                     Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
                 return new TestHelper(context.getConfiguration());
             }
 
+//            @Override
+//            protected VariantCallMeta loadMeta() throws IOException {
+//                return variantCallMeta;
+//            }
+
             @Override
-            protected VariantCallMeta loadMeta() throws IOException {
-                return variantCallMeta;
+            protected StudyConfiguration loadStudyConf() throws IOException {
+                return studyConf;
             }
 
             @Override
