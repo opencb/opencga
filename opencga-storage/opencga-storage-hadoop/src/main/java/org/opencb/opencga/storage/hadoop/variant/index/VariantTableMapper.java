@@ -229,7 +229,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
-    private Set<Integer> generateCoveredPositions(Stream<Variant> variants) {
+    protected Set<Integer> generateCoveredPositions(Stream<Variant> variants) {
         return variants.map(v -> generateRegion(v.getStart(),v.getEnd()))
                 .flatMap(l -> l.stream()) // hope this works
                 .collect(Collectors.toSet());
@@ -240,7 +240,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             end = start; // TODO check if END is 0 in case of SNV/SNP
         }
         int len = end-start;
-        Integer [] array = new Integer[len];
+        Integer [] array = new Integer[len+1];
         for (int a = 0; a <= len; a++) { // <= to be inclusive
             array[a] = (start + a);
         }
@@ -392,21 +392,18 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         return resMap;
     }
 
-    private boolean variantCoveringPosition(Variant v,Integer position) {
+    protected boolean variantCoveringPosition(Variant v,Integer position) {
         return variantCoveringRegion(v, position, position, true);
-//        return position >= v.getStart() && position <=v.getEnd();
     }
-    private boolean variantCoveringRegion (Variant v, Integer start, Integer end, boolean inclusive) {
-        if(inclusive){ // TODO check if END is 0 or actual value
+    protected boolean variantCoveringRegion (Variant v, Integer start, Integer end, boolean inclusive) {
+        if(inclusive){
             return end >= v.getStart() && start <= v.getEnd();
         } else {
             return end > v.getStart() && start < v.getEnd();
-//            return v.getEnd() > start && v.getStart() < end;
         }
-//        return position >= v.getStart() && position <=v.getEnd();
     }
 
-    private Map<String, List<Integer>> createGenotypeIndex(Variant ... varArr) {
+    protected Map<String, List<Integer>> createGenotypeIndex(Variant ... varArr) {
         // init
         Map<String, List<Integer>> gtToSampleIds = new HashMap<String, List<Integer>>();
         gtToSampleIds.put(VariantTableStudyRow.HOM_REF, new ArrayList<Integer>());
@@ -465,7 +462,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
     }
 
-    private Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
+    protected Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
         Set<VariantType> whileList = new HashSet<VariantType>(Arrays.asList(types));
        return variants
                  // ignore others for the moment TODO for later

@@ -35,7 +35,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private final Configuration configuration;
     private final ObjectMap options;
     private final GenomeHelper genomeHelper;
-    private final Connection connection;
+    private Connection connection;
     private final ObjectMapper objectMapper;
 
     private final HBaseManager hBaseManager;
@@ -48,7 +48,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         this.options = options;
         genomeHelper = new GenomeHelper(configuration);
         columnFamily = genomeHelper.getColumnFamily();
-        connection = ConnectionFactory.createConnection(configuration);
+        connection = null; // lazy load
         objectMapper = new ObjectMapper();
         hBaseManager = new HBaseManager(configuration);
     }
@@ -77,8 +77,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         }
 
         try {
-            if (!hBaseManager.act(connection, credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
-                studyConfigurationList = hBaseManager.act(connection, credentials.getTable(), table -> {
+            if (!hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
+                studyConfigurationList = hBaseManager.act(getConnection(), credentials.getTable(), table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
                         return Collections.emptyList();
@@ -106,7 +106,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
         try {
-            hBaseManager.act(connection, credentials.getTable(), table -> {
+            hBaseManager.act(getConnection(), credentials.getTable(), table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
                 Put put = new Put(STUDIES_ROW);
                 put.addColumn(columnFamily, columnQualifier, studyConfiguration.getTimeStamp(), bytes);
@@ -129,10 +129,10 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         Get get = new Get(STUDIES_ROW);
         get.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN);
         try {
-            if (!hBaseManager.act(connection, credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
+            if (!hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
                 return HashBiMap.create();
             }
-            return hBaseManager.act(connection, credentials.getTable(), table -> {
+            return hBaseManager.act(getConnection(), credentials.getTable(), table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
                     return HashBiMap.create();
@@ -164,7 +164,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
             createTableIfMissing();
-            try(Table table = connection.getTable(TableName.valueOf(credentials.getTable()))) {
+            try(Table table = getConnection().getTable(TableName.valueOf(credentials.getTable()))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(STUDIES_ROW);
                 put.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN, bytes);
@@ -178,7 +178,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     private boolean createTableIfMissing() throws IOException {
-        return hBaseManager.act(connection, credentials.getTable(), (table, admin) -> {
+        return hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> {
             if (admin.tableExists(table.getName())) {
                 return true;
             } else {
@@ -186,6 +186,13 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
                 return false;
             }
         });
+    }
+
+    public Connection getConnection() throws IOException {
+        if(null == connection){
+            connection = ConnectionFactory.createConnection(configuration);
+        }
+        return connection;
     }
 
 }
