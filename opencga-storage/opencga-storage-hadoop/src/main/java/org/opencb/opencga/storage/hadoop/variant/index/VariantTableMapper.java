@@ -165,20 +165,23 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
             String nextSliceKey = h.generateBlockId(chr, nextStartPos);
 
-            // Load Archive data (selection only
-            List<Variant> variants = 
+// Unpack Archive data (selection only
+            List<Variant> archive = 
                     unpack(value, context,startPos.intValue(), nextStartPos.intValue(),false);
+            
+            Set<Integer> coveredPositions = generateCoveredPositions(archive.stream());
 
-            Set<Integer> positionsWithVariants = 
-                    filterForVariant(variants.stream(), TARGET_VARIANT_TYPE)
+            // Start positions of Variants of specific type
+            Set<Integer> archVarStartPositions = 
+                    filterForVariant(archive.stream(), TARGET_VARIANT_TYPE)
                         .map(v -> v.getStart()).collect(Collectors.toSet());
             
-            Set<Integer> coveredPositions = coveredPositions(variants.stream());
 
-            // Load Variant data (For study)
-            Map<Integer, Map<String, Result>> vartableMap = loadCurrentVariantsRegion(context,currRowKey, nextSliceKey);
+// Load Variant data (For study) for same region
+            Map<Integer, Map<String, Result>> varTabMap = loadCurrentVariantsRegion(context,currRowKey, nextSliceKey);
 
-            Set<Integer> archPosMissing = new HashSet<Integer>(vartableMap.keySet());
+            // Report Missing regions in ARCHIVE table, which are seen in VAR table
+            Set<Integer> archPosMissing = new HashSet<Integer>(varTabMap.keySet());
             archPosMissing.removeAll(coveredPositions);
             if(!archPosMissing.isEmpty()){
                 // should never happen - positions exist in variant table but not in archive table
@@ -189,27 +192,27 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             }
 
             // Positions already in VAR table -> update stats / add other variants
-            Set<Integer> varPosUpdate = new HashSet<Integer>(positionsWithVariants);
-            varPosUpdate.retainAll(vartableMap.keySet());
+            Set<Integer> varPosUpdate = new HashSet<Integer>(archVarStartPositions);
+            varPosUpdate.retainAll(varTabMap.keySet());
             
-            
+            // Find achive entries covering this region
             List<Variant> varPosUpdateLst = 
-                    variants.stream()
+                    archive.stream()
                         .filter(v -> {
-                            return varPosUpdate.stream().anyMatch(p -> p >= v.getStart() && p <= v.getEnd());
+                            return varPosUpdate.stream().anyMatch(p -> variantCoveringPosition(v,p));
                             })
                         .collect(Collectors.toList());
             
             Map<String, VariantTableStudyRow> updatedVar = merge(context,
                             varPosUpdateLst,
-                            translate(filterByPosition(vartableMap,varPosUpdate)));
+                            translate(filterByPosition(varTabMap,varPosUpdate)));
 
             // Missing positions in VAR table -> require Archive table fetch of all columns
-            Set<Integer> varPosMissing = new HashSet<Integer>(positionsWithVariants);
-            varPosMissing.removeAll(vartableMap.keySet());
+            Set<Integer> varPosMissing = new HashSet<Integer>(archVarStartPositions);
+            varPosMissing.removeAll(varTabMap.keySet());
             // TODO Archive table - fetch all columns instead of just the current once
-            Map<Integer,Collection<Variant>> archMissing = 
-                    filterByPosition(vartableMap, varPosMissing).entrySet().stream()
+            Map<Integer,Collection<Variant>> archMissing =  // FIXME check if Variant region is covering any of these positions
+                    filterByPosition(varTabMap, varPosMissing).entrySet().stream()
                     .collect(Collectors.toMap(
                             p -> p.getKey(), 
                             p -> ((List<Pair<List<Genotype>, Variant>>)p.getValue()).stream().map(
@@ -226,17 +229,20 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
-    private Set<Integer> coveredPositions(Stream<Variant> variants) {
-        return variants.map(v -> generate(v.getStart(),v.getEnd()))
+    private Set<Integer> generateCoveredPositions(Stream<Variant> variants) {
+        return variants.map(v -> generateRegion(v.getStart(),v.getEnd()))
                 .flatMap(l -> l.stream()) // hope this works
                 .collect(Collectors.toSet());
     }
     
-    private Set<Integer> generate(Integer start, Integer end){
+    private Set<Integer> generateRegion(Integer start, Integer end){
+        if(end <= 0){
+            end = start; // TODO check if END is 0 in case of SNV/SNP
+        }
         int len = end-start;
         Integer [] array = new Integer[len];
-        for (int a = 0; a < len; a++) {
-            array[a] = (start + 1);
+        for (int a = 0; a <= len; a++) { // <= to be inclusive
+            array[a] = (start + a);
         }
         return new HashSet<Integer>(Arrays.asList(array));
     }
@@ -245,6 +251,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context,
             Map<Integer, Collection<Variant>> archMissing) {
         Map<String, VariantTableStudyRow> newVar = new HashMap<String, VariantTableStudyRow>();
+        
         for(Entry<Integer, Collection<Variant>> entry : archMissing.entrySet()){
             Integer pos = entry.getKey();
             // find SNV/SNP variants 
@@ -256,12 +263,23 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             if(varSnvp.isEmpty()){
                 continue;
             }
+            VariantTableStudyRow seedRow = null; // init in first round
+            /* For each variant with a variation */
+            for(Variant var : varSnvp){
+                VariantTableStudyRow row = new VariantTableStudyRow(
+                        getHelper().getStudyId(), var.getChromosome(), var.getStart().longValue(), var.getReference(), var.getAlternate());
+                String currRowKey = row.generateRowKey(getHelper());
+                // run through full set for same position each time
+                
+            }
+            
+            
 
             // TODO -> use all variants, not only the first!!!
-            Variant chosenVar = varSnvp.get(0);
+            Variant seedVar = varSnvp.get(0); 
             VariantTableStudyRow row = new VariantTableStudyRow(
-                    getHelper().getStudyId(), chosenVar.getChromosome(), 
-                    chosenVar.getStart().longValue(), chosenVar.getReference(), chosenVar.getAlternate());
+                    getHelper().getStudyId(), seedVar.getChromosome(), 
+                    seedVar.getStart().longValue(), seedVar.getReference(), seedVar.getAlternate());
             String currRowKey = row.generateRowKey(getHelper());
             
             for(Variant var : entry.getValue()){
@@ -299,7 +317,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             
             /* Find Variants covering this position */
             List<Variant> inPosition = 
-                    varPosUpdateLst.stream().filter(v -> position >= v.getStart() && position <=v.getEnd()).collect(Collectors.toList());
+                    varPosUpdateLst.stream().filter(v -> variantCoveringPosition(v,position)).collect(Collectors.toList());
             
             /* For each Variant */
             for(Variant var : inPosition){
@@ -372,6 +390,20 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                     .flatMap(v -> v.stream())
                     .collect(Collectors.toMap(v -> v.generateRowKey(getHelper()), v -> v));
         return resMap;
+    }
+
+    private boolean variantCoveringPosition(Variant v,Integer position) {
+        return variantCoveringRegion(v, position, position, true);
+//        return position >= v.getStart() && position <=v.getEnd();
+    }
+    private boolean variantCoveringRegion (Variant v, Integer start, Integer end, boolean inclusive) {
+        if(inclusive){ // TODO check if END is 0 or actual value
+            return end >= v.getStart() && start <= v.getEnd();
+        } else {
+            return end > v.getStart() && start < v.getEnd();
+//            return v.getEnd() > start && v.getStart() < end;
+        }
+//        return position >= v.getStart() && position <=v.getEnd();
     }
 
     private Map<String, List<Integer>> createGenotypeIndex(Variant ... varArr) {
@@ -490,7 +522,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             }
         }
         List<Variant> keepList = variantList.stream() // only keep variants in overlapping this region
-                .filter(v -> v.getEnd() > sliceStartPos && v.getStart() < nextSliceStartPos)
+                .filter(v -> variantCoveringRegion(v, sliceStartPos, nextSliceStartPos,true))
                 .collect(Collectors.toList());
         return keepList;
     }
