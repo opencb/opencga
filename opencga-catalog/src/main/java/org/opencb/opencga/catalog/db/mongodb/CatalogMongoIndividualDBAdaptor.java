@@ -205,22 +205,44 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet)
+    public QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite)
             throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Long> count = individualCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, individualId));
-        if (count.getResult().get(0) > 0) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+
+        if (overwrite) {
+            if (count.getResult().get(0) == 0) {
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+            }
+        } else {
+            if (count.getResult().get(0) > 0) {
+                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            }
         }
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
 
         DBObject query = new BasicDBObject(_ID, individualId);
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+        if (overwrite) {
+            query.put("annotationSets.id", annotationSet.getId());
+        } else {
+            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+        }
+
+        DBObject update;
+        if (overwrite) {
+            update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
+        } else {
+            update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+        }
 
         QueryResult<WriteResult> queryResult = individualCollection.update(query, update, null);
+
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        }
 
         return endQuery("", startTime, Collections.singletonList(annotationSet));
     }

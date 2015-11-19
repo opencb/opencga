@@ -86,8 +86,8 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot1);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot2);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
@@ -106,6 +106,35 @@ public class CatalogMongoSampleDBAdaptorTest {
     }
 
     @Test
+    public void testOverwriteAnnotateSample() throws Exception {
+        int sampleId = s1.getId();
+
+        Set<Annotation> annotationSet = Arrays.asList(
+                new Annotation("key", "value"),
+                new Annotation("key2", "value2"),
+                new Annotation("key3", 3),
+                new Annotation("key4", true))
+                .stream().collect(Collectors.toSet());
+        AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+
+        catalogSampleDBAdaptor.annotateSample(sampleId, expectedAnnot, false);
+        AnnotationSet annot = catalogSampleDBAdaptor.getSample(sampleId, null).first().getAnnotationSets().get(0);
+        assertEquals(expectedAnnot, annot);
+
+        annotationSet = Arrays.asList(
+                new Annotation("key2", "value2"),
+                new Annotation("key3", 8),
+                new Annotation("key4", false),
+                new Annotation("key5", 2.3))
+                .stream().collect(Collectors.toSet());
+        expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(sampleId, expectedAnnot, true);
+        annot = catalogSampleDBAdaptor.getSample(sampleId, null).first().getAnnotationSets().get(0);
+        assertEquals(expectedAnnot, annot);
+
+    }
+
+        @Test
     public void getSampleAcl() throws Exception {
         AclEntry acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
         assertNotNull(acl);

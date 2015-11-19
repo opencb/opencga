@@ -70,6 +70,15 @@ public class CatalogManagerTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private File testFolder;
+    private int s_1;
+    private int s_2;
+    private int s_3;
+    private int s_4;
+    private int s_5;
+    private int s_6;
+    private int s_7;
+    private int s_8;
+    private int s_9;
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -142,19 +151,20 @@ public class CatalogManagerTest extends GenericTest {
                 new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:130"), 1, "", "", null, Collections.<String, Object>emptyMap()),
                 new Variable("HEIGHT", "", Variable.VariableType.NUMERIC, "1.5", false, false, Collections.singletonList("0:"), 2, "", "", null, Collections.<String, Object>emptyMap()),
                 new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "", null, Collections.<String, Object>emptyMap()),
-                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "", null, Collections.<String, Object>emptyMap())
+                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "", null, Collections.<String, Object>emptyMap()),
+                new Variable("EXTRA", "", Variable.VariableType.TEXT, "", false, false, Collections.emptyList(), 5, "", "", null, Collections.<String, Object>emptyMap())
         ));
         VariableSet vs = catalogManager.createVariableSet(studyId, "vs", true, "", null, variables, sessionIdUser).first();
 
-        int s_1 = catalogManager.createSample(studyId, "s_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_2 = catalogManager.createSample(studyId, "s_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_3 = catalogManager.createSample(studyId, "s_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_4 = catalogManager.createSample(studyId, "s_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_5 = catalogManager.createSample(studyId, "s_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_6 = catalogManager.createSample(studyId, "s_6", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_7 = catalogManager.createSample(studyId, "s_7", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_8 = catalogManager.createSample(studyId, "s_8", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        int s_9 = catalogManager.createSample(studyId, "s_9", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_1 = catalogManager.createSample(studyId, "s_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_2 = catalogManager.createSample(studyId, "s_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_3 = catalogManager.createSample(studyId, "s_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_4 = catalogManager.createSample(studyId, "s_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_5 = catalogManager.createSample(studyId, "s_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_6 = catalogManager.createSample(studyId, "s_6", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_7 = catalogManager.createSample(studyId, "s_7", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_8 = catalogManager.createSample(studyId, "s_8", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        s_9 = catalogManager.createSample(studyId, "s_9", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         catalogManager.annotateSample(s_1, "annot1", vs.getId(), new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"), null, true, sessionIdUser);
         catalogManager.annotateSample(s_2, "annot1", vs.getId(), new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false).append("PHEN", "CASE"), null, true, sessionIdUser);
@@ -1491,6 +1501,55 @@ public class CatalogManagerTest extends GenericTest {
         annotation.addToListOption("annotation", "ALIVE:true");
         samples = catalogManager.getAllSamples(studyId, annotation, sessionIdUser).getResult();
         assertEquals(2, samples.size());
+    }
+
+    @Test
+    public void testUpdateAnnotation() throws CatalogException {
+
+        Sample sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
+        AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
+        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(),
+                new ObjectMap("NAME", "SAMPLE1")
+                        .append("AGE", 38)
+                        .append("HEIGHT", null)
+                        .append("EXTRA", "extra")
+                , sessionIdUser);
+
+        sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
+        Map<String, Object> annotations = sample.getAnnotationSets().get(0).getAnnotations().stream()
+                .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+
+        assertEquals(6, annotations.size());
+        assertEquals("SAMPLE1", annotations.get("NAME"));
+        assertEquals(38.0, annotations.get("AGE"));
+        assertEquals(1.5, annotations.get("HEIGHT"));   //Default value
+        assertEquals("extra", annotations.get("EXTRA"));
+
+        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(),
+                new ObjectMap("NAME", "SAMPLE 1")
+                        .append("EXTRA", null)
+                , sessionIdUser);
+
+        sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
+        annotations = sample.getAnnotationSets().get(0).getAnnotations().stream()
+                .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+
+
+        assertEquals(5, annotations.size());
+        assertEquals("SAMPLE 1", annotations.get("NAME"));
+        assertEquals(false, annotations.containsKey("EXTRA"));
+    }
+
+    @Test
+    public void testUpdateAnnotationFail() throws CatalogException {
+
+        Sample sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
+        AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
+
+        thrown.expect(CatalogException.class); //Can not delete required fields
+        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(),
+                new ObjectMap("NAME", null), sessionIdUser);
+
     }
 
     @Test

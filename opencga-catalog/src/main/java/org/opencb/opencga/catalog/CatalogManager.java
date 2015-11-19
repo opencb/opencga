@@ -812,12 +812,26 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.annotate(sampleId, annotationSetId, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
+    public QueryResult<AnnotationSet> updateSampleAnnotation(int sampleId, String annotationSetId,
+                                                                 Map<String, Object> annotations,
+                                                                 String sessionId)
+            throws CatalogException {
+        return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
+    }
+
     public QueryResult<AnnotationSet> annotateIndividual(int individualId, String annotationSetId, int variableSetId,
                                                             Map<String, Object> annotations,
                                                             Map<String, Object> attributes,
                                                             String sessionId)
             throws CatalogException {
         return individualManager.annotate(individualId, annotationSetId, variableSetId, annotations, attributes, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateIndividualAnnotation(int individualId, String annotationSetId,
+                                                            Map<String, Object> annotations,
+                                                            String sessionId)
+            throws CatalogException {
+        return individualManager.updateAnnotation(individualId, annotationSetId, annotations, sessionId);
     }
 
     public QueryResult<AnnotationSet> deleteSampleAnnotation(int sampleId, String annotationId, String sessionId)

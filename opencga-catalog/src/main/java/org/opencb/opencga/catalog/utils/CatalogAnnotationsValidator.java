@@ -411,4 +411,20 @@ public class CatalogAnnotationsValidator {
         }
     }
 
+    public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
+        Map<String, Annotation> annotations = annotationSet.getAnnotations().stream()
+                .collect(Collectors.toMap(Annotation::getId, Function.identity()));
+
+        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
+            if (entry.getValue() != null) {
+                //Remove old value (if present)
+                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
+                //Add the new annotation value
+                annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
+            } else {
+                //Remove the old value (if present)
+                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
+            }
+        }
+    }
 }

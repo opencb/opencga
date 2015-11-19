@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
@@ -73,7 +74,51 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
         }
 
-        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet);
+        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet, false);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()), "annotate", null);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> updateAnnotation(int sampleId, String annotationSetId, Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException {
+
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkObj(newAnnotations, "newAnnotations");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.WRITE);
+
+        // Get sample
+        QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets"));
+        Sample sample = sampleDBAdaptor.getSample(sampleId, queryOptions).first();
+
+        List<AnnotationSet> annotationSets = sample.getAnnotationSets();
+
+        // Get annotation set
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet annotationSetAux : sample.getAnnotationSets()) {
+            if (annotationSetAux.getId().equals(annotationSetId)) {
+                annotationSet = annotationSetAux;
+                sample.getAnnotationSets().remove(annotationSet);
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetId);
+        }
+
+        // Get variable set
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null).first();
+
+        // Update and validate annotations
+        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
+        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+
+        // Commit changes
+        QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet, true);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()), "annotate", null);
         return queryResult;
     }
