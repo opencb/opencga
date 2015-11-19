@@ -138,6 +138,20 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId, String sessionId)
+            throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        int studyId = sampleDBAdaptor.getStudyIdBySampleId(individualId);
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+
+        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.deleteAnnotation(individualId, annotationId);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId,
+                new ObjectMap("annotationSets", queryResult.first()), "deleteAnnotation", null);
+        return queryResult;
+    }
+
+    @Override
     public QueryResult<Individual> update(Integer individualId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");

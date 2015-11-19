@@ -21,4 +21,6 @@ public interface IIndividualManager extends ResourceManager<Integer, Individual>
 
     QueryResult<AnnotationSet> annotate(int individualId, String annotationSetId, int variableSetId,
                                         Map<String, Object> annotations, Map<String, Object> attributes, String sessionId) throws CatalogException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId, String sessionId) throws CatalogException;
 }

@@ -34,7 +34,7 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
             throws CatalogException;
 
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId)
-    throws CatalogException;
+            throws CatalogException;
 
     /*----------------*/
     /* Cohort METHODS */

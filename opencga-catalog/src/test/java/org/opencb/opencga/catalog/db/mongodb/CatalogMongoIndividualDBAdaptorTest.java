@@ -21,6 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -180,8 +181,18 @@ public class CatalogMongoIndividualDBAdaptorTest {
 
         Individual individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        assertEquals(2, annotationSets.size());
         assertEquals(annot1, annotationSets.get(annot1.getId()));
         assertEquals(annot2, annotationSets.get(annot2.getId()));
+
+        catalogIndividualDBAdaptor.deleteAnnotation(individualId, annot1.getId());
+
+        individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
+        annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        assertEquals(1, annotationSets.size());
+        assertFalse(annotationSets.containsKey(annot1.getId()));
+        assertEquals(annot2, annotationSets.get(annot2.getId()));
+
     }
 
     @Test

@@ -226,6 +226,34 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     }
 
     @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet as : individual.getAnnotationSets()) {
+            if (as.getId().equals(annotationId)) {
+                annotationSet = as;
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        DBObject query = new BasicDBObject(_ID, individualId);
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
+        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
+        if (resultQueryResult.first().getN() < 1) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
+    }
+
+    @Override
     public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException {
 
         long startTime = startQuery();

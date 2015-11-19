@@ -80,6 +80,8 @@ public interface CatalogIndividualDBAdaptor {
 
     QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet) throws CatalogDBException;
 
+    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
+
     QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
     int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
