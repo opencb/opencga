@@ -16,6 +16,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -232,6 +233,10 @@ public class GenomeHelper {
         sb.append(String.format("%012d", position));
         sb.append(getSeparator());
         return sb.toString();
+    }
+    
+    public String generateVcfRowId(Variant var){
+        return generateVcfRowId(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
     }
 
     /**
