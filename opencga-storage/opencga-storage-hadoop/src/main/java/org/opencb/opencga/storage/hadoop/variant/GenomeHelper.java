@@ -230,9 +230,32 @@ public class GenomeHelper {
         sb.append(getSeparator());
         return sb.toString();
     }
+
+    public String extractChromosomeFromBlockId(String blockId) {
+        return extractChromosomeFromBlockId(splitBlockId(blockId));
+    }
+
+    public String extractChromosomeFromBlockId(String[] strings) {
+        return strings[0];
+    }
+
+    public Long extractSliceFromBlockId (String blockId) {
+        return Long.valueOf(splitBlockId(blockId)[1]);
+    }
+
+    public Long extractPositionFromBlockId (String blockId) {
+        return Long.valueOf(splitBlockId(blockId)[1]) * getChunkSize();
+    }
+
+    /* ***************
+     * Variant Row Key helper methods
+     *
+     * Generators and extractors
+     *
+     */
     
-    public String generateVcfRowId(Variant var){
-        return generateVcfRowId(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
+    public String generateVariantRowKey(Variant var){
+        return generateVariantRowKey(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
     }
 
     /**
@@ -248,7 +271,7 @@ public class GenomeHelper {
      * @param ref      Alt name
      * @return {@link String} Row key string
      */
-    public String generateVcfRowId (String chrom, long position, String ref, String alt) {
+    public String generateVariantRowKey(String chrom, long position, String ref, String alt) {
         StringBuilder sb = new StringBuilder(generateRowPositionKey(chrom, position));
         sb.append(ref);
         sb.append(getSeparator());
@@ -256,21 +279,38 @@ public class GenomeHelper {
         return sb.toString();
     }
 
-    public String extractChromosomeFromBlockId (String blockId) {
-        return splitBlockId(blockId)[0];
+
+    public Variant extractVariantFromVariantRowKey(String variantRowKey) {
+        String[] strings = splitVariantRowkey(variantRowKey);
+        return new Variant(extractChromosomeFromVariantRowKey(strings),
+                extractPositionFromVariantRowKey(strings),
+                extractReferenceFromVariantRowkey(strings),
+                extractAlternateFromVariantRowkey(strings));
     }
 
-    public Long extractSliceFromBlockId (String blockId) {
-        return Long.valueOf(splitBlockId(blockId)[1]);
+    public String extractChromosomeFromVariantRowKey(String[] strings){
+        return strings[0];
     }
-    
-    public Long extractPositionFromVariantRowkey(String variantRowkey){
-        return Long.valueOf(splitVariantRowkey(variantRowkey)[1]);
+
+    public Integer extractPositionFromVariantRowKey(String variantRowKey) {
+        return extractPositionFromVariantRowKey(splitVariantRowkey(variantRowKey));
+    }
+
+    public Integer extractPositionFromVariantRowKey(String[] strings){
+        return Integer.valueOf(strings[1]);
+    }
+
+    public String extractReferenceFromVariantRowkey(String[] strings){
+        return strings[2];
+    }
+
+    public String extractAlternateFromVariantRowkey(String[] strings){
+        return strings.length > 3 ? strings[3] : "";
     }
 
     public String[] splitBlockId (String blockId) {
         char sep = getSeparator();
-        String[] split = StringUtils.split(blockId, sep);
+        String[] split = StringUtils.splitPreserveAllTokens(blockId, sep);
         if (split.length != 2)
             throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
                     blockId));
@@ -279,7 +319,7 @@ public class GenomeHelper {
     
     public String[] splitVariantRowkey (String rowkey) {
         char sep = getSeparator();
-        String[] split = StringUtils.split(rowkey, sep);
+        String[] split = StringUtils.splitPreserveAllTokens(rowkey, sep);
         if (split.length < 2)
             throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value `%s`", sep,
                     rowkey));

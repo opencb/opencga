@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,16 +15,13 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
@@ -33,7 +29,6 @@ import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.mapreduce.MapContext;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.biodata.models.feature.AllelesCode;
@@ -49,15 +44,10 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -220,7 +210,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             List<Variant> archMissingInVar = filterByPositionCovered(archive,varPosMissing);
             
             Map<String,VariantTableStudyRow> newVar = createNewVar(context,archMissingInVar, varPosMissing);
-            
+
             // merge output
             updatedVar.putAll(newVar);
 //                    fetchCurrentValues(context, summary.keySet());
@@ -253,7 +243,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         Map<String, VariantTableStudyRow> newVar = new HashMap<String, VariantTableStudyRow>();
         
         Map<Variant,Map<String, List<Integer>>> gtIdx = archMissing.stream().collect(Collectors.toMap(v -> v, v -> createGenotypeIndex(v)));
-        Map<Variant, String> rowkeyIdx = archMissing.stream().collect(Collectors.toMap(v -> v,v -> getHelper().generateVcfRowId(v)));
+        Map<Variant, String> rowkeyIdx = archMissing.stream().collect(Collectors.toMap(v -> v,v -> getHelper().generateVariantRowKey(v)));
 
         for(Integer pos : targetPos){
             List<Variant> varCovingPos = archMissing.stream().filter(v ->  variantCoveringPosition(v, pos)).collect(Collectors.toList());
@@ -309,7 +299,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             /* For each Variant */
             for(Variant var : inPosition){
                 // using row key, since this is "start" position specific and not based on the current position (e.g. if region)
-                String rowKey = getHelper().generateVcfRowId(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
+                String rowKey = getHelper().generateVariantRowKey(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
                 Map<String, List<Integer>> gtToSampleIds = createGenotypeIndex(var);
 
                 /* For each Row (ref_alt) combination -> update the count*/
@@ -333,7 +323,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         /* For each Variant (SNP/SNV) that does not exist yet */
         Map<String,List<Variant>> variantsWithVar = filterForVariant(varPosUpdateLst.stream(), TARGET_VARIANT_TYPE)
                 .collect(Collectors.groupingBy(
-                        v -> getHelper().generateVcfRowId(
+                        v -> getHelper().generateVariantRowKey(
                                 v.getChromosome(), v.getStart().longValue(), v.getReference(), v.getAlternate())));
         for(Entry<String, List<Variant>> varEntry : variantsWithVar.entrySet()){
             String rowKey = varEntry.getKey();
@@ -497,6 +487,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
             context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             List<Variant> varList = archiveCellToVariants(x.getKey(),x.getValue());
+            context.getCounter("OPENCGA.HBASE", "READ_VARIANTS").increment(varList.size());
             variantList.addAll(varList);
             Integer minStartPos = nextSliceStartPos;
             if(!varList.isEmpty()){
@@ -506,6 +497,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             while(minStartPos >= sliceStartPos && (reverseSearchCnt++) < MAX_REVERSE_SEARCH_ITER){ // more information in previous region
                 context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
                 List<Variant> var = querySliceBreakPerFile(context,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
+//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS").increment(1);
+//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS_" + reverseSearchCnt).increment(1);
+//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_VARIANTS").increment(var.size());
                 if(!var.isEmpty()){
                     minStartPos = var.stream().map(v -> v.getStart()).collect(Collectors.minBy(Comparator.naturalOrder())).get();
                 }
@@ -633,13 +627,13 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             ResultScanner rs = table.getScanner(scan); 
             for(Result r : rs){
                 String rowStr = Bytes.toString(r.getRow());
-                Long pos = h.extractPositionFromVariantRowkey(rowStr);
+                Integer pos = h.extractPositionFromVariantRowKey(rowStr);
                 context.getCounter("OPENCGA.HBASE", "VCF_TABLE_SCAN-result").increment(1);
                 if(!r.isEmpty()){ // only non empty rows
-                    Map<String, Result> res = resMap.get(pos.intValue());
+                    Map<String, Result> res = resMap.get(pos);
                     if(null == res){
                         res = new HashMap<String, Result>();
-                        resMap.put(pos.intValue(), res);
+                        resMap.put(pos, res);
                     }
                     res.put(rowStr, r);
                 }

@@ -5,7 +5,6 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -141,7 +140,7 @@ public class VariantTableStudyRow {
     }
 
     public String generateRowKey(VariantTableHelper helper) {
-        return helper.generateVcfRowId(this.chromosome, this.pos, this.ref , this.alt);
+        return helper.generateVariantRowKey(this.chromosome, this.pos, this.ref , this.alt);
     }
     
     public void addHomeRefCount(Integer cnt){
