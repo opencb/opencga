@@ -67,8 +67,10 @@ public class VariantTableMapperTest {
             return null;
         }
     }
-    
-    private static final String AVRO_FILE = "VCF_To_Avro_Conversion/example.vcf.gz.variants.avro.gz";
+
+    private static final String AVRO_FILE = "src/test/resources/sample1.genome.vcf.variants.avro.gz";
+
+//  private static final String AVRO_FILE = "VCF_To_Avro_Conversion/example.vcf.gz.variants.avro.gz";
 //    private static final String AVRO_STUDY_FILE = "VCF_To_Avro_Conversion/example.vcf.gz.file.json.gz";
     List<Variant> variantCollection;
     VariantTableMapper tm;
@@ -104,9 +106,11 @@ public class VariantTableMapperTest {
 
     @Test
     public void testGenerateCoveredPositions() {
+        List<Variant> subList = this.variantCollection.subList(2, 5);
+        subList.get(2).setEnd(10018);
         Set<Integer> positions = tm.generateCoveredPositions(
-                this.variantCollection.subList(0, 3).stream());
-        assertEquals(positions, new HashSet<Integer>(Arrays.asList(167154617,167154547,167154918)));
+                subList.stream());
+        assertEquals(positions, new HashSet<Integer>(Arrays.asList(10013,10014,10015,10016,10017,10018)));
     }
 
     @Test
@@ -153,25 +157,25 @@ public class VariantTableMapperTest {
     
     @Test
     public void testCreateGenotypeIndex(){
-        Variant var = this.variantCollection.stream().filter(v -> v.getLength() > 1).findFirst().get();
+        Variant var = tm.filterForVariant(this.variantCollection.stream(), VariantType.INDEL).filter(v -> v.getLength() > 1).findFirst().get();
         HashMap<String, Integer> map = new HashMap<String, Integer>();
         map.put("Sample1", 0);
         var.getStudies().get(0).setSamplesPosition(map);
         Map<String, List<Integer>> createGenotypeIndex = tm.createGenotypeIndex(var);
-        assertEquals(createGenotypeIndex.get("1/1"), Arrays.asList(1));
+        assertEquals(Arrays.asList(1),createGenotypeIndex.get("0/1"));
     }
     
     @Test
     public void testExtractGts(){
-        Variant var = this.variantCollection.stream().findFirst().get();
+        Variant var = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV).findFirst().get();
         List<Genotype> extractGts = tm.extractGts(var);
         assertEquals(1, extractGts.size());
-        assertEquals("1/1", extractGts.get(0).toString());
+        assertEquals("0/1", extractGts.get(0).toString());
     }
     
     @Test
     public void testHasVariant(){
-        Variant var = this.variantCollection.stream().findFirst().get();
+        Variant var = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV).findFirst().get();
         List<Genotype> extractGts = tm.extractGts(var);
         assertTrue(tm.hasVariant(extractGts));
         assertFalse(tm.hasVariant(Arrays.asList( new Genotype("./.", "A", "T"))));
@@ -181,18 +185,45 @@ public class VariantTableMapperTest {
     }
     
     @Test
-    public void testNewVariantOne(){
+    public void testNewVariantOneVar(){
         HashMap<String, Integer> map = new HashMap<String, Integer>();
         map.put("Sample1", 0);
-        List<Variant> sublist = this.variantCollection.subList(0, 1);
+        List<Variant> sublist = 
+                tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
         Map<Integer, List<Variant>> varlst = sublist.stream()
                 .filter(v -> {v.getStudies().get(0).setSamplesPosition(map);return true;})
                 .collect(Collectors.groupingBy(v -> v.getStart()));
 
         Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
-        assertEquals(res.values().stream().findFirst().get().getHomRefCount().intValue(), 0);
-        assertEquals(res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size(), 1);
-        System.out.println(res);
+        assertEquals(0,res.values().stream().findFirst().get().getHomRefCount().intValue());
+        assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
+        assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_REF).size());
+        assertEquals(1,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
+        
+    }
+    
+    @Test
+    public void testNewVariantOneRef(){
+        HashMap<String, Integer> map = new HashMap<String, Integer>();
+        map.put("Sample1", 0);
+        List<Variant> sublist = 
+                tm.filterForVariant(this.variantCollection.stream(), VariantType.NO_VARIATION)
+                .collect(Collectors.toList()).subList(0, 2);
+        Map<Integer, List<Variant>> varlst = sublist.stream()
+                .filter(v -> {v.getStudies().get(0).setSamplesPosition(map);return true;})
+                .collect(Collectors.groupingBy(v -> v.getStart()));
+
+        Map<String, List<Integer>> gtidx = tm.createGenotypeIndex(sublist.toArray(new Variant[0])[0]);
+        assertEquals(0,gtidx.get(VariantTableStudyRow.HOM_REF).size());
+        assertEquals(1,gtidx.get(VariantTableStudyRow.OTHER).size());
+
+        gtidx = tm.createGenotypeIndex(sublist.toArray(new Variant[0])[1]);
+        assertEquals(1,gtidx.get(VariantTableStudyRow.HOM_REF).size());
+        assertEquals(0,gtidx.get(VariantTableStudyRow.OTHER).size());
+
+        Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
+        assertTrue(res.isEmpty());
     }
     
     private <A,B> Map<A,B> asMap(A key,B val){
@@ -207,15 +238,27 @@ public class VariantTableMapperTest {
         studyConfiguration.getSampleIds().put("Sample2", 2);
         studyConfiguration.getSampleIds().put("Sample3", 3);
         studyConfiguration.getSampleIds().put("Sample4", 4);
+        studyConfiguration.getSampleIds().put("Sample5", 5);
         
-        List<Variant> subList = this.variantCollection.subList(0, 1);
+        List<Variant> subList = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
+        Variant refRegion = tm.filterForVariant(this.variantCollection.stream(), VariantType.NO_VARIATION)
+                .collect(Collectors.toList()).get(1);
+        
+        
         Variant var = subList.get(0);
         var.getStudies().get(0).setSamplesPosition(asMap("Sample1",0));
+        
+
+        refRegion.getStudies().get(0).setSamplesPosition(asMap("Sample5",0));
+        refRegion.setStart(var.getStart()-2);
+        refRegion.setEnd(var.getEnd() + 10);
         
         Variant varModRef = new Variant(VariantAvro.newBuilder(var.getImpl()).build());
         varModRef.setAlternate("");
         varModRef.getStudies().get(0).getSamplesData().get(0).set(0, "0/0");
         varModRef.getStudies().get(0).setSamplesPosition(asMap("Sample4",0));
+        varModRef.setType(VariantType.NO_VARIATION);
 
         Variant varMod2 = new Variant(VariantAvro.newBuilder(var.getImpl()).build());
         varMod2.setAlternate("X");
@@ -227,17 +270,20 @@ public class VariantTableMapperTest {
         varMod.setAlternate("XXXX");
         varMod.setReference("AAAA");
         varMod.getStudies().get(0).setSamplesPosition(asMap("Sample2",0));
+        varMod.setType(VariantType.INDEL);
 
         subList.add(varModRef);
         subList.add(varMod);
         subList.add(varMod2);
+        subList.add(refRegion);
         
         Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, subList,new HashSet<Integer>(Arrays.asList(var.getStart())));
         assertEquals(2, res.size());
-        assertEquals(1, res.get(res.keySet().stream().filter(k -> k.endsWith("_T")).findFirst().get()).getHomRefCount().intValue());
-        assertEquals(1,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
-        assertEquals(0, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
+        assertEquals(2, res.get(res.keySet().stream().filter(k -> k.endsWith("T_C")).findFirst().get()).getHomRefCount().intValue());
+        assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
+        assertEquals(1, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
         assertEquals(2, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.OTHER).size());
+        assertEquals(2,res.values().stream().findFirst().get().getHomRefCount().intValue());
         System.out.println(res);
     }
     

@@ -236,8 +236,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
     
     private Set<Integer> generateRegion(Integer start, Integer end){
-        if(end <= 0){
-            end = start; // TODO check if END is 0 in case of SNV/SNP
+        if(end < start){
+            throw new IllegalStateException(
+                    String.format("End position (%s) is < than Start (%s)!!!", start,end));
         }
         int len = end-start;
         Integer [] array = new Integer[len+1];
@@ -458,9 +459,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     protected Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
         Set<VariantType> whileList = new HashSet<VariantType>(Arrays.asList(types));
        return variants
-                 // ignore others for the moment TODO for later
-                .filter(v -> whileList.contains(v.getType()))
-                .filter(v -> hasVariant(extractGts(v)));
+                .filter(v -> whileList.contains(v.getType()));
+//                .filter(v -> hasVariant(extractGts(v))); // Not needed for GVCF
     }
 
     protected boolean hasVariant(Collection<Genotype> genotypeColl){
