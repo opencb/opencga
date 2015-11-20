@@ -183,7 +183,13 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         for (DBObject dbo : result) {
             String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
-            samplesInSources.put(key, new ArrayList(value.toMap().keySet()));
+
+            // replace '£' by '.'
+            List<String> sampleNames = new ArrayList<>();
+            for (String mongoSampleName : value.keySet()) {
+                sampleNames.add(mongoSampleName.replace(DBObjectToVariantSourceConverter.CHARACTER_TO_REPLACE_DOTS, '.'));
+            }
+            samplesInSources.put(key, sampleNames);
         }
         
         return queryResult;
