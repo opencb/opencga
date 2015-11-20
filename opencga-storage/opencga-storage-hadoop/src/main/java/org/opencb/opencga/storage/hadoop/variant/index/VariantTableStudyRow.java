@@ -65,6 +65,10 @@ public class VariantTableStudyRow {
         this.ref = ref;
         this.alt = alt;
     }
+    
+    public Long getPos() {
+        return pos;
+    }
 
     private VariantTableStudyRow(Integer studyId, String[] arr){
         this(studyId,arr[0],Long.parseLong(arr[1]),arr[2],arr[3]);
