@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -177,7 +179,13 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         // Commit changes
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, true);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", newAnnotations), "annotate", null);
+
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+                newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors.toSet()),
+                annotationSet.getDate(), null);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
+                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
+
         return queryResult;
     }
 
