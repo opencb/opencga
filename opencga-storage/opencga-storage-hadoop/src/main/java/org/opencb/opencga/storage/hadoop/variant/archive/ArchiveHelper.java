@@ -20,6 +20,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
+import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ public class ArchiveHelper extends GenomeHelper {
     private final static Logger log = LoggerFactory.getLogger(ArchiveHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
     private final byte[] column;
+    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
@@ -90,7 +92,7 @@ public class ArchiveHelper extends GenomeHelper {
      * @return          Table name
      */
     public static String getTableName(int studyId) {
-        return Integer.toString(studyId);
+        return ARCHIVE_TABLE_PREFIX + Integer.toString(studyId);
     }
 
     /**
@@ -100,6 +102,15 @@ public class ArchiveHelper extends GenomeHelper {
      */
     public static String getColumnName(int fileId) {
         return Integer.toString(fileId);
+    }
+
+    /**
+     * Get the archive column name for a file given a FileId
+     * @param columnName    Column name
+     * @return              Related fileId
+     */
+    public static int getFileIdFromColumnName(byte[] columnName) {
+        return Integer.parseInt(Bytes.toString(columnName));
     }
 
     /**

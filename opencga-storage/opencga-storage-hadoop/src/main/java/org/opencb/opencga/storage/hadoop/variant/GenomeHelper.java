@@ -132,10 +132,6 @@ public class GenomeHelper {
         conf.setInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, studyId);
     }
 
-    public static String getArchiveTableName(String prefix,Integer studyId){
-        return prefix+"_"+studyId;
-    }
-
     public int getStudyId(){
         return this.studyId;
     }

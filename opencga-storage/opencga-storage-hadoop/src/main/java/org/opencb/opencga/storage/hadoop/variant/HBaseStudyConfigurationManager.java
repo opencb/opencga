@@ -5,6 +5,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
@@ -31,7 +32,6 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes("SUMMARY");
     final byte[] columnFamily;
 
-    private final HadoopCredentials credentials;
     private final Configuration configuration;
     private final ObjectMap options;
     private final GenomeHelper genomeHelper;
@@ -39,12 +39,18 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private final ObjectMapper objectMapper;
 
     private final HBaseManager hBaseManager;
+    private final String tableName;
 
     public HBaseStudyConfigurationManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
             throws IOException {
+        this(credentials.getTable(), configuration, options);
+    }
+
+    public HBaseStudyConfigurationManager(String tableName, Configuration configuration, ObjectMap options)
+            throws IOException {
         super(options);
-        this.credentials = credentials;
-        this.configuration = configuration;
+        this.configuration = Objects.requireNonNull(configuration);
+        this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
         genomeHelper = new GenomeHelper(configuration);
         columnFamily = genomeHelper.getColumnFamily();
@@ -77,8 +83,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         }
 
         try {
-            if (!hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
-                studyConfigurationList = hBaseManager.act(getConnection(), credentials.getTable(), table -> {
+            if (hBaseManager.act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+                studyConfigurationList = hBaseManager.act(getConnection(), tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
                         return Collections.emptyList();
@@ -106,7 +112,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
         try {
-            hBaseManager.act(getConnection(), credentials.getTable(), table -> {
+            hBaseManager.act(getConnection(), tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
                 Put put = new Put(STUDIES_ROW);
                 put.addColumn(columnFamily, columnQualifier, studyConfiguration.getTimeStamp(), bytes);
@@ -129,10 +135,10 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         Get get = new Get(STUDIES_ROW);
         get.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN);
         try {
-            if (!hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> admin.tableExists(table.getName()))) {
+            if (!hBaseManager.act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
                 return HashBiMap.create();
             }
-            return hBaseManager.act(getConnection(), credentials.getTable(), table -> {
+            return hBaseManager.act(getConnection(), tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
                     return HashBiMap.create();
@@ -164,7 +170,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
             createTableIfMissing();
-            try(Table table = getConnection().getTable(TableName.valueOf(credentials.getTable()))) {
+            try(Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(STUDIES_ROW);
                 put.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN, bytes);
@@ -178,11 +184,13 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     private boolean createTableIfMissing() throws IOException {
-        return hBaseManager.act(getConnection(), credentials.getTable(), (table, admin) -> {
+        return hBaseManager.act(getConnection(), tableName, (table, admin) -> {
             if (admin.tableExists(table.getName())) {
                 return true;
             } else {
-                admin.createTable(new HTableDescriptor(TableName.valueOf(credentials.getTable())));
+                HTableDescriptor hTableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
+                hTableDescriptor.addFamily(new HColumnDescriptor(genomeHelper.getColumnFamily()));
+                admin.createTable(hTableDescriptor);
                 return false;
             }
         });

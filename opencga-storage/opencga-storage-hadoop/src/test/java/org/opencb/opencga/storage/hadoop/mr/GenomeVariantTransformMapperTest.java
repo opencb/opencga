@@ -5,8 +5,18 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapDriver;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+
+import java.io.IOException;
+import java.util.*;
 
 public class GenomeVariantTransformMapperTest {
     private VariantTableMapper mapper;
@@ -19,6 +29,7 @@ public class GenomeVariantTransformMapperTest {
         }
 
     }
+
 
 //    @Before
 //    public void setUp() throws Exception {

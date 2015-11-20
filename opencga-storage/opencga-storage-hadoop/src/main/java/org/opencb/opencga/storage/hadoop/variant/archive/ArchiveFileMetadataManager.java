@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
@@ -53,6 +54,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         genomeHelper = new GenomeHelper(configuration);
         connection = con;
         objectMapper = new ObjectMapper();
+        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         hBaseManager = new HBaseManager(configuration);
     }
 
@@ -103,7 +105,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = new Put(genomeHelper.getMetaRowKey());
-        put.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()), objectMapper.writeValueAsBytes(variantSource));
+        put.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()), variantSource.getImpl().toString().getBytes());
         hBaseManager.act(connection, tableName, table -> {
             table.put(put);
         });

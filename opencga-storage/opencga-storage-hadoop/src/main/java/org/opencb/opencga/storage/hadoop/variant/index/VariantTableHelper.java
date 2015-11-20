@@ -50,7 +50,7 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration loadMeta() throws IOException{
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, this.hBaseManager.getConf(), null);
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
         QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(),new QueryOptions());
         if(query.getResult().size() != 1){
             throw new NotSupportedException("Only one study configuration expected for study");
@@ -61,7 +61,7 @@ public class VariantTableHelper extends GenomeHelper {
     // Table locking
     // http://grokbase.com/t/hbase/user/1169nsvfcx/does-put-support-dont-put-if-row-exists
     public void storeMeta(StudyConfiguration studyConf) throws IOException{
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(null, this.hBaseManager.getConf(), null);
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
         scm.updateStudyConfiguration(studyConf, new QueryOptions());
     }
 
