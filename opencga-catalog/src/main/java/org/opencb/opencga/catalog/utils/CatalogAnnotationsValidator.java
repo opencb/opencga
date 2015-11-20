@@ -155,6 +155,14 @@ public class CatalogAnnotationsValidator {
             annotatedVariables.add(annotation.getId());
         }
 
+        //Remove null values
+        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext(); ) {
+            Annotation annotation = iterator.next();
+            if (annotation.getValue() == null) {
+                iterator.remove();
+            }
+        }
+
         //Check for missing values
         List<Annotation> defaultAnnotations = new LinkedList<>();
         for (Variable variable : variableSet.getVariables()) {

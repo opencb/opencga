@@ -1224,6 +1224,28 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testAnnotate() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()));
+        variables.add(new Variable("AGE", "", Variable.VariableType.TEXT, "", false, false, Collections.<String>emptyList(), 0, "", "", null, Collections.<String, Object>emptyMap()));
+        VariableSet vs1 = catalogManager.createVariableSet(study.getId(), "vs1", false, "", null, variables, sessionIdUser).first();
+
+
+        HashMap<String, Object> annotations = new HashMap<>();
+        annotations.put("NAME", "Joe");
+        annotations.put("AGE", null);
+        QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.annotateSample(s_1, "annotation1", vs1.getId(), annotations, null, sessionIdUser);
+        assertEquals(1, annotationSetQueryResult.getNumResults());
+        Map<String, Object> map = annotationSetQueryResult.first().getAnnotations().stream().collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+        assertEquals(1, map.size());
+        assertEquals("Joe", map.get("NAME"));
+
+    }
+
+    @Test
     public void testAnnotateMulti () throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         Study study = catalogManager.getStudy(studyId, sessionIdUser).first();

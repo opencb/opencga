@@ -24,6 +24,9 @@ public class CatalogAnnotationsValidatorTest {
     public static final Variable string = new Variable(
             "string", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null);
 
+    public static final Variable stringNoRequired = new Variable(
+            "string", "", Variable.VariableType.TEXT, null, false, false, null, 0, null, null, null, null);
+
     public static final Variable stringList = new Variable(
             "stringList", "", Variable.VariableType.TEXT, null, true, true, null, 0, null, null, null, null);
 
@@ -151,6 +154,16 @@ public class CatalogAnnotationsValidatorTest {
         CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(nestedObject.getId(), nestedObject),
                 new Annotation(nestedObject.getId(), new ObjectMap(stringList.getId(), Arrays.asList("v1", "v2", "v3")).append(object.getId(),
                         new ObjectMap(string.getId(), "OneString"))));
+    }
+
+    @Test
+    public void checkNullValuesTest() throws CatalogException {
+        CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(stringNoRequired.getId(), stringNoRequired), new Annotation(string.getId(), null));
+    }
+    @Test
+    public void checkNullValues2Test() throws CatalogException {
+        thrown.expect(CatalogException.class); //Numeric list is required
+        CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(string.getId(), string), new Annotation(string.getId(), null));
     }
 
     @Test

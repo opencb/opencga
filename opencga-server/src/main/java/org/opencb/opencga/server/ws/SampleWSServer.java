@@ -137,7 +137,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
             } else {
                 queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-                        annotations, queryOptions, sessionId);
+                        annotations, Collections.emptyMap(), sessionId);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -180,7 +180,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 if (update) {
                     queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
                 } else {
-                    queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, queryOptions, sessionId);
+                    queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, Collections.emptyMap(), sessionId);
                 }
             }
 

@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -109,7 +110,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
             } else {
                 queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                        annotations, queryOptions, sessionId);
+                        annotations, Collections.emptyMap(), sessionId);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -152,7 +153,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
                 } else {
                     queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                            annotations, queryOptions, sessionId);
+                            annotations, Collections.emptyMap(), sessionId);
                 }
             }
 
