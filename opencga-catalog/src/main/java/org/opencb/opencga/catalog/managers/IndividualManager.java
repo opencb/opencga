@@ -176,7 +176,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, individual.getAnnotationSets());
 
         // Commit changes
-        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, false);
+        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, true);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", newAnnotations), "annotate", null);
         return queryResult;
     }

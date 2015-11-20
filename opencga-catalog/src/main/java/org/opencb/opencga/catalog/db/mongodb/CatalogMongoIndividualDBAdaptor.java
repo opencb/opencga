@@ -213,11 +213,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, individualId));
 
         if (overwrite) {
-            if (count.getResult().get(0) == 0) {
+            if (count.first() == 0) {
                 throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
             }
         } else {
-            if (count.getResult().get(0) > 0) {
+            if (count.first() > 0) {
                 throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
             }
         }

@@ -57,6 +57,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class CatalogManagerTest extends GenericTest {
@@ -1506,38 +1507,58 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testUpdateAnnotation() throws CatalogException {
 
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+        Individual individual = catalogManager.createIndividual(study.getId(), "INDIVIDUAL_1", "", -1, -1, Individual.Gender.UNKNOWN, new QueryOptions(), sessionIdUser).first();
         Sample sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
+
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
-        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(),
-                new ObjectMap("NAME", "SAMPLE1")
-                        .append("AGE", 38)
-                        .append("HEIGHT", null)
-                        .append("EXTRA", "extra")
-                , sessionIdUser);
+        catalogManager.annotateIndividual(individual.getId(), annotationSet.getId(), annotationSet.getVariableSetId(),
+                annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getId, Annotation::getValue)),
+                Collections.emptyMap(), sessionIdUser);
+
+        // First update
+        ObjectMap updateAnnotation = new ObjectMap("NAME", "SAMPLE1")
+                .append("AGE", 38)
+                .append("HEIGHT", null)
+                .append("EXTRA", "extra");
+        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(), updateAnnotation, sessionIdUser);
+        catalogManager.updateIndividualAnnotation(individual.getId(), annotationSet.getId(), updateAnnotation, sessionIdUser);
+
+        Consumer<AnnotationSet> check = as -> {
+            Map<String, Object> annotations = as.getAnnotations().stream()
+                    .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+
+            assertEquals(6, annotations.size());
+            assertEquals("SAMPLE1", annotations.get("NAME"));
+            assertEquals(38.0, annotations.get("AGE"));
+            assertEquals(1.5, annotations.get("HEIGHT"));   //Default value
+            assertEquals("extra", annotations.get("EXTRA"));
+        };
 
         sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
-        Map<String, Object> annotations = sample.getAnnotationSets().get(0).getAnnotations().stream()
-                .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+        individual = catalogManager.getIndividual(individual.getId(), null, sessionIdUser).first();
+        check.accept(sample.getAnnotationSets().get(0));
+        check.accept(individual.getAnnotationSets().get(0));
 
-        assertEquals(6, annotations.size());
-        assertEquals("SAMPLE1", annotations.get("NAME"));
-        assertEquals(38.0, annotations.get("AGE"));
-        assertEquals(1.5, annotations.get("HEIGHT"));   //Default value
-        assertEquals("extra", annotations.get("EXTRA"));
+        updateAnnotation = new ObjectMap("NAME", "SAMPLE 1")
+                .append("EXTRA", null);
+        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(), updateAnnotation, sessionIdUser);
+        catalogManager.updateIndividualAnnotation(individual.getId(), annotationSet.getId(), updateAnnotation, sessionIdUser);
 
-        catalogManager.updateSampleAnnotation(s_1, annotationSet.getId(),
-                new ObjectMap("NAME", "SAMPLE 1")
-                        .append("EXTRA", null)
-                , sessionIdUser);
+        check = as -> {
+            Map<String, Object> annotations = as.getAnnotations().stream()
+                    .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+
+            assertEquals(5, annotations.size());
+            assertEquals("SAMPLE 1", annotations.get("NAME"));
+            assertEquals(false, annotations.containsKey("EXTRA"));
+        };
 
         sample = catalogManager.getSample(s_1, null, sessionIdUser).first();
-        annotations = sample.getAnnotationSets().get(0).getAnnotations().stream()
-                .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
-
-
-        assertEquals(5, annotations.size());
-        assertEquals("SAMPLE 1", annotations.get("NAME"));
-        assertEquals(false, annotations.containsKey("EXTRA"));
+        individual = catalogManager.getIndividual(individual.getId(), null, sessionIdUser).first();
+        check.accept(sample.getAnnotationSets().get(0));
+        check.accept(individual.getAnnotationSets().get(0));
     }
 
     @Test
