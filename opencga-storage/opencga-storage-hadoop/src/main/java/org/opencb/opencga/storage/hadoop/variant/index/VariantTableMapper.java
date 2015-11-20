@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.apache.commons.lang.math.NumberUtils;
@@ -150,7 +151,6 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     @Override
     protected void map(ImmutableBytesWritable key, Result value, 
             Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
-        // TODO count and look for reference blocks if there is one variant
         if(value.isEmpty()){
             context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
             return; // TODO search backwards?
@@ -163,10 +163,10 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
             // Calculate various positions
             byte[] currRowKey = key.get();
-            String blockId = Bytes.toString(currRowKey);
+            String sliceKey = Bytes.toString(currRowKey);
             VariantTableHelper h = getHelper();
-            String chr = h.extractChromosomeFromBlockId(blockId );
-            Long sliceReg = h.extractSliceFromBlockId(blockId);
+            String chr = h.extractChromosomeFromBlockId(sliceKey );
+            Long sliceReg = h.extractSliceFromBlockId(sliceKey);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
             String nextSliceKey = h.generateBlockId(chr, nextStartPos);
@@ -206,10 +206,22 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             // Missing positions in VAR table -> require Archive table fetch of all columns
             Set<Integer> varPosMissing = new HashSet<Integer>(archVarStartPositions);
             varPosMissing.removeAll(varTabMap.keySet());
-            // TODO Archive table - fetch all columns instead of just the current once
+            // Current 
             List<Variant> archMissingInVar = filterByPositionCovered(archive,varPosMissing);
             
-            Map<String,VariantTableStudyRow> newVar = createNewVar(context,archMissingInVar, varPosMissing);
+            getLog().info("Fetch data for missing position from Archive table: " + varPosMissing.size());
+            List<Variant> archPreviousFiles = loadArchivePreviousFiles(context, varPosMissing,sliceKey);
+            getLog().info("Fetched Variants from Archive table: " + archPreviousFiles.size());
+            
+            List<Variant> newTargetVariants = new ArrayList<Variant>(archPreviousFiles);
+            newTargetVariants.addAll(archMissingInVar);
+
+            // check that there is no duplication of rows (current mapreduce and reloaded Arch data)
+            if(new HashSet<Variant>(newTargetVariants).size() != newTargetVariants.size()){
+                throw new IllegalStateException("Double loading of Archive data!!!");
+            }
+
+            Map<String,VariantTableStudyRow> newVar = createNewVar(context,newTargetVariants, varPosMissing);
             
             // merge output
             updatedVar.putAll(newVar);
@@ -218,6 +230,41 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }catch(InvalidProtocolBufferException e){
             throw new IOException(e);
         }
+    }
+
+
+    /**
+     * Load all registered files for slice from ARCHIVE table and return variants covering the target positions. 
+     * Could be memory extensive for lot of files, but there is room for improvement.
+     * @param context
+     * @param targetPositions Positions of interest
+     * @param sliceKey Rowkey
+     * @return List of Variants covering the target positions
+     * @throws IOException
+     */
+    private List<Variant> loadArchivePreviousFiles(MapContext context, Set<Integer> targetPositions, String sliceKey) throws IOException {
+        // IMPROVEMENT: iterate in blocks of e.g. 200 column to fetch & filter variants, if this is an issue
+        // TODO Work out which Columns to Load / ignore !!!!
+        List<Variant> var = new ArrayList<Variant>();
+        Get get = new Get(Bytes.toBytes(sliceKey));
+        BiMap<String, Integer> fileMap = getStudyConfiguration().getFileIds();
+        for(Entry<String, Integer> file : fileMap.entrySet()){
+            get.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(file.getValue()));
+        }
+        
+        Result res = getHelper().getHBaseManager().act(getDbConnection(),getHelper().getIntputTable(), table -> {return table.get(get);});
+        if(res.isEmpty()){
+            return var;
+        }
+        NavigableMap<byte[], byte[]> fm = res.getFamilyMap(getHelper().getColumnFamily());
+        for (Entry<byte[], byte[]> x : fm.entrySet()) {
+            // for each Column extract slice to variants
+            List<Variant> archVars = archiveCellToVariants(x.getKey(),x.getValue());
+            // Filter Variants on Position covered
+            List<Variant> subset = filterByPositionCovered(archVars, targetPositions);
+            var.addAll(subset);
+        }
+        return var;
     }
 
     protected Set<Integer> generateCoveredPositions(Stream<Variant> variants) {
@@ -499,6 +546,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         List<Variant> variantList = new ArrayList<Variant>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(getHelper().getColumnFamily());
         for (Entry<byte[], byte[]> x : fm.entrySet()) {
+            // for each FILE (column in HBase
             context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             List<Variant> varList = archiveCellToVariants(x.getKey(),x.getValue());
             variantList.addAll(varList);
