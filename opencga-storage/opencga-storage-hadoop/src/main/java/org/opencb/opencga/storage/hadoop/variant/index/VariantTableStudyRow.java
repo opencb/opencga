@@ -116,7 +116,7 @@ public class VariantTableStudyRow {
      */
     public void addSampleId(String gt, Collection<Integer> sampleIds) throws IllegalStateException{
         Set<Integer> set = this.callMap.get(gt);
-        if(null != set){
+        if(null == set){
             set = new HashSet<Integer>();
             this.callMap.put(gt, set);
         }
@@ -131,7 +131,7 @@ public class VariantTableStudyRow {
      */
     public void addSampleId(String gt, Integer sampleId) throws IllegalStateException{
         Set<Integer> set = this.callMap.get(gt);
-        if(null != set){
+        if(null == set){
             set = new HashSet<Integer>();
             this.callMap.put(gt, set);
         }
