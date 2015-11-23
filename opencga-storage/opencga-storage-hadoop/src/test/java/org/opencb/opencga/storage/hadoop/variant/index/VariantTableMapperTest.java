@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 public class VariantTableMapperTest {
 
@@ -75,8 +76,28 @@ public class VariantTableMapperTest {
     List<Variant> variantCollection;
     VariantTableMapper tm;
     StudyConfiguration studyConfiguration;
-    private MapContext cxt;
+    private MapContext ctx;
     private VariantTableHelper helper;
+
+    private List<Pair<AvroKey<VariantAvro>, NullWritable>> getInput(int max, int repeat) throws IOException {
+        File f = new File(AVRO_FILE);
+        List<Pair<AvroKey<VariantAvro>, NullWritable>> lst = new ArrayList<Pair<AvroKey<VariantAvro>, NullWritable>>();
+        DatumReader<VariantAvro> userDatumReader = new SpecificDatumReader<VariantAvro>(VariantAvro.class);
+        try (DataFileReader<VariantAvro> dataFileReader = new DataFileReader<VariantAvro>(f, userDatumReader)) {
+            int cnt = 0;
+            while (dataFileReader.hasNext()) {
+                VariantAvro v = dataFileReader.next();
+                for (int i = 0; i < repeat; ++i) {
+                    lst.add(new Pair<AvroKey<VariantAvro>, NullWritable>(new AvroKey<VariantAvro>(v), NullWritable.get()));
+                }
+                ++cnt;
+                if (max > 0 && cnt >= max) {
+                    break;
+                }
+            }
+            return lst;
+        }
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -97,7 +118,7 @@ public class VariantTableMapperTest {
             return studyConfiguration;}};
         tm.setHelper(helper);
             
-       cxt = (MapContext) Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{MapContext.class},new ContextProxy());
+       ctx = (MapContext) Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{MapContext.class},new ContextProxy());
     } 
                
     @After
@@ -195,7 +216,7 @@ public class VariantTableMapperTest {
                 .filter(v -> {v.getStudies().get(0).setSamplesPosition(map);return true;})
                 .collect(Collectors.groupingBy(v -> v.getStart()));
 
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
+        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
         assertEquals(0,res.values().stream().findFirst().get().getHomRefCount().intValue());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_REF).size());
@@ -222,7 +243,7 @@ public class VariantTableMapperTest {
         assertEquals(1,gtidx.get(VariantTableStudyRow.HOM_REF).size());
         assertEquals(0,gtidx.get(VariantTableStudyRow.OTHER).size());
 
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
+        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
         assertTrue(res.isEmpty());
     }
     
@@ -277,7 +298,7 @@ public class VariantTableMapperTest {
         subList.add(varMod2);
         subList.add(refRegion);
         
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(cxt, subList,new HashSet<Integer>(Arrays.asList(var.getStart())));
+        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, subList,new HashSet<Integer>(Arrays.asList(var.getStart())));
         assertEquals(2, res.size());
         assertEquals(2, res.get(res.keySet().stream().filter(k -> k.endsWith("T_C")).findFirst().get()).getHomRefCount().intValue());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
@@ -287,24 +308,78 @@ public class VariantTableMapperTest {
         System.out.println(res);
     }
     
-    private List<Pair<AvroKey<VariantAvro>, NullWritable>> getInput(int max, int repeat) throws IOException {
-        File f = new File(AVRO_FILE);
-        List<Pair<AvroKey<VariantAvro>, NullWritable>> lst = new ArrayList<Pair<AvroKey<VariantAvro>, NullWritable>>();
-        DatumReader<VariantAvro> userDatumReader = new SpecificDatumReader<VariantAvro>(VariantAvro.class);
-        try (DataFileReader<VariantAvro> dataFileReader = new DataFileReader<VariantAvro>(f, userDatumReader)) {
-            int cnt = 0;
-            while (dataFileReader.hasNext()) {
-                VariantAvro v = dataFileReader.next();
-                for (int i = 0; i < repeat; ++i) {
-                    lst.add(new Pair<AvroKey<VariantAvro>, NullWritable>(new AvroKey<VariantAvro>(v), NullWritable.get()));
-                }
-                ++cnt;
-                if (max > 0 && cnt >= max) {
-                    break;
-                }
+    @Test
+    public void testMerge() throws InvalidProtocolBufferException{
+
+        studyConfiguration.getSampleIds().put("Sample3", 3);
+        
+        Map<Integer, Map<String, VariantTableStudyRow>> prep = prepareMerge();
+        List<Variant> varLst = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
+        
+        varLst.get(0).getStudies().get(0).setSamplesPosition(asMap("Sample3",0));
+
+        Map<String, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
+        assertEquals(1, res.size());
+        VariantTableStudyRow row = res.values().stream().findFirst().get();
+        assertEquals(new HashSet<Integer>(Arrays.asList(1,3)), row.getSampleIds(VariantTableStudyRow.HET_REF));
+        assertEquals(new HashSet<Integer>(), row.getSampleIds(VariantTableStudyRow.OTHER));
+        assertEquals(1, row.getHomRefCount().intValue());
+    }
+    
+    @Test
+    public void testMergeNewVarSamePos() throws InvalidProtocolBufferException{
+
+        studyConfiguration.getSampleIds().put("Sample3", 3);
+        
+        Map<Integer, Map<String, VariantTableStudyRow>> prep = prepareMerge();
+        List<Variant> varLst = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
+        
+        varLst.get(0).getStudies().get(0).setSamplesPosition(asMap("Sample3",0));
+        varLst.get(0).setAlternate("X");
+
+        Map<String, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
+        assertEquals(2, res.size());
+        
+        VariantTableStudyRow row = res.entrySet().stream().filter(v -> v.getKey().endsWith("T_C")).map(v -> v.getValue()).findFirst().get();
+        assertEquals(new HashSet<Integer>(Arrays.asList(1)), row.getSampleIds(VariantTableStudyRow.HET_REF));
+        assertEquals(new HashSet<Integer>(Arrays.asList(3)), row.getSampleIds(VariantTableStudyRow.OTHER));
+        assertEquals(1, row.getHomRefCount().intValue());
+
+        row = res.entrySet().stream().filter(v -> v.getKey().endsWith("T_X")).map(v -> v.getValue()).findFirst().get();
+        assertEquals(new HashSet<Integer>(Arrays.asList(3)), row.getSampleIds(VariantTableStudyRow.HET_REF));
+        assertEquals(new HashSet<Integer>(Arrays.asList(1)), row.getSampleIds(VariantTableStudyRow.OTHER));
+        assertEquals(1, row.getHomRefCount().intValue());
+        
+        
+    }
+    
+    public Map<Integer, Map<String, VariantTableStudyRow>> prepareMerge(){
+
+        List<Variant> subList = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
+        Variant refRegion = tm.filterForVariant(this.variantCollection.stream(), VariantType.NO_VARIATION)
+                .collect(Collectors.toList()).get(1);
+        
+        Variant var = subList.get(0);
+        
+        var.getStudies().get(0).setSamplesPosition(asMap("Sample1",0));
+        refRegion.getStudies().get(0).setSamplesPosition(asMap("Sample2",0));
+        refRegion.setEnd(var.getStart()+3);
+        refRegion.setStart(var.getStart()-1);
+
+        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, Arrays.asList(var,refRegion),new HashSet<Integer>(Arrays.asList(var.getStart(),refRegion.getStart())));
+        Map<Integer, Map<String, VariantTableStudyRow>> ret = new HashMap<Integer, Map<String,VariantTableStudyRow>>();
+        for(Entry<String, VariantTableStudyRow> entry : res.entrySet()){
+            Map<String, VariantTableStudyRow> map = ret.get(entry.getValue().getPos().intValue());
+            if(map == null){
+                map = new HashMap<String, VariantTableStudyRow>();
+                ret.put(entry.getValue().getPos().intValue(), map);
             }
-            return lst;
+            map.put(entry.getKey(), entry.getValue());
         }
+        return ret;
     }
 
 }
