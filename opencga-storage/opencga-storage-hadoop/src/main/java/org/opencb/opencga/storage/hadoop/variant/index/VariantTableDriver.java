@@ -191,7 +191,7 @@ public class VariantTableDriver extends Configured implements Tool {
         addHBaseSettings(conf, toolArgs[0]);
         conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
         conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
-        conf.setInt(OPENCGA_VARIANT_TRANSFORM_STUDY, 1);
+        conf.setInt(OPENCGA_VARIANT_TRANSFORM_STUDY, Integer.valueOf(toolArgs[3]));
         conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, cols);
 
         //set the configuration back, so that Tool can configure itself
