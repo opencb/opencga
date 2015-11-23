@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.NotSupportedException;
 
@@ -163,6 +164,18 @@ public class VariantTableDriver extends Configured implements Tool {
         conf.set(HBASE_MASTER, master);
     }
 
+    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId , int fileId, int ... fileIds) {
+        StringBuilder stringBuilder = new StringBuilder()
+                .append(server).append(' ')
+                .append(inputTable).append(' ')
+                .append(outputTable).append(' ')
+                .append(studyId).append(' ')
+                .append(fileId);
+        for (int otherFileId : fileIds) {
+            stringBuilder.append(',').append(otherFileId);
+        }
+        return stringBuilder.toString();
+    }
 
     /**
      * @param args
@@ -178,21 +191,20 @@ public class VariantTableDriver extends Configured implements Tool {
         //get the args w/o generic hadoop args
         String[] toolArgs = parser.getRemainingArgs();
         
-        if (toolArgs.length != 4) {
-            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <fileIds>\n",
+        if (toolArgs.length != 5) {
+            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <studyId> <fileIds>\n",
                     VariantTableDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             System.exit(-1);
         }
 
-        String[] cols = toolArgs[3].split(",");
-
         addHBaseSettings(conf, toolArgs[0]);
+        /** FIXME : Should we get the input table from the studyId with {@link ArchiveHelper#getTableName(int)} ? */
         conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
         conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
-        conf.setInt(OPENCGA_VARIANT_TRANSFORM_STUDY, 1);
-        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, cols);
+        conf.set(OPENCGA_VARIANT_TRANSFORM_STUDY, toolArgs[3]);
+        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, toolArgs[4].split(","));
 
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);

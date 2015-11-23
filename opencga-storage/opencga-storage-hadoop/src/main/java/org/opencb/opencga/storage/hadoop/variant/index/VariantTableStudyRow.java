@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -34,6 +35,7 @@ public class VariantTableStudyRow {
     public static final String HET_REF = "0/1";
     public static final String HOM_VAR = "1/1";
     public static final String OTHER = "?";
+    public static final char COLUMN_KEY_SEPARATOR = '_';
     private Integer studyId;
     private Integer homRefCount = 0;
     private String chromosome;
@@ -66,33 +68,63 @@ public class VariantTableStudyRow {
     }
 
     private VariantTableStudyRow(Integer studyId, String[] arr){
-        this(studyId,arr[0],Long.parseLong(arr[1]),arr[2],arr[3]);
+        this(studyId, arr[0], Long.parseLong(arr[1]), arr[2], arr[3]);
     }
 
-    public VariantTableStudyRow(Integer studyId, Result row, VariantTableHelper helper) {
-        this(studyId,helper.splitVariantRowkey(Bytes.toString(row.getRow())));
-        parse(row.getFamilyMap(helper.getColumnFamily()));
+    public VariantTableStudyRow(Integer studyId, Result row, GenomeHelper helper) {
+        this(studyId, helper.splitVariantRowkey(Bytes.toString(row.getRow())));
+        parse(this, row.getFamilyMap(helper.getColumnFamily()));
     }
 
-    private void parse(NavigableMap<byte[], byte[]> familyMap) {
+    public static List<VariantTableStudyRow> parse(Result result, GenomeHelper helper) {
+        NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
+        Set<Integer> studyIds = familyMap.keySet().stream()
+                .map(columnKey -> extractStudyId(Bytes.toString(columnKey)))
+                .collect(Collectors.toSet());
+
+        List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            VariantTableStudyRow row = new VariantTableStudyRow(studyId, helper.splitVariantRowkey(Bytes.toString(result.getRow())));
+            rows.add(parse(row, familyMap, true));
+        }
+
+        return rows;
+    }
+
+    public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, NavigableMap<byte[], byte[]> familyMap) {
+        return parse(variantTableStudyRow, familyMap, false);
+    }
+
+    public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, NavigableMap<byte[], byte[]> familyMap,
+                                             boolean skipOtherStudies) {
         for(Entry<byte[], byte[]> entry : familyMap.entrySet()){
             String colStr = Bytes.toString(entry.getKey());
-            String[] colSplit = colStr.split("_",2);
-            if(!colSplit[0].equals(this.studyId.toString())) // check study ID for consistency check
-                throw new IllegalStateException(
-                        String.format("Expected study id %s, but found %s in row %s",this.studyId.toString(),colSplit[0],colStr));
+            String[] colSplit = colStr.split("_", 2);
+            if(!colSplit[0].equals(variantTableStudyRow.studyId.toString())) { // check study ID for consistency check
+                if (skipOtherStudies) {
+                    continue;
+                } else {
+                    throw new IllegalStateException(
+                            String.format("Expected study id %s, but found %s in row %s", variantTableStudyRow.studyId.toString(), colSplit[0], colStr));
+                }
+            }
             String gt = colSplit[1];
             if(gt.equals(HOM_REF)){
-                this.homRefCount = Bytes.toInt(entry.getValue());
-            } else{
+                variantTableStudyRow.homRefCount = Bytes.toInt(entry.getValue());
+            } else {
                 try {
                     VariantCallProt vcp = VariantCallProt.parseFrom(entry.getValue());
-                    callMap.put(gt, new HashSet<Integer>(vcp.getSampleIdsList()));
+                    variantTableStudyRow.callMap.put(gt, new HashSet<>(vcp.getSampleIdsList()));
                 } catch (InvalidProtocolBufferException e) {
                     throw new UncheckedIOException(e);
                 }
             }
         }
+        return variantTableStudyRow;
+    }
+
+    public Set<String> getGenotypes() {
+        return callMap.keySet();
     }
 
     public Set<Integer> getSampleIds(String gt){
@@ -104,9 +136,13 @@ public class VariantTableStudyRow {
     }
     
     public Set<Integer> getSampleIds(Genotype gt){
-        return getSampleIds(gt.getGenotypeInfo().toString());
+        return getSampleIds(gt.toString());
     }
-    
+
+    public Integer getStudyId() {
+        return studyId;
+    }
+
     /**
      * 
      * @param gt
@@ -123,7 +159,7 @@ public class VariantTableStudyRow {
     }
 
     /**
-     * 
+     *
      * @param gt
      * @param sampleId
      * @throws IllegalStateException in case the sample already exists in the collection
@@ -175,8 +211,27 @@ public class VariantTableStudyRow {
         return put;
     }
 
-    private String buildColumnKey(Integer sid, String gt) {
-        return sid + "_" + gt;
+    public static String buildColumnKey(Integer sid, String gt) {
+        return new StringBuilder().append(sid).append(COLUMN_KEY_SEPARATOR).append(gt).toString();
     }
+
+    public static int extractStudyId(String columnKey) {
+        return Integer.parseInt(StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0]);
+    }
+
+//    public static Map<Integer, List<byte[]>> extractStudyIds(Collection<byte[]> columnKeys) {
+//        Map<Integer, List<byte[]>> map = new HashMap<>();
+//        for (byte[] columnKey : columnKeys) {
+//            int studyId = extractStudyId(Bytes.toString(columnKey));
+//            if (map.containsKey(studyId)) {
+//                map.get(studyId).add(columnKey);
+//            } else {
+//                ArrayList<byte[]> value = new ArrayList<>();
+//                value.add(columnKey);
+//                map.put(studyId, value);
+//            }
+//        }
+//        return map;
+//    }
 
 }

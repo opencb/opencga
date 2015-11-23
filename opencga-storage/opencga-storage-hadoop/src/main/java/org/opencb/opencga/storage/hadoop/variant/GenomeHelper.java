@@ -86,7 +86,7 @@ public class GenomeHelper {
         return log;
     }
     
-    private Configuration getConf() {
+    public Configuration getConf() {
         return conf;
     }
 
@@ -222,7 +222,7 @@ public class GenomeHelper {
     public byte[] generateBlockIdAsBytes(String chrom, long start) {
         return Bytes.toBytes(generateBlockId(chrom, start));
     }
-    
+
     public String generateRowPositionKey(String chrom, long position){
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());

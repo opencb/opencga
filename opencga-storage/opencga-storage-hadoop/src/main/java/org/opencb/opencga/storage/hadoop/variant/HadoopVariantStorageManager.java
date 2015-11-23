@@ -197,11 +197,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         if (loadVar) {
             // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
             Class execClass = VariantTableDriver.class;
-            String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
-                    + " " + variantsTable.getHostAndPort()
-                    + " " + archiveTable.getTable()
-                    + " " + variantsTable.getTable()
-                    + " " + options.getString(VariantStorageManager.Options.FILE_ID.key());
+            String args = VariantTableDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable.getTable(),
+                    variantsTable.getTable(), options.getInt(Options.STUDY_ID.key()), options.getInt(Options.FILE_ID.key()));
+            String commandLine = hadoopRoute + " jar " + jar + ' ' + execClass.getName() + ' ' + args;
 
             logger.debug("------------------------------------------------------");
             logger.debug(commandLine);

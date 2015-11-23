@@ -79,7 +79,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         }
         HBaseManager.HBaseTableFunction<Result> resultHBaseTableFunction = table -> table.get(get);
         Result result = hBaseManager.act(connection, tableName, resultHBaseTableFunction);
-
+        logger.debug("Get VcfMeta from : {}", fileIds);
         if (result.isEmpty()) {
             return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 0, 0, "", "",
                     Collections.emptyList());
@@ -87,6 +87,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
             List<VcfMeta> metas = new ArrayList<>(result.size());
             for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
                 VariantSource variantSource = objectMapper.readValue(entry.getValue(), VariantSource.class);
+                logger.debug("Got VcfMeta from : {}, [{}]", variantSource.getFileName(), variantSource.getFileId());
                 VcfMeta vcfMeta = new VcfMeta(variantSource);
                 metas.add(vcfMeta);
             }
