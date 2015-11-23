@@ -158,7 +158,7 @@ public class VariantVcfExporter {
                     writer.add(variantContext);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
                 failedVariants++;
             }
         }
@@ -259,6 +259,7 @@ public class VariantVcfExporter {
 //            }
 //        }
 
+
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
         Integer originalPosition = null;
@@ -306,14 +307,21 @@ public class VariantVcfExporter {
 
         List<String> ids = variant.getIds();
 
+        if (originalAlleles == null) {
+            originalAlleles = allelesArray;
+        }
 
         variantContextBuilder.start(originalPosition == null ? start : originalPosition)
-                .stop((originalPosition == null ? start : originalPosition) + (originalAlleles == null ? allelesArray : originalAlleles).get(0).length() - 1)
+                .stop((originalPosition == null ? start : originalPosition) + originalAlleles.get(0).length() - 1)
                 .chr(variant.getChromosome())
-                .alleles(originalAlleles == null ? allelesArray : originalAlleles)
                 .filter(filter)
                 .genotypes(genotypes); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 
+        if (variant.getType().equals(VariantType.NO_VARIATION) && alternate.isEmpty()) {
+            variantContextBuilder.alleles(reference);
+        } else {
+            variantContextBuilder.alleles(originalAlleles);
+        }
         // if asked variant annotations are exported
         if (annotations != null) {
             Map<String, Object> infoAnnotations = getAnnotations(variant, annotations);
