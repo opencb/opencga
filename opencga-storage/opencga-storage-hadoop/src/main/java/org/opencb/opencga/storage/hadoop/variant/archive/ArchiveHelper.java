@@ -157,7 +157,15 @@ public class ArchiveHelper extends GenomeHelper {
         }
 
         // Sort records
-        Collections.sort(vcfRecordLst, getVcfComparator());
+        try{
+            Collections.sort(vcfRecordLst, getVcfComparator());
+        } catch (IllegalArgumentException e){
+            getLog().error("Issue with comparator: ");
+            for(VcfRecord r : vcfRecordLst){
+                getLog().error(r.toString());
+            }
+            throw e;
+        }
 
         // Add all
         sliceBuilder.addAllRecords(vcfRecordLst);
