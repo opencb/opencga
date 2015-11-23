@@ -7,11 +7,12 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Created on 04/11/15
@@ -21,6 +22,8 @@ import java.util.Iterator;
 public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements AutoCloseable {
 
     private final VcfRecordToVariantConverter converter;
+    private long limit;
+    private long count = 0;
     private Iterator<VcfSliceProtos.VcfRecord> vcfRecordIterator = Collections.emptyIterator();
     private VcfSliceProtos.VcfSlice vcfSlice;
     private final Iterator<Result> iterator;
@@ -28,12 +31,13 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private final byte[] fileIdBytes;
     private ResultScanner resultScanner;
 
-    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper) {
+    public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
         this.fileIdBytes = archiveHelper.getColumn();
         converter = new VcfRecordToVariantConverter(archiveHelper.getMeta());
+        setLimit(options.getLong("limit"));
     }
 
     public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, byte[] columnFamily, byte[] fileIdBytes, VcfMeta meta) {
@@ -46,11 +50,14 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public boolean hasNext() {
-        return vcfRecordIterator.hasNext() || iterator.hasNext();
+        return count < limit && (vcfRecordIterator.hasNext() || iterator.hasNext());
     }
 
     @Override
     public Variant next() {
+        if (!hasNext()) {
+            throw new NoSuchElementException("Limit reached");
+        }
         if (!vcfRecordIterator.hasNext()) {
             Result result = iterator.next();
             byte[] rid = result.getRow();
@@ -67,6 +74,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
         Variant variant = null;
         try {
+            count++;
             variant = converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
         } catch (IllegalArgumentException e ){
             e.printStackTrace(System.err);
@@ -83,5 +91,10 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     @Override
     public void close() {
         resultScanner.close();
+    }
+
+
+    protected void setLimit(long limit) {
+        this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
     }
 }

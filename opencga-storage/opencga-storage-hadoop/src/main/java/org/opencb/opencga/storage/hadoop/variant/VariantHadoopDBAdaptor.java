@@ -319,7 +319,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 ArchiveHelper archiveHelper = getArchiveHelper(studyId, fileId);
                 Table table = con.getTable(TableName.valueOf(tableName));
                 ResultScanner resScan = table.getScanner(scan);
-                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper);
+                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
