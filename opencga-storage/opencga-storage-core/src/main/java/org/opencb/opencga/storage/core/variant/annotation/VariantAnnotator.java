@@ -16,41 +16,28 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Created by jacobo on 9/01/15.
  */
-public interface VariantAnnotator {
+public abstract class VariantAnnotator {
+
+    public VariantAnnotator(StorageConfiguration configuration, ObjectMap options) throws VariantAnnotatorException {}
 
     /**
-     * Creates a variant annotation file from an specific source based on the content of a Variant DataBase.
+     * Creates variant annotations from a list of variants.
      *
-     * @param variantDBAdaptor      DBAdaptor to the variant db
-     * @param outDir                File outdir.
-     * @param fileName              Generated file name.
-     * @param query                 Query for those variants to annotate.
-     * @param options               Specific options.
-     * @return                      URI of the generated file.
+     * @param variants              Variants to annotate
+     * @return                      VariantAnnotations
      * @throws IOException
      */
-    URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options)
-            throws IOException;
-
-    /**
-     * Loads variant annotations from an specified file into the selected Variant DataBase
-     *
-     * @param variantDBAdaptor      DBAdaptor to the variant db
-     * @param uri                   URI of the annotation file
-     * @param options               Specific options.
-     * @throws IOException
-     */
-    void loadAnnotation(VariantDBAdaptor variantDBAdaptor, URI uri, QueryOptions options) throws IOException;
+    public abstract List<VariantAnnotation> annotate(List<Variant> variants) throws IOException;
 
 }

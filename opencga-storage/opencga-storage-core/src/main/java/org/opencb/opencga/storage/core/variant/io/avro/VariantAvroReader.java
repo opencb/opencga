@@ -1,9 +1,6 @@
 package org.opencb.opencga.storage.core.variant.io.avro;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.specific.SpecificDatumReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -27,47 +24,34 @@ import java.util.zip.GZIPInputStream;
  */
 public class VariantAvroReader implements VariantReader {
 
-    final private File variantsFile;
     final private File metadataFile;
     private VariantSource source;
-    private DatumReader<VariantAvro> datumReader;
-    private DataFileReader<VariantAvro> dataFileReader;
     private LinkedHashMap<String, Integer> samplesPosition;
+    private final AvroDataReader<VariantAvro> avroDataReader;
 
     public VariantAvroReader(File variantsFile, File metadataFile, VariantSource source) {
-        this.variantsFile = variantsFile;
         this.metadataFile = metadataFile;
         this.source = source;
+        avroDataReader = new AvroDataReader<>(variantsFile, VariantAvro.class);
     }
 
     @Override
     public boolean open() {
-        datumReader = new SpecificDatumReader<>(VariantAvro.class);
-        try {
-            dataFileReader = new DataFileReader<>(variantsFile, datumReader);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return true;
+        return avroDataReader.open();
     }
 
     @Override
     public boolean close() {
-        try {
-            dataFileReader.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return true;
+        return avroDataReader.close();
     }
 
     @Override
     public boolean pre() {
-        try(InputStream inputStream = metadataFile.toString().endsWith("gz")
+        try (InputStream inputStream = metadataFile.toString().endsWith("gz")
                 ? new GZIPInputStream(new FileInputStream(metadataFile))
                 : metadataFile.toString().endsWith("snappy")
-                    ? new SnappyInputStream(new FileInputStream(metadataFile))
-                    : new FileInputStream(metadataFile)) {
+                ? new SnappyInputStream(new FileInputStream(metadataFile))
+                : new FileInputStream(metadataFile)) {
             ObjectMapper jsonObjectMapper = new ObjectMapper();
 
             // Read global JSON file and copy its info into the already available VariantSource object
@@ -95,19 +79,20 @@ public class VariantAvroReader implements VariantReader {
         for (int i = 0; i < samples.length; i++) {
             this.samplesPosition.put(samples[i], i);
         }
-        return true;
+        return avroDataReader.pre();
     }
 
     @Override
     public boolean post() {
-        return true;
+        return avroDataReader.post();
     }
 
     @Override
     public List<Variant> read(int batchSize) {
         List<Variant> batch = new ArrayList<>(batchSize);
-        for (int i = 0; i < batchSize && dataFileReader.hasNext(); i++) {
-            Variant variant = new Variant(dataFileReader.next());
+        List<VariantAvro> read = avroDataReader.read(batchSize);
+        for (VariantAvro variantAvro : read) {
+            Variant variant = new Variant(variantAvro);
             if (!variant.getStudies().isEmpty()) {
                 variant.getStudies().get(0).setSamplesPosition(samplesPosition);
             }

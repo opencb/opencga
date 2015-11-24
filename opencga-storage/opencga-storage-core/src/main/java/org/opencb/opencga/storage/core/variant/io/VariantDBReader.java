@@ -43,6 +43,10 @@ public class VariantDBReader implements VariantReader {
     private VariantDBIterator iterator;
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
+    public VariantDBReader(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
+        this(null, variantDBAdaptor, query, options);
+    }
+
     public VariantDBReader(StudyConfiguration studyConfiguration, VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
         this.studyConfiguration = studyConfiguration;
         this.variantDBAdaptor = variantDBAdaptor;
@@ -55,7 +59,7 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public List<String> getSampleNames() {
-        return new LinkedList<>(studyConfiguration.getSampleIds().keySet());
+        return studyConfiguration != null ? new LinkedList<>(studyConfiguration.getSampleIds().keySet()) : null;
     }
 
     @Override
@@ -72,31 +76,12 @@ public class VariantDBReader implements VariantReader {
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference", "sourceEntries");
-        iteratorQueryOptions.add("include", include);   // add() does not overwrite in case a "include" was already specified
+        iteratorQueryOptions.putIfAbsent("include", include);   // add() does not overwrite in case a "include" was already specified
 
         iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
         return iterator != null;
     }
 
-    @Override
-    public boolean close() {
-        return false;
-    }
-
-    @Override
-    public boolean pre() {
-        return false;
-    }
-
-    @Override
-    public boolean post() {
-        return false;
-    }
-
-    @Override
-    public List<Variant> read() {
-        return read(1);
-    }
 
     @Override
     public List<Variant> read(int batchSize) {

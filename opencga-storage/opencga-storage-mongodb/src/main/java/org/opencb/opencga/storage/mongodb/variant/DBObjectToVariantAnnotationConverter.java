@@ -255,7 +255,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
         ProteinVariantAnnotation proteinVariantAnnotation = new ProteinVariantAnnotation(null, null, aaPosition,
                 aaReference, aaAlternate, null, null, proteinSubstitutionScores, null, null);
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, cDnaPosition,
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, Arrays.asList(), cDnaPosition,
                 cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
