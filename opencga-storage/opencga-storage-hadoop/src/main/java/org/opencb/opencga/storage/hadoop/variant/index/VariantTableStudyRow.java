@@ -208,9 +208,11 @@ public class VariantTableStudyRow {
             byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));
             
             List<Integer> value = new ArrayList<Integer>(entry.getValue());
-            Collections.sort(value);
-            byte[] protValue = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
-            put.addColumn(cf, column, protValue);
+            if(!value.isEmpty()) {
+                Collections.sort(value);
+                byte[] protValue = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
+                put.addColumn(cf, column, protValue);
+            }
         }
         return put;
     }
