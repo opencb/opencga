@@ -7,6 +7,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -17,8 +19,9 @@ import java.util.NoSuchElementException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHBaseIterator extends VariantDBIterator implements AutoCloseable {
+public class VariantHBaseIterator extends VariantDBIterator {
 
+    private final Logger logger = LoggerFactory.getLogger(VariantHBaseIterator.class);
     private final ResultScanner resultScanner;
     private final GenomeHelper genomeHelper;
     private final Iterator<Result> iterator;
@@ -54,11 +57,13 @@ public class VariantHBaseIterator extends VariantDBIterator implements AutoClose
             throw new NoSuchElementException("Limit reached");
         }
         count++;
-        return converter.convert(iterator.next());
+        Result next = fetch(iterator::next);
+        return convert(() -> converter.convert(next));
     }
 
     @Override
     public void close() {
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 100000.0, getTimeConverting() / 1000000.0);
         resultScanner.close();
     }
 

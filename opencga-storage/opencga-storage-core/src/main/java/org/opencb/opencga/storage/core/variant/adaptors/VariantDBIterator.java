@@ -23,7 +23,7 @@ import java.util.Iterator;
 /**
  * Created by jacobo on 9/01/15.
  */
-public abstract class VariantDBIterator implements Iterator<Variant> {
+public abstract class VariantDBIterator implements Iterator<Variant> , AutoCloseable {
     protected long timeFetching = 0;
     protected long timeConverting = 0;
 
@@ -42,4 +42,27 @@ public abstract class VariantDBIterator implements Iterator<Variant> {
     public void setTimeConverting(long timeConverting) {
         this.timeConverting = timeConverting;
     }
+
+    protected interface TimeFunction <R, E extends Exception> {
+        R call() throws E;
+    }
+
+    protected <R, E extends Exception> R convert(TimeFunction<R, E> converter) throws E {
+        long start = System.nanoTime();
+        try {
+            return converter.call();
+        } finally {
+            timeConverting += System.nanoTime() - start;
+        }
+    }
+
+    protected <R, E extends Exception> R fetch(TimeFunction<R, E> fetcher) throws E {
+        long start = System.nanoTime();
+        try {
+            return fetcher.call();
+        } finally {
+            timeFetching += System.nanoTime() - start;
+        }
+    }
+
 }

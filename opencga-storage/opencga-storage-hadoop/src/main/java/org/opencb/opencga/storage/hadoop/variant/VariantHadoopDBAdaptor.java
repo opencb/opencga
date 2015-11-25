@@ -42,10 +42,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
     private final Connection con;
-    // FIXME: Pooling or caching this object is not recommended.
-    // Should create for each query and close it at the end.
-    @Deprecated
-    private final Table table;
     private final String variantTable;
     private StudyConfigurationManager studyConfigurationManager;
     private final Configuration configuration;
@@ -60,7 +56,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         con = ConnectionFactory.createConnection(conf);
         variantTable = credentials.getTable();
-        this.table = con.getTable(TableName.valueOf(variantTable));
         studyConfigurationManager = new HBaseStudyConfigurationManager(credentials, conf, configuration.getVariant().getOptions());
     }
 
@@ -113,98 +108,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    @Deprecated
-    public QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
-        long start = System.currentTimeMillis();
-        QueryResult<Variant> queryResult = new QueryResult<>(
-                String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
-        List<Variant> results = new LinkedList<>();
-        Scan scan = new Scan();
-
-        scan.addFamily(genomeHelper.getColumnFamily());
-        scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), Long.valueOf(region.getStart())));
-        scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), Long.valueOf(region.getEnd())));
-
-        try {
-            ResultScanner resScan = table.getScanner(scan);
-            Iterator<Result> iter = resScan.iterator();
-            while(iter.hasNext()){
-                Result result = iter.next();
-                byte[] rid = result.getRow();
-                Variant var = buildVariantFromRowId(rid);
-                results.add(var);
-            }
-
-            long end = System.currentTimeMillis();
-            Long time = end-start;
-            queryResult.setResult(results);
-            queryResult.setNumResults(results.size());
-            queryResult.setDbTime(time.intValue());
-
-        } catch (IOException e) {
-            String msg = String.format("Problems with query: %s", e);
-            getLog().error(msg,e);
-            queryResult.setErrorMsg(msg);
-        }
-        return queryResult;
-    }
-
-    public static Variant buildVariantFromRowId(byte[] rid) {
-        String rowString = Bytes.toString(rid);
-
-        String[] arr = StringUtils.split(rowString, HBaseUtils.ROWKEY_SEPARATOR);
-
-        String chr = arr[0];
-        int start = Long.valueOf(arr[1]).intValue();
-        String ref = arr[2];
-        String alt = arr.length > 3?arr[3]:null;
-
-        int end = start+ref.length();
-        end+=1; // 0 based adjustment TODO check if this is correct
-
-        Variant var = new Variant(
-                chr,start,end,ref,alt
-        );
-        return var;
-    }
-
-    @Deprecated
-	@Override
-    public List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
-        List<QueryResult<Variant>> allResults;
-        if (options == null) {
-            options = new QueryOptions();
-        }
-        
-        // If the users asks to sort the results, do it by chromosome and start
-        if (options.getBoolean("sort", false)) {
-            // TODO Add sort option
-        }
-        
-        // If the user asks to merge the results, run only one query,
-        // otherwise delegate in the method to query regions one by one
-        if (options.getBoolean("merge", false)) {
-            options.add(VariantQueryParams.REGION.key(), regionList);
-            allResults = Collections.singletonList(getAllVariants(options));
-        } else {
-            allResults = new ArrayList<>(regionList.size());
-            for (Region r : regionList) {
-                QueryResult queryResult = getAllVariantsByRegion(r, options);
-                queryResult.setId(r.toString());
-                allResults.add(queryResult);
-            }
-        }
-        return allResults;
-    }
-
-
-    @Override
     public boolean close() {
-        try {
-            table.close();
-        } catch (IOException e) {
-            getLog().error("Problems closing Table", e);
-        }
         try {
             if(!con.isClosed()){
                 con.close();
@@ -302,8 +206,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             int fileId = query.getInt(VariantQueryParams.FILES.key());
             Scan scan = new Scan();
             scan.addFamily(genomeHelper.getColumnFamily());
-            scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+            addRegionFilter(scan, region);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = ArchiveHelper.getTableName(studyId);
 
@@ -416,54 +319,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> getAllVariants(QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public QueryResult<Variant> getVariantById(String id, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public QueryResult groupBy(String field, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public VariantDBIterator iterator(QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
     public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
             QueryOptions queryOptions) {
         // TODO Auto-generated method stub
@@ -475,6 +330,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             QueryOptions queryOptions) {
         // TODO Auto-generated method stub
         return null;
+    }
+
+
+    ////// Util methods:
+
+    public void addRegionFilter(Scan scan, Region region) {
+        scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+        scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
     }
 
 

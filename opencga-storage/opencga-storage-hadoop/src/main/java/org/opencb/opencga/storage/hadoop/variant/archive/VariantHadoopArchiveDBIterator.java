@@ -9,10 +9,13 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.Callable;
 
 /**
  * Created on 04/11/15
@@ -21,6 +24,7 @@ import java.util.NoSuchElementException;
  */
 public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements AutoCloseable {
 
+    private final Logger logger = LoggerFactory.getLogger(VariantHadoopArchiveDBIterator.class);
     private final VcfRecordToVariantConverter converter;
     private long limit;
     private long count = 0;
@@ -59,11 +63,11 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             throw new NoSuchElementException("Limit reached");
         }
         if (!vcfRecordIterator.hasNext()) {
-            Result result = iterator.next();
+            Result result = fetch(iterator::next);
             byte[] rid = result.getRow();
             try {
                 byte[] value = result.getValue(columnFamily, fileIdBytes);
-                vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
+                vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
                 vcfRecordIterator = vcfSlice.getRecordsList().iterator();
 
             } catch (InvalidProtocolBufferException e) {
@@ -75,7 +79,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         Variant variant = null;
         try {
             count++;
-            variant = converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition());
+            variant = convert(() -> converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition()));
         } catch (IllegalArgumentException e ){
             e.printStackTrace(System.err);
             System.err.println("vcfSlice.getPosition() = " + vcfSlice.getPosition());
@@ -90,11 +94,12 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public void close() {
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultScanner.close();
     }
-
 
     protected void setLimit(long limit) {
         this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
     }
+
 }
