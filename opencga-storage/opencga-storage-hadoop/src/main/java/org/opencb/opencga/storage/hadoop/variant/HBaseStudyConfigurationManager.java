@@ -69,7 +69,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         long startTime = System.currentTimeMillis();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
-        logger.info("Get StudyConfiguration {}", studyName);
+        logger.info("Get StudyConfiguration {} from DB {}", studyName, tableName);
         Get get = new Get(STUDIES_ROW);
         byte[] columnQualifier = Bytes.toBytes(studyName);
         get.addColumn(columnFamily, columnQualifier);
