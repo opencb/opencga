@@ -63,6 +63,8 @@ public class JobManager extends AbstractManager implements IJobManager {
                     params.getString("name"),
                     params.getString("toolName"),
                     params.getString("description"),
+                    params.getString("execution"),
+                    Collections.emptyMap(),
                     params.getString("commandLine"),
                     params.containsKey("tmpOutDirUri")? new URI(null, params.getString("tmpOutDirUri"), null) : null,
                     params.getInt("outDirId"),
@@ -82,7 +84,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
+    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
                                    URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles,
                                    Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
                                    Job.Status status, long startTime, long endTime, QueryOptions options, String sessionId)
@@ -120,6 +122,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         job.setStatus(status);
         job.setStartTime(startTime);
         job.setEndTime(endTime);
+        job.setParams(params);
+        job.setExecution(executor);
 
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
