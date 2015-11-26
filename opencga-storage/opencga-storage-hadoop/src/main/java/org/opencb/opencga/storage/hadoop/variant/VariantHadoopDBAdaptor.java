@@ -15,25 +15,27 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.function.Consumer;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -191,10 +193,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        Region region = Region.parseRegion(query.getString(VariantQueryParams.REGION.key()));
+        Region region = Region.parseRegion(query.getString(REGION.key()));
 
-        if (query.containsKey(VariantQueryParams.FILES.key())) {
-            String study = query.getString(VariantQueryParams.STUDIES.key());
+        if (query.containsKey(FILES.key())) {
+            String study = query.getString(STUDIES.key());
             StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
             int studyId;
             if (StringUtils.isNumeric(study)) {
@@ -203,10 +205,21 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 studyId = studyConfiguration.getStudyId();
             }
 
-            int fileId = query.getInt(VariantQueryParams.FILES.key());
+            int fileId = query.getInt(FILES.key());
+            if (!studyConfiguration.getFileIds().containsValue(fileId)) {
+                return VariantDBIterator.emptyIterator();
+            }
+
+            LinkedHashSet<Integer> samlpeIds = studyConfiguration.getSamplesInFiles().get(fileId);
+            List<String> returnedSamples = new ArrayList<>(samlpeIds.size());
+            for (Integer sampleId : samlpeIds) {
+                returnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
+            }
+            query.put(RETURNED_SAMPLES.key(), returnedSamples);
+
             Scan scan = new Scan();
-            scan.addFamily(genomeHelper.getColumnFamily());
-            addRegionFilter(scan, region);
+            scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
+            addArchiveRegionFilter(scan, region);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = ArchiveHelper.getTableName(studyId);
 
@@ -230,8 +243,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             Scan scan = new Scan();
             scan.addFamily(genomeHelper.getColumnFamily());
-            scan.setStartRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getStart())));
-            scan.setStopRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getEnd())));
+            addRegionFilter(scan, region);
             scan.setMaxResultSize(options.getInt("limit"));
 
             logger.debug("Creating {} iterator", VariantHBaseIterator.class);
@@ -335,9 +347,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     ////// Util methods:
 
-    public void addRegionFilter(Scan scan, Region region) {
+    public void addArchiveRegionFilter(Scan scan, Region region) {
         scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
         scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+    }
+
+    public void addRegionFilter(Scan scan, Region region) {
+        scan.setStartRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getStart())));
+        scan.setStopRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getEnd())));
     }
 
 

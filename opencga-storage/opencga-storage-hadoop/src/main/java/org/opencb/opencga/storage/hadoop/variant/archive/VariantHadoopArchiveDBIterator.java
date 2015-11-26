@@ -69,7 +69,6 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
                 byte[] value = result.getValue(columnFamily, fileIdBytes);
                 vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
                 vcfRecordIterator = vcfSlice.getRecordsList().iterator();
-
             } catch (InvalidProtocolBufferException e) {
                 throw new RuntimeException(e);
             }
@@ -80,7 +79,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         try {
             count++;
             variant = convert(() -> converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition()));
-        } catch (IllegalArgumentException e ){
+        } catch (IllegalArgumentException e) {
             e.printStackTrace(System.err);
             System.err.println("vcfSlice.getPosition() = " + vcfSlice.getPosition());
             System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());

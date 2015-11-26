@@ -18,12 +18,15 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.variant.Variant;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Created by jacobo on 9/01/15.
  */
 public abstract class VariantDBIterator implements Iterator<Variant> , AutoCloseable {
+    public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
     protected long timeFetching = 0;
     protected long timeConverting = 0;
 
@@ -63,6 +66,15 @@ public abstract class VariantDBIterator implements Iterator<Variant> , AutoClose
         } finally {
             timeFetching += System.nanoTime() - start;
         }
+    }
+
+    public static VariantDBIterator emptyIterator() { return EMPTY_ITERATOR; }
+
+    static class EmptyVariantDBIterator extends VariantDBIterator {
+        EmptyVariantDBIterator() { }
+        @Override public boolean hasNext() { return false; }
+        @Override public Variant next() { throw new NoSuchElementException("Empty iterator"); }
+        @Override public void close() { }
     }
 
 }
