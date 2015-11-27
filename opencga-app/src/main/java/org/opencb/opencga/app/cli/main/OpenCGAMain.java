@@ -33,6 +33,8 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.beans.Execution;
+import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -932,6 +934,59 @@ public class OpenCGAMain {
                         }
                         break;
                     }
+                    case "run": {
+                        OptionsParser.JobsCommands.RunJobCommand c = optionsParser.getJobsCommands().runJobCommand;
+
+                        int studyId = catalogManager.getStudyId(c.studyId);
+                        int outdirId = catalogManager.getFileId(c.outdir);
+                        int toolId = catalogManager.getToolId(c.toolId);
+                        String toolName;
+                        AnalysisJobExecutor analysisJobExecutor;
+                        if (toolId < 0) {
+                            analysisJobExecutor = new AnalysisJobExecutor(c.toolId, c.execution);    //LEGACY MODE, AVOID USING
+                            toolName = c.toolId;
+                        } else {
+                            Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+                            analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), c.execution);
+                            toolName = tool.getName();
+                        }
+
+
+                        List<Integer> inputFiles = new LinkedList<>();
+                        Map<String, List<String>> localParams = new HashMap<>();
+
+                        for (String key : c.params.keySet()) {
+                            localParams.put(key, c.params.getAsStringList(key));
+                        }
+
+
+                        Execution ex = analysisJobExecutor.getExecution();
+                        // Set input param
+                        for (InputParam inputParam : ex.getInputParams()) {
+                            if (c.params.containsKey(inputParam.getName())) {
+                                List<String> filePaths = new LinkedList<>();
+                                for (String fileId : c.params.getAsStringList(inputParam.getName())) {
+                                    File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
+                                    filePaths.add(catalogManager.getFileUri(file).getPath());
+                                    inputFiles.add(file.getId());
+                                }
+                                localParams.put(inputParam.getName(), filePaths);
+                            }
+                        }
+
+                        // Set outdir
+                        String outputParam = analysisJobExecutor.getExecution().getOutputParam();
+                        File outdir = catalogManager.getFile(outdirId, sessionId).first();
+                        localParams.put(outputParam, Collections.singletonList(catalogManager.getFileUri(outdir).getPath()));
+
+
+                        QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId,
+                                c.name, c.description, outdir, inputFiles, sessionId, true);
+
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;
@@ -956,8 +1011,19 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
-                        System.out.println(createOutput(c.cOpt, tool, null));
+                        int toolId = catalogManager.getToolId(c.id);
+                        AnalysisJobExecutor analysisJobExecutor;
+                        String toolName;
+                        if (toolId < 0) {
+                            analysisJobExecutor = new AnalysisJobExecutor(c.id, null);    //LEGACY MODE, AVOID USING
+                            toolName = c.id;
+                            System.out.println(createOutput(c.cOpt, analysisJobExecutor.getAnalysis(), null));
+                        } else {
+                            Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+                            analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), null);
+                            toolName = tool.getName();
+                            System.out.println(createOutput(c.cOpt, tool, null));
+                        }
                         break;
                     }
                     default: {

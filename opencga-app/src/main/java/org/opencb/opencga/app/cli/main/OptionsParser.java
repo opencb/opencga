@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -941,6 +942,7 @@ public class OptionsParser {
         final InfoCommand infoCommand;
         final DoneJobCommand doneJobCommand;
         final StatusCommand statusCommand;
+        final RunJobCommand runJobCommand;
 
         public JobsCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -948,6 +950,7 @@ public class OptionsParser {
             tools.addCommand(this.infoCommand = new InfoCommand());
             tools.addCommand(this.doneJobCommand = new DoneJobCommand());
             tools.addCommand(this.statusCommand = new StatusCommand());
+            tools.addCommand(this.runJobCommand = new RunJobCommand());
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
@@ -993,6 +996,38 @@ public class OptionsParser {
 
             @Parameter(names = {"--study-id"}, description = "Study id", required = false, arity = 1)
             String studyId;
+        }
+
+        @Parameters(commandNames = {"run"}, commandDescription = "Executes a job.")
+        class RunJobCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-t", "--tool-id"}, description = "", required = true, arity = 1)
+            String toolId;
+
+            @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
+            String studyId;
+
+            @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
+            String outdir;
+
+            @Parameter(names = {"-e", "--execution"}, description = "", required = false, arity = 1)
+            String execution;
+
+            @Parameter(names = {"-n", "--name"}, description = "", required = true, arity = 1)
+            String name;
+
+            @Parameter(names = {"-d", "--description"}, description = "", required = false, arity = 1)
+            String description;
+
+            @DynamicParameter(names = "-P", description = "Parameters", hidden = false)
+            ObjectMap params = new ObjectMap();
+
         }
     }
 
