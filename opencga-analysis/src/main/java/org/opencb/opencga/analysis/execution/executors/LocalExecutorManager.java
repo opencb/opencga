@@ -3,7 +3,9 @@ package org.opencb.opencga.analysis.execution.executors;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.plugins.PluginExecutor;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Objects;
 
 /**
  * Created on 26/11/15
@@ -33,7 +36,26 @@ public class LocalExecutorManager implements ExecutorManager {
     }
 
     @Override
-    public QueryResult<Job> run(Job job) throws CatalogException {
+    public QueryResult<Job> run(Job job) throws CatalogException, AnalysisExecutionException {
+        if (isPlugin(job)) {
+            return runPlugin(job);
+        } else {
+            return runThreadLocal(job);
+        }
+    }
+
+    public boolean isPlugin(Job job) {
+        return Boolean.parseBoolean(Objects.toString(job.getAttributes().get("plugin")));
+    }
+
+    /**
+     * Executes a job using a {@link Command}
+     *
+     * @param job       Job to execute
+     * @return          Modified job
+     * @throws CatalogException
+     */
+    private QueryResult<Job> runThreadLocal(Job job) throws CatalogException {
         Command com = new Command(job.getCommandLine());
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
         URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
@@ -47,7 +69,7 @@ public class LocalExecutorManager implements ExecutorManager {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
                 com.setStatus(RunnableProcess.Status.KILLED);
                 com.setExitValue(-2);
-                postExecuteLocal(job, com);
+                postExecuteCommand(job, com, Job.ERRNO_ABORTED);
             } catch (CatalogException e) {
                 e.printStackTrace();
             }
@@ -68,11 +90,112 @@ public class LocalExecutorManager implements ExecutorManager {
         logger.info("Finished job {}({})", job.getName(), job.getId());
         logger.info("==========================================");
 
-        return postExecuteLocal(job, com);
+        return postExecuteCommand(job, com, null);
     }
 
-    private QueryResult<Job> postExecuteLocal(Job job, Command com)
+    /**
+     * Executes a job using the {@link PluginExecutor}
+     *
+     * @param job       Job to be executed
+     * @return          Modified job
+     * @throws AnalysisExecutionException
+     * @throws CatalogException
+     */
+    private QueryResult<Job> runPlugin(Job job) throws AnalysisExecutionException, CatalogException {
+
+        PluginExecutor pluginExecutor = new PluginExecutor(catalogManager, sessionId);
+        final ObjectMap executionInfo = new ObjectMap();
+
+        final int jobId = job.getId();
+        Thread hook = new Thread(() -> {
+            try {
+                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                postExecuteLocal(job, 2, executionInfo, Job.ERRNO_ABORTED);
+            } catch (CatalogException e) {
+                e.printStackTrace();
+            }
+        });
+
+        logger.info("==========================================");
+        logger.info("Executing job {}({})", job.getName(), job.getId());
+        logger.debug("Executing commandLine {}", job.getCommandLine());
+        logger.info("==========================================");
+        System.err.println();
+
+        int exitValue;
+        Runtime.getRuntime().addShutdownHook(hook);
+        try {
+            exitValue = pluginExecutor.run(job);
+        } catch (Exception e) {
+            exitValue = 1;
+            e.printStackTrace();
+            executionInfo.put("exception", e);
+        }
+        Runtime.getRuntime().removeShutdownHook(hook);
+
+        System.err.println();
+        logger.info("==========================================");
+        logger.info("Finished job {}({})", job.getName(), job.getId());
+        logger.info("==========================================");
+
+        return postExecuteLocal(job, exitValue, executionInfo, null);
+    }
+
+    /**
+     * Closes command output and executes {@link LocalExecutorManager#postExecuteLocal(Job, int, Object, String)}
+     */
+    private QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError)
             throws CatalogException {
+        closeOutputStreams(com);
+        return postExecuteLocal(job, com.getExitValue(), com, errnoFinishError);
+    }
+
+    /**
+     * Changes the job status and record output files in catalog.
+     *
+     *
+     * @param job           Job to be post processed
+     * @param exitValue     Exit value. If equals zero and no error is given, the job status will be set to READY.
+     * @param executionInfo Optional execution info
+     * @param error         Optional error. If this parameter not null, the job status will be set as ERROR,
+     *                      even if the exitValue is 0.
+     * @return              QueryResult with the modifier Job
+     * @throws CatalogException
+     */
+    private QueryResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
+            throws CatalogException {
+
+        /** Change status to DONE  - Add the execution information to the job entry **/
+//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
+        ObjectMap parameters = new ObjectMap();
+        if (executionInfo != null) {
+            parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
+        }
+        parameters.put("status", Job.Status.DONE);
+        catalogManager.modifyJob(job.getId(), parameters, sessionId);
+
+        /** Record output **/
+        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+        outputRecorder.recordJobOutputAndPostProcess(job, exitValue != 0);
+
+        /** Change status to READY or ERROR **/
+        if (exitValue == 0 && error == null) {
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+        } else {
+            if (error == null) {
+                error = Job.ERRNO_FINISH_ERROR;
+            }
+            parameters = new ObjectMap();
+            parameters.put("status", Job.Status.ERROR);
+            parameters.put("error", error);
+            parameters.put("errorDescription", Job.errorDescriptions.get(error));
+            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+        }
+
+        return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
+    }
+
+    private void closeOutputStreams(Command com) {
         /** Close output streams **/
         if (com.getOutputOutputStream() != null) {
             try {
@@ -92,30 +215,6 @@ public class LocalExecutorManager implements ExecutorManager {
             com.setErrorOutputStream(null);
             com.setError(null);
         }
-
-        /** Change status to DONE  - Add the execution information to the job entry **/
-//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
-        ObjectMap parameters = new ObjectMap();
-        parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
-        parameters.put("status", Job.Status.DONE);
-        catalogManager.modifyJob(job.getId(), parameters, sessionId);
-
-        /** Record output **/
-        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutputAndPostProcess(job, com.getExitValue() != 0);
-
-        /** Change status to READY or ERROR **/
-        if (com.getExitValue() == 0) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
-        } else {
-            parameters = new ObjectMap();
-            parameters.put("status", Job.Status.ERROR);
-            parameters.put("error", Job.ERRNO_FINISH_ERROR);
-            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
-        }
-
-        return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
     }
 
 }

@@ -24,6 +24,8 @@ import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
 import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
 import org.opencb.opencga.analysis.execution.executors.SgeExecutorManager;
+import org.opencb.opencga.analysis.execution.plugins.OpenCGAPlugin;
+import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -60,6 +62,7 @@ public class AnalysisJobExecutor {
     protected String sessionId;
     protected Analysis analysis;
     protected Execution execution;
+    protected boolean isPlugin;
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -104,11 +107,22 @@ public class AnalysisJobExecutor {
     private void load() throws IOException, AnalysisExecutionException {
 
         analysisPath = Paths.get(home).resolve(analysisRootPath).resolve(analysisName);
-        manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
-        resultsFile = analysisPath.resolve(Paths.get("results.js"));
 
-        analysis = getAnalysis();
-        execution = getExecution();
+        if (!analysisPath.toFile().exists()) {
+            //Search for a plugin
+            OpenCGAPlugin plugin = PluginFactory.get().getPlugin(analysisName);
+            if (plugin == null) {
+                throw new IllegalArgumentException("Plugin  '" + analysisName + "' does not exist");
+            }
+            analysis = plugin.getManifest();
+            execution = getExecution();
+            isPlugin = true;
+        } else {
+            manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
+            resultsFile = analysisPath.resolve(Paths.get("results.js"));
+            analysis = getAnalysis();
+            execution = getExecution();
+        }
     }
 
     /*
@@ -152,7 +166,7 @@ public class AnalysisJobExecutor {
         String binaryPath = analysisPath.resolve(executable).toString();
 
         // Check required params
-        List<Option> validParams = execution.getValidParams();
+        List<Option> validParams = new LinkedList<>(execution.getValidParams());
         validParams.addAll(analysis.getGlobalParams());
         validParams.add(new Option(execution.getOutputParam(), "Outdir", false));
         if (checkRequiredParams(params, validParams)) {
@@ -219,8 +233,11 @@ public class AnalysisJobExecutor {
                 entry -> entry.getValue().stream().collect(Collectors.joining(",")))
         );
 
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put("plugin", isPlugin); //TODO: Save type of tool in a better way
+
         return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, getExecution().getId(), plainParams, commandLine, execute, false, new HashMap<>(), new HashMap<>());
+                randomString, temporalOutDirUri, getExecution().getId(), plainParams, commandLine, execute, false, attributes, new HashMap<>());
     }
 
     @Deprecated
@@ -263,6 +280,7 @@ public class AnalysisJobExecutor {
         if (resourceManagerAttributes == null) {
             resourceManagerAttributes = new HashMap<>();
         }
+
         if (simulate) { //Simulate a job. Do not create it.
             resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(

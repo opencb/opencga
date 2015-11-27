@@ -132,6 +132,10 @@
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
