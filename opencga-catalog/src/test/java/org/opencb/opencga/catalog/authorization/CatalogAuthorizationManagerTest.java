@@ -15,12 +15,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.StringUtils;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -502,6 +502,42 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(1, catalogManager.getAllIndividuals(s1, null, memberSessionId).getNumResults());
     }
 
+
+
+    /*--------------------------*/
+    // Read Jobs
+    /*--------------------------*/
+
+    @Test
+    public void getAllJobs() throws CatalogException {
+        int studyId = s1;
+        int outDirId = this.data_d1_d2;
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), ownerSessionId);
+        int job1 = catalogManager.createJob(studyId, "job1", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.emptyList(), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job2 = catalogManager.createJob(studyId, "job2", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job3 = catalogManager.createJob(studyId, "job3", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job4 = catalogManager.createJob(studyId, "job4", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3_d4), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+
+        checkGetAllJobs(studyId, Arrays.asList(job1, job2, job3, job4), ownerSessionId);    //Owner can see everything
+        checkGetAllJobs(studyId, Arrays.asList(job1, job2), memberSessionId);               //Can't see inside data_d1_d2_d3
+        checkGetAllJobs(studyId, Arrays.asList(job1, job4), studyAdmin1SessionId);          //Can only see data_d1_d2_d3_d4
+    }
+
+    public void checkGetAllJobs(int studyId, Collection<Integer> expectedJobs, String sessionId) throws CatalogException {
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+
+        assertEquals(expectedJobs.size(), allJobs.getNumResults());
+        allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job.getId())));
+    }
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {

@@ -148,36 +148,38 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         query = ParamUtils.defaultObject(query, QueryOptions::new);
-        query.put("studyId", studyId);
-        QueryResult<Job> queryResult = readAll(query, options, sessionId);
-        authorizationManager.filterJobs(userId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
-
-        return queryResult;
+        //Get studyId from Query and call to readAll
+        int studyId = query.getInt("studyId", -1);
+        return readAll(studyId, query, options, sessionId);
     }
 
     @Override
-    public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkObj(query, "query");
-        options = ParamUtils.defaultObject(options, new QueryOptions());
+        query = ParamUtils.defaultObject(query, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        // If studyId is null, check if there is any on the query
+        // Else, ensure that studyId is in the Query
+        if (studyId < 0) {
+            studyId = query.getInt("studyId", -1);
+        } else {
+            query.put("studyId", studyId);
+        }
         query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (!query.containsKey("studyId")) {
+            if (studyId < 0) {
                 throw new CatalogException("Permission denied. Can't get jobs without specify an StudyId");
             } else {
-                int studyId = query.getInt("studyId");
                 authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
             }
         }
         QueryResult<Job> queryResult = jobDBAdaptor.getAllJobs(query, options);
-        authorizationManager.filterJobs(userId, queryResult.getResult());
+        authorizationManager.filterJobs(userId, queryResult.getResult(), studyId);
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
