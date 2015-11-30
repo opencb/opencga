@@ -21,7 +21,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
+import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -62,8 +63,8 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
-        final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
+        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
         String fileIdStr = options.getString(VariantStorageManager.Options.FILE_ID.key(), null);
         boolean updateStats = options.getBoolean(VariantStorageManager.Options.UPDATE_STATS.key(), false);
         final Integer fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
@@ -210,7 +211,8 @@ public class VariantStorage {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put(Job.TYPE, Job.Type.COHORT_STATS);
         attributes.put("cohortIds", cohortIds);
-        return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
+        JobFactory jobFactory = new JobFactory(catalogManager);
+        return jobFactory.createJob(studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 attributes, new HashMap<>());
@@ -220,8 +222,8 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
-        final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
+        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
         final long start = System.currentTimeMillis();
 
         File outDir = catalogManager.getFile(outDirId, null, sessionId).first();
@@ -271,10 +273,11 @@ public class VariantStorage {
         /** create job **/
         String jobDescription = "Variant annotation";
         String jobName = "annotate-stats";
-        return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
+        JobFactory jobFactory = new JobFactory(catalogManager);
+        return jobFactory.createJob(studyId, jobName,
                 AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+                new HashMap<>(), new HashMap<>());
     }
 
 }

@@ -21,7 +21,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -219,7 +219,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
                 Integer outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
-                queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                queryOptions.put(ToolManager.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult = variantStorage.calculateStats(outdirId, cohortIds, sessionId, queryOptions);
                 return createOkResponse(jobQueryResult);

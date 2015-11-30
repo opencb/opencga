@@ -21,9 +21,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -64,9 +62,9 @@ public class ToolWSServer extends OpenCGAWSServer {
             for (String id : toolIds) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(analysisJobExecutor.getAnalysis());
-                tool.setResult(analysisJobExecutor.getResult());
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                tool.setManifest(toolManager.getAnalysis());
+                tool.setResult(toolManager.getResult());
                 results.add(toolResult);
             }
             return createOkResponse(results);
@@ -85,9 +83,9 @@ public class ToolWSServer extends OpenCGAWSServer {
             catalogManager.getAllTools(queryOptions, sessionId);
             QueryResult<Tool> toolResult = catalogManager.getAllTools(queryOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
-                tool.setManifest(analysisJobExecutor.getAnalysis());
-                tool.setResult(analysisJobExecutor.getResult());
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
+                tool.setManifest(toolManager.getAnalysis());
+                tool.setResult(toolManager.getResult());
             }
             return createOkResponse(toolResult);
         } catch (Exception e) {
@@ -105,8 +103,8 @@ public class ToolWSServer extends OpenCGAWSServer {
             List<String> results = new LinkedList<>();
             for (String id : toolIds) {
                 Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                String help = analysisJobExecutor.help("");
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                String help = toolManager.help("");
                 System.out.println(help);
                 results.add(help);
             }

@@ -10,6 +10,11 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
+ * This class scans all the classpath using the library {@link Reflections} and find all the
+ * implementations of the plugin interface {@link OpenCGAPlugin}.
+ *
+ * Implements singleton pattern. Use {@link #get()} to obtain instance
+ *
  * Created on 27/11/15
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -30,6 +35,9 @@ public class PluginFactory {
         init();
     }
 
+    /**
+     * Initialize the pluginsIdMap. Find all the subtypes of {@link OpenCGAPlugin}
+     */
     private void init() {
         Set<Class<? extends OpenCGAPlugin>> plugins = reflections.getSubTypesOf(OpenCGAPlugin.class);
         List<String> duplicatedPlugins = new LinkedList<>();
@@ -50,6 +58,11 @@ public class PluginFactory {
         duplicatedPlugins.forEach(pluginsIdMap::remove);
     }
 
+    /**
+     * Singleton accessor method
+     *
+     * @return Get the singleton instance of {@link PluginFactory}
+     */
     public static PluginFactory get() {
         if (pluginFactory == null) {
             pluginFactory = new PluginFactory();
@@ -57,10 +70,31 @@ public class PluginFactory {
         return pluginFactory;
     }
 
+    /**
+     * Get all the found plugin classes
+     *
+     * @return  Map between plugin id and plugin class
+     */
+    public Map<String, Class<? extends OpenCGAPlugin>> getAllPlugins() {
+        return Collections.unmodifiableMap(pluginsIdMap);
+    }
+
+    /**
+     * Get the class of a plugin given its id
+     *
+     * @param id    Plugin id
+     * @return      Plugin class
+     */
     public Class<? extends OpenCGAPlugin> getPluginClass(String id) {
         return pluginsIdMap.get(id);
     }
 
+    /**
+     * Get a new instance of a plugin given its id.
+     *
+     * @param id    Plugin id
+     * @return      New instance of the plugin
+     */
     public OpenCGAPlugin getPlugin(String id) {
         try {
             Class<? extends OpenCGAPlugin> pluginClass = getPluginClass(id);
@@ -74,6 +108,5 @@ public class PluginFactory {
             throw new IllegalStateException("Error creating new instance");
         }
     }
-
 
 }

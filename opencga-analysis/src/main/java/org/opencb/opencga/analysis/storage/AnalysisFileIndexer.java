@@ -21,7 +21,8 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
+import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -101,8 +102,8 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
-        final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
+        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
         final long start = System.currentTimeMillis();
         final boolean transform;
         final boolean load;
@@ -301,7 +302,8 @@ public class AnalysisFileIndexer {
                 jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
         }
-        final Job job = AnalysisJobExecutor.createJob(catalogManager, studyIdByOutDirId, jobName,
+        JobFactory jobFactory = new JobFactory(catalogManager);
+        final Job job = jobFactory.createJob(studyIdByOutDirId, jobName,
                 OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 

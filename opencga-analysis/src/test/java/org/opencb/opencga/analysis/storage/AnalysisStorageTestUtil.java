@@ -2,7 +2,8 @@ package org.opencb.opencga.analysis.storage;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -43,7 +44,7 @@ public class AnalysisStorageTestUtil {
 
         InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+        inputStream = new ByteArrayInputStream((ToolManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
@@ -64,7 +65,7 @@ public class AnalysisStorageTestUtil {
         logger.info("==========================================");
 
         storageJob.setCommandLine("echo 'Executing fake CLI :' " + storageJob.getCommandLine());
-        AnalysisJobExecutor.execute(catalogManager, storageJob, sessionId);
+        ExecutorManager.execute(catalogManager, storageJob, sessionId);
         return catalogManager.getJob(storageJob.getId(), null, sessionId).first();
     }
 

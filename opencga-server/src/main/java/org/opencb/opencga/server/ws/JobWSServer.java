@@ -22,9 +22,10 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -138,22 +139,23 @@ public class JobWSServer extends OpenCGAWSServer {
         QueryResult<Job> jobResult;
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            AnalysisJobExecutor analysisJobExecutor;
+            ToolManager toolManager;
+            JobFactory jobFactory = new JobFactory(catalogManager);
             String toolName;
             int toolId = catalogManager.getToolId(toolIdStr);
             if (toolId < 0) {
-                analysisJobExecutor = new AnalysisJobExecutor(toolIdStr, execution);    //LEGACY MODE, AVOID USING
+                toolManager = new ToolManager(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
             } else {
                 Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 toolName = tool.getName();
             }
 
             List<Integer> inputFiles = new LinkedList<>();
             Map<String, List<String>> localParams = new HashMap<>(params);
 
-            Execution ex = analysisJobExecutor.getExecution();
+            Execution ex = toolManager.getExecution();
             // Set input param
             for (InputParam inputParam : ex.getInputParams()) {
                 if (params.containsKey(inputParam.getName())) {
@@ -163,7 +165,7 @@ public class JobWSServer extends OpenCGAWSServer {
                         for (String fileId : files.split(",")) {
                             if (fileId.startsWith("example_")) { // is a example
                                 fileId = fileId.replace("example_", "");
-                                filePaths.add(analysisJobExecutor.getExamplePath(fileId));
+                                filePaths.add(toolManager.getExamplePath(fileId));
                             } else {
                                 File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
                                 filePaths.add(catalogManager.getFileUri(file).getPath());
@@ -184,7 +186,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
-            String outputParam = analysisJobExecutor.getExecution().getOutputParam();
+            String outputParam = toolManager.getExecution().getOutputParam();
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }
@@ -231,30 +233,8 @@ public class JobWSServer extends OpenCGAWSServer {
             }
 
 
-            // Create temporal Outdir
-//            String randomString = StringUtils.randomString(10);
-//            URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-//            localParams.put(outputParam, Arrays.asList(temporalOutDirUri.getPath()));
-//
-//            // Create commandLine
-//            String commandLine = analysisJobExecuter.createCommandLine(localParams);
-//            System.out.println(commandLine);
-//
-//            // Create job in CatalogManager
-//            Map<String, Object> resourceManagerAttributes = new HashMap<>();
-//            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-//
-//            jobResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-//                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
-//            Job job = jobResult.getResult().get(0);
-
-            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(
-                    localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
-
-            // Execute job
-//            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
-//            AnalysisJobExecutor.execute(jobQueryResult.getResult().get(0));
-            //Job will be executed by the Daemon. status: PREPARED
+            QueryResult<Job> jobQueryResult = jobFactory.createJob(toolManager, localParams, studyId, name,
+                    description, jobOutDir, inputFiles, sessionId);
 
             return createOkResponse(jobQueryResult);
 

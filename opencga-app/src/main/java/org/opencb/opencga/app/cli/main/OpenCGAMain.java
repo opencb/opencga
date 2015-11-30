@@ -31,10 +31,11 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -437,7 +438,7 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
 
-                        queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
+                        queryOptions.put(ToolManager.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
@@ -641,12 +642,12 @@ public class OpenCGAMain {
                         String sid = sessionId;
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                            queryOptions.put(ToolManager.EXECUTE, false);
                             if (c.up.sessionId == null || c.up.sessionId.isEmpty()) {
                                 sid = login(c.up);
                             }
                         } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                            queryOptions.add(ToolManager.EXECUTE, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -813,9 +814,9 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                            queryOptions.put(ToolManager.EXECUTE, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                            queryOptions.add(ToolManager.EXECUTE, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
@@ -941,13 +942,13 @@ public class OpenCGAMain {
                         int outdirId = catalogManager.getFileId(c.outdir);
                         int toolId = catalogManager.getToolId(c.toolId);
                         String toolName;
-                        AnalysisJobExecutor analysisJobExecutor;
+                        ToolManager toolManager;
                         if (toolId < 0) {
-                            analysisJobExecutor = new AnalysisJobExecutor(c.toolId, c.execution);    //LEGACY MODE, AVOID USING
+                            toolManager = new ToolManager(c.toolId, c.execution);    //LEGACY MODE, AVOID USING
                             toolName = c.toolId;
                         } else {
                             Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                            analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), c.execution);
+                            toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), c.execution);
                             toolName = tool.getName();
                         }
 
@@ -960,7 +961,7 @@ public class OpenCGAMain {
                         }
 
 
-                        Execution ex = analysisJobExecutor.getExecution();
+                        Execution ex = toolManager.getExecution();
                         // Set input param
                         for (InputParam inputParam : ex.getInputParams()) {
                             if (c.params.containsKey(inputParam.getName())) {
@@ -975,12 +976,12 @@ public class OpenCGAMain {
                         }
 
                         // Set outdir
-                        String outputParam = analysisJobExecutor.getExecution().getOutputParam();
+                        String outputParam = toolManager.getExecution().getOutputParam();
                         File outdir = catalogManager.getFile(outdirId, sessionId).first();
                         localParams.put(outputParam, Collections.singletonList(catalogManager.getFileUri(outdir).getPath()));
 
 
-                        QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId,
+                        QueryResult<Job> jobQueryResult = new JobFactory(catalogManager).createJob(toolManager, localParams, studyId,
                                 c.name, c.description, outdir, inputFiles, sessionId, true);
 
                         System.out.println(createOutput(c.cOpt, jobQueryResult, null));
@@ -1012,15 +1013,15 @@ public class OpenCGAMain {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
                         int toolId = catalogManager.getToolId(c.id);
-                        AnalysisJobExecutor analysisJobExecutor;
+                        ToolManager toolManager;
                         String toolName;
                         if (toolId < 0) {
-                            analysisJobExecutor = new AnalysisJobExecutor(c.id, null);    //LEGACY MODE, AVOID USING
+                            toolManager = new ToolManager(c.id, null);    //LEGACY MODE, AVOID USING
                             toolName = c.id;
-                            System.out.println(createOutput(c.cOpt, analysisJobExecutor.getAnalysis(), null));
+                            System.out.println(createOutput(c.cOpt, toolManager.getAnalysis(), null));
                         } else {
                             Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                            analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), null);
+                            toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), null);
                             toolName = tool.getName();
                             System.out.println(createOutput(c.cOpt, tool, null));
                         }

@@ -17,40 +17,28 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.tools.ant.types.Commandline;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
-import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
-import org.opencb.opencga.analysis.execution.executors.SgeExecutorManager;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAPlugin;
 import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
-import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.StringUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
-public class AnalysisJobExecutor {
+public class ToolManager {
 
     public static final String EXECUTE = "execute";
     public static final String SIMULATE = "simulate";
     public static final String OPENCGA_ANALYSIS_JOB_EXECUTOR = "OPENCGA.ANALYSIS.JOB.EXECUTOR";
-    protected static Logger logger = LoggerFactory.getLogger(AnalysisJobExecutor.class);
+    protected static Logger logger = LoggerFactory.getLogger(ToolManager.class);
     protected final Properties analysisProperties;
     protected final String home;
     protected String analysisName;
@@ -62,22 +50,22 @@ public class AnalysisJobExecutor {
     protected String sessionId;
     protected Analysis analysis;
     protected Execution execution;
-    protected boolean isPlugin;
+    protected boolean plugin;
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
-    private AnalysisJobExecutor() throws IOException, AnalysisExecutionException {
+    private ToolManager() throws IOException, AnalysisExecutionException {
         home = Config.getOpenCGAHome();
         analysisProperties = Config.getAnalysisProperties();
         executionName = null;
     }
 
-    public AnalysisJobExecutor(String analysisStr, String execution) throws IOException, AnalysisExecutionException {
+    public ToolManager(String analysisStr, String execution) throws IOException, AnalysisExecutionException {
         this(analysisStr, execution, "system");
     }
 
     @Deprecated
-    public AnalysisJobExecutor(String analysisStr, String execution, String analysisOwner) throws IOException, AnalysisExecutionException {
+    public ToolManager(String analysisStr, String execution, String analysisOwner) throws IOException, AnalysisExecutionException {
         this();
         if (analysisOwner.equals("system")) {
             this.analysisRootPath = Paths.get(analysisProperties.getProperty("OPENCGA.ANALYSIS.BINARIES.PATH"));
@@ -95,7 +83,7 @@ public class AnalysisJobExecutor {
         load();
     }
 
-    public AnalysisJobExecutor(Path analysisRootPath, String analysisName, String executionName) throws IOException, AnalysisExecutionException {
+    public ToolManager(Path analysisRootPath, String analysisName, String executionName) throws IOException, AnalysisExecutionException {
         this();
         this.analysisRootPath = analysisRootPath;
         this.analysisName = analysisName;
@@ -116,7 +104,7 @@ public class AnalysisJobExecutor {
             }
             analysis = plugin.getManifest();
             execution = getExecution();
-            isPlugin = true;
+            this.plugin = true;
         } else {
             manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
             resultsFile = analysisPath.resolve(Paths.get("results.js"));
@@ -203,149 +191,16 @@ public class AnalysisJobExecutor {
     }
 
     /*
-     * Job factory methods
-     */
-
-    //TODO: Move to a JobFactory class
-    public QueryResult<Job> createJob(Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
-            throws AnalysisExecutionException, CatalogException {
-        return createJob(params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId, false);
-    }
-
-    //TODO: Move to a JobFactory class
-    public QueryResult<Job> createJob(Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId, boolean execute)
-            throws AnalysisExecutionException, CatalogException {
-        String executable = execution.getExecutable();
-
-        // Create temporal Outdir
-        String randomString = "J_" + StringUtils.randomString(10);
-        URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-        params.put(getExecution().getOutputParam(), Arrays.asList(temporalOutDirUri.getPath()));
-
-        // Create commandLine
-        String commandLine = createCommandLine(executable, params);
-        System.out.println(commandLine);
-
-        Map<String, String> plainParams = params.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue().stream().collect(Collectors.joining(",")))
-        );
-
-        HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("plugin", isPlugin); //TODO: Save type of tool in a better way
-
-        return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, getExecution().getId(), plainParams, commandLine, execute, false, attributes, new HashMap<>());
-    }
-
-    @Deprecated
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
-                                             String randomString, URI temporalOutDirUri, String commandLine,
-                                             boolean execute, boolean simulate, Map<String, Object> attributes,
-                                             Map<String, Object> resourceManagerAttributes)
-            throws AnalysisExecutionException, CatalogException {
-        String[] args = Commandline.translateCommandline(commandLine);
-        Map<String, String> params = new HashMap<>();
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].startsWith("-")) {
-                String key = args[i].replaceAll("^--?", "");
-                String value;
-                if (args.length == i + 1 || args[i + 1].startsWith("-")) {
-                    value = "";
-                } else {
-                    value = args[i + 1];
-                    i++;
-                }
-                params.put(key, value);
-            }
-        }
-        return createJob(catalogManager, studyId, jobName, toolName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, "", params, commandLine, execute, simulate, attributes, resourceManagerAttributes);
-    }
-
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
-                                             String randomString, URI temporalOutDirUri,
-                                             String executor, Map<String, String> params, String commandLine,
-                                             boolean execute, boolean simulate, Map<String, Object> attributes,
-                                             Map<String, Object> resourceManagerAttributes)
-            throws AnalysisExecutionException, CatalogException {
-        logger.debug("Creating job {}: simulate {}, execute {}", jobName, simulate, execute);
-        long start = System.currentTimeMillis();
-
-        QueryResult<Job> jobQueryResult;
-        if (resourceManagerAttributes == null) {
-            resourceManagerAttributes = new HashMap<>();
-        }
-
-        if (simulate) { //Simulate a job. Do not create it.
-            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-            jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
-                    new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
-                            TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.Status.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
-                            null, attributes, resourceManagerAttributes)));
-        } else {
-            if (execute) {
-                /** Create a RUNNING job in CatalogManager **/
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
-                Job job = jobQueryResult.first();
-
-                jobQueryResult = executeLocal(catalogManager, job, sessionId);
-
-            } else {
-                /** Create a PREPARED job in CatalogManager **/
-                resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
-            }
-        }
-        return jobQueryResult;
-    }
-
-    /*
      * Execute util methods
      * Will create the required ExecutorManager and run the job
      */
 
-    public static void execute(CatalogManager catalogManager, Job job, String sessionId)
-            throws AnalysisExecutionException, IOException, CatalogException {
-        logger.debug("Execute, job: {}", job);
-
-        // read execution param
-        String defaultJobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR, "LOCAL").trim().toUpperCase();
-        String jobExecutor = job.getResourceManagerAttributes().getOrDefault("executor", defaultJobExecutor).toString();
-
-        // local execution
-        switch (jobExecutor) {
-            default:
-            case "LOCAL":
-                executeLocal(catalogManager, job, sessionId);
-                break;
-            case "SGE":
-                logger.debug("Execute, running by SgeManager");
-                try {
-                    new SgeExecutorManager(catalogManager, sessionId).run(job);
-                } catch (Exception e) {
-                    logger.error(e.toString());
-                    throw new AnalysisExecutionException("ERROR: sge execution failed.");
-                }
-                break;
-        }
+    public String getAnalysisName() {
+        return analysisName;
     }
 
-    private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws AnalysisExecutionException, CatalogException {
-//        if (false && job.getAttributes().getOrDefault("type", "").equals("plugin")) {
-//            logger.debug("Execute, running by PluginExecutorManager");
-//            return new PluginExecutorManager(catalogManager, sessionId).run(job);
-//        } else {
-            logger.debug("Execute, running by LocalExecutorManager");
-            return new LocalExecutorManager(catalogManager, sessionId).run(job);
-//        }
+    public boolean isPlugin() {
+        return plugin;
     }
 
     public Analysis getAnalysis() throws IOException, AnalysisExecutionException {
