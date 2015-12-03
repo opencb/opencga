@@ -118,7 +118,7 @@ public class VariantTableDriver extends Configured implements Tool {
 
         // QUERY design
         Scan scan = new Scan();
-        scan.setCaching(250);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+        scan.setCaching(100);        // 1 is the default in Scan, which will be bad for MapReduce jobs
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
 
         // specify return columns (file IDs)
