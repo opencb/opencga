@@ -98,6 +98,16 @@
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-tools</artifactId>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.phoenix</groupId>-->
+            <!--<artifactId>phoenix</artifactId>-->
+            <!--<version>4.6.0-HBase-1.1</version>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-spark</artifactId>
+            <version>4.6.0-HBase-1.1</version>
+        </dependency>
     </dependencies>
     
      <build>

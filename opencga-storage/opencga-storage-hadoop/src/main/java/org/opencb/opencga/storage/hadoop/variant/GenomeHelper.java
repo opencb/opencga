@@ -43,6 +43,7 @@ public class GenomeHelper {
     public static final String CONFIG_GENOME_VARIANT_ROW_KEY_SEP = "opencga.storage.hadoop.vcf.row_key_sep";
     public static final String CONFIG_META_ROW_KEY = "opencga.storage.hadoop.vcf.meta.key";
 
+    public static final String METADATA_PREFIX = "_";
     public static final String DEFAULT_META_ROW_KEY = "_METADATA";
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "d";
@@ -57,7 +58,7 @@ public class GenomeHelper {
 
     protected final HBaseManager hBaseManager;
     private int studyId;
-    
+
     public interface MetadataAction<T>{
         T parse(InputStream is) throws IOException;
     }
@@ -85,7 +86,7 @@ public class GenomeHelper {
     public static Logger getLog() {
         return log;
     }
-    
+
     public Configuration getConf() {
         return conf;
     }

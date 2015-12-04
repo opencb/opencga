@@ -25,7 +25,7 @@ public class VariantHBaseIterator extends VariantDBIterator {
     private final ResultScanner resultScanner;
     private final GenomeHelper genomeHelper;
     private final Iterator<Result> iterator;
-    private final HBaseVariantToVariantConverter converter;
+    private final HBaseToVariantConverter converter;
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
@@ -33,7 +33,7 @@ public class VariantHBaseIterator extends VariantDBIterator {
         this.resultScanner = resultScanner;
         this.genomeHelper = variantTableHelper;
         iterator = resultScanner.iterator();
-        converter = new HBaseVariantToVariantConverter(variantTableHelper);
+        converter = new HBaseToVariantConverter(variantTableHelper);
         setLimit(options.getLong("limit"));
     }
 
@@ -42,13 +42,13 @@ public class VariantHBaseIterator extends VariantDBIterator {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
-        converter = new HBaseVariantToVariantConverter(genomeHelper, scm);
+        converter = new HBaseToVariantConverter(genomeHelper, scm);
         setLimit(options.getLong("limit"));
     }
 
     @Override
     public boolean hasNext() {
-        return count < limit && iterator.hasNext();
+        return count < limit && fetch(iterator::hasNext);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class VariantHBaseIterator extends VariantDBIterator {
 
     @Override
     public void close() {
-        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 100000.0, getTimeConverting() / 1000000.0);
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultScanner.close();
     }
 

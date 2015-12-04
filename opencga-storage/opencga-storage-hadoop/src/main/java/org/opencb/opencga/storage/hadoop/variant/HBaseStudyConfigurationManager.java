@@ -28,8 +28,8 @@ import java.util.*;
  */
 public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
-    public static final byte[] STUDIES_ROW = Bytes.toBytes("STUDIES");
-    public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes("SUMMARY");
+    public static final byte[] STUDIES_ROW = Bytes.toBytes(GenomeHelper.METADATA_PREFIX + "STUDIES");
+    public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes(GenomeHelper.METADATA_PREFIX + "SUMMARY");
     final byte[] columnFamily;
 
     private final Configuration configuration;

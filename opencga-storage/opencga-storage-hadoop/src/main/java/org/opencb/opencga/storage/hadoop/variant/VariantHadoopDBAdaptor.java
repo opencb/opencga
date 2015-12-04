@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -26,13 +27,12 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataMana
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
@@ -193,7 +193,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        Region region = Region.parseRegion(query.getString(REGION.key()));
 
         if (query.containsKey(FILES.key())) {
             String study = query.getString(STUDIES.key());
@@ -216,6 +215,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 returnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
             }
             query.put(RETURNED_SAMPLES.key(), returnedSamples);
+
+            Region region = null;
+            if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
+                region = Region.parseRegion(query.getString(REGION.key()));
+            }
 
             Scan scan = new Scan();
             scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
@@ -240,23 +244,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else {
-
-            Scan scan = new Scan();
-            scan.addFamily(genomeHelper.getColumnFamily());
-            addRegionFilter(scan, region);
-            scan.setMaxResultSize(options.getInt("limit"));
-
             logger.debug("Creating {} iterator", VariantHBaseIterator.class);
             logger.debug("Table name = " + variantTable);
-            logger.debug("StartRow = " + new String(scan.getStartRow()));
-            logger.debug("StopRow = " + new String(scan.getStopRow()));
-            logger.debug("MaxResultSize = " + scan.getMaxResultSize());
-            logger.debug("region = " + region);
-
+            Scan scan = parseQuery(query, options);
             try {
                 Table table = con.getTable(TableName.valueOf(variantTable));
                 ResultScanner resScan = table.getScanner(scan);
-                return  new VariantHBaseIterator(resScan, genomeHelper, studyConfigurationManager, options);
+                return new VariantHBaseIterator(resScan, genomeHelper, studyConfigurationManager, options);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -333,28 +327,127 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
             QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        return null;
+        return updateAnnotations(variantAnnotations, queryOptions);
     }
 
     @Override
     public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
             QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        return null;
+
+        long start = System.currentTimeMillis();
+
+        VariantAnnotationToHBaseConverter converter = new VariantAnnotationToHBaseConverter(new GenomeHelper(configuration));
+        List<Put> puts = converter.apply(variantAnnotations);
+
+        try (Table table = con.getTable(TableName.valueOf(variantTable))) {
+            table.put(puts);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
 
     ////// Util methods:
 
+
+    private Scan parseQuery(Query query, QueryOptions options) {
+
+        Scan scan = new Scan();
+        scan.addFamily(genomeHelper.getColumnFamily());
+        FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+        List<byte[]> columnPrefixes = new LinkedList<>();
+
+        if (!StringUtils.isEmpty(query.getString(REGION.key()))) {
+            Region region = Region.parseRegion(query.getString(REGION.key()));
+            logger.debug("region = " + region);
+            addRegionFilter(scan, region);
+        } else {
+            addDefaultRegionFilter(scan);
+        }
+
+        if (!StringUtils.isEmpty(query.getString(GENE.key()))) {
+            addValueFilter(filters, VariantAnnotationToHBaseConverter.GENES_COLUMN, query.getAsStringList(GENE.key()));
+        }
+        if (!StringUtils.isEmpty(query.getString(ANNOT_BIOTYPE.key()))) {
+            addValueFilter(filters, VariantAnnotationToHBaseConverter.BIOTYPE_COLUMN, query.getAsStringList(ANNOT_BIOTYPE.key()));
+        }
+
+        Set<String> includedFields = new HashSet<>(Arrays.asList("studies", "annotation"));
+        if (!options.getAsStringList("include").isEmpty()) {
+            includedFields = new HashSet<>(options.getAsStringList("include"));
+        } else if (!options.getAsStringList("exclude").isEmpty()) {
+            includedFields.removeAll(options.getAsStringList("exclude"));
+        }
+
+        if (includedFields.contains("annotation")) {
+            columnPrefixes.add(VariantAnnotationToHBaseConverter.ANNOTATION_COLUMN_PREFIX);
+        }
+
+        if (includedFields.contains("studies")) {
+            if (!StringUtils.isEmpty(query.getString(STUDIES.key()))) {
+                //TODO: Handle negations(!), and(;), or(,) and studyName(string)
+                List<Integer> studyIdList = query.getAsIntegerList(STUDIES.key());
+                for (Integer studyId : studyIdList) {
+                    columnPrefixes.add(Bytes.toBytes(studyId.toString() + genomeHelper.getSeparator()));
+                }
+            } else {
+                for (int i = 0; i < 10; i++) {
+                    columnPrefixes.add(Bytes.toBytes(Integer.toString(i)));
+                }
+            }
+        }
+
+        if (columnPrefixes.isEmpty()) {
+            KeyOnlyFilter keyOnlyFilter = new KeyOnlyFilter();
+            filters.addFilter(keyOnlyFilter);
+        } else {
+            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
+            filters.addFilter(columnPrefixFilter);
+        }
+
+        scan.setFilter(filters);
+        scan.setMaxResultSize(options.getInt("limit"));
+
+        logger.debug("StartRow = " + new String(scan.getStartRow()));
+        logger.debug("StopRow = " + new String(scan.getStopRow()));
+        logger.debug("MaxResultSize = " + scan.getMaxResultSize());
+        logger.debug("Filters = " + scan.getFilter().toString());
+        return scan;
+    }
+
+    private void addValueFilter(FilterList filters, byte[] column, List<String> values) {
+        List<Filter> valueFilters = new ArrayList<>(values.size());
+        for (String value : values) {
+            SingleColumnValueFilter valueFilter = new SingleColumnValueFilter(genomeHelper.getColumnFamily(),
+                    column, CompareFilter.CompareOp.EQUAL, new SubstringComparator(value));
+            valueFilter.setFilterIfMissing(true);
+            valueFilters.add(valueFilter);
+        }
+        filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
+    }
+
     public void addArchiveRegionFilter(Scan scan, Region region) {
-        scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-        scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+        if (region == null) {
+            addDefaultRegionFilter(scan);
+        } else {
+            scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+        }
     }
 
     public void addRegionFilter(Scan scan, Region region) {
-        scan.setStartRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getStart())));
-        scan.setStopRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getEnd())));
+        if (region == null) {
+            addDefaultRegionFilter(scan);
+        } else {
+            scan.setStartRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getStart())));
+            scan.setStopRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getEnd())));
+        }
+    }
+
+    public Scan addDefaultRegionFilter(Scan scan) {
+        return scan.setStopRow(Bytes.toBytes(String.valueOf(GenomeHelper.METADATA_PREFIX)));
     }
 
 

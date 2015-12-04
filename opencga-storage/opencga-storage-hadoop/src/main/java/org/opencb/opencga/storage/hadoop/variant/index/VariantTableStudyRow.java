@@ -82,8 +82,10 @@ public class VariantTableStudyRow {
 
     public static List<VariantTableStudyRow> parse(Result result, GenomeHelper helper) {
         NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
-        Set<Integer> studyIds = familyMap.keySet().stream()
-                .map(columnKey -> extractStudyId(Bytes.toString(columnKey)))
+        Set<Integer> studyIds = familyMap.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
+                .map(entry -> extractStudyId(Bytes.toString(entry.getKey())))
+                .filter(integer -> integer != null)
                 .collect(Collectors.toSet());
 
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
@@ -114,13 +116,21 @@ public class VariantTableStudyRow {
             }
             String gt = colSplit[1];
             if(gt.equals(HOM_REF)){
-                variantTableStudyRow.homRefCount = Bytes.toInt(entry.getValue());
+                if (entry.getValue() == null || entry.getValue().length == 0) {
+                    variantTableStudyRow.homRefCount = 0;
+                } else {
+                    variantTableStudyRow.homRefCount = Bytes.toInt(entry.getValue());
+                }
             } else {
-                try {
-                    VariantCallProt vcp = VariantCallProt.parseFrom(entry.getValue());
-                    variantTableStudyRow.callMap.put(gt, new HashSet<>(vcp.getSampleIdsList()));
-                } catch (InvalidProtocolBufferException e) {
-                    throw new UncheckedIOException(e);
+                if (entry.getValue() == null || entry.getValue().length == 0) {
+                    variantTableStudyRow.callMap.put(gt, Collections.emptySet());
+                } else {
+                    try {
+                        VariantCallProt vcp = VariantCallProt.parseFrom(entry.getValue());
+                        variantTableStudyRow.callMap.put(gt, new HashSet<>(vcp.getSampleIdsList()));
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
             }
         }
@@ -221,8 +231,13 @@ public class VariantTableStudyRow {
         return new StringBuilder().append(sid).append(COLUMN_KEY_SEPARATOR).append(gt).toString();
     }
 
-    public static int extractStudyId(String columnKey) {
-        return Integer.parseInt(StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0]);
+    public static Integer extractStudyId(String columnKey) {
+        String study = StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0];
+        if (StringUtils.isNumeric(study)) {
+            return Integer.parseInt(study);
+        } else {
+            return null;
+        }
     }
 
 //    public static Map<Integer, List<byte[]>> extractStudyIds(Collection<byte[]> columnKeys) {

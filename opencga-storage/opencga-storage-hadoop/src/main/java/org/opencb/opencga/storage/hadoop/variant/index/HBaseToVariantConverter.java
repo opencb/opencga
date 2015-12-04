@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 
 import java.io.IOException;
 import java.util.*;
@@ -23,23 +24,26 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseVariantToVariantConverter implements Converter<Result, Variant> {
+public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private final StudyConfigurationManager scm;
-    private GenomeHelper genomeHelper;
-    private QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
+    private final HBaseToVariantAnnotationConverter annotationConverter;
+    private final GenomeHelper genomeHelper;
+    private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
-    private Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPosition = new HashMap<>();
+    private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPosition = new HashMap<>();
+
     private List<String> returnedSamples = Collections.emptyList();
 
-    public HBaseVariantToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
+    public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
                 variantTableHelper.getConf(), new ObjectMap()));
     }
 
-    public HBaseVariantToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
+    public HBaseToVariantConverter(GenomeHelper genomeHelper, StudyConfigurationManager scm) {
         this.genomeHelper = genomeHelper;
         this.scm = scm;
+        this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
     }
 
 
@@ -96,6 +100,7 @@ public class HBaseVariantToVariantConverter implements Converter<Result, Variant
 
             variant.addStudyEntry(studyEntry);
         }
+        variant.setAnnotation(annotationConverter.convert(result));
 
         return variant;
     }
