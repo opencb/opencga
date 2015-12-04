@@ -62,6 +62,7 @@ public class ArchiveDriver extends Configured implements Tool {
         VcfMeta meta = readMetaData(conf, inputMetaFile);
         storeMetaData(meta, tablename, conf);
         conf.set(GenomeHelper.CONFIG_FILE_ID, meta.getVariantSource().getFileId());
+        GenomeHelper.setChunkSize(conf, 1000);
         ArchiveHelper archiveHelper = new ArchiveHelper(conf, meta);
 
         /* JOB setup */

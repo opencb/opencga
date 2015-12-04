@@ -32,6 +32,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.MapContext;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.parquet.Strings;
 import org.opencb.biodata.models.feature.AllelesCode;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -67,6 +68,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     private StudyConfiguration studyConfiguration = null;
     private final Map<Integer, VcfMeta> vcfMetaMap = new ConcurrentHashMap<>();
     private Connection dbConnection = null;
+    private List<Long> timeSum = new ArrayList<Long>();
     
     public Logger getLog() {
         return LOG;
@@ -88,7 +90,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
         super.setup(context);
     }
-    
+
     public StudyConfiguration getStudyConfiguration() {
         return studyConfiguration;
     }
@@ -96,6 +98,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     @Override
     protected void cleanup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
             InterruptedException {
+        for(int i = 0; i < this.timeSum.size(); ++i){
+            context.getCounter("OPENCGA.HBASE", "VCF_TIMER_"+i).increment(this.timeSum.get(i));
+        }
         if (null != this.dbConnection) {
             dbConnection.close();
         }
@@ -129,7 +134,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     public VariantTableHelper getHelper() {
         return helper;
     }
-    
+
     protected void setHelper(VariantTableHelper helper){
         this.helper = helper;
     }
@@ -150,6 +155,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 return; // ignore metadata column
 
             context.getCounter("OPENCGA.HBASE", "VCF_BLOCK_READ").increment(1);
+            List<Long> times = new ArrayList<Long>();
+
+            times.add(System.currentTimeMillis());
 
             // Calculate various positions
             byte[] currRowKey = key.get();
@@ -159,22 +167,32 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             Long sliceReg = h.extractSliceFromBlockId(sliceKey);
             Long startPos = h.getStartPositionFromSlice(sliceReg);
             Long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
-            String nextSliceKey = h.generateBlockId(chr, nextStartPos);
+            String varStartKey = h.generateRowPositionKey(chr, startPos);
+            String varEndKey = h.generateRowPositionKey(chr, nextStartPos);
 
+            getLog().info("Processing slice " + sliceKey);
 // Unpack Archive data (selection only
             List<Variant> archive = 
                     unpack(value, context,startPos.intValue(), nextStartPos.intValue(),false);
-            
+
+            times.add(System.currentTimeMillis());
+
             Set<Integer> coveredPositions = generateCoveredPositions(archive.stream());
+            
+            getLog().info(String.format("Found %s covered regions from %s variants",coveredPositions.size(),archive.size()));
+            getLog().trace(Arrays.toString(coveredPositions.toArray()));
 
             // Start positions of Variants of specific type
             Set<Integer> archVarStartPositions = 
                     filterForVariant(archive.stream(), TARGET_VARIANT_TYPE)
                         .map(v -> v.getStart()).collect(Collectors.toSet());
-            
+
+            times.add(System.currentTimeMillis());
 
 // Load Variant data (For study) for same region
-            Map<Integer, Map<String, Result>> varTabMap = loadCurrentVariantsRegion(context,currRowKey, nextSliceKey);
+            Map<Integer, Map<String, Result>> varTabMap = loadCurrentVariantsRegion(context,varStartKey, varEndKey);
+
+            times.add(System.currentTimeMillis());
 
             // Report Missing regions in ARCHIVE table, which are seen in VAR table
             Set<Integer> archPosMissing = new HashSet<Integer>(varTabMap.keySet());
@@ -187,11 +205,22 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                                 Arrays.toString(archPosMissing.toArray(new Integer[0]))));
             }
 
+            getLog().info(String.format("Loaded %s variant positions ... ",varTabMap.size()));
+            getLog().trace(Arrays.toString(varTabMap.keySet().toArray()));
+
             // Find ARCHIVE entries covering all existing positions in the VARIANT table
             List<Variant> varPosUpdateLst = filterByPositionCovered(archive, varTabMap.keySet());
             
+            getLog().info(String.format("Found %s variants to update ... ",varPosUpdateLst.size()));
+
+            times.add(System.currentTimeMillis());
+
 // Update VARIANT table entries with archive table entries
             Map<String, VariantTableStudyRow> updatedVar = merge(context, varPosUpdateLst, translate(varTabMap));
+
+            getLog().info(String.format("Merged into %s variants ... ",updatedVar.size()));
+
+            times.add(System.currentTimeMillis());
 
             // Missing positions in VAR table -> require Archive table fetch of all columns
             Set<Integer> varPosMissing = new HashSet<Integer>(archVarStartPositions);
@@ -199,11 +228,17 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             // Current 
             List<Variant> archMissingInVar = filterByPositionCovered(archive,varPosMissing);
 
+            times.add(System.currentTimeMillis());
+
+            getLog().info(String.format("Load  %s missing positions!",varPosMissing.size()));
+            getLog().trace(Arrays.toString(varPosMissing.toArray()));
 
             getLog().info("Fetch data for missing position from Archive table: " + varPosMissing.size());
             List<Variant> archPreviousFiles = loadArchivePreviousFiles(context, varPosMissing,sliceKey);
             getLog().info("Fetched Variants from Archive table: " + archPreviousFiles.size());
-            
+
+            times.add(System.currentTimeMillis());
+
             List<Variant> newTargetVariants = new ArrayList<Variant>(archPreviousFiles);
             newTargetVariants.addAll(archMissingInVar);
 
@@ -213,16 +248,35 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             }
 
             Map<String,VariantTableStudyRow> newVar = createNewVar(context,newTargetVariants, varPosMissing);
-            
+
+            getLog().info(String.format("Created %s Variants from %s targets from %s missing positions ... ",
+                    newVar.size(),newTargetVariants.size(), varPosMissing.size()));
+
+            times.add(System.currentTimeMillis());
+
             // merge output
             updatedVar.putAll(newVar);
 //                    fetchCurrentValues(context, summary.keySet());
             updateOutputTable(context,updatedVar);
+
+            times.add(System.currentTimeMillis());
+            addTimes(times);
         }catch(InvalidProtocolBufferException e){
             throw new IOException(e);
         }
     }
 
+    private void addTimes(List<Long> times) {
+        int n = times.size();
+        boolean init = timeSum.isEmpty();
+        for(int i = 1; i < n; ++i){
+            long diff = times.get(i) - times.get(i-1);
+            if(init)
+                timeSum.add(diff);
+            else
+                timeSum.set(i-1, timeSum.get(i-1) + diff);
+        }
+    }
 
     /**
      * Load all registered files for slice from ARCHIVE table and return variants covering the target positions. 
@@ -540,6 +594,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             // for each FILE (column in HBase
             context.getCounter("OPENCGA.HBASE", "VCF_SLICE_READ").increment(1);
             List<Variant> varList = archiveCellToVariants(x.getKey(),x.getValue());
+            getLog().info(String.format("For Column %s found %s entries", ArchiveHelper.getFileIdFromColumnName(x.getKey()),varList.size()));
             context.getCounter("OPENCGA.HBASE", "READ_VARIANTS").increment(varList.size());
             variantList.addAll(varList);
             Integer minStartPos = nextSliceStartPos;
@@ -550,9 +605,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             while(minStartPos >= sliceStartPos && (reverseSearchCnt++) < MAX_REVERSE_SEARCH_ITER){ // more information in previous region
                 context.getCounter("OPENCGA.HBASE", "VCF_SLICE-break-region").increment(1);
                 List<Variant> var = querySliceBreakPerFile(context,previousArchiveSliceRK(value.getRow()),x.getKey(),sliceStartPos,nextSliceStartPos);
-//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS").increment(1);
-//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS_" + reverseSearchCnt).increment(1);
-//                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_VARIANTS").increment(var.size());
+                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS").increment(1);
+                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_BLOCKS_" + reverseSearchCnt).increment(1);
+                context.getCounter("OPENCGA.HBASE", "EXTRA_READ_VARIANTS").increment(var.size());
                 if(!var.isEmpty()){
                     minStartPos = var.stream().map(v -> v.getStart()).collect(Collectors.minBy(Comparator.naturalOrder())).get();
                 }
@@ -668,16 +723,18 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
-    protected Map<Integer, Map<String, Result>> loadCurrentVariantsRegion(Context context, byte[] sliceKey, String endKey) throws IOException {
+    protected Map<Integer, Map<String, Result>> loadCurrentVariantsRegion(Context context, String startKey, String endKey) throws IOException {
         Map<Integer, Map<String, Result>> resMap = new HashMap<Integer, Map<String, Result>>();
         try (
                 Table table = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));
         ) {
             context.getCounter("OPENCGA.HBASE", "VCF_TABLE_SCAN-query").increment(1);
             VariantTableHelper h = getHelper();
-            Scan scan = new Scan(sliceKey, Bytes.toBytes(endKey));
-            scan.setFilter(new PrefixFilter(sliceKey));
-            scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(getHelper().getStudyId() + "_")));  // Limit for currenty study
+            String colPrefix = getHelper().getStudyId() + "_";
+            getLog().info(String.format("Scan from %s to %s with column prefix %s", startKey, endKey, colPrefix));
+            
+            Scan scan = new Scan(Bytes.toBytes(startKey), Bytes.toBytes(endKey));
+            scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(colPrefix)));  // Limit for currenty study
             ResultScanner rs = table.getScanner(scan); 
             for(Result r : rs){
                 String rowStr = Bytes.toString(r.getRow());
@@ -706,6 +763,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     private void updateOutputTable(Context context, Map<String, VariantTableStudyRow> variants) 
             throws IOException, InterruptedException {
         for(VariantTableStudyRow row : variants.values()){
+            getLog().trace(String.format("Submit %s: hr: %s; 0/1: %s",row.getPos(),row.getHomRefCount(), Arrays.toString(row.getSampleIds("0/1").toArray())));
             Put put = row.createPut(getHelper());
             context.write(new ImmutableBytesWritable(put.getRow()), put);
             context.getCounter("OPENCGA.HBASE", "VCF_ROW-put").increment(1);

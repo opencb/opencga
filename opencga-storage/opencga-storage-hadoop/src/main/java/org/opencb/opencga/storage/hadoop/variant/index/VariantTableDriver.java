@@ -91,6 +91,7 @@ public class VariantTableDriver extends Configured implements Tool {
         LOG.info(String.format("Use table %s as input", inTable));
 
         GenomeHelper.setStudyId(conf,studyId);
+        GenomeHelper.setChunkSize(conf, 1000);
         VariantTableHelper.setOutputTableName(conf, out_table);
         VariantTableHelper.setInputTableName(conf, inTable);
         
@@ -117,7 +118,7 @@ public class VariantTableDriver extends Configured implements Tool {
 
         // QUERY design
         Scan scan = new Scan();
-        scan.setCaching(500);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+        scan.setCaching(100);        // 1 is the default in Scan, which will be bad for MapReduce jobs
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
 
         // specify return columns (file IDs)
@@ -139,7 +140,7 @@ public class VariantTableDriver extends Configured implements Tool {
             null,             // reducer class
             job);
         job.setNumReduceTasks(0);
-        
+
         boolean b = job.waitForCompletion(true);
         if (!b) {
             LOG.error("error with job!");
