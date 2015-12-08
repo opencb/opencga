@@ -42,7 +42,7 @@ public class GenomeHelperTest {
     }
 
     public void checkVariantRowKeyGeneration(Variant variant) {
-        String variantRowkey = genomeHelper.generateVariantRowKey(variant);
+        byte[] variantRowkey = genomeHelper.generateVariantRowKey(variant);
         Variant generatedVariant = genomeHelper.extractVariantFromVariantRowKey(variantRowkey);
         Assert.assertEquals(variant, generatedVariant);
     }

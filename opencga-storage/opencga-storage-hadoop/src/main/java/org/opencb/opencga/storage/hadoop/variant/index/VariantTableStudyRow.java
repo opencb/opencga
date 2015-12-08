@@ -4,23 +4,16 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.NavigableMap;
-import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 
@@ -39,7 +32,7 @@ public class VariantTableStudyRow {
     private Integer studyId;
     private Integer homRefCount = 0;
     private String chromosome;
-    private Long pos;
+    private int pos;
     private String ref;
     private String alt;
     private Map<String, Set<Integer>> callMap = new HashMap<String, Set<Integer>>();
@@ -58,7 +51,7 @@ public class VariantTableStudyRow {
     /**
      * 
      */
-    public VariantTableStudyRow (Integer studyId, String chr, Long pos, String ref, String alt) {
+    public VariantTableStudyRow (Integer studyId, String chr, int pos, String ref, String alt) {
         this.studyId = studyId;
         this.homRefCount = 0;
         this.chromosome = chr;
@@ -67,16 +60,16 @@ public class VariantTableStudyRow {
         this.alt = alt;
     }
     
-    public Long getPos() {
+    public int getPos() {
         return pos;
     }
 
-    private VariantTableStudyRow(Integer studyId, String[] arr){
-        this(studyId, arr[0], Long.parseLong(arr[1]), arr[2], arr[3]);
+    public VariantTableStudyRow(Integer studyId, Variant variant){
+        this(studyId, variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
     }
 
     public VariantTableStudyRow(Integer studyId, Result row, GenomeHelper helper) {
-        this(studyId, helper.splitVariantRowkey(Bytes.toString(row.getRow())));
+        this(studyId, helper.extractVariantFromVariantRowKey(row.getRow()));
         parse(this, row.getFamilyMap(helper.getColumnFamily()));
     }
 
@@ -90,7 +83,7 @@ public class VariantTableStudyRow {
 
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
         for (Integer studyId : studyIds) {
-            VariantTableStudyRow row = new VariantTableStudyRow(studyId, helper.splitVariantRowkey(Bytes.toString(result.getRow())));
+            VariantTableStudyRow row = new VariantTableStudyRow(studyId, helper.extractVariantFromVariantRowKey(result.getRow()));
             rows.add(parse(row, familyMap, true));
         }
 
@@ -189,7 +182,7 @@ public class VariantTableStudyRow {
         }
     }
 
-    public String generateRowKey(VariantTableHelper helper) {
+    public byte[] generateRowKey(VariantTableHelper helper) {
         return helper.generateVariantRowKey(this.chromosome, this.pos, this.ref , this.alt);
     }
     
@@ -204,15 +197,15 @@ public class VariantTableStudyRow {
     }
 
     public Put createPut(VariantTableHelper helper) {
-        String generateRowKey = generateRowKey(helper);
+        byte[] generateRowKey = generateRowKey(helper);
         if(this.callMap.containsKey(HOM_REF)){
             throw new IllegalStateException(
                     String.format("HOM_REF data found for row %s for sample IDs %s",
-                            generateRowKey,StringUtils.join(this.callMap.get(HOM_REF),",")));
+                            Arrays.toString(generateRowKey), StringUtils.join(this.callMap.get(HOM_REF), ",")));
         }
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
-        Put put = new Put(Bytes.toBytes(generateRowKey));
+        Put put = new Put(generateRowKey);
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         for(Entry<String, Set<Integer>> entry : this.callMap.entrySet()){
             byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));

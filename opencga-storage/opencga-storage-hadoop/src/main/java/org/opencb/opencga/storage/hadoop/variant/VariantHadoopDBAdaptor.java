@@ -441,8 +441,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getStart())));
-            scan.setStopRow(Bytes.toBytes(genomeHelper.generateRowPositionKey(region.getChromosome(), region.getEnd())));
+            scan.setStartRow(genomeHelper.generateVariantRowKey(region.getChromosome(), region.getStart()));
+            scan.setStopRow(genomeHelper.generateVariantRowKey(region.getChromosome(), region.getEnd()));
         }
     }
 

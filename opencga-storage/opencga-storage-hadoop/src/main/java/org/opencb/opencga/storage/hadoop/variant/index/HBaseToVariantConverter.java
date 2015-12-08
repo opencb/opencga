@@ -51,7 +51,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     @Override
     public Variant convert(Result result) {
 
-        Variant variant = genomeHelper.extractVariantFromVariantRowKey(Bytes.toString(result.getRow()));
+        Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
 
         List<VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper);
 

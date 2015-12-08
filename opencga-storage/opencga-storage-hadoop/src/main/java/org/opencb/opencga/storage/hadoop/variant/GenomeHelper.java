@@ -3,12 +3,9 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.google.protobuf.ByteString;
+import com.google.protobuf.MessageLite;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -16,13 +13,19 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.query.QueryConstants;
+import org.apache.phoenix.schema.types.PUnsignedInt;
+import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.MessageLite;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -220,16 +223,8 @@ public class GenomeHelper {
      * @param start Position
      * @return {@link Byte} array
      */
-    public byte[] generateBlockIdAsBytes(String chrom, long start) {
+    public byte[] generateBlockIdAsBytes(String chrom, int start) {
         return Bytes.toBytes(generateBlockId(chrom, start));
-    }
-
-    public String generateRowPositionKey(String chrom, long position){
-        StringBuilder sb = new StringBuilder(standardChromosome(chrom));
-        sb.append(getSeparator());
-        sb.append(String.format("%012d", position));
-        sb.append(getSeparator());
-        return sb.toString();
     }
 
     public String extractChromosomeFromBlockId(String blockId) {
@@ -248,14 +243,32 @@ public class GenomeHelper {
         return Long.valueOf(splitBlockId(blockId)[1]) * getChunkSize();
     }
 
+    public String[] splitBlockId (String blockId) {
+        char sep = getSeparator();
+        String[] split = StringUtils.splitPreserveAllTokens(blockId, sep);
+        if (split.length != 2)
+            throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
+                    blockId));
+        return split;
+    }
+
     /* ***************
      * Variant Row Key helper methods
      *
      * Generators and extractors
      *
      */
-    
-    public String generateVariantRowKey(Variant var){
+
+    public byte[] generateVariantRowKey(String chrom, int position){
+//        StringBuilder sb = new StringBuilder(standardChromosome(chrom));
+//        sb.append(getSeparator());
+//        sb.append(String.format("%012d", position));
+//        sb.append(getSeparator());
+//        return sb.toString();
+        return generateVariantRowKey(chrom, position, "", "");
+    }
+
+    public byte[] generateVariantRowKey(Variant var){
         return generateVariantRowKey(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
     }
 
@@ -269,63 +282,62 @@ public class GenomeHelper {
      * @param chrom    Chromosome name
      * @param position Genomic position
      * @param ref      Reference name
-     * @param ref      Alt name
+     * @param alt      Alt name
      * @return {@link String} Row key string
      */
-    public String generateVariantRowKey(String chrom, long position, String ref, String alt) {
-        StringBuilder sb = new StringBuilder(generateRowPositionKey(chrom, position));
-        sb.append(ref);
-        sb.append(getSeparator());
-        sb.append(alt);
-        return sb.toString();
+    public byte[] generateVariantRowKey(String chrom, int position, String ref, String alt) {
+//        StringBuilder sb = new StringBuilder(generateRowPositionKey(chrom, position));
+//        sb.append(ref);
+//        sb.append(getSeparator());
+//        sb.append(alt);
+//        return sb.toString();
+        int size = PVarchar.INSTANCE.estimateByteSizeFromLength(chrom.length())
+                + QueryConstants.SEPARATOR_BYTE_ARRAY.length
+                + PUnsignedInt.INSTANCE.estimateByteSize(position)
+                + PVarchar.INSTANCE.estimateByteSizeFromLength(ref.length())
+                + QueryConstants.SEPARATOR_BYTE_ARRAY.length
+                + PVarchar.INSTANCE.estimateByteSizeFromLength(alt.length());
+        byte[] rk = new byte[size];
+        int offset = 0;
+        offset += PVarchar.INSTANCE.toBytes(chrom, rk, offset);
+        rk[offset++] = QueryConstants.SEPARATOR_BYTE;
+        offset += PUnsignedInt.INSTANCE.toBytes(position, rk, offset);
+        // Separator not needed. PUnsignedInt.INSTANCE.isFixedWidth() = true
+        offset += PVarchar.INSTANCE.toBytes(ref, rk, offset);
+        rk[offset++] = QueryConstants.SEPARATOR_BYTE;
+        offset += PVarchar.INSTANCE.toBytes(alt, rk, offset);
+//        assert offset == size;
+        return rk;
+    }
+
+    public Variant extractVariantFromVariantRowKey(byte[] variantRowKey) {
+//        String[] strings = splitVariantRowkey(variantRowKey);
+//        return new Variant(extractChromosomeFromVariantRowKey(strings),
+//                extractPositionFromVariantRowKey(strings),
+//                extractReferenceFromVariantRowkey(strings),
+//                extractAlternateFromVariantRowkey(strings));
+        int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0);
+        String chromosome = (String) PVarchar.INSTANCE.toObject(variantRowKey, 0, chrPosSeparator, PVarchar.INSTANCE);
+        Integer intSize = PUnsignedInt.INSTANCE.getByteSize();
+        int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
+        int referenceOffset = chrPosSeparator + 1 + intSize;
+        int refAltSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, referenceOffset);
+        String reference = (String) PVarchar.INSTANCE.toObject(variantRowKey, referenceOffset , refAltSeparator - referenceOffset, PVarchar.INSTANCE);
+        String alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1, variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
+
+        return new Variant(chromosome, position, reference, alternate);
     }
 
 
-    public Variant extractVariantFromVariantRowKey(String variantRowKey) {
-        String[] strings = splitVariantRowkey(variantRowKey);
-        return new Variant(extractChromosomeFromVariantRowKey(strings),
-                extractPositionFromVariantRowKey(strings),
-                extractReferenceFromVariantRowkey(strings),
-                extractAlternateFromVariantRowkey(strings));
-    }
-
-    public String extractChromosomeFromVariantRowKey(String[] strings){
-        return strings[0];
-    }
-
-    public Integer extractPositionFromVariantRowKey(String variantRowKey) {
-        return extractPositionFromVariantRowKey(splitVariantRowkey(variantRowKey));
-    }
-
-    public Integer extractPositionFromVariantRowKey(String[] strings){
-        return Integer.valueOf(strings[1]);
-    }
-
-    public String extractReferenceFromVariantRowkey(String[] strings){
-        return strings[2];
-    }
-
-    public String extractAlternateFromVariantRowkey(String[] strings){
-        return strings.length > 3 ? strings[3] : "";
-    }
-
-    public String[] splitBlockId (String blockId) {
-        char sep = getSeparator();
-        String[] split = StringUtils.splitPreserveAllTokens(blockId, sep);
-        if (split.length != 2)
-            throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
-                    blockId));
-        return split;
-    }
-    
-    public String[] splitVariantRowkey (String rowkey) {
-        char sep = getSeparator();
-        String[] split = StringUtils.splitPreserveAllTokens(rowkey, sep);
-        if (split.length < 2)
-            throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value `%s`", sep,
-                    rowkey));
-        return split;
-    }
+//
+//    public String[] splitVariantRowkey (String rowkey) {
+//        char sep = getSeparator();
+//        String[] split = StringUtils.splitPreserveAllTokens(rowkey, sep);
+//        if (split.length < 2)
+//            throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value `%s`", sep,
+//                    rowkey));
+//        return split;
+//    }
 
     /**
      * Creates a standard chromosome name from the provided string

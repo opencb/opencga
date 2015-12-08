@@ -200,7 +200,7 @@ public class ArchiveHelper extends GenomeHelper {
 
     public Put wrap (VcfSlice slice) {
 //        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition() + slice.getRecords(0).getRelativeStart() * 100);
-        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), (long) slice.getPosition());
+        byte[] rowId = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
         return wrapAsPut(getColumn(), rowId, slice);
     }
 

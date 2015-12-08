@@ -42,10 +42,9 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
     @Override
     public Put convert(VariantAnnotation variantAnnotation) {
-        String rowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+        byte[] bytesRowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
                 variantAnnotation.getReference(), variantAnnotation.getAlternate());
 
-        byte[] bytesRowKey = Bytes.toBytes(rowKey);
         Put put = new Put(bytesRowKey);
 
         if (addFullAnnotation) {
@@ -58,13 +57,14 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Set<String> biotype = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
-            genes.add(consequenceType.getGeneName());
-            genes.add(consequenceType.getEnsemblGeneId());
-            transcript.add(consequenceType.getEnsemblTranscriptId());
-            biotype.add(consequenceType.getBiotype());
+            String value = consequenceType.getGeneName();
+            addNotNull(genes, value);
+            addNotNull(genes, consequenceType.getEnsemblGeneId());
+            addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
+            addNotNull(biotype, consequenceType.getBiotype());
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                 String accession = sequenceOntologyTerm.getAccession();
-                so.add(Integer.parseInt(accession.substring(3)));
+                addNotNull(so, Integer.parseInt(accession.substring(3)));
             }
         }
 
@@ -74,6 +74,12 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         addIntegerArray(put, SO_COLUMN, so);
 
         return put;
+    }
+
+    public <T> void addNotNull(Collection<T> collection, T value) {
+        if (value != null) {
+            collection.add(value);
+        }
     }
 
     public void addVarcharArray(Put put, byte[] column, Collection<String> collection) {
@@ -95,16 +101,4 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         put.addColumn(genomeHelper.getColumnFamily(), column, arrayBytes);
     }
 
-
-//    public static void main(String[] args) {
-//
-//        PhoenixArray phoenixArray = PDataType.instantiatePhoenixArray(PVarchar.INSTANCE, new String[]{"v1", "v2"});
-////        PhoenixArray phoenixArray = new PhoenixArray(PVarchar.INSTANCE, new String[]{"v1", "v2"});
-//        byte[] bytes = PVarcharArray.INSTANCE.toBytes(phoenixArray);
-//        System.out.println("bytes = " + new String(bytes));
-//        PhoenixArray p = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes, SortOrder.ASC, PVarchar.INSTANCE);
-//        for (int i = 0; i < p.getDimensions(); i++) {
-//            System.out.println(p.getElement(i));
-//        }
-//    }
 }

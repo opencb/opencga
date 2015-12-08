@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hdfs.util.ByteArray;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.MapContext;
@@ -216,7 +217,7 @@ public class VariantTableMapperTest {
                 .filter(v -> {v.getStudies().get(0).setSamplesPosition(map);return true;})
                 .collect(Collectors.groupingBy(v -> v.getStart()));
 
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
+        Map<ByteArray, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
         assertEquals(0,res.values().stream().findFirst().get().getHomRefCount().intValue());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_REF).size());
@@ -243,7 +244,7 @@ public class VariantTableMapperTest {
         assertEquals(1,gtidx.get(VariantTableStudyRow.HOM_REF).size());
         assertEquals(0,gtidx.get(VariantTableStudyRow.OTHER).size());
 
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
+        Map<ByteArray, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet()));
         assertTrue(res.isEmpty());
     }
     
@@ -298,28 +299,37 @@ public class VariantTableMapperTest {
         subList.add(varMod2);
         subList.add(refRegion);
         
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, subList,new HashSet<Integer>(Arrays.asList(var.getStart())));
+        Map<ByteArray, VariantTableStudyRow> res = tm.createNewVar(ctx, subList,new HashSet<Integer>(Arrays.asList(var.getStart())));
         assertEquals(2, res.size());
-        assertEquals(2, res.get(res.keySet().stream().filter(k -> k.endsWith("T_C")).findFirst().get()).getHomRefCount().intValue());
+        assertEquals(2, res.get(res.keySet().stream().filter(k -> endsWith(k.getBytes(), new byte[]{'T',0,'C'})).findFirst().get()).getHomRefCount().intValue());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
         assertEquals(1, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
         assertEquals(2, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.OTHER).size());
         assertEquals(2,res.values().stream().findFirst().get().getHomRefCount().intValue());
         System.out.println(res);
     }
-    
+
+    private boolean endsWith(byte[] a, byte[] suffix) {
+        for (int i = 0; i < suffix.length; i++) {
+            if (a[a.length - suffix.length + i] != suffix[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Test
     public void testMerge() throws InvalidProtocolBufferException{
 
         studyConfiguration.getSampleIds().put("Sample3", 3);
         
-        Map<Integer, Map<String, VariantTableStudyRow>> prep = prepareMerge();
+        Map<Integer, Map<ByteArray, VariantTableStudyRow>> prep = prepareMerge();
         List<Variant> varLst = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
                 .collect(Collectors.toList()).subList(0, 1);
         
         varLst.get(0).getStudies().get(0).setSamplesPosition(asMap("Sample3",0));
 
-        Map<String, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
+        Map<ByteArray, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
         assertEquals(1, res.size());
         VariantTableStudyRow row = res.values().stream().findFirst().get();
         assertEquals(new HashSet<Integer>(Arrays.asList(1,3)), row.getSampleIds(VariantTableStudyRow.HET_REF));
@@ -332,22 +342,22 @@ public class VariantTableMapperTest {
 
         studyConfiguration.getSampleIds().put("Sample3", 3);
         
-        Map<Integer, Map<String, VariantTableStudyRow>> prep = prepareMerge();
+        Map<Integer, Map<ByteArray, VariantTableStudyRow>> prep = prepareMerge();
         List<Variant> varLst = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
                 .collect(Collectors.toList()).subList(0, 1);
         
         varLst.get(0).getStudies().get(0).setSamplesPosition(asMap("Sample3",0));
         varLst.get(0).setAlternate("X");
 
-        Map<String, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
+        Map<ByteArray, VariantTableStudyRow> res = tm.merge(ctx, varLst , prep);
         assertEquals(2, res.size());
         
-        VariantTableStudyRow row = res.entrySet().stream().filter(v -> v.getKey().endsWith("T_C")).map(v -> v.getValue()).findFirst().get();
+        VariantTableStudyRow row = res.entrySet().stream().filter(v -> endsWith(v.getKey().getBytes(), new byte[]{'T',0,'C'})).map(v -> v.getValue()).findFirst().get();
         assertEquals(new HashSet<Integer>(Arrays.asList(1)), row.getSampleIds(VariantTableStudyRow.HET_REF));
         assertEquals(new HashSet<Integer>(Arrays.asList(3)), row.getSampleIds(VariantTableStudyRow.OTHER));
         assertEquals(1, row.getHomRefCount().intValue());
 
-        row = res.entrySet().stream().filter(v -> v.getKey().endsWith("T_X")).map(v -> v.getValue()).findFirst().get();
+        row = res.entrySet().stream().filter(v ->endsWith(v.getKey().getBytes(), new byte[]{'T',0,'X'})).map(v -> v.getValue()).findFirst().get();
         assertEquals(new HashSet<Integer>(Arrays.asList(3)), row.getSampleIds(VariantTableStudyRow.HET_REF));
         assertEquals(new HashSet<Integer>(Arrays.asList(1)), row.getSampleIds(VariantTableStudyRow.OTHER));
         assertEquals(1, row.getHomRefCount().intValue());
@@ -355,7 +365,7 @@ public class VariantTableMapperTest {
         
     }
     
-    public Map<Integer, Map<String, VariantTableStudyRow>> prepareMerge(){
+    public Map<Integer, Map<ByteArray, VariantTableStudyRow>> prepareMerge(){
 
         List<Variant> subList = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
                 .collect(Collectors.toList()).subList(0, 1);
@@ -369,13 +379,13 @@ public class VariantTableMapperTest {
         refRegion.setEnd(var.getStart()+3);
         refRegion.setStart(var.getStart()-1);
 
-        Map<String, VariantTableStudyRow> res = tm.createNewVar(ctx, Arrays.asList(var,refRegion),new HashSet<Integer>(Arrays.asList(var.getStart(),refRegion.getStart())));
-        Map<Integer, Map<String, VariantTableStudyRow>> ret = new HashMap<Integer, Map<String,VariantTableStudyRow>>();
-        for(Entry<String, VariantTableStudyRow> entry : res.entrySet()){
-            Map<String, VariantTableStudyRow> map = ret.get(entry.getValue().getPos().intValue());
+        Map<ByteArray, VariantTableStudyRow> res = tm.createNewVar(ctx, Arrays.asList(var,refRegion),new HashSet<Integer>(Arrays.asList(var.getStart(),refRegion.getStart())));
+        Map<Integer, Map<ByteArray, VariantTableStudyRow>> ret = new HashMap<>();
+        for(Entry<ByteArray, VariantTableStudyRow> entry : res.entrySet()){
+            Map<ByteArray, VariantTableStudyRow> map = ret.get(entry.getValue().getPos());
             if(map == null){
-                map = new HashMap<String, VariantTableStudyRow>();
-                ret.put(entry.getValue().getPos().intValue(), map);
+                map = new HashMap<>();
+                ret.put(entry.getValue().getPos(), map);
             }
             map.put(entry.getKey(), entry.getValue());
         }
