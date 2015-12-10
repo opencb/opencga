@@ -130,7 +130,7 @@ public class VariantTableMapperTest {
         List<Variant> subList = this.variantCollection.subList(2, 5);
         subList.get(2).setEnd(10018);
         Set<Integer> positions = tm.generateCoveredPositions(
-                subList.stream());
+                subList.stream(), 10000l,10100l);
         assertEquals(positions, new HashSet<Integer>(Arrays.asList(10013,10014,10015,10016,10017,10018)));
     }
 
