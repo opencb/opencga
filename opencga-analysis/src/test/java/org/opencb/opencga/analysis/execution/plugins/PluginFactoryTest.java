@@ -21,7 +21,7 @@ public class PluginFactoryTest {
 
         OpenCGAPlugin testPlugin = PluginFactory.get().getPlugin(TestPlugin.PLUGIN_ID);
         assertEquals(TestPlugin.class, testPlugin.getClass());
-        testPlugin.init(LoggerFactory.getLogger(OpenCGAPlugin.class), new ObjectMap(TestPlugin.PARAM_1, "Hello").append(TestPlugin.ERROR, false), null, null);
+        testPlugin.init(LoggerFactory.getLogger(OpenCGAPlugin.class), new ObjectMap(TestPlugin.PARAM_1, "Hello").append(TestPlugin.ERROR, false), null, null, -1, null);
         int run = testPlugin.run();
         assertEquals(run, 0);
     }
