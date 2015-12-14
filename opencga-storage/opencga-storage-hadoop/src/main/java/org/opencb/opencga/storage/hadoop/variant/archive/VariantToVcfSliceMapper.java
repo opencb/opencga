@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -76,11 +77,14 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
             Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
         VariantAvro varAvro = key.datum();
         Variant variant = new Variant(varAvro);
-        VcfSlice slice = convert(variant);
-        Put put = getHelper().wrap(slice);
-        ImmutableBytesWritable rowKey = new ImmutableBytesWritable(put.getRow());
-        context.getCounter("OPENCGA.HBASE", "VCF_CONVERT").increment(1);
-        context.write(rowKey, put);
+        context.getCounter("OPENCGA.HBASE", "VCF_MAP").increment(1);
+        List<VcfSlice> slices = convert(variant);
+        for(VcfSlice slice : slices){ // for all slice regions covered by variant
+            Put put = getHelper().wrap(slice);
+            ImmutableBytesWritable rowKey = new ImmutableBytesWritable(put.getRow());
+            context.getCounter("OPENCGA.HBASE", "VCF_CONVERT").increment(1);
+            context.write(rowKey, put);
+        }
     }
 
     public VariantToProtoVcfRecord getConverter () {
@@ -91,21 +95,36 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
      * Convert a Variant to a {@link VcfSlice} converting the position into the slice position <br>
      * e.g. using chunk size 100 with position 1234 would result in slice position 1200
      * @param variant {@link Variant}
-     * @return {@link VcfSlice}
+     * @return {@link List} of type {@link VcfSlice}
      */
-    public VcfSlice convert (Variant variant) {
-        VcfRecord rec = getConverter().convert(variant, this.getChunkSize());
-        long slicePosition = getSlicePosition(variant);
-        VcfSlice slice = VcfSlice.newBuilder()
-                .addRecords(rec)
-                .setChromosome(extractChromosome(variant))
-                .setPosition((int) slicePosition)
-                .build();
-        return slice;
+    public List<VcfSlice> convert (Variant variant) {
+        long[] slicePositionArr = getCoveredSlicePositions(variant);
+        List<VcfSlice> sliceArr = new ArrayList<VcfSlice>(slicePositionArr.length);
+        for(long slicePos : slicePositionArr){
+            VcfRecord rec = getConverter().convertUsingSliceposition(variant, (int) slicePos);
+            VcfSlice slice = VcfSlice.newBuilder()
+                    .addRecords(rec)
+                    .setChromosome(extractChromosome(variant))
+                    .setPosition((int) slicePos)
+                    .build();
+            sliceArr.add(slice);
+        }
+        return sliceArr;
     }
 
-    private long getSlicePosition (Variant variant) {
-        return getConverter().getSlicePosition(variant.getStart(), this.getChunkSize());
+    private long[] getCoveredSlicePositions(Variant variant){
+        int chSize = this.getChunkSize();
+        long startChunk = getConverter().getSlicePosition(variant.getStart(), chSize);
+        long endChunk = getConverter().getSlicePosition(variant.getEnd(), chSize);
+        if(endChunk == startChunk){
+            return new long[]{startChunk};
+        }
+        int len = (int) ((endChunk - startChunk)/chSize) + 1;
+        long[] ret = new long[len];
+        for(int i = 0; i < len; ++i){
+            ret[i] = startChunk + (((long)i) * chSize);
+        }
+        return ret;
     }
 
     private String extractChromosome (Variant var) {
