@@ -3,21 +3,20 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.UncheckedIOException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PUnsignedIntArray;
+import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.models.protobuf.VariantCallProtos.VariantCallProt;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -118,11 +117,25 @@ public class VariantTableStudyRow {
                 if (entry.getValue() == null || entry.getValue().length == 0) {
                     variantTableStudyRow.callMap.put(gt, Collections.emptySet());
                 } else {
+//                    try {
+//                        VariantCallProt vcp = VariantCallProt.parseFrom(entry.getValue());
+//                        variantTableStudyRow.callMap.put(gt, new HashSet<>(vcp.getSampleIdsList()));
+//                    } catch (InvalidProtocolBufferException e) {
+//                        throw new UncheckedIOException(e);
+//                    }
+                    PhoenixArray phoenixArray = ((PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue()));
                     try {
-                        VariantCallProt vcp = VariantCallProt.parseFrom(entry.getValue());
-                        variantTableStudyRow.callMap.put(gt, new HashSet<>(vcp.getSampleIdsList()));
-                    } catch (InvalidProtocolBufferException e) {
-                        throw new UncheckedIOException(e);
+                        HashSet<Integer> value = new HashSet<>();
+                        if (phoenixArray.getArray() != null) {
+                            int[] array = (int[]) phoenixArray.getArray();
+                            for (int i : array) {
+                                value.add(i);
+                            }
+                        }
+                        variantTableStudyRow.callMap.put(gt, value);
+                    } catch (SQLException e) {
+                        //Impossible
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -213,8 +226,9 @@ public class VariantTableStudyRow {
             List<Integer> value = new ArrayList<Integer>(entry.getValue());
             if(!value.isEmpty()) {
                 Collections.sort(value);
-                byte[] protValue = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
-                put.addColumn(cf, column, protValue);
+//                byte[] bytesArray = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
+                byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
+                put.addColumn(cf, column, bytesArray);
             }
         }
         return put;
