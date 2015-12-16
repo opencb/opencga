@@ -3,15 +3,16 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper.Columns.*;
 
 /**
  * Created on 01/12/15
@@ -20,18 +21,6 @@ import java.util.Set;
  */
 public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnotation, Put> {
 
-
-    public static final String ANNOTATION_COLUMN_PREFIX_STRING = "A_";
-    public static final byte[] ANNOTATION_COLUMN_PREFIX = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING);
-    public static final byte[] FULL_ANNOTATION_COLUMN = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING + "FULL_ANNOTATION");   // VARBINARY
-    public static final byte[] GENES_COLUMN = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING + "GENE");                        // VARCHAR[]
-    public static final byte[] TRANSCRIPTS_COLUMN = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING + "TRANSCRIPT");            // VARCHAR[]
-    public static final byte[] BIOTYPE_COLUMN = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING + "BIOTYPE");                   // VARCHAR[]
-    public static final byte[] SO_COLUMN = Bytes.toBytes(ANNOTATION_COLUMN_PREFIX_STRING + "SO");                             // INTEGER[]
-
-
-    public static final String POLYPHEN_FIELD = "polyphen";
-    public static final String SIFT_FIELD = "sift";
 
     private final GenomeHelper genomeHelper;
     private boolean addFullAnnotation = true;
@@ -48,7 +37,7 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Put put = new Put(bytesRowKey);
 
         if (addFullAnnotation) {
-            put.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION_COLUMN, Bytes.toBytes(variantAnnotation.toString()));
+            put.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes(), Bytes.toBytes(variantAnnotation.toString()));
         }
 
         Set<String> genes = new HashSet<>();
@@ -68,12 +57,33 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
             }
         }
 
-        addVarcharArray(put, GENES_COLUMN, genes);
-        addVarcharArray(put, TRANSCRIPTS_COLUMN, transcript);
-        addVarcharArray(put, BIOTYPE_COLUMN, biotype);
-        addIntegerArray(put, SO_COLUMN, so);
+        addVarcharArray(put, GENES.bytes(), genes);
+        addVarcharArray(put, TRANSCRIPTS.bytes(), transcript);
+        addVarcharArray(put, BIOTYPE.bytes(), biotype);
+        addIntegerArray(put, SO.bytes(), so);
+
+        if (variantAnnotation.getConservation() != null) {
+            for (Score score : variantAnnotation.getConservation()) {
+                put.addColumn(genomeHelper.getColumnFamily(), getConservationColumnName(score), PFloat.INSTANCE.toBytes(score.getScore()));
+            }
+        }
+
+//        for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
+//            put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
+//                    PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
+//        }
 
         return put;
+    }
+
+    private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
+        return Bytes.toBytes(populationFrequency.getStudy()
+                + "_" + populationFrequency.getSuperPopulation()
+                + "_" + populationFrequency.getPopulation());
+    }
+
+    private byte[] getConservationColumnName(Score score) {
+        return Bytes.toBytes(score.getSource().toUpperCase());
     }
 
     public <T> void addNotNull(Collection<T> collection, T value) {
@@ -94,10 +104,7 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         if (collection.size() == 0) {
             return;
         }
-        PDataType pDataType = PDataType.arrayBaseType(arrayType);
-        Object[] elements = collection.toArray();
-        PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);
-        byte[] arrayBytes = arrayType.toBytes(phoenixArray);
+        byte[] arrayBytes = VariantPhoenixHelper.toBytes(collection, arrayType);
         put.addColumn(genomeHelper.getColumnFamily(), column, arrayBytes);
     }
 

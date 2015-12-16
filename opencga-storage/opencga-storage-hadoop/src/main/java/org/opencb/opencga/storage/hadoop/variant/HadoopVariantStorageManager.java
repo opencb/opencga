@@ -11,7 +11,6 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -19,10 +18,10 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +31,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -221,9 +221,17 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
+    public VariantHadoopDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
+        return getDBAdaptor(buildCredentials(dbName));
+    }
+
+    public VariantHadoopDBAdaptor getDBAdaptor() throws StorageManagerException {
+        return getDBAdaptor(getDbCredentials());
+    }
+
+    protected VariantHadoopDBAdaptor getDBAdaptor(HadoopCredentials credentials) throws StorageManagerException {
         try {
-            return new VariantHadoopDBAdaptor(buildCredentials(dbName), configuration.getStorageEngine(storageEngineId),
+            return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(storageEngineId),
                     getHadoopConfiguration(configuration.getStorageEngine(storageEngineId).getOptions()));
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter",e);
@@ -232,13 +240,14 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     public HadoopCredentials buildCredentials(String table) throws IllegalStateException{
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
-    
+
         DatabaseCredentials db = vStore.getDatabase();
         String user = db.getUser();
         String pass = db.getPassword();
         List<String> hostList = db.getHosts();
-        if (hostList.size() != 1)
+        if (hostList.size() != 1) {
             throw new IllegalStateException("Expect only one server name");
+        }
         String target = hostList.get(0);
         try{
             URI uri = new URI(target);
@@ -258,6 +267,18 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            HadoopCredentials dbCredentials = getDbCredentials();
+            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
+            int studyId = options.getInt(Options.STUDY_ID.key());
+
+            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+            try {
+                phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), dbCredentials.getTable(), studyId);
+            } catch (SQLException e) {
+                throw new StorageManagerException("Unable to register study in Phoenix", e);
+            }
+
+
             return super.postLoad(input, output);
         } else {
             return input;

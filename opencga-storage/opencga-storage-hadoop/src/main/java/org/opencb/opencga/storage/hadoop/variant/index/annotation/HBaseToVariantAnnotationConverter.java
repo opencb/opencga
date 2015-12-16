@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
 
 import java.io.IOException;
 
@@ -28,7 +29,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     @Override
     public VariantAnnotation convert(Result result) {
 
-        byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantAnnotationToHBaseConverter.FULL_ANNOTATION_COLUMN);
+        byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantPhoenixHelper.Columns.FULL_ANNOTATION.bytes());
         if (value != null && value.length > 0 ) {
             try {
                 return objectMapper.readValue(value, VariantAnnotation.class);
