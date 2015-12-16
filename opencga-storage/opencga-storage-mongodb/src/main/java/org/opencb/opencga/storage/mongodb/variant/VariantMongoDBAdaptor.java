@@ -326,6 +326,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options.addToListOption(GENE, geneName);
         }
         options.put(GENE, geneName);
+        
+        // If the users asks to sort the results, do it by chromosome and start
+        if (options.getBoolean(SORT, false)) {
+            options.put(SORT, new BasicDBObject("chr", 1).append("start", 1));
+        }
+        
         parseQueryOptions(options, qb);
         DBObject projection = parseProjectionQueryOptions(options);
         QueryResult<Variant> queryResult = coll.find(qb.get(), projection, variantConverter, options);
