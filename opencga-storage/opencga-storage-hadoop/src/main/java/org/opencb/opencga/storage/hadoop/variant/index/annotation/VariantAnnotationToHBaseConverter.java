@@ -6,13 +6,13 @@ import org.apache.phoenix.schema.types.*;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
 
 /**
  * Created on 01/12/15

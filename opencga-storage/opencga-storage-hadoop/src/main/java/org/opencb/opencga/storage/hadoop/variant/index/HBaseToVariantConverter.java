@@ -2,10 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -15,8 +15,11 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -46,14 +49,25 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
     }
 
-
-
     @Override
     public Variant convert(Result result) {
+        return convert(
+                genomeHelper.extractVariantFromVariantRowKey(result.getRow()),
+                VariantTableStudyRow.parse(result, genomeHelper),
+                annotationConverter.convert(result));
+    }
 
-        Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
+    public Variant convert(ResultSet resultSet) throws SQLException {
+        Variant variant = new Variant(
+                resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
+                resultSet.getInt(VariantPhoenixHelper.Columns.POSITION.column()),
+                resultSet.getString(VariantPhoenixHelper.Columns.REFERENCE.column()),
+                resultSet.getString(VariantPhoenixHelper.Columns.ALTERNATE.column())
+        );
+        return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), annotationConverter.convert(resultSet));
+    }
 
-        List<VariantTableStudyRow> rows = VariantTableStudyRow.parse(result, genomeHelper);
+    protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
 
         for (VariantTableStudyRow row : rows) {
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(row.getStudyId(), scmOptions);
@@ -100,7 +114,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             variant.addStudyEntry(studyEntry);
         }
-        variant.setAnnotation(annotationConverter.convert(result));
+        variant.setAnnotation(annotation);
 
         return variant;
     }

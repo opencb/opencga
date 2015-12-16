@@ -1,9 +1,10 @@
-package org.opencb.opencga.storage.hadoop.variant.index;
+package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +13,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
 
 /**
  * Created on 15/12/15
@@ -108,7 +109,7 @@ public class VariantPhoenixHelper {
         con.createStatement().execute(sql);
 
         sql = buildAlterViewAddColumn(table, VariantTableStudyRow.buildColumnKey(studyId,
-                VariantTableStudyRow.OTHER), PVarbinary.INSTANCE.getSqlTypeName());
+                VariantTableStudyRow.OTHER), PUnsignedIntArray.INSTANCE.getSqlTypeName());
         logger.debug(sql);
         con.createStatement().execute(sql);
 
@@ -127,9 +128,11 @@ public class VariantPhoenixHelper {
                     REFERENCE + " " + REFERENCE.sqlType() + " , " +
                     ALTERNATE + " " + ALTERNATE.sqlType() + " , " +
                     GENES + " " + GENES.sqlType() + " , " +
+                    BIOTYPE + " " + BIOTYPE.sqlType() + " , " +
                     SO + " " + SO.sqlType() + " , " +
                     PHYLOP + " " + PHYLOP.sqlType() + " , " +
-                    PHASTCONS + " " + PHASTCONS.sqlType() + " " +
+                    PHASTCONS + " " + PHASTCONS.sqlType() + " , " +
+                    FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " " +
                     "CONSTRAINT PK PRIMARY KEY (" + CHROMOSOME + ", " + POSITION + ", " + REFERENCE + ", " + ALTERNATE + ") " +
                 ") " +
                 "DEFAULT_COLUMN_FAMILY='" + columnFamily + "'"

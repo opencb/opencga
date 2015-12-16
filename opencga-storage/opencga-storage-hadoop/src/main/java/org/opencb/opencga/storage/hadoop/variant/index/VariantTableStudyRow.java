@@ -12,7 +12,11 @@ import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -89,6 +93,28 @@ public class VariantTableStudyRow {
         return rows;
     }
 
+    public static List<VariantTableStudyRow> parse(Variant variant, ResultSet resultSet, GenomeHelper helper) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        Set<Integer> studyIds = new HashSet<>();
+        for (int i = 0; i < metaData.getColumnCount(); i++) {
+            String columnName = metaData.getColumnName(i + 1);
+            if (columnName != null && !columnName.isEmpty()) {
+                Integer studyId = extractStudyId(columnName);
+                if (studyId != null) {
+                    studyIds.add(studyId);
+                }
+            }
+        }
+
+        List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            VariantTableStudyRow row = new VariantTableStudyRow(studyId, variant);
+            rows.add(parse(row, resultSet, studyId));
+        }
+
+        return rows;
+    }
+
     public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, NavigableMap<byte[], byte[]> familyMap) {
         return parse(variantTableStudyRow, familyMap, false);
     }
@@ -140,6 +166,24 @@ public class VariantTableStudyRow {
                 }
             }
         }
+        return variantTableStudyRow;
+    }
+
+    public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, ResultSet resultSet, int studyId)
+            throws SQLException {
+        variantTableStudyRow.homRefCount = resultSet.getInt(buildColumnKey(studyId, HOM_REF));
+        for (String gt : new String[]{HET_REF, HOM_VAR, OTHER}) {
+            Array sqlArray = resultSet.getArray(buildColumnKey(studyId, gt));
+            HashSet<Integer> value = new HashSet<>();
+            if (sqlArray != null && sqlArray.getArray() != null) {
+                int[] array = (int[]) sqlArray.getArray();
+                for (int i : array) {
+                    value.add(i);
+                }
+            }
+            variantTableStudyRow.callMap.put(gt, value);
+        }
+
         return variantTableStudyRow;
     }
 

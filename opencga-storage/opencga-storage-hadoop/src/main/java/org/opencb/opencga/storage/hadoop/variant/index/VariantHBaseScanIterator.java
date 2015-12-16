@@ -19,9 +19,9 @@ import java.util.NoSuchElementException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHBaseIterator extends VariantDBIterator {
+public class VariantHBaseScanIterator extends VariantDBIterator {
 
-    private final Logger logger = LoggerFactory.getLogger(VariantHBaseIterator.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantHBaseScanIterator.class);
     private final ResultScanner resultScanner;
     private final GenomeHelper genomeHelper;
     private final Iterator<Result> iterator;
@@ -29,7 +29,7 @@ public class VariantHBaseIterator extends VariantDBIterator {
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
-    public VariantHBaseIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options) throws IOException {
+    public VariantHBaseScanIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options) throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = variantTableHelper;
         iterator = resultScanner.iterator();
@@ -37,7 +37,7 @@ public class VariantHBaseIterator extends VariantDBIterator {
         setLimit(options.getLong("limit"));
     }
 
-    public VariantHBaseIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm, QueryOptions options)
+    public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm, QueryOptions options)
             throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;

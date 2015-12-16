@@ -55,7 +55,8 @@ public class GenomeHelper {
     private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
     private final char separator;
     private final byte[] columnFamily;
-    private byte[] metaRowKey;
+    private final byte[] metaRowKey;
+    private final String metaRowKeyString;
 
     private final Configuration conf;
 
@@ -76,7 +77,8 @@ public class GenomeHelper {
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
-        this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
+        this.metaRowKeyString = conf.get(CONFIG_META_ROW_KEY, DEFAULT_META_ROW_KEY);
+        this.metaRowKey = Bytes.toBytes(metaRowKeyString);
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
         this.studyId = conf.getInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, -1);
         this.hBaseManager = new HBaseManager(conf);
@@ -191,6 +193,10 @@ public class GenomeHelper {
 
     public byte[] getMetaRowKey() {
         return metaRowKey ;
+    }
+
+    public String getMetaRowKeyString() {
+        return metaRowKeyString;
     }
 
     /**

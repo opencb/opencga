@@ -6,9 +6,11 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Created on 03/12/15
@@ -36,6 +38,30 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        return null;
+
+    }
+
+    public VariantAnnotation convert(ResultSet resultSet) {
+        int column;
+        try {
+            column = resultSet.findColumn(VariantPhoenixHelper.Columns.FULL_ANNOTATION.column());
+        } catch (SQLException e) {
+            //Column not found
+            return null;
+        }
+        try {
+            String value = resultSet.getString(column);
+            if (value != null && !value.isEmpty() ) {
+                try {
+                    return objectMapper.readValue(value, VariantAnnotation.class);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return null;
 

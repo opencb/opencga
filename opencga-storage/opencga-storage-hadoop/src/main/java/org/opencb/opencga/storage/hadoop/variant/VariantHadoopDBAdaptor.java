@@ -27,9 +27,11 @@ import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -54,6 +56,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final Configuration configuration;
     private GenomeHelper genomeHelper;
     private final java.sql.Connection phoenixCon;
+    private final VariantSqlQueryParser queryParser;
 //    private final PhoenixConnection phoenixCon;
 
     public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
@@ -66,6 +69,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         hbaseCon = ConnectionFactory.createConnection(conf);
         variantTable = credentials.getTable();
         studyConfigurationManager = new HBaseStudyConfigurationManager(credentials, conf, configuration.getVariant().getOptions());
+
+        queryParser = new VariantSqlQueryParser(genomeHelper, variantTable);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
         try {
@@ -227,7 +232,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
 
-        if (query.containsKey(FILES.key())) {
+        if (query.getBoolean("archive", false)) {
             String study = query.getString(STUDIES.key());
             StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
             int studyId;
@@ -277,16 +282,34 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else {
-            logger.debug("Creating {} iterator", VariantHBaseIterator.class);
+            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             logger.debug("Table name = " + variantTable);
-            Scan scan = parseQuery(query, options);
+            String sql = queryParser.parse(query, options);
+            logger.debug(sql);
+
+//            try (Statement statement = phoenixCon.createStatement()) {
+//                ResultSet resultSet = statement.executeQuery(sql);
+//                return new VariantHBaseResultIterator(resultSet, genomeHelper, studyConfigurationManager, options);
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
             try {
-                Table table = hbaseCon.getTable(TableName.valueOf(variantTable));
-                ResultScanner resScan = table.getScanner(scan);
-                return new VariantHBaseIterator(resScan, genomeHelper, studyConfigurationManager, options);
-            } catch (IOException e) {
+                Statement statement = phoenixCon.createStatement();
+                ResultSet resultSet = statement.executeQuery(sql);
+                return new VariantHBaseResultSetIterator(resultSet, genomeHelper, studyConfigurationManager, options);
+            } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+
+
+//            Scan scan = parseQuery(query, options);
+//            try {
+//                Table table = hbaseCon.getTable(TableName.valueOf(variantTable));
+//                ResultScanner resScan = table.getScanner(scan);
+//                return new VariantHBaseScanIterator(resScan, genomeHelper, studyConfigurationManager, options);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
         }
     }
 
