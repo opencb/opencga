@@ -15,6 +15,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -95,11 +96,22 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Annotate an individual", position = 4)
     public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
                                        @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId", required = true) @QueryParam("variableSetId") int variableSetId,
+                                       @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                    annotations, queryOptions, sessionId);
+            QueryResult<AnnotationSet> queryResult;
+            if (update && delete) {
+                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
+            } else if (update) {
+                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+            } else if (delete) {
+                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+            } else {
+                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+                        annotations, Collections.emptyMap(), sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -112,16 +124,39 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Annotate an individual", position = 5)
     public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") int variableSetId) {
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
         try {
-            QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-            if(variableSetResult.getResult().isEmpty()) {
-                return createErrorResponse("sample - annotate", "VariableSet not find.");
+            QueryResult<AnnotationSet> queryResult;
+            if (update && delete) {
+                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
+            } else if (delete) {
+                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+            } else {
+                if (update) {
+                    for (AnnotationSet annotationSet : catalogManager.getIndividual(individualId, null, sessionId).first().getAnnotationSets()) {
+                        if (annotationSet.getId().equals(annotateSetName)) {
+                            variableSetId = annotationSet.getVariableSetId();
+                        }
+                    }
+                }
+                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+                if(variableSetResult.getResult().isEmpty()) {
+                    return createErrorResponse("sample annotate", "VariableSet not find.");
+                }
+                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+                        .filter(variable -> params.containsKey(variable.getId()))
+                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+
+                if (update) {
+                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+                } else {
+                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+                            annotations, Collections.emptyMap(), sessionId);
+                }
             }
-            Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                    .filter(variable -> params.containsKey(variable.getId()))
-                    .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
-            QueryResult<AnnotationSet> queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId, annotations, queryOptions, sessionId);
+
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

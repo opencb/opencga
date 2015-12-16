@@ -75,7 +75,7 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
 
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
-        this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId());
+        this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
         this.normalizer = new VariantNormalizer();
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }

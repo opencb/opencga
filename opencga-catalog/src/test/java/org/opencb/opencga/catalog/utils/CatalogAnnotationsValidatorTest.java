@@ -1,17 +1,17 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Variable;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 23/06/15.
@@ -23,6 +23,9 @@ public class CatalogAnnotationsValidatorTest {
 
     public static final Variable string = new Variable(
             "string", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null);
+
+    public static final Variable stringNoRequired = new Variable(
+            "string", "", Variable.VariableType.TEXT, null, false, false, null, 0, null, null, null, null);
 
     public static final Variable stringList = new Variable(
             "stringList", "", Variable.VariableType.TEXT, null, true, true, null, 0, null, null, null, null);
@@ -151,6 +154,38 @@ public class CatalogAnnotationsValidatorTest {
         CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(nestedObject.getId(), nestedObject),
                 new Annotation(nestedObject.getId(), new ObjectMap(stringList.getId(), Arrays.asList("v1", "v2", "v3")).append(object.getId(),
                         new ObjectMap(string.getId(), "OneString"))));
+    }
+
+    @Test
+    public void checkNullValuesTest() throws CatalogException {
+        CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(stringNoRequired.getId(), stringNoRequired), new Annotation(string.getId(), null));
+    }
+    @Test
+    public void checkNullValues2Test() throws CatalogException {
+        thrown.expect(CatalogException.class); //Numeric list is required
+        CatalogAnnotationsValidator.checkAnnotation(Collections.singletonMap(string.getId(), string), new Annotation(string.getId(), null));
+    }
+
+    @Test
+    public void mergeAnnotationsTest() {
+        HashSet<Annotation> annotations = new HashSet<>(Arrays.asList(
+                new Annotation("K", "V"),
+                new Annotation("K2", "V2"),
+                new Annotation("K4", false)));
+        AnnotationSet annotationSet = new AnnotationSet("", 0, annotations, "", Collections.emptyMap());
+        Map<String, Object> newAnnotations = new ObjectMap()
+                .append("K", "newValue")        //Modify
+                .append("K2", null)             //Delete
+                .append("K3", "newAnnotation"); //Add
+        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
+
+        Map<String, Object> newAnnotation = annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+
+        Assert.assertEquals(3, newAnnotation.size());
+        Assert.assertEquals("newValue", newAnnotation.get("K"));
+        Assert.assertEquals(false, newAnnotation.containsKey("K2"));
+        Assert.assertEquals("newAnnotation", newAnnotation.get("K3"));
+        Assert.assertEquals(false, newAnnotation.get("K4"));
     }
 
 }
