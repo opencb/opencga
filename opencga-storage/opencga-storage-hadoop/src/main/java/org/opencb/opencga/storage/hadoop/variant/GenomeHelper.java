@@ -49,7 +49,7 @@ public class GenomeHelper {
     public static final String METADATA_PREFIX = "_";
     public static final String DEFAULT_META_ROW_KEY = "_METADATA";
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
-    public static final String DEFAULT_COLUMN_FAMILY = "d";
+    public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
     public static Integer DEFAULT_CHUNK_SIZE = 100;
 
     private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
@@ -72,6 +72,9 @@ public class GenomeHelper {
     public GenomeHelper (Configuration conf) {
         this.conf = conf;
         this.separator = conf.get(CONFIG_GENOME_VARIANT_ROW_KEY_SEP, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
+        // TODO: Check if columnFamily is upper case
+        // Phoenix local indexes fail if the default_column_family is lower case
+        // TODO: Report this bug to phoenix JIRA
         this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
         this.metaRowKey = Bytes.toBytes(conf.get(CONFIG_META_ROW_KEY,DEFAULT_META_ROW_KEY));
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
