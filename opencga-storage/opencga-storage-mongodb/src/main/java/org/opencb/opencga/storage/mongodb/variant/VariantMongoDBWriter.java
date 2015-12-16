@@ -260,6 +260,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                     continue;
                 }
 
+                // the chromosome and start appear just as shard keys, in an unsharded cluster they wouldn't be needed
+                BasicDBObject query = new BasicDBObject("_id", id)
+                        .append(DBObjectToVariantConverter.CHROMOSOME_FIELD, variant.getChromosome())
+                        .append(DBObjectToVariantConverter.START_FIELD, variant.getStart());
+
                 BasicDBObject addToSet = new BasicDBObject()
                         .append(DBObjectToVariantConverter.FILES_FIELD,
                                 sourceEntryConverter.convertToStorageType(variantSourceEntry));
@@ -278,7 +283,7 @@ public class VariantMongoDBWriter extends VariantDBWriter {
                         .append("$addToSet", addToSet)
                         .append("$setOnInsert", variantConverter.convertToStorageType(variant));    // assuming variantConverter.statsConverter == null
 
-                bulk.find(new BasicDBObject("_id", id)).upsert().updateOne(update);
+                bulk.find(query).upsert().updateOne(update);
 
                 currentBulkSize++;
             }
