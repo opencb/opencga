@@ -28,9 +28,8 @@ import java.util.*;
  */
 public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
-    public static final byte[] STUDIES_ROW = Bytes.toBytes(GenomeHelper.METADATA_PREFIX + "STUDIES");
-    public static final byte[] STUDIES_SUMMARY_COLUMN = Bytes.toBytes(GenomeHelper.METADATA_PREFIX + "SUMMARY");
-    final byte[] columnFamily;
+    private final byte[] studiesRow;
+    private final byte[] studiesSummaryColumn;
 
     private final Configuration configuration;
     private final ObjectMap options;
@@ -53,10 +52,11 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         this.tableName = Objects.requireNonNull(tableName);
         this.options = options;
         genomeHelper = new GenomeHelper(configuration);
-        columnFamily = genomeHelper.getColumnFamily();
         connection = null; // lazy load
         objectMapper = new ObjectMapper();
         hBaseManager = new HBaseManager(configuration);
+        studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
+        studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
     }
 
     @Override
@@ -70,9 +70,9 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.info("Get StudyConfiguration {} from DB {}", studyName, tableName);
-        Get get = new Get(STUDIES_ROW);
+        Get get = new Get(studiesRow);
         byte[] columnQualifier = Bytes.toBytes(studyName);
-        get.addColumn(columnFamily, columnQualifier);
+        get.addColumn(genomeHelper.getColumnFamily(), columnQualifier);
         if (timeStamp != null) {
             try {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
@@ -89,7 +89,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
                     if (result.isEmpty()) {
                         return Collections.emptyList();
                     } else {
-                        byte[] value = result.getValue(columnFamily, columnQualifier);
+                        byte[] value = result.getValue(genomeHelper.getColumnFamily(), columnQualifier);
                         StudyConfiguration studyConfiguration = objectMapper.readValue(value, StudyConfiguration.class);
                         return Collections.singletonList(studyConfiguration);
                     }
@@ -114,8 +114,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         try {
             hBaseManager.act(getConnection(), tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
-                Put put = new Put(STUDIES_ROW);
-                put.addColumn(columnFamily, columnQualifier, studyConfiguration.getTimeStamp(), bytes);
+                Put put = new Put(studiesRow);
+                put.addColumn(genomeHelper.getColumnFamily(), columnQualifier, studyConfiguration.getTimeStamp(), bytes);
                 table.put(put);
             });
         } catch (IOException e) {
@@ -132,8 +132,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     private BiMap<String, Integer> getStudiesSummary(QueryOptions options) {
-        Get get = new Get(STUDIES_ROW);
-        get.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN);
+        Get get = new Get(studiesRow);
+        get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
             if (!hBaseManager.act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
                 return HashBiMap.create();
@@ -143,7 +143,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
                 if (result.isEmpty()) {
                     return HashBiMap.create();
                 } else {
-                    byte[] value = result.getValue(columnFamily, STUDIES_SUMMARY_COLUMN);
+                    byte[] value = result.getValue(genomeHelper.getColumnFamily(), studiesSummaryColumn);
                     Map<String, Integer> map = objectMapper.readValue(value, Map.class);
                     logger.info("Get StudyConfiguration summary {}", map);
 
@@ -172,8 +172,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             createTableIfMissing();
             try(Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
-                Put put = new Put(STUDIES_ROW);
-                put.addColumn(columnFamily, STUDIES_SUMMARY_COLUMN, bytes);
+                Put put = new Put(studiesRow);
+                put.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn, bytes);
                 table.put(put);
             } catch (IOException e) {
                 e.printStackTrace();
