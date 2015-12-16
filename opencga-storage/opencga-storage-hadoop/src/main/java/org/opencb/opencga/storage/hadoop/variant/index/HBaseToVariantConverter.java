@@ -16,6 +16,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -35,6 +37,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
     private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPosition = new HashMap<>();
+    private final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
     private List<String> returnedSamples = Collections.emptyList();
 
@@ -105,7 +108,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             if (homRef != row.getHomRefCount()) {
-                throw new IllegalArgumentException("Wrong number of HomRef samples");
+                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row.getHomRefCount();
+//                throw new IllegalArgumentException(message);
+                logger.warn(message);
             }
 
             studyEntry.setSamplesData(samplesData);

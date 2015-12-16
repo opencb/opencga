@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -21,7 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
+    public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
@@ -69,6 +71,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         if (!loadArch && !loadVar) {
             options.put(HADOOP_LOAD_ARCHIVE, true);
             options.put(HADOOP_LOAD_VARIANT, true);
+            loadArch = true;
+            loadVar = true;
         }
 
 
@@ -97,6 +101,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
             //TODO: CopyFromLocal input to HDFS
             if (!input.getScheme().equals("hdfs")) {
+                if (!StringUtils.isEmpty(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY))) {
+                    output = URI.create(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY));
+                }
                 if (!output.getScheme().equals("hdfs")) {
                     throw new StorageManagerException("Output must be in HDFS");
                 }
@@ -131,6 +138,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     //TODO: Generalize this
     VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         VariantSource source;
+
+        if (input.getScheme().startsWith("file")) {
+            return readVariantSource(Paths.get(input.getPath()), null);
+        }
 
         Configuration conf = getHadoopConfiguration(options);
         Path metaPath = new Path(input.toString().replace("variants.avro", "file.json"));
