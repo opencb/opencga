@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -178,9 +179,6 @@ public class CliOptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId;
-
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         boolean transform = false;
 
@@ -202,6 +200,9 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        public String fileId;
+
         @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
         public boolean calculateCoverage = true;
 
@@ -215,8 +216,11 @@ public class CliOptionsParser {
         @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
         public String study;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-        public String studyId;
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
+        public String studyId = VariantStorageManager.Options.STUDY_ID.defaultValue().toString();
+
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         public String pedigree;
