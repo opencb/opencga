@@ -16,11 +16,42 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 16/06/15.
  */
-public class BenchmarkStats extends HashMap{
+public class BenchmarkStats {
 
+    private HashMap<String, List<Integer>> counters;
+
+    public BenchmarkStats() {
+        counters = new HashMap<>();
+    }
+
+    public void addTime(String counter, int time) {
+        if (!counters.containsKey(counter)) {
+            counters.put(counter, new ArrayList<>());
+        }
+        counters.get(counter).add(time);
+    }
+
+    public double avg(String counter) {
+        if (counter != null && counters.get(counter) != null) {
+            List<Integer> integers = counters.get(counter);
+            double total = 0;
+            for (Integer integer : integers) {
+                total += integer.doubleValue();
+            }
+            return total / integers.size();
+        }
+        return 0.0f;
+    }
+
+    public void printSummary() {
+
+    }
 }

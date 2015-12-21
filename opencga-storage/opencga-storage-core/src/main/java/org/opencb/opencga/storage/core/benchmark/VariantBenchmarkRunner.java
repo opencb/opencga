@@ -27,6 +27,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 /**
  * Created by imedina on 16/06/15.
  */
@@ -53,37 +57,50 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
 
     @Override
+    public BenchmarkStats convert() {
+        return null;
+    }
+
+    @Override
     public BenchmarkStats insert() {
         return null;
     }
 
-
     @Override
     public BenchmarkStats query() {
-        return query(3);
+        return query(3, "");
     }
 
     @Override
-    public BenchmarkStats query(int numRepetitions) {
+    public BenchmarkStats query(int numRepetitions, String dbQuery) {
 
-//        List<BenchmarkStats> benchmarkStatsList = new ArrayList<>(numRepetitions);
+        System.out.println("numRepetitions = " + numRepetitions);
+
+        List<BenchmarkStats> benchmarkStatsList = new ArrayList<>(numRepetitions);
         BenchmarkStats benchmarkStats = new BenchmarkStats();
-        int ms;
+
+        //int ms;
         int countTime = 0;
         int queryTime = 0;
+
         for (int i = 0; i < numRepetitions; i++) {
-            countTime += count();
 
-            queryTime += queryByRegion();
+            if (dbQuery.equals("count")) {
+                countTime = count();
+                benchmarkStats.addTime("count", countTime);
+            } else if (Objects.equals(dbQuery, "queryByRegion")) {
+                queryTime = queryByRegion();
+                benchmarkStats.addTime("regionQuery", queryTime);
+            } else if (dbQuery.equals("queryByChromosome")) {
+                queryTime = queryByChromosome();
+                benchmarkStats.addTime("chromosomeQuery", queryTime);
+            }
 
-
-//            benchmarkStatsList.add(benchmarkStats);
+            benchmarkStatsList.add(benchmarkStats);
         }
 
-//        benchmarkStats.put("count", countTime/numRepetitions);
-//        benchmarkStats.put("query", queryTime/numRepetitions);
-
-        return null;
+        System.out.println(benchmarkStats.avg("count"));
+        return benchmarkStats;
     }
 
     private int count() {
@@ -98,10 +115,21 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:333-116666");
 
         QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResult = variantDBAdaptor.get(query, queryOptions);
+        QueryResult<Variant> variantQueryResultByRegion = variantDBAdaptor.get(query, queryOptions);
 
-        System.out.println(variantQueryResult.getDbTime());
-        return variantQueryResult.getDbTime();
+        System.out.println(variantQueryResultByRegion.getDbTime());
+        return variantQueryResultByRegion.getDbTime();
+    }
+
+    private int queryByChromosome() {
+        Query query = new Query();
+        query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "3");
+
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+
+        System.out.println(variantQueryResultByChr.getDbTime());
+        return variantQueryResultByChr.getDbTime();
     }
 
 }
