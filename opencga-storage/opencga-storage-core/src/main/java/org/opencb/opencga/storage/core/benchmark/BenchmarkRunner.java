@@ -33,14 +33,17 @@ public abstract class BenchmarkRunner {
     protected Logger logger;
 
     public BenchmarkRunner() {
+
     }
 
 
+    public abstract BenchmarkStats convert();
 
     public abstract BenchmarkStats insert();
 
     public abstract BenchmarkStats query();
 
-    public abstract BenchmarkStats query(int numRepetitions);
+    public abstract BenchmarkStats query(int numRepetitions, String query);
+
 
 }
