@@ -20,6 +20,8 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 
+import java.util.Set;
+
 /**
  * Created by imedina on 16/06/15.
  */
@@ -43,7 +45,7 @@ public abstract class BenchmarkRunner {
 
     public abstract BenchmarkStats query();
 
-    public abstract BenchmarkStats query(int numRepetitions, String query);
+    public abstract BenchmarkStats query(int numRepetitions, Set<String> query);
 
 
 }

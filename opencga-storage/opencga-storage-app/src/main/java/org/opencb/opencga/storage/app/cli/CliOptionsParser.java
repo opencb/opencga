@@ -513,13 +513,13 @@ public class CliOptionsParser {
     public class BenchmarkCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"--load"}, description = "File name with absolute path", required = false, arity = 1)
-        public String load = null;
+        public String load;
 
         @Parameter(names = {"--query"}, description = "Query to fetch the data from tables", required = true, arity = 1)
         public String query;
 
-        @Parameter(names = {"--repetition"}, description = "Number of repetition", required = true, arity = 1)
-        public String repetition;
+        @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
+        public int repetition = 3;
 
         @Parameter(names = {"--table-name"}, description = "Benchmark variants", required = true, arity = 1)
         public String tableName;

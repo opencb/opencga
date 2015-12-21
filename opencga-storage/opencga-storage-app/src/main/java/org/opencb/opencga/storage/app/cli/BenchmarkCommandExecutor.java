@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.app.cli;
 
-import org.opencb.datastore.core.Query;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -38,7 +37,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
 
     private void benchmark() throws Exception {
         String load = benchmarkCommandOptions.load;
-        String numOfRepetition = benchmarkCommandOptions.repetition;
+        int numOfRepetition = benchmarkCommandOptions.repetition;
         String tableName = benchmarkCommandOptions.tableName;
         String query  = benchmarkCommandOptions.query;
         boolean loadRequired;
@@ -48,7 +47,7 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         } else {
             loadRequired = false;
         }
-        String[] args = {load, numOfRepetition, tableName, query, Boolean.toString(loadRequired)};
+        String[] args = {load, "" + numOfRepetition, tableName, query, Boolean.toString(loadRequired)};
 
         new BenchmarkManager().run(args);
 

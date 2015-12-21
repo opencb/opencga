@@ -19,6 +19,9 @@ package org.opencb.opencga.storage.core.benchmark;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
+import java.util.Arrays;
+import java.util.HashSet;
+
 /**
  * Created by imedina on 08/10/15.
  */
@@ -42,7 +45,7 @@ public class BenchmarkManager {
         BenchmarkStats benchmarkStats;
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
 
-        benchmarkStats = benchmarkRunner.query(Integer.parseInt(numOfRepetition), dbQuery);
+        benchmarkStats = benchmarkRunner.query(Integer.parseInt(numOfRepetition), new HashSet<>(Arrays.asList(dbQuery.split(","))));
 
         return benchmarkStats;
     }

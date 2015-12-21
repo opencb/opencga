@@ -85,6 +85,9 @@ public class StorageMain {
                     case "stats-variants":
                         commandExecutor = new StatsVariantsCommandExecutor(cliOptionsParser.getStatsVariantsCommandOptions());
                         break;
+                    case "benchmark":
+                        commandExecutor = new BenchmarkCommandExecutor(cliOptionsParser.getBenchmarkCommandOptions());
+                        break;
                     default:
                         System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                         break;

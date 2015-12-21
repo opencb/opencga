@@ -27,14 +27,13 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by imedina on 16/06/15.
  */
 public class VariantBenchmarkRunner extends BenchmarkRunner {
+
 
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
         this(storageConfiguration.getDefaultStorageEngineId(), storageConfiguration);
@@ -68,38 +67,38 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     @Override
     public BenchmarkStats query() {
-        return query(3, "");
+        return query(3, new HashSet<>(Arrays.asList("count", "queryByRegion")));
     }
 
     @Override
-    public BenchmarkStats query(int numRepetitions, String dbQuery) {
-
+    public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) {
         System.out.println("numRepetitions = " + numRepetitions);
 
-        List<BenchmarkStats> benchmarkStatsList = new ArrayList<>(numRepetitions);
-        BenchmarkStats benchmarkStats = new BenchmarkStats();
-
         //int ms;
-        int countTime = 0;
-        int queryTime = 0;
+        int executionTime = 0;
 
+        BenchmarkStats benchmarkStats = new BenchmarkStats();
         for (int i = 0; i < numRepetitions; i++) {
-
-            if (dbQuery.equals("count")) {
-                countTime = count();
-                benchmarkStats.addTime("count", countTime);
-            } else if (Objects.equals(dbQuery, "queryByRegion")) {
-                queryTime = queryByRegion();
-                benchmarkStats.addTime("regionQuery", queryTime);
-            } else if (dbQuery.equals("queryByChromosome")) {
-                queryTime = queryByChromosome();
-                benchmarkStats.addTime("chromosomeQuery", queryTime);
+            Iterator<String> iterator = benchmarkTests.iterator();
+            while (iterator.hasNext()) {
+                String next = iterator.next();
+                switch (next) {
+                    case "count":
+                        executionTime = count();
+                        break;
+                    case "queryByRegion":
+                        executionTime = queryByRegion();
+                        break;
+                    case "chromosomeQuery":
+                        executionTime = queryByChromosome();
+                        break;
+                    default:
+                        break;
+                }
+                benchmarkStats.addExecutionTime(next, executionTime);
             }
-
-            benchmarkStatsList.add(benchmarkStats);
         }
-
-        System.out.println(benchmarkStats.avg("count"));
+        benchmarkStats.printSummary();
         return benchmarkStats;
     }
 

@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.benchmark;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,13 +26,13 @@ import java.util.Map;
  */
 public class BenchmarkStats {
 
-    private HashMap<String, List<Integer>> counters;
+    private Map<String, List<Integer>> counters;
 
     public BenchmarkStats() {
-        counters = new HashMap<>();
+        counters = new LinkedHashMap<>();
     }
 
-    public void addTime(String counter, int time) {
+    public void addExecutionTime(String counter, int time) {
         if (!counters.containsKey(counter)) {
             counters.put(counter, new ArrayList<>());
         }
@@ -52,6 +52,11 @@ public class BenchmarkStats {
     }
 
     public void printSummary() {
-
+        for (String key : counters.keySet()) {
+            System.out.print("Counter: " + key + ", ");
+            System.out.print("values: " + counters.get(key).toString());
+            System.out.print("avg: " + avg(key));
+            System.out.println();
+        }
     }
 }
