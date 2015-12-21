@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -307,6 +308,19 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
 
+        final String fileId = options.getString(Options.FILE_ID.key());
+        Task<Variant> remapIdsTask = new Task<Variant>() {
+            @Override
+            public boolean apply(List<Variant> variants) {
+                variants.forEach(variant -> variant.getStudies()
+                        .forEach(studyEntry -> {
+                            studyEntry.setStudyId(Integer.toString(studyConfiguration.getStudyId()));
+                            studyEntry.getFiles().forEach(fileEntry -> fileEntry.setFileId(fileId));
+                        }));
+                return true;
+            }
+        };
+        taskList.add(remapIdsTask);
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -314,6 +328,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Runner
         if (loadThreads == 1) {
             logger.info("Single thread load...");
+            List<Task<Variant>> ts = Collections.singletonList(remapIdsTask);
             VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, (List) writers, taskList, batchSize);
             vr.run();
         } else {
@@ -342,6 +357,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
                     @Override
                     public List<Variant> apply(List<Variant> batch) {
+                        try {
+                            remapIdsTask.apply(batch);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);// IMPOSSIBLE
+                        }
                         writer.write(batch);
                         return batch;
                     }
@@ -453,12 +473,18 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             logger.info("Resume mode. Previously loaded variants: " + alreadyLoadedVariants);
         }
 
+        StorageManagerException exception = null;
         if (expectedCount != count) {
-            throw new StorageManagerException("Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count);
+            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
+            logger.error(message);
+            exception = new StorageManagerException(message);
         } else {
             logger.info("Final number of loaded variants: " + count);
         }
         logger.info("============================================================");
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     @Override

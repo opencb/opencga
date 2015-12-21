@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
@@ -113,10 +114,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         STUDY_TYPE ("studyType", VariantStudy.StudyType.CASE_CONTROL),
         AGGREGATED_TYPE ("aggregatedType", VariantSource.Aggregation.NONE),
-        STUDY_NAME ("studyName", ""),
-        STUDY_ID ("studyId", ""),
-        FILE_ID ("fileId", ""),
+        STUDY_NAME ("studyName", "default"),
+        STUDY_ID ("studyId", -1),
+        FILE_ID ("fileId", -1),
+        OVERRIDE_FILE_ID("overrideFileId", false),
         SAMPLE_IDS ("sampleIds", ""),
+        ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
 
         COMPRESS_METHOD ("compressMethod", "gzip"),
         AGGREGATION_MAPPING_PROPERTIES ("aggregationMappingFile", null),
@@ -145,6 +148,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             return key;
         }
 
+        @SuppressWarnings("unchecked")
         public <T> T defaultValue() {
             return (T) value;
         }
@@ -176,18 +180,31 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
         ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(variantOptions);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(variantOptions.getInt(Options.STUDY_ID.key), variantOptions.getString(Options.STUDY_NAME.key));
-            studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
-            variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
-        }
         String fileName = Paths.get(input.getPath()).getFileName().toString();
-        Integer fileId = variantOptions.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
+        int fileId = variantOptions.getInt(Options.FILE_ID.key, Options.FILE_ID.defaultValue());
+        int studyId = variantOptions.getInt(Options.STUDY_ID.key, Options.STUDY_ID.defaultValue());
 
-        checkNewFile(studyConfiguration, fileId, fileName);
+        StudyConfiguration studyConfiguration;
+        if (studyId < 0 && fileId < 0) {
+            logger.debug("Isolated study configuration");
+            studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(), fileName);
+            studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
+            variantOptions.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+        } else {
+            //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+            studyConfiguration = getStudyConfiguration(variantOptions);
+
+            if (studyConfiguration == null) {
+                logger.info("Creating a new StudyConfiguration");
+                checkStudyId(studyId);
+                studyConfiguration = new StudyConfiguration(studyId, variantOptions.getString(Options.STUDY_NAME.key));
+                studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
+            }
+
+            checkNewFile(studyConfiguration, fileId, fileName);
+        }
+        variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
+
 
         return input;
     }
@@ -218,7 +235,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         String parser = options.getString("transform.parser", "htsjdk");
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        Integer fileId = options.getInt(Options.FILE_ID.key);    //TODO: Transform into an optional field
+        Integer fileId;
+        if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue())) {
+            fileId = Options.FILE_ID.defaultValue();
+        } else {
+            fileId = options.getInt(Options.FILE_ID.key);
+        }
         VariantSource.Aggregation aggregation = options.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue());
         String fileName = input.getFileName().toString();
         VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key, VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
@@ -407,6 +429,13 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
+        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        // Delete isolated storage configuration
+        if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key())) {
+            options.remove(Options.STUDY_CONFIGURATION.key());
+        }
+
         return input;
     }
 
@@ -418,7 +447,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key), options.getString(Options.STUDY_NAME.key));
+            int studyId = options.getInt(Options.STUDY_ID.key, Options.STUDY_ID.defaultValue());
+            String studyName = options.getString(Options.STUDY_NAME.key, Options.STUDY_NAME.defaultValue());
+            checkStudyId(studyId);
+            studyConfiguration = new StudyConfiguration(studyId, studyName);
             options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
         }
 
@@ -428,6 +460,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
          * FileID and FileName is read from the VariantSource
+         * If fileId is -1, read fileId from Options
          * Will fail if:
          *     fileId is not an integer
          *     fileId was already in the studyConfiguration.indexedFiles
@@ -440,9 +473,26 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         try {
             fileId = Integer.parseInt(source.getFileId());
         } catch (NumberFormatException e) {
-            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
+            throw new StorageManagerException("FileId '" + source.getFileId() + "' is not an integer", e);
         }
-        options.put(Options.FILE_ID.key(), fileId);
+
+        if (fileId < 0) {
+            fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
+        } else {
+            int fileIdFromParams = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
+            if (fileIdFromParams >= 0) {
+                if (fileIdFromParams != fileId) {
+                    if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
+                        throw new StorageManagerException("Wrong fileId! Unable to load using fileId: " + fileIdFromParams + ". " +
+                                "The input file has fileId: " + fileId + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
+                    } else {
+                        //Override the fileId
+                        fileId = fileIdFromParams;
+                    }
+                }
+            }
+            options.put(Options.FILE_ID.key(), fileId);
+        }
 
         checkNewFile(studyConfiguration, fileId, fileName);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
@@ -745,8 +795,15 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         } else {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(params);
             StudyConfiguration studyConfiguration;
-            if (params.containsKey(Options.STUDY_NAME.key)) {
+            if (!StringUtils.isEmpty(params.getString(Options.STUDY_NAME.key))
+                    && !params.getString(Options.STUDY_NAME.key()).equals(Options.STUDY_NAME.defaultValue())) {
                 studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getString(Options.STUDY_NAME.key), new QueryOptions(params)).first();
+                if (studyConfiguration != null && params.containsKey(Options.STUDY_ID.key)) {
+                    //Check if StudyId matches
+                    if (studyConfiguration.getStudyId() != params.getInt(Options.STUDY_ID.key)) {
+                        throw new StorageManagerException("Invalid StudyConfiguration. StudyId mismatches");
+                    }
+                }
             } else if (params.containsKey(Options.STUDY_ID.key)) {
                 studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getInt(Options.STUDY_ID.key), new QueryOptions(params)).first();
             } else {
@@ -817,6 +874,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     protected void checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
         Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
 
+        if (fileId < 0) {
+            throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
+        }
+
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
                 throw new StorageManagerException("FileName " + fileName + " have a different fileId in the StudyConfiguration: " +
@@ -843,6 +904,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         if (studyConfiguration == null) {
             throw new StorageManagerException("StudyConfiguration is null");
         }
+        checkStudyId(studyConfiguration.getStudyId());
         if (studyConfiguration.getFileIds().size() != StudyConfiguration.inverseMap(studyConfiguration.getFileIds()).size() ) {
             throw new StorageManagerException("StudyConfiguration has duplicated fileIds");
         }
@@ -850,5 +912,13 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             throw new StorageManagerException("StudyConfiguration has duplicated cohortIds");
         }
     }
+
+
+    public static void checkStudyId(int studyId) throws StorageManagerException {
+        if (studyId < 0) {
+            throw new StorageManagerException("Invalid studyId : " + studyId);
+        }
+    }
+
 
 }

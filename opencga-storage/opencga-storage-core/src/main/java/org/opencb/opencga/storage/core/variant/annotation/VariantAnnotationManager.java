@@ -16,31 +16,33 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.avro.AvroDataReader;
+import org.opencb.opencga.storage.core.variant.io.avro.AvroDataWriter;
+import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataReader;
+import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -61,6 +63,7 @@ public class VariantAnnotationManager {
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
+    public static final String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;
@@ -90,18 +93,116 @@ public class VariantAnnotationManager {
         logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
     }
 
+    /**
+     * Creates a variant annotation file from an specific source based on the content of a Variant DataBase.
+     *
+     * @param outDir                File outdir.
+     * @param fileName              Generated file name.
+     * @param query                 Query for those variants to annotate.
+     * @param options               Specific options.
+     * @return                      URI of the generated file.
+     * @throws IOException
+     */
     public URI createAnnotation(Path outDir, String fileName, Query query, QueryOptions options) throws IOException {
-        return this.variantAnnotator.createAnnotation(dbAdaptor, outDir, fileName, query, options);
+
+        boolean gzip = options == null || options.getBoolean("gzip", true);
+        boolean avro = options == null || options.getBoolean("avro", false);
+        Path path = Paths.get(outDir != null? outDir.toString() : "/tmp" ,fileName + ".annot" + (avro? ".avro" : ".json") + (gzip? ".gz" : ""));
+        URI fileUri = path.toUri();
+
+        /** Getting iterator from OpenCGA Variant database. **/
+        QueryOptions iteratorQueryOptions;
+        if(options == null) {
+            iteratorQueryOptions = new QueryOptions();
+        } else {
+            iteratorQueryOptions = new QueryOptions(options);
+        }
+        List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
+        iteratorQueryOptions.add("include", include);
+
+        int batchSize = 200;
+        int numThreads = 8;
+        if(options != null) { //Parse query options
+            batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
+            numThreads = options.getInt(VariantAnnotationManager.NUM_THREADS, numThreads);
+        }
+
+        try {
+            DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
+
+            ParallelTaskRunner.Task<Variant, VariantAnnotation> annotationTask = variantList -> {
+                List<VariantAnnotation> variantAnnotationList;
+                long start = System.currentTimeMillis();
+                logger.debug("Annotating batch of {} genomic variants.", variantList.size());
+                try {
+                    variantAnnotationList = variantAnnotator.annotate(variantList);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(), (System.currentTimeMillis() - start) / 1000.0);
+                return variantAnnotationList;
+            };
+
+            final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
+            if (avro) {
+                variantAnnotationDataWriter = new AvroDataWriter<>(path, gzip, VariantAnnotation.getClassSchema());
+            } else {
+                variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(path, gzip);
+            }
+
+            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
+            ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
+            parallelTaskRunner.run();
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+
+        return fileUri;
     }
 
+    /**
+     * Loads variant annotations from an specified file into the selected Variant DataBase
+     *
+     * @param uri                   URI of the annotation file
+     * @param options               Specific options.
+     * @throws IOException
+     */
     public void loadAnnotation(URI uri, QueryOptions options) throws IOException {
-        variantAnnotator.loadAnnotation(dbAdaptor, uri, options);
+
+        final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
+        final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
+        boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
+
+
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
+        DataReader<VariantAnnotation> reader;
+
+        //TODO: Read from VEP file
+        if (avro) {
+            reader = new AvroDataReader<>(Paths.get(uri).toFile(), VariantAnnotation.class);
+        } else {
+            reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
+        }
+        try {
+            ParallelTaskRunner<VariantAnnotation, Void> prt = new ParallelTaskRunner<>(reader, variantAnnotationList -> {
+                dbAdaptor.updateAnnotations(variantAnnotationList, new QueryOptions());
+                return Collections.emptyList();
+            }, null, config);
+            prt.run();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     public enum AnnotationSource {
         CELLBASE_DB_ADAPTOR,
         CELLBASE_REST,
-        VEP
+        VEP,
+        OTHER
     }
 
 
@@ -109,154 +210,36 @@ public class VariantAnnotationManager {
             throws VariantAnnotatorException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
         AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(
-                options.getString(ANNOTATION_SOURCE, VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()).toUpperCase()
+                options.getString(ANNOTATION_SOURCE, options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+                        ? AnnotationSource.OTHER.name()
+                        : VariantAnnotationManager.AnnotationSource.CELLBASE_REST.name()).toUpperCase()
         );
 
         logger.info("Annotating with {}", annotationSource);
 
-        String species = options.getString(SPECIES);
-        String assembly = options.getString(ASSEMBLY);
-
         switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
-                return CellBaseVariantAnnotator.buildCellbaseAnnotator(configuration.getCellbase(), species, assembly, false);
+                return new CellBaseVariantAnnotator(configuration, options, false);
             case CELLBASE_REST:
-                return CellBaseVariantAnnotator.buildCellbaseAnnotator(configuration.getCellbase(), species, assembly, true);
+                return new CellBaseVariantAnnotator(configuration, options, true);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
+            case OTHER:
             default:
-                //TODO: Reflexion?
-                throw new VariantAnnotatorException("Unknown annotation source: " + annotationSource);
-        }
-
-    }
-
-    class AnnotatorDBReader implements DataReader<VariantAnnotation> {
-        private final VariantDBIterator iterator;
-        private final VariantDBAdaptor variantDBAdaptor;
-        AnnotatorDBReader(VariantDBAdaptor variantDBAdaptor, Query query) {
-            this.variantDBAdaptor = variantDBAdaptor;
-            QueryOptions iteratorQueryOptions = new QueryOptions();
-            iteratorQueryOptions.add("include", Arrays.asList("chromosome", "start", "end", "alternate", "reference"));
-            this.iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
-        }
-        @Override public boolean open() {return true;}
-        @Override public boolean close() {return true;}
-        @Override public boolean pre() {return true;}
-        @Override public boolean post() {return true;}
-        @Override public List<VariantAnnotation> read() { return read(1); }
-        @Override public List<VariantAnnotation> read(int batchSize) {
-            List<VariantAnnotation> batch = new ArrayList<>(batchSize);
-            for (int i = 0; i < batchSize && iterator.hasNext(); i++) {
-                Variant variant = iterator.next();
-                // If Variant is SV some work is needed
-                if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
-//                logger.info("Skip variant! {}", genomicVariant);
-                    logger.info("Skip variant! {}", variant.getChromosome() + ":" +
-                                    variant.getStart() + ":" +
-                                    (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
-                                    (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
-                    );
-                    logger.debug("Skip variant! {}", variant);
-                } else {
-//                    GenomicVariant genomicVariant = new GenomicVariant(variant.getChromosome(), variant.getStart(),
-//                            variant.getReference().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getReference(),
-//                            variant.getAlternate().isEmpty() && variant.getType() == Variant.VariantType.INDEL ? "-" : variant.getAlternate());
-//                    genomicVariantList.add(genomicVariant);
-                    VariantAnnotation variantAnnotation = new VariantAnnotation();
-                    variantAnnotation.setChromosome(variant.getChromosome());
-                    variantAnnotation.setStart( variant.getStart());
-                    variantAnnotation.setEnd( variant.getEnd());
-                    variantAnnotation.setReference( variant.getReference());
-                    variantAnnotation.setAlternate( variant.getAlternate());
-                    batch.add(variantAnnotation);
-                }
-            }
-            return batch;
-        }
-    }
-
-    class AnnotatorDBWriter implements DataWriter<VariantAnnotation> {
-        private final VariantDBAdaptor variantDBAdaptor;
-        AnnotatorDBWriter(VariantDBAdaptor variantDBAdaptor) {
-            this.variantDBAdaptor = variantDBAdaptor;
-        }
-        @Override public boolean open() {return true;}
-        @Override public boolean close() {return true;}
-        @Override public boolean pre() {return true;}
-        @Override public boolean post() {return true;}
-        @Override public boolean write(VariantAnnotation elem) {
-            variantDBAdaptor.updateAnnotations(Collections.singletonList(elem), null);
-            return true;
-        }
-        @Override public boolean write(List<VariantAnnotation> batch) {
-            variantDBAdaptor.updateAnnotations(batch, null);
-            return true;
-        }
-    }
-
-    class AnnotatorJsonReader implements DataReader<VariantAnnotation> {
-        private final JsonParser parser;
-        private long readsCounter;
-        AnnotatorJsonReader(InputStream inputStream) throws IOException {
-            JsonFactory factory = new JsonFactory();
-            ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
-            /** Innitialice Json parse**/
-            parser = factory.createParser(inputStream);
-        }
-
-        @Override public boolean open() {return true;}
-        @Override public boolean close() {return true;}
-        @Override public boolean pre() {readsCounter = 0; return true;}
-        @Override public boolean post() {return true;}
-        @Override public List<VariantAnnotation> read() { return read(1); }
-        @Override public List<VariantAnnotation> read(int batchSize) {
-            List<VariantAnnotation> batch = new ArrayList<>(batchSize);
-            try {
-                for (int i = 0; i < batchSize && parser.nextToken() != null; i++) {
-                    VariantAnnotation variantAnnotation = parser.readValueAs(VariantAnnotation.class);
-                    batch.add(variantAnnotation);
-                    readsCounter++;
-                    if (readsCounter % 1000 == 0) {
-                        logger.info("Element {}", readsCounter);
-                    }
-                }
-            } catch (IOException e) {
-                return Collections.emptyList();
-            }
-            return batch;
-        }
-    }
-
-    class AnnotatorJsonWriter implements DataWriter<VariantAnnotation> {
-        private final ObjectWriter writer;
-        private final OutputStream outputStream;
-
-        AnnotatorJsonWriter(OutputStream outputStream) {
-            this.outputStream = outputStream;
-            JsonFactory factory = new JsonFactory();
-            ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
-            this.writer = jsonObjectMapper.writerWithType(VariantAnnotation.class);
-        }
-        @Override public boolean open() {return true;}
-        @Override public boolean close() {return true;}
-        @Override public boolean pre() {return true;}
-        @Override public boolean post() {return true;}
-        @Override  public boolean write(VariantAnnotation variantAnnotation) {
-            return write(Collections.singletonList(variantAnnotation));
-        }
-        @Override  public boolean write(List<VariantAnnotation> batch) {
-            for (VariantAnnotation variantAnnotation : batch) {
+                String className = options.getString(VARIANT_ANNOTATOR_CLASSNAME);
                 try {
-                    outputStream.write(writer.writeValueAsString(variantAnnotation).getBytes());
-                    outputStream.write('\n');
-                } catch (IOException e) {
-                    logger.error(e.getMessage(), e);
-                    return false;
+                    Class<?> clazz = Class.forName(className);
+                    if (VariantAnnotator.class.isAssignableFrom(clazz)) {
+                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class).newInstance(configuration, options);
+                    } else {
+                        throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
+                    }
+                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
+                    throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
                 }
-            }
-            return true;
         }
+
     }
 
 }

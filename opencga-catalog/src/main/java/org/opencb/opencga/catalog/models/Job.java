@@ -29,15 +29,39 @@ import java.util.Map;
  */
 public class Job {
 
+    /**
+     * Catalog unique identifier
+     */
     private int id;
+    /**
+     * User given job name
+     */
     private String name;
+    /**
+     * UserId of the user that created the job
+     */
     private String userId;
+    /**
+     * Name of the tool to be executed
+     */
     private String toolName;
+    /**
+     * Job creation date
+     */
     private String date;
+
     private String description;
+    /**
+     * Start time in milliseconds
+     */
     private long startTime;
+    /**
+     * End time in milliseconds
+     */
     private long endTime;
     private String outputError;
+    private String execution;
+    private Map<String, String> params;
     private String commandLine;
     private int visits;
     private Status status;
@@ -59,7 +83,7 @@ public class Job {
 
     public enum Status {
        PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
-       ERROR,                 //Job with errors. See "errNo"
+       ERROR,                 //Job with errors. See "error"
        QUEUED,
        RUNNING,
        DONE,                  //Job finished, but output not ready. Daemon will process the output.
@@ -100,19 +124,12 @@ public class Job {
     public Job() {
     }
 
-    @Deprecated
-    public Job(String name, String userId, String toolName, String description, String commandLine,
-               List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, -1, -1, "", commandLine, -1, Status.PREPARED, 0,
-                -1, null, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
-    }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status.PREPARED, 0,
-                outDirId, tmpOutDirUri, input, new LinkedList<Integer>(), new LinkedList<String>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+                outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
+                new HashMap<>());
     }
 
     public Job(int id, String name, String userId, String toolName, String date, String description,
@@ -169,8 +186,10 @@ public class Job {
                 ", outputError='" + outputError + '\'' +
                 ", commandLine='" + commandLine + '\'' +
                 ", visits=" + visits +
-                ", status='" + status + '\'' +
+                ", status=" + status +
                 ", diskUsage=" + diskUsage +
+                ", execution='" + execution + '\'' +
+                ", params=" + params +
                 ", outDirId=" + outDirId +
                 ", tmpOutDirUri=" + tmpOutDirUri +
                 ", input=" + input +
@@ -178,6 +197,8 @@ public class Job {
                 ", tags=" + tags +
                 ", attributes=" + attributes +
                 ", resourceManagerAttributes=" + resourceManagerAttributes +
+                ", error='" + error + '\'' +
+                ", errorDescription='" + errorDescription + '\'' +
                 '}';
     }
 
@@ -283,6 +304,24 @@ public class Job {
 
     public void setDiskUsage(long diskUsage) {
         this.diskUsage = diskUsage;
+    }
+
+    public String getExecution() {
+        return execution;
+    }
+
+    public Job setExecution(String execution) {
+        this.execution = execution;
+        return this;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public Job setParams(Map<String, String> params) {
+        this.params = params;
+        return this;
     }
 
     public int getOutDirId() {

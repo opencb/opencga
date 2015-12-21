@@ -29,12 +29,15 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
 
     QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> annotate(int sampleId, String id, int variableSetId, Map<String, Object> annotations,
+    QueryResult<AnnotationSet> annotate(int sampleId, String annotationSetId, int variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet, String sessionId)
             throws CatalogException;
 
+    QueryResult<AnnotationSet> updateAnnotation(int sampleId, String annotationSetId, Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException;
+
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId)
-    throws CatalogException;
+            throws CatalogException;
 
     /*----------------*/
     /* Cohort METHODS */
