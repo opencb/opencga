@@ -29,25 +29,22 @@ public class BenchmarkManager {
 
     private StorageConfiguration storageConfiguration;
     String load = null;
-    String numOfRepetition = null;
+//    String numOfRepetition = null;
     String tableName = null;
     String query = null;
     boolean isLoadRequired;
 
-    public BenchmarkManager() {
-
+    public BenchmarkManager(StorageConfiguration storageConfiguration) {
+        this.storageConfiguration = storageConfiguration;
     }
 
-    public BenchmarkStats variantBenchmark(StorageConfiguration storageConfiguration, String numOfRepetition, String dbTableName,
-                                           String dbQuery) throws ClassNotFoundException, StorageManagerException,
+    public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageManagerException,
             InstantiationException, IllegalAccessException {
 
-        BenchmarkStats benchmarkStats;
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
+//        BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(), new HashSet<>(Arrays.asList(dbQuery.split(","))));
 
-        benchmarkStats = benchmarkRunner.query(Integer.parseInt(numOfRepetition), new HashSet<>(Arrays.asList(dbQuery.split(","))));
-
-        return benchmarkStats;
+        return null;
     }
 
     //Load data if user provide the loading option with file path
@@ -57,30 +54,30 @@ public class BenchmarkManager {
 
     public void run(String[] args) throws ClassNotFoundException, StorageManagerException, InstantiationException, IllegalAccessException {
 
-        load = args[0];
-        numOfRepetition = args[1];
-        tableName = args[2];
-        query = args[3];
-        isLoadRequired = Boolean.parseBoolean(args[4]);
+//        load = args[0];
+//        numOfRepetition = args[1];
+//        tableName = args[2];
+//        query = args[3];
+//        isLoadRequired = Boolean.parseBoolean(args[4]);
+//
+//        System.out.println("load :: " + load);
+//        System.out.println("numOfRepetition :: " + numOfRepetition);
+//        System.out.println("tableName :: " + tableName);
+//        System.out.println("query :: " + query);
+//        System.out.println("isLoadRequired :: " + isLoadRequired);
 
-        System.out.println("load :: " + load);
-        System.out.println("numOfRepetition :: " + numOfRepetition);
-        System.out.println("tableName :: " + tableName);
-        System.out.println("query :: " + query);
-        System.out.println("isLoadRequired :: " + isLoadRequired);
-
-        String dbTableName = null;
-        if (isLoadRequired) {
-            //use the file path and table name provided by user
-            //loadDataToHBase(loadFilePath);
-            //dbTableName = tableName;
-        } else {
-            // use the default HBase tables for query
-            dbTableName = tableName;
-        }
-
-        StorageConfiguration storageConfiguration = new StorageConfiguration();
-        variantBenchmark(storageConfiguration, numOfRepetition, dbTableName, query);
+//        String dbTableName = null;
+//        if (isLoadRequired) {
+//            //use the file path and table name provided by user
+//            //loadDataToHBase(loadFilePath);
+//            //dbTableName = tableName;
+//        } else {
+//            // use the default HBase tables for query
+//            dbTableName = tableName;
+//        }
+//
+//        StorageConfiguration storageConfiguration = new StorageConfiguration();
+//        variantBenchmark(storageConfiguration, numOfRepetition, dbTableName, query);
 
     }
 

@@ -2,8 +2,12 @@ package org.opencb.opencga.storage.app.cli;
 
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
+import org.opencb.opencga.storage.core.config.BenchmarkConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+
+import java.util.Arrays;
 
 /**
  * Created by pawan on 06/11/15.
@@ -24,33 +28,58 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        /**
-         * Create DBAdaptor
-         */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(benchmarkCommandOptions.storageEngine);
+
+        String storageEngine = (benchmarkCommandOptions.storageEngine != null && !benchmarkCommandOptions.storageEngine.isEmpty())
+                ? benchmarkCommandOptions.storageEngine
+                : configuration.getDefaultStorageEngineId();
+        logger.debug("Storage Engine set to '{}'", storageEngine);
+
+
+        StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
+
+        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+        VariantStorageManager variantStorageManager;
+        if (storageEngine == null || storageEngine.isEmpty()) {
+            variantStorageManager = storageManagerFactory.getVariantStorageManager();
+        } else {
+            variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
+        }
+        storageConfiguration.getVariant().getOptions().putAll(benchmarkCommandOptions.params);
+
+
+        // Overwrite default options from configuration.yaml with CLI parameters
+        if (benchmarkCommandOptions.storageEngine != null) {
+            configuration.getBenchmark().setStorageEngines(Arrays.asList(benchmarkCommandOptions.storageEngine.split(",")));
+        }
+        configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+        System.out.println(configuration.getBenchmark());
+
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
 
-        benchmark();
-    }
-
-
-    private void benchmark() throws Exception {
-        String load = benchmarkCommandOptions.load;
-        int numOfRepetition = benchmarkCommandOptions.repetition;
-        String tableName = benchmarkCommandOptions.tableName;
-        String query  = benchmarkCommandOptions.query;
-        boolean loadRequired;
-
-        if (load != null) {
-            loadRequired = true;
-        } else {
-            loadRequired = false;
-        }
-        String[] args = {load, "" + numOfRepetition, tableName, query, Boolean.toString(loadRequired)};
-
-        new BenchmarkManager().run(args);
+//        benchmark();
+        BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
+        benchmarkManager.variantBenchmark();
 
     }
+
+
+//    private void benchmark() throws Exception {
+//        String load = benchmarkCommandOptions.load;
+//        int numOfRepetition = benchmarkCommandOptions.repetition;
+//        String tableName = benchmarkCommandOptions.tableName;
+//        String query  = benchmarkCommandOptions.query;
+//        boolean loadRequired;
+//
+//        if (load != null) {
+//            loadRequired = true;
+//        } else {
+//            loadRequired = false;
+//        }
+//        String[] args = {load, "" + numOfRepetition, tableName, query, Boolean.toString(loadRequired)};
+//
+//        new BenchmarkManager().run(args);
+//
+//    }
 
 }

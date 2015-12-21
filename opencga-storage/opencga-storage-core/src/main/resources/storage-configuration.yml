@@ -28,6 +28,8 @@ server:
 
 benchmark:
   storageEngines: ["mongodb", "hadoop"]
+  numRepetitions: 3
+  load: false
 
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine

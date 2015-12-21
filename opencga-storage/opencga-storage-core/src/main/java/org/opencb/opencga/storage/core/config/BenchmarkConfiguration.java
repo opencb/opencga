@@ -24,15 +24,19 @@ import java.util.List;
 public class BenchmarkConfiguration {
 
     private List<String> storageEngines;
+    private int numRepetitions;
+    private boolean load;
+
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BenchmarkConfiguration{");
-        sb.append(", storageEngines=").append(storageEngines);
+        sb.append("storageEngines=").append(storageEngines);
+        sb.append(", numRepetitions=").append(numRepetitions);
+        sb.append(", load=").append(load);
         sb.append('}');
         return sb.toString();
     }
-
 
     public List<String> getStorageEngines() {
         return storageEngines;
@@ -41,4 +45,21 @@ public class BenchmarkConfiguration {
     public void setStorageEngines(List<String> storageEngines) {
         this.storageEngines = storageEngines;
     }
+
+    public int getNumRepetitions() {
+        return numRepetitions;
+    }
+
+    public void setNumRepetitions(int numRepetitions) {
+        this.numRepetitions = numRepetitions;
+    }
+
+    public boolean isLoad() {
+        return load;
+    }
+
+    public void setLoad(boolean load) {
+        this.load = load;
+    }
+
 }
