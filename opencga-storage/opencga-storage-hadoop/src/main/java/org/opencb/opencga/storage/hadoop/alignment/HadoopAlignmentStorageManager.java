@@ -18,13 +18,14 @@ package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.hpg.bigdata.tools.converters.mr.Bam2AvroMR;
-import org.opencb.hpg.bigdata.tools.stats.alignment.mr.ReadAlignmentDepthMR;
+import org.opencb.hpg.bigdata.tools.alignment.Bam2AvroMR;
+import org.opencb.hpg.bigdata.tools.alignment.stats.ReadAlignmentDepthMR;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -35,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
+
 
 /**
  * Created by imedina on 16/06/15.
@@ -92,7 +94,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         Configuration conf = getConf();
 
         FileSystem fileSystem = FileSystem.get(conf);
-        BamUtils.checkBamOrCramFile(fileSystem.open(new java.nio.file.Path(inputUri)), inputUri.getPath(), false);
+        BamUtils.checkBamOrCramFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
         return inputUri;
     }
 
@@ -128,7 +130,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 //            if (exitValue != 0) {
 //                throw new Exception("Transform cli error: Exit value = " + exitValue);
 //            }
-            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, conf);
+            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, false, conf);
         } catch (Exception e) {
             throw new StorageManagerException("Error while transforming file", e);
         }
