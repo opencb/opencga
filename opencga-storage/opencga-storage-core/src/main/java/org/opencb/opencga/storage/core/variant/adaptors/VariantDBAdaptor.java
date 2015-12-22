@@ -245,13 +245,19 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @return A QueryResult containing a set of variants and other optional information
      */
     @Deprecated
-    QueryResult<Variant> getAllVariants(QueryOptions options);
+    default QueryResult<Variant> getAllVariants(QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    QueryResult<Variant> getVariantById(String id, QueryOptions options);
+    default QueryResult<Variant> getVariantById(String id, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options);
+    default List<QueryResult<Variant>> getAllVariantsByIdList(List<String> idList, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Given a genomic region, it retrieves a set of variants and, optionally, all the information
@@ -263,32 +269,46 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
      * @return A QueryResult containing a set of variants and other optional information
      */
     @Deprecated
-    QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options);
+    default QueryResult<Variant> getAllVariantsByRegion(Region region, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @deprecated Use "getAllVariants" with VariantDBAdaptor.REGION filter instead.
      */
     @Deprecated
-    List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options);
+    default List<QueryResult<Variant>> getAllVariantsByRegionList(List<Region> regionList, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options);
+    default QueryResult getVariantFrequencyByRegion(Region region, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    QueryResult groupBy(String field, QueryOptions options);
+    default QueryResult groupBy(String field, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
+    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        throw new UnsupportedOperationException();
+    }
 
     StudyConfigurationManager getStudyConfigurationManager();
 
     void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
-    VariantDBIterator iterator(QueryOptions options);
+    default VariantDBIterator iterator(QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
 
     @Deprecated
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions);
+    default QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, int studyId, QueryOptions queryOptions) {
+        throw new UnsupportedOperationException();
+    }
 
 //    @Deprecated
 //    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);

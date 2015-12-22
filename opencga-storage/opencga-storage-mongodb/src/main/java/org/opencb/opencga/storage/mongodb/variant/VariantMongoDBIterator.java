@@ -64,4 +64,8 @@ public class VariantMongoDBIterator extends VariantDBIterator {
         throw new UnsupportedOperationException( "can't remove from a cursor" );
     }
 
+    @Override
+    public void close() {
+        dbCursor.close();
+    }
 }

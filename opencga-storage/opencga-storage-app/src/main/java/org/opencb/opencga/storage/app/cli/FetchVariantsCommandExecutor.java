@@ -337,6 +337,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                     // we know that it is JSON, otherwise we have not reached this point
                     printJsonResult(iterator, outputStream);
                 }
+                iterator.close();
             }
         }
         outputStream.close();
@@ -371,6 +372,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
             outputStream.write(variant.toJson().getBytes());
+            outputStream.write('\n');
         }
     }
 
