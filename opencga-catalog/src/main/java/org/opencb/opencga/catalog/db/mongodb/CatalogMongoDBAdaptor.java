@@ -621,7 +621,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
                 return null;
             }
         }, queryOptions);
-        logger.info("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
+        logger.debug("File search: query : {}, project: {}, dbTime: {}", mongoQuery, queryOptions == null ? "" : queryOptions.toJson(), queryResult.getDbTime());
 //        List<File> files = parseFiles(queryResult);
 
         return endQuery("Search File", startTime, queryResult);
@@ -894,7 +894,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
 
 
-        return endQuery("Create Job", startTime, getTool(tool.getId()).getResult());
+        return endQuery("Create tool", startTime, getTool(tool.getId()).getResult());
     }
 
 
@@ -934,6 +934,28 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         }
         User user = parseUser(queryResult);
         return user.getTools().get(0).getId();
+    }
+
+    @Override
+    public QueryResult<Tool> getAllTools(QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        DBObject query = new BasicDBObject();
+        addQueryStringListFilter("userId", queryOptions, _ID, query);
+        addQueryIntegerListFilter("id", queryOptions, "tools.id", query);
+        addQueryIntegerListFilter("alias", queryOptions, "tools.alias", query);
+
+        QueryResult<DBObject> queryResult = userCollection.aggregate(
+                Arrays.asList(
+                        new BasicDBObject("$project", new BasicDBObject("tools", 1)),
+                        new BasicDBObject("$unwind", "$tools"),
+                        new BasicDBObject("$match", query)
+                ), queryOptions);
+
+
+        List<User> users = parseObjects(queryResult, User.class);
+        List<Tool> tools = users.stream().map(user -> user.getTools().get(0)).collect(Collectors.toList());
+        return endQuery("Get tools", startTime, tools);
     }
 
 //    @Override

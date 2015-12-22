@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -14,12 +15,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.StringUtils;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -29,7 +30,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogAuthorizationManagerTest {
+public class CatalogAuthorizationManagerTest extends GenericTest {
 
     private final String ownerUser = "owner";
     private final String studyAdminUser1 = "studyAdmin1";
@@ -53,6 +54,7 @@ public class CatalogAuthorizationManagerTest {
     private int data_d1_d2;           // Forbidden for @admins
     private int data_d1_d2_d3;        // Forbidden for member
     private int data_d1_d2_d3_d4;     // Shared for @admins
+    private int data_d1_d2_d3_d4_txt; // Shared for member
     private int smp1;   // Shared with member
     private int smp2;   // Shared with studyAdmin1
     private int smp3;   // Shared with member
@@ -91,6 +93,7 @@ public class CatalogAuthorizationManagerTest {
         data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
+        data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", "file content".getBytes(), "", false, ownerSessionId).first().getId();
 
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
@@ -101,6 +104,7 @@ public class CatalogAuthorizationManagerTest {
         catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3_d4_txt, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
@@ -207,7 +211,17 @@ public class CatalogAuthorizationManagerTest {
     @Test
     public void readProjectDenny() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getProject(p1, null, externalSessionId);
+    }
+
+    @Test
+    public void readProjectAllow() throws CatalogException {
         catalogManager.getProject(p1, null, memberSessionId);
+    }
+
+    @Test
+    public void readProjectAllow2() throws CatalogException {
+        catalogManager.getProject(p1, null, ownerSessionId);
     }
 
     /*--------------------------*/
@@ -241,7 +255,7 @@ public class CatalogAuthorizationManagerTest {
     }
 
     @Test
-    public void readExplicitlySharedFile() throws CatalogException {
+    public void readExplicitlySharedFolder() throws CatalogException {
         catalogManager.getFile(data_d1, memberSessionId);
     }
 
@@ -268,6 +282,11 @@ public class CatalogAuthorizationManagerTest {
     public void readInheritedForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1_d2_d3_d4, memberSessionId);
+    }
+
+    @Test
+    public void readExplicitlySharedFile() throws CatalogException {
+        catalogManager.getFile(data_d1_d2_d3_d4_txt, memberSessionId);
     }
 
     @Test
@@ -483,6 +502,42 @@ public class CatalogAuthorizationManagerTest {
         assertEquals(1, catalogManager.getAllIndividuals(s1, null, memberSessionId).getNumResults());
     }
 
+
+
+    /*--------------------------*/
+    // Read Jobs
+    /*--------------------------*/
+
+    @Test
+    public void getAllJobs() throws CatalogException {
+        int studyId = s1;
+        int outDirId = this.data_d1_d2;
+
+        URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), ownerSessionId);
+        int job1 = catalogManager.createJob(studyId, "job1", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.emptyList(), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job2 = catalogManager.createJob(studyId, "job2", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job3 = catalogManager.createJob(studyId, "job3", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+        int job4 = catalogManager.createJob(studyId, "job4", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
+                tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3_d4), Collections.emptyList(),
+                new HashMap<>(), null, Job.Status.ERROR, 0, 0, null, ownerSessionId).first().getId();
+
+        checkGetAllJobs(studyId, Arrays.asList(job1, job2, job3, job4), ownerSessionId);    //Owner can see everything
+        checkGetAllJobs(studyId, Arrays.asList(job1, job2), memberSessionId);               //Can't see inside data_d1_d2_d3
+        checkGetAllJobs(studyId, Arrays.asList(job1, job4), studyAdmin1SessionId);          //Can only see data_d1_d2_d3_d4
+    }
+
+    public void checkGetAllJobs(int studyId, Collection<Integer> expectedJobs, String sessionId) throws CatalogException {
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+
+        assertEquals(expectedJobs.size(), allJobs.getNumResults());
+        allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job.getId())));
+    }
 
     /////////// Aux methods
     private Map<String, Group> getGroupMap() throws CatalogException {

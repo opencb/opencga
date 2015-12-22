@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -54,11 +54,14 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
         FILES ("files", TEXT_ARRAY, ""),
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
+
+        COHORTS("cohorts", TEXT_ARRAY, "Select variants with calculated stats for the selected cohorts"),
         STATS_MAF("maf", TEXT_ARRAY, ""),
         STATS_MGF("mgf", TEXT_ARRAY, ""),
         MISSING_ALLELES ("missingAlleles", TEXT_ARRAY, ""),
         MISSING_GENOTYPES ("missingGenotypes", TEXT_ARRAY, ""),
         ANNOTATION_EXISTS ("annotationExists", TEXT_ARRAY, ""),
+
         GENOTYPE ("genotype", TEXT_ARRAY, ""),
         ANNOT_CONSEQUENCE_TYPE ("annot-ct", TEXT_ARRAY, ""),
         ANNOT_XREF ("annot-xref", TEXT_ARRAY, ""),

@@ -100,7 +100,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public URI getFileUri(int studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
-        List<File> parents = getParents(false, null, filePath, studyId).getResult();
+        List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"), filePath, studyId).getResult();
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
@@ -164,7 +164,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
-        return getParents(read(fileId, null, sessionId).first(), true, options);
+        return getParents(true, options, read(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first().getPath(), getStudyId(fileId));
     }
 
     /**
@@ -181,11 +181,17 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     public static List<String> getParentPaths(String filePath) {
         String path = "";
-        List<String> paths = new ArrayList<>(10);
-        paths.add("");  //Add root
-        for (String f : filePath.split("/")) {
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
             paths.add(path = path + f + "/");
         }
+        paths.add(filePath); //Add the file path
         return paths;
     }
 
@@ -341,33 +347,30 @@ public class FileManager extends AbstractManager implements IFileManager {
             parentPath = parent.toString() + "/";
         }
 
-        int fileId = fileDBAdaptor.getFileId(studyId, parentPath);
-        if (fileId < 0 && parent != null) {
+        int parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
+        if (parentFileId < 0 && parent != null) {
             if (parents) {
                 create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
                         file.getOwnerId(), file.getCreationDate(), "", File.Status.READY, 0, -1,
                         Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId);
-                fileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
+                parentFileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
             } else {
                 throw new CatalogDBException("Directory not found " + parent.toString());
             }
         }
 
         //Check permissions
-        if (fileId < 0) {
+        if (parentFileId < 0) {
             throw new CatalogException("Unable to create file without a parent file");
         } else {
-            authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
+            authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
         }
 
 
         //Check external file
-        boolean isExternal = false;
-        if (fileId > 0) {
-            isExternal = isExternal(fileDBAdaptor.getFile(fileId, null).first());
-        }
+        boolean isExternal = isExternal(file);
 
         if (file.getType() == File.Type.FOLDER && file.getStatus() == File.Status.READY && (!isExternal || isRoot)) {
             URI fileUri = getFileUri(studyId, file.getPath());

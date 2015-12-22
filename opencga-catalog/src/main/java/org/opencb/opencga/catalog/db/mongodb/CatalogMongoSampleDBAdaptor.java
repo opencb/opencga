@@ -344,28 +344,34 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
-                .start(_ID, studyId)
-                .append("cohorts.name", cohort.getName())
-                .get());
+        checkCohortNameExists(studyId, cohort.getName());
 
-        if(count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Cohort { name: \"" + cohort.getName() + "\" } already exists in this study.");
-        }
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int newId = getNewAutoIncrementId(metaCollection);;
         cohort.setId(newId);
 
         DBObject cohortObject = getDbObject(cohort, "Cohort");
         QueryResult<WriteResult> update = studyCollection.update(
-                new BasicDBObject(_ID, studyId),
+                new BasicDBObject(_ID, studyId).append("cohorts.name", new BasicDBObject("$ne", cohort.getName())),
                 new BasicDBObject("$push", new BasicDBObject("cohorts", cohortObject)), null);
 
         if (update.getResult().get(0).getN() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.alreadyExists("Cohort", "name", cohort.getName());
         }
 
         return endQuery("createCohort", startTime, getCohort(newId));
+    }
+
+    private void checkCohortNameExists(int studyId, String cohortName) throws CatalogDBException {
+        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
+                .start(_ID, studyId)
+                .append("cohorts.name", cohortName)
+                .get());
+
+        if(count.getResult().get(0) > 0) {
+            throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
+        }
     }
 
     @Override
@@ -503,23 +509,44 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
      */
 
     @Override
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException {
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, sampleId));
-        if (count.getResult().get(0) > 0) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        if (overwrite) {
+            if (count.getResult().get(0) == 0) {
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+            }
+        } else {
+            if (count.getResult().get(0) > 0) {
+                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            }
         }
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
 
         DBObject query = new BasicDBObject(_ID, sampleId);
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+        if (overwrite) {
+            query.put("annotationSets.id", annotationSet.getId());
+        } else {
+            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+        }
+
+        DBObject update;
+        if (overwrite) {
+            update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
+        } else {
+            update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+        }
 
         QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
 
-        return endQuery("", startTime, Arrays.asList(annotationSet));
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        }
+
+        return endQuery("", startTime, Collections.singletonList(annotationSet));
     }
 
     @Override

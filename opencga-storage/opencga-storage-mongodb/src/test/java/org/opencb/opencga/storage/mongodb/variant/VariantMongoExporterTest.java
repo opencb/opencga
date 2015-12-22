@@ -22,15 +22,5 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporterTest;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class VariantMongoExporterTest extends VariantExporterTest {
-
-    @Override
-    protected MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
-        return MongoVariantStorageManagerTestUtils.getVariantStorageManager();
-    }
-
-    @Override
-    protected void clearDB(String dbName) throws Exception {
-        MongoVariantStorageManagerTestUtils.clearDB(dbName);
-    }
+public class VariantMongoExporterTest extends VariantExporterTest implements MongoVariantStorageManagerTestUtils {
 }

@@ -18,13 +18,9 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.biodata.formats.annotation.io.VepFormatReader;
-import org.opencb.biodata.models.variant.annotation.VariantAnnotation;
-import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.lib.DBAdaptorFactory;
-import org.opencb.cellbase.core.lib.api.variation.VariantAnnotationDBAdaptor;
-import org.opencb.cellbase.core.lib.api.variation.VariationDBAdaptor;
-import org.opencb.datastore.core.Query;
+import org.opencb.biodata.formats.variant.annotation.io.VepFormatReader;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
@@ -33,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,20 +37,25 @@ import java.util.concurrent.*;
 /**
  * Created by fjlopez on 10/04/15.
  */
-public class VepVariantAnnotator implements VariantAnnotator {
+public class VepVariantAnnotator extends VariantAnnotator {
     private final JsonFactory factory;
     private ObjectMapper jsonObjectMapper;
 
     protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
 
-    public VepVariantAnnotator() {
+    public VepVariantAnnotator() throws VariantAnnotatorException {
+        super(null, null);
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(factory);
-        jsonObjectMapper.addMixInAnnotations(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
     }
 
     public static VepVariantAnnotator buildVepAnnotator() {
+        try {
             return new VepVariantAnnotator();
+        } catch (VariantAnnotatorException ignore) {
+            return null;
+        }
     }
 
     private static void checkNull(String value, String name) throws VariantAnnotatorException {
@@ -67,13 +67,13 @@ public class VepVariantAnnotator implements VariantAnnotator {
     /////// CREATE ANNOTATION: empty. Vep annotation must be created beforehand by using VEP's cli and stored in a vep format file
 
     @Override
-    public URI createAnnotation(VariantDBAdaptor variantDBAdaptor, Path outDir, String fileName, Query query, QueryOptions options) {
+    public List<VariantAnnotation> annotate(List<Variant> variants) throws IOException {
         return null;
     }
 
+
     /////// LOAD ANNOTATION
 
-    @Override
     public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor, final URI uri, QueryOptions options) throws IOException {
 
         final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
@@ -96,13 +96,18 @@ public class VepVariantAnnotator implements VariantAnnotator {
 
                     /** Read annotations **/
                     List<VariantAnnotation> variantAnnotation;
-                    while ((variantAnnotation = vepFormatReader.read()) != null) {
-                        queue.put(variantAnnotation.get(0));  // read() method always returns a list of just one element
-                        annotationsCounter++;
-                        if (annotationsCounter % 1000 == 0) {
-                            logger.info("Element {}", annotationsCounter);
-                        }
+                    //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME
+                    if (true) {
+                        throw new UnsupportedOperationException();
                     }
+//                    while ((variantAnnotation = vepFormatReader.read()) != null) {
+//                        queue.put(variantAnnotation.get(0));  // read() method always returns a list of just one element
+//                        annotationsCounter++;
+//                        if (annotationsCounter % 1000 == 0) {
+//                            logger.info("Element {}", annotationsCounter);
+//                        }
+//                    }
+                    //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME
                     for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
                         queue.put(lastElement);
                     }

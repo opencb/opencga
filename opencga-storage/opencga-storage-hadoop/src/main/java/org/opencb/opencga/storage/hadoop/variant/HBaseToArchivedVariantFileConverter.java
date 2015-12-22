@@ -17,23 +17,23 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.client.Result;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ComplexTypeConverter;
 
 /**
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class HBaseToArchivedVariantFileConverter implements ComplexTypeConverter<VariantSourceEntry, Result> {
+public class HBaseToArchivedVariantFileConverter implements ComplexTypeConverter<StudyEntry, Result> {
 
     @Override
-    public VariantSourceEntry convertToDataModelType(Result object) {
+    public StudyEntry convertToDataModelType(Result object) {
         // TODO Implementation pending
         return null;
     }
 
     @Override
-    public Result convertToStorageType(VariantSourceEntry object) {
+    public Result convertToStorageType(StudyEntry object) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     

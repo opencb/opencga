@@ -247,7 +247,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {
-        logger.info("Coping file. Encryption : " + encrypt);
+        logger.info("Copying file. Encryption : " + encrypt);
         long start = System.currentTimeMillis();
         if(fileName == null || fileName.isEmpty()) {
             fileName = bamFile.getFileName().toString();

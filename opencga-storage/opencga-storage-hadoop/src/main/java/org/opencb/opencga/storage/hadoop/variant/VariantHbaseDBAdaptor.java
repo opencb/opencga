@@ -32,7 +32,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.*;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
 import org.opencb.biodata.models.variant.stats.VariantStats;

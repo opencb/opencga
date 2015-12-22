@@ -63,6 +63,8 @@ public class JobManager extends AbstractManager implements IJobManager {
                     params.getString("name"),
                     params.getString("toolName"),
                     params.getString("description"),
+                    params.getString("execution"),
+                    Collections.emptyMap(),
                     params.getString("commandLine"),
                     params.containsKey("tmpOutDirUri")? new URI(null, params.getString("tmpOutDirUri"), null) : null,
                     params.getInt("outDirId"),
@@ -82,7 +84,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
+    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
                                    URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles,
                                    Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
                                    Job.Status status, long startTime, long endTime, QueryOptions options, String sessionId)
@@ -105,8 +107,11 @@ public class JobManager extends AbstractManager implements IJobManager {
         for (Integer inputFile : inputFiles) {
             authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
         }
-        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList("id", "type", "path"));
-        File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).getResult().get(0);
+        QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
+                "projects.studies.files.id",
+                "projects.studies.files.type",
+                "projects.studies.files.path"));
+        File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).first();
 
         if (!outDir.getType().equals(File.Type.FOLDER)) {
             throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
@@ -117,6 +122,8 @@ public class JobManager extends AbstractManager implements IJobManager {
         job.setStatus(status);
         job.setStartTime(startTime);
         job.setEndTime(endTime);
+        job.setParams(params);
+        job.setExecution(executor);
 
         if (resourceManagerAttributes != null) {
             job.getResourceManagerAttributes().putAll(resourceManagerAttributes);
@@ -141,36 +148,38 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         query = ParamUtils.defaultObject(query, QueryOptions::new);
-        query.put("studyId", studyId);
-        QueryResult<Job> queryResult = readAll(query, options, sessionId);
-        authorizationManager.filterJobs(userId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
-
-        return queryResult;
+        //Get studyId from Query and call to readAll
+        int studyId = query.getInt("studyId", -1);
+        return readAll(studyId, query, options, sessionId);
     }
 
     @Override
-    public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkObj(query, "query");
-        options = ParamUtils.defaultObject(options, new QueryOptions());
+        query = ParamUtils.defaultObject(query, QueryOptions::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        // If studyId is null, check if there is any on the query
+        // Else, ensure that studyId is in the Query
+        if (studyId < 0) {
+            studyId = query.getInt("studyId", -1);
+        } else {
+            query.put("studyId", studyId);
+        }
         query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (!query.containsKey("studyId")) {
+            if (studyId < 0) {
                 throw new CatalogException("Permission denied. Can't get jobs without specify an StudyId");
             } else {
-                int studyId = query.getInt("studyId");
                 authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
             }
         }
         QueryResult<Job> queryResult = jobDBAdaptor.getAllJobs(query, options);
-        authorizationManager.filterJobs(userId, queryResult.getResult());
+        authorizationManager.filterJobs(userId, queryResult.getResult(), studyId);
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
@@ -266,5 +275,10 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         //TODO: Check ACLs
         return jobDBAdaptor.getTool(id);
+    }
+
+    @Override
+    public QueryResult<Tool> readAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobDBAdaptor.getAllTools(queryOptions);
     }
 }

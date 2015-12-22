@@ -19,7 +19,7 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
 
     QueryResult<ObjectMap> visit(int jobId, String sessionId) throws CatalogException;
 
-    QueryResult<Job> create(int studyId, String name, String toolName, String description, String commandLine,
+    QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
                             URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
                             Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime, long endTime, QueryOptions options,
                             String sessionId)
@@ -37,4 +37,6 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
                                  String path, boolean openTool, String sessionId) throws CatalogException;
 
     QueryResult<Tool> readTool(int id, String sessionId) throws CatalogException;
+
+    QueryResult<Tool> readAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException;
 }

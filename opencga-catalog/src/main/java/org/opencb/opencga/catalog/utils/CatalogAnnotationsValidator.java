@@ -155,6 +155,14 @@ public class CatalogAnnotationsValidator {
             annotatedVariables.add(annotation.getId());
         }
 
+        //Remove null values
+        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext(); ) {
+            Annotation annotation = iterator.next();
+            if (annotation.getValue() == null) {
+                iterator.remove();
+            }
+        }
+
         //Check for missing values
         List<Annotation> defaultAnnotations = new LinkedList<>();
         for (Variable variable : variableSet.getVariables()) {
@@ -411,4 +419,20 @@ public class CatalogAnnotationsValidator {
         }
     }
 
+    public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
+        Map<String, Annotation> annotations = annotationSet.getAnnotations().stream()
+                .collect(Collectors.toMap(Annotation::getId, Function.identity()));
+
+        for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
+            if (entry.getValue() != null) {
+                //Remove old value (if present)
+                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
+                //Add the new annotation value
+                annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
+            } else {
+                //Remove the old value (if present)
+                annotationSet.getAnnotations().remove(annotations.get(entry.getKey()));
+            }
+        }
+    }
 }

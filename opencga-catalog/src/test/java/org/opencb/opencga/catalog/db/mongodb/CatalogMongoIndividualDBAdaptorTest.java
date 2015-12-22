@@ -13,14 +13,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -175,13 +173,23 @@ public class CatalogMongoIndividualDBAdaptorTest {
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        catalogIndividualDBAdaptor.annotateIndividual(individualId, annot1);
-        catalogIndividualDBAdaptor.annotateIndividual(individualId, annot2);
+        catalogIndividualDBAdaptor.annotateIndividual(individualId, annot1, false);
+        catalogIndividualDBAdaptor.annotateIndividual(individualId, annot2, false);
 
         Individual individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        assertEquals(2, annotationSets.size());
         assertEquals(annot1, annotationSets.get(annot1.getId()));
         assertEquals(annot2, annotationSets.get(annot2.getId()));
+
+        catalogIndividualDBAdaptor.deleteAnnotation(individualId, annot1.getId());
+
+        individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
+        annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        assertEquals(1, annotationSets.size());
+        assertFalse(annotationSets.containsKey(annot1.getId()));
+        assertEquals(annot2, annotationSets.get(annot2.getId()));
+
     }
 
     @Test
@@ -189,9 +197,33 @@ public class CatalogMongoIndividualDBAdaptorTest {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
-        catalogIndividualDBAdaptor.annotateIndividual(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(), "", Collections.emptyMap()));
+        catalogIndividualDBAdaptor.annotateIndividual(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(), "", Collections.emptyMap()), false);
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.annotateIndividual(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(), "", Collections.emptyMap()));
+        catalogIndividualDBAdaptor.annotateIndividual(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(), "", Collections.emptyMap()), false);
+    }
+
+    @Test
+    public void testAnnotateIndividualOverwriteExistingAnnotationId() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2", "v2"))), "", Collections.emptyMap());
+        QueryResult<AnnotationSet> queryResult = catalogIndividualDBAdaptor.annotateIndividual(individualId, annot1, false);
+        assertEquals(annot1, queryResult.first());
+
+        annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v2"), new Annotation("k3", "v3"))), "", Collections.emptyMap());
+        queryResult = catalogIndividualDBAdaptor.annotateIndividual(individualId, annot1, true);
+        assertEquals(annot1, queryResult.first());
+    }
+
+    @Test
+    public void testAnnotateIndividualOverwriteNonExistingAnnotationId() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2", "v2"))), "", Collections.emptyMap());
+        thrown.expect(CatalogDBException.class);
+        catalogIndividualDBAdaptor.annotateIndividual(individualId, annot1, true);
     }
 
 

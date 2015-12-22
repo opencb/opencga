@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryOptions;
@@ -133,18 +133,11 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
 //                    Integer fid = (Integer) vs.get(FILE_ID);
                     String sid = getStudyName((Integer) vs.get(STUDY_ID));
                     String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
-                    VariantSourceEntry sourceEntry = null;
-                    if (/*fid != null && */sid != null && cid != null) {
-                        for (Map.Entry<String, VariantSourceEntry> entry : variant.getSourceEntries().entrySet()) {
-                            if (entry.getValue().getStudyId().equals(sid)) {
-                                sourceEntry = entry.getValue();
-                                break;
-                            }
-                        }
-//                        sourceEntry = variant.getSourceEntry(Integer.toString(fid), Integer.toString(sid));
+                    StudyEntry sourceEntry = null;
+                    if (sid != null && cid != null) {
+                        sourceEntry = variant.getStudiesMap().get(sid);
                         if (sourceEntry != null) {
-                            Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
-                            cohortStats.put(cid, variantStats);
+                            sourceEntry.setStats(cid, variantStats);
                         } else {
                             //This could happen if the study has been excluded
                             logger.trace("ignoring non present source entry studyId={}", sid);
@@ -162,11 +155,11 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      * @param sourceEntries for instance, you can pass in variant.getSourceEntries()
      * @return list of VariantStats (as DBObjects)
      */
-    public List<DBObject> convertCohortsToStorageType(Map<String, VariantSourceEntry> sourceEntries) {
+    public List<DBObject> convertCohortsToStorageType(Map<String, StudyEntry> sourceEntries) {
         List<DBObject> cohortsStatsList = new LinkedList<>();
         for (String studyIdFileId : sourceEntries.keySet()) {
-            VariantSourceEntry sourceEntry = sourceEntries.get(studyIdFileId);
-            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getCohortStats(),
+            StudyEntry sourceEntry = sourceEntries.get(studyIdFileId);
+            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getStats(),
                     Integer.parseInt(sourceEntry.getStudyId()));
             cohortsStatsList.addAll(list);
         }
@@ -175,7 +168,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
 
     /**
      * converts just some cohorts stats in one VariantSourceEntry.
-     * @param cohortStats for instance, you can pass in sourceEntry.getCohortStats()
+     * @param cohortStats for instance, you can pass in sourceEntry.getStats()
      * @param studyId of the source entry
      * @return list of VariantStats (as DBObjects)
      */
@@ -185,9 +178,12 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
             variantStats = variantStatsEntry.getValue();
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, getCohortId(studyId, variantStatsEntry.getKey()));
-            variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
-            cohortsStatsList.add(variantStatsDBObject);
+            Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
+            if (cohortId != null) {
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, (int)cohortId);
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
+                cohortsStatsList.add(variantStatsDBObject);
+            }
         }
         return cohortsStatsList;
     }
@@ -220,8 +216,11 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         }
     }
 
-    private int getCohortId(int studyId, String cohortName) {
-        return getStudyConfiguration(studyId).getCohortIds().get(cohortName);
+    private Integer getCohortId(int studyId, String cohortName) {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId);
+        Map<String, Integer> cohortIds = studyConfiguration.getCohortIds();
+        Integer integer = cohortIds.get(cohortName);
+        return integer;
     }
 
     private StudyConfiguration getStudyConfiguration(int studyId) {

@@ -3,16 +3,19 @@ package org.opencb.opencga.analysis.files;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
  */
 public class FileMetadataReader {
 
+    public static final String VARIANT_STATS = "variantStats";
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
@@ -380,6 +384,47 @@ public class FileMetadataReader {
             return null;
         }
     }
+
+    /**
+     * Updates the file stats from a transformed variant file.
+     * Reads the stats generated on the transform step.
+     *
+     * @param job           Job that executed successfully the transform step
+     * @param sessionId     User sessionId
+     * @throws CatalogException
+     */
+    public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
+        int studyId = catalogManager.getStudyIdByJobId(job.getId());
+        QueryOptions queryOptions = new QueryOptions()
+                .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getInput())
+                .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.VARIANT);
+        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+        if (fileQueryResult.getResult().isEmpty()) {
+            return;
+        }
+        File inputFile = fileQueryResult.first();
+        if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
+            queryOptions = new QueryOptions()
+                    .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getOutput())
+                    .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~" + inputFile.getName() + ".variants");
+            fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+            if (fileQueryResult.getResult().isEmpty()) {
+                return;
+            }
+
+            File variantsFile = fileQueryResult.first();
+            URI fileUri = catalogManager.getFileUri(variantsFile);
+            try {
+                VariantSource variantSource = VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), null);
+                VariantGlobalStats stats = variantSource.getStats();
+                catalogManager.modifyFile(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)), sessionId);
+            } catch (StorageManagerException e) {
+                throw new CatalogException(e);
+            }
+        }
+    }
+
+
 
     public static FileMetadataReader get(CatalogManager catalogManager) {
         return new FileMetadataReader(catalogManager);

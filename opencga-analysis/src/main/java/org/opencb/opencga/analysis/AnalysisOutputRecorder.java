@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.analysis;
 
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -61,7 +62,17 @@ public class AnalysisOutputRecorder {
         this.sessionId = sessionId;
     }
 
-    public void recordJobOutput(Job job, boolean jobFailed) {
+    public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) {
+        recordJobOutput(job);
+
+        /** Modifies the job to set the output and endTime. **/
+        try {
+            postProcessJob(job, jobFailed);
+        } catch (CatalogException e) {
+            e.printStackTrace(); //TODO: Handle exception
+        }
+    }
+    public void recordJobOutput(Job job) {
 
         try {
             /** Scans the output directory from a job or index to find all files. **/
@@ -73,6 +84,10 @@ public class AnalysisOutputRecorder {
             List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
             List<Integer> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+            if (!ioManager.exists(tmpOutDirUri)) {
+                logger.warn("Output folder doesn't exist");
+                return;
+            }
             List<URI> uriList = ioManager.listFiles(tmpOutDirUri);
             if (uriList.isEmpty()) {
                 ioManager.deleteDirectory(tmpOutDirUri);
@@ -85,20 +100,13 @@ public class AnalysisOutputRecorder {
             parameters.put("output", fileIds);
             parameters.put("endTime", System.currentTimeMillis());
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            job.setOutput(fileIds);
+            job.setEndTime(parameters.getLong("endTime"));
 
             //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
         } catch (CatalogException | IOException e) {
             e.printStackTrace();
             logger.error("Error while processing Job", e);
-            return;
-        }
-
-
-        /** Modifies the job to set the output and endTime. **/
-        try {
-            postProcessJob(job, jobFailed);
-        } catch (CatalogException e) {
-            e.printStackTrace(); //TODO: Handle exception
         }
     }
 
@@ -129,6 +137,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.TRANSFORMED);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                         case LOADING:
@@ -147,6 +156,7 @@ public class AnalysisOutputRecorder {
                                 index.setStatus(Index.Status.NONE);
                             } else {
                                 index.setStatus(Index.Status.READY);
+                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
                             }
                             break;
                     }
@@ -157,7 +167,7 @@ public class AnalysisOutputRecorder {
                 }
                 catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
                 if (index.getStatus().equals(Index.Status.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), VariantSourceEntry.DEFAULT_COHORT), sessionId);
+                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), StudyEntry.DEFAULT_COHORT), sessionId);
                     if (queryResult.getNumResults() != 0) {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();

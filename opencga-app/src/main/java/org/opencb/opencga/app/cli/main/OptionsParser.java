@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
@@ -456,6 +457,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
             List<String> datastores;
+            
+            @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
+            VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
         }
 
         @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
@@ -492,7 +496,7 @@ public class OptionsParser {
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
         class AnnotationCommand extends BaseStudyCommand {
 
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
             String outdir = "";
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
@@ -792,6 +796,9 @@ public class OptionsParser {
 
             @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
             Cohort.Type type;
+
+            @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
+            String tagmap = null;
         }
 
         @Parameters(commandNames = {SamplesCommand.COMMAND_NAME}, commandDescription = "List samples belonging to a cohort")
@@ -820,7 +827,7 @@ public class OptionsParser {
             @ParametersDelegate
             CommonOptions cOpt = commonOptions;
 
-            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = true)
+            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = false)
             List<Integer> cohortIds;
 
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
@@ -828,7 +835,10 @@ public class OptionsParser {
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
             boolean enqueue;
-
+            
+            @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+            String tagmap = null;
+            
             @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
             public List<String> dashDashParameters;
         }
@@ -930,12 +940,14 @@ public class OptionsParser {
 
         final InfoCommand infoCommand;
         final DoneJobCommand doneJobCommand;
+        final StatusCommand statusCommand;
 
         public JobsCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander tools = jcommander.getCommands().get("jobs");
             tools.addCommand(this.infoCommand = new InfoCommand());
             tools.addCommand(this.doneJobCommand = new DoneJobCommand());
+            tools.addCommand(this.statusCommand = new StatusCommand());
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
@@ -961,11 +973,26 @@ public class OptionsParser {
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
             int id;
 
-            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 1)
+            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
             boolean error;
 
-            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 1)
+            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 0)
             boolean force;
+
+            @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.", required = false, arity = 0)
+            boolean discardOutput;
+        }
+
+        @Parameters(commandNames = {"status"}, commandDescription = "Get the status of all running jobs.")
+        class StatusCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"--study-id"}, description = "Study id", required = false, arity = 1)
+            String studyId;
         }
     }
 
@@ -1016,7 +1043,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
-            int id;
+            String id;
         }
     }
 

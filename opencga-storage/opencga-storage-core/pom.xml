@@ -49,18 +49,14 @@
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.hpg-bigdata</groupId>
+            <artifactId>hpg-bigdata-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

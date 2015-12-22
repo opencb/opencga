@@ -682,17 +682,17 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.getStudyId(jobId);
     }
 
-    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String commandLine,
+    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status,
                                       long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
-        return jobManager.create(studyId, name, toolName, description, commandLine, tmpOutDirUri, outDirId, inputFiles,
+        return jobManager.create(studyId, name, toolName, description, executor, params, commandLine, tmpOutDirUri, outDirId, inputFiles,
                 outputFiles, attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
     }
 
     public URI createJobOutDir(int studyId, String dirName, String sessionId)
-            throws CatalogException, CatalogIOException {
+            throws CatalogException {
         return jobManager.createJobOutDir(studyId, dirName, sessionId);
     }
 
@@ -723,6 +723,10 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Job> getAllJobs(int studyId, String sessionId) throws CatalogException {
         return jobManager.readAll(studyId, null, null, sessionId);
+    }
+
+    public QueryResult<Job> getAllJobs(int studyId, QueryOptions query, String sessionId) throws CatalogException {
+        return jobManager.readAll(studyId, query, query, sessionId);
     }
 
 
@@ -808,12 +812,36 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.annotate(sampleId, annotationSetId, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
+    public QueryResult<AnnotationSet> updateSampleAnnotation(int sampleId, String annotationSetId,
+                                                                 Map<String, Object> annotations,
+                                                                 String sessionId)
+            throws CatalogException {
+        return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
+    }
+
     public QueryResult<AnnotationSet> annotateIndividual(int individualId, String annotationSetId, int variableSetId,
                                                             Map<String, Object> annotations,
                                                             Map<String, Object> attributes,
                                                             String sessionId)
             throws CatalogException {
         return individualManager.annotate(individualId, annotationSetId, variableSetId, annotations, attributes, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateIndividualAnnotation(int individualId, String annotationSetId,
+                                                            Map<String, Object> annotations,
+                                                            String sessionId)
+            throws CatalogException {
+        return individualManager.updateAnnotation(individualId, annotationSetId, annotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteSampleAnnotation(int sampleId, String annotationId, String sessionId)
+            throws CatalogException {
+        return sampleManager.deleteAnnotation(sampleId, annotationId, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteIndividualAnnotation(int individualId, String annotationId, String sessionId)
+            throws CatalogException {
+        return individualManager.deleteAnnotation(individualId, annotationId, sessionId);
     }
 
     public QueryResult<Sample> deleteSample(int sampleId, QueryOptions options, String sessionId) throws CatalogException {
@@ -898,4 +926,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readTool(id, sessionId);
     }
 
+    public QueryResult<Tool> getAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobManager.readAllTools(queryOptions, sessionId);
+    }
 }

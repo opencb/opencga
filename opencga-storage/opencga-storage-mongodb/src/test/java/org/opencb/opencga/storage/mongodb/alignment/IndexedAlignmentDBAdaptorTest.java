@@ -25,7 +25,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;

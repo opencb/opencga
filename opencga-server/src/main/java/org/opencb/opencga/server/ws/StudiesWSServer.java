@@ -17,9 +17,7 @@
 package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.*;
-import org.opencb.biodata.models.feature.Region;
-import org.opencb.biodata.models.variant.*;
-import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -30,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -251,20 +250,18 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
-        Response okResponse;
         try {
             String[] studyIds = studyIdStrCvs.split(",");
             List<QueryResult> queryResults = new LinkedList<>();
-            VariantFetcher variantFetcher = new VariantFetcher(this);
+            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 int studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval));
+                queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
             }
-            okResponse = createOkResponse(queryResults);
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        return okResponse;
     }
 
     @GET

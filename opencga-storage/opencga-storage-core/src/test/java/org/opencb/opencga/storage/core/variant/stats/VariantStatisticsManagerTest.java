@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.stats;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -153,8 +153,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
 
     private static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
         for (Variant variant : dbAdaptor) {
-            for (VariantSourceEntry sourceEntry : variant.getSourceEntries().values()) {
-                Map<String, VariantStats> cohortStats = sourceEntry.getCohortStats();
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
                     assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " + calculatedCohorts,

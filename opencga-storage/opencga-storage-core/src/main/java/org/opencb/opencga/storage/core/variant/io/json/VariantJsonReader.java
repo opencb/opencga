@@ -25,16 +25,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -50,18 +48,19 @@ public class VariantJsonReader implements VariantReader {
     protected ObjectMapper jsonObjectMapper;
     private JsonParser variantsParser;
     private JsonParser globalParser;
-    
+
     private InputStream variantsStream;
     private InputStream globalStream;
-    
+
     private String variantFilename;
     private String globalFilename;
-    
+
     private Path variantsPath;
     private Path globalPath;
-    
+    private LinkedHashMap<String, Integer> samplesPosition;
+
     private VariantSource source;
-    
+
 //    public VariantJsonReader(String variantFilename, String globalFilename) {
     public VariantJsonReader(VariantSource source, String variantFilename, String globalFilename) {
         this.source = source;
@@ -77,7 +76,7 @@ public class VariantJsonReader implements VariantReader {
             this.variantsPath = Paths.get(this.variantFilename);
 //            this.variantsPath = Paths.get(source.getFileName());
             this.globalPath = Paths.get(this.globalFilename);
-            
+
             Files.exists(this.variantsPath);
             Files.exists(this.globalPath);
 
@@ -99,7 +98,7 @@ public class VariantJsonReader implements VariantReader {
                 this.globalStream = new FileInputStream(globalPath.toFile());
             }
 
-            
+
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
@@ -110,14 +109,14 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public boolean pre() {
-        jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         try {
             variantsParser = factory.createParser(variantsStream);
             globalParser = factory.createParser(globalStream);
             // TODO Optimizations for memory management?
-            
+
             // Read global JSON file and copy its info into the already available VariantSource object
             VariantSource readSource = globalParser.readValueAs(VariantSource.class);
             source.setFileName(readSource.getFileName());
@@ -134,7 +133,17 @@ public class VariantJsonReader implements VariantReader {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
-        
+
+        Map<String, Integer> samplesPosition = source.getSamplesPosition();
+        this.samplesPosition = new LinkedHashMap<>(samplesPosition.size());
+        String[] samples = new String[samplesPosition.size()];
+        for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
+            samples[entry.getValue()] = entry.getKey();
+        }
+        for (int i = 0; i < samples.length; i++) {
+            this.samplesPosition.put(samples[i], i);
+        }
+
         return true;
     }
 
@@ -143,6 +152,7 @@ public class VariantJsonReader implements VariantReader {
         try {
             if (variantsParser.nextToken() != null) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
+                variant.getStudy(source.getStudyId()).setSamplesPosition(samplesPosition);
                 return Arrays.asList(variant);
             }
         } catch (IOException ex) {
@@ -155,10 +165,11 @@ public class VariantJsonReader implements VariantReader {
     @Override
     public List<Variant> read(int batchSize) {
         List<Variant> listRecords = new ArrayList<>(batchSize);
-        
+
         try {
             for (int i = 0; i < batchSize && variantsParser.nextToken() != null; i++) {
                 Variant variant = variantsParser.readValueAs(Variant.class);
+                variant.getStudy(source.getStudyId()).setSamplesPosition(samplesPosition);
                 listRecords.add(variant);
             }
         } catch (IOException ex) {
@@ -167,7 +178,7 @@ public class VariantJsonReader implements VariantReader {
 
         return listRecords;
     }
-    
+
     @Override
     public boolean post() {
         return true;
@@ -182,7 +193,7 @@ public class VariantJsonReader implements VariantReader {
             Logger.getLogger(VariantJsonReader.class.getName()).log(Level.SEVERE, null, ex);
             return false;
         }
-        
+
         return true;
     }
 

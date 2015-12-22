@@ -23,9 +23,11 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -35,22 +37,23 @@ public class CellBaseVariantAnnotatorTest extends GenericTest {
     private String cellbaseSpecies = "hsapiens";
     private String cellbaseAssembly = "GRCh37";
 
-    @Test
-    public void testCreateAnnotationREST() throws Exception {
-        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
-
-        CellBaseClient cellBaseClient;
-        cellBaseClient = new CellBaseClient("bioinfodev.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
-//        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
-
-        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
-
-        URI test = annotator.createAnnotation(variantDBAdaptor, Paths.get("/tmp"), "testREST", null, null);
-
-        System.out.println(test.toString());
-
-        annotator.loadAnnotation(variantDBAdaptor, test, new QueryOptions());
-    }
+//    @Test
+//    public void testCreateAnnotationREST() throws Exception {
+//        VariantDBAdaptor variantDBAdaptor = getDbAdaptor();
+//
+//        CellBaseClient cellBaseClient;
+//        cellBaseClient = new CellBaseClient("bioinfodev.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+////        cellBaseClient = new CellBaseClient("localhost", 8080, "/cellbase/webservices/rest/", "v3", "hsapiens");
+//
+//        CellBaseVariantAnnotator annotator = new CellBaseVariantAnnotator(cellBaseClient);
+//        VariantAnnotationManager annotationManager = new VariantAnnotationManager(annotator, variantDBAdaptor);
+//
+//        URI test = annotationManager.createAnnotation(Paths.get("/tmp"), "testREST", null, null);
+//
+//        System.out.println(test.toString());
+//
+//        annotationManager.loadAnnotation(test, new QueryOptions());
+//    }
 
 //    @Test
 //    public void testCreateAnnotationDBAdaptor() throws Exception {

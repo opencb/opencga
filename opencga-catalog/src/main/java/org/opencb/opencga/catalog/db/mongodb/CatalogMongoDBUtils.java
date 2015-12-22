@@ -15,10 +15,7 @@
  */
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -60,6 +57,7 @@ class CatalogMongoDBUtils {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         jsonObjectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonReaderMap = new HashMap<>();
     }
@@ -184,11 +182,13 @@ class CatalogMongoDBUtils {
 
     static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
         DBObject dbObject;
+        String jsonString = null;
         try {
-            dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(object));
+            jsonString = jsonObjectWriter.writeValueAsString(object);
+            dbObject = (DBObject) JSON.parse(jsonString);
             dbObject = replaceDotsInKeys(dbObject);
         } catch (Exception e) {
-            throw new CatalogDBException("Error while writing to Json : " + objectName, e);
+            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null? "" : (" -> " + jsonString)), e);
         }
         return dbObject;
     }
@@ -276,11 +276,18 @@ class CatalogMongoDBUtils {
             List<String> list = filteredOptions.getAsStringList(listName);
             List<String> filteredList = new LinkedList<>();
             int length = route.length();
-            if (list != null) {
+            if (list != null && !list.isEmpty()) {
                 for (String s : list) {
                     if (s.startsWith(route)) {
                         filteredList.add(s.substring(length));
                     }
+                }
+                if (listName.equals("include")) {
+                    filteredList.add("id");
+                    filteredList.add(_ID);
+                } else if (listName.equals("exclude")) {
+                    filteredList.remove("id");
+                    filteredList.remove(_ID);
                 }
                 filteredOptions.put(listName, filteredList);
             }

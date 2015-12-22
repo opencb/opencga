@@ -41,6 +41,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -786,6 +789,48 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+    }
+
+    @Test
+    public void createMultipleCohorts() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        AtomicInteger numFailures = new AtomicInteger();
+        Function<Integer, String> getCohortName = c -> "Cohort_" + c;
+        int numThreads = 10;
+        int numCohorts = 10;
+        for (int c = 0; c < numCohorts; c++) {
+            List<Thread> threads = new LinkedList<>();
+            String cohortName = getCohortName.apply(c);
+            for (int i = 0; i < numThreads; i++) {
+                threads.add(new Thread(() -> {
+                    try {
+                        catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION, "", "", Collections.emptyList(), null));
+                    } catch (CatalogDBException ignore) {
+                        numFailures.incrementAndGet();
+                    }
+                }));
+            }
+            threads.parallelStream().forEach(Thread::run);
+            threads.parallelStream().forEach((thread) -> {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+
+        assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
+        Study study = catalogDBAdaptor.getCatalogStudyDBAdaptor().getStudy(studyId, null).first();
+        assertEquals(numCohorts, study.getCohorts().size());
+        Set<String> names = study.getCohorts().stream().map(Cohort::getName).collect(Collectors.toSet());
+        for (int c = 0; c < numCohorts; c++) {
+            String cohortName = getCohortName.apply(c);
+            names.contains(cohortName);
+        }
+
     }
 
     /**

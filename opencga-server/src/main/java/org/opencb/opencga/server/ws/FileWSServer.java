@@ -21,7 +21,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -37,9 +37,11 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -129,10 +131,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @ApiOperation(value = "Create folder", position = 2)
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder) {
+                                 @ApiParam(value = "Path of the folder to be created", required = true) @QueryParam("folder") String folder,
+                                 @ApiParam(value = "parents", required = false) @QueryParam("parents") @DefaultValue("true") boolean parents) {
         try {
             java.nio.file.Path folderPath = Paths.get(folder);
-            boolean parents = true;
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -270,10 +272,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
                 IOUtils.deleteDirectory(folderPath);
                 try {
-                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                    QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
                             File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(),
                             description, parents, sessionId
                     );
+                    File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
+                            queryOptions, sessionId, false);
+                    queryResult.setResult(Collections.singletonList(file));
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());
@@ -496,7 +501,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File index", position = 14)
     public Response index(@ApiParam("fileId") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
                           @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate) {
+                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate,
+                          @ApiParam("Calculate stats") @DefaultValue("true") @QueryParam("calculateStats") boolean calculateStats) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
         try {
@@ -505,12 +511,8 @@ public class FileWSServer extends OpenCGAWSServer {
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            if (!queryOptions.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-                File a = catalogManager.getFile(fileId, sessionId).getResult().get(0);
-                if(a.getBioformat() == File.Bioformat.VARIANT){
-                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--calculate-stats", "--include-stats"));
-                }
-            }
+            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
+            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
             QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -731,11 +733,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
         List<QueryResult> results = new LinkedList<>();
         try {
-            VariantFetcher variantFetcher = new VariantFetcher(this);
+            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;
-                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId);
+                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
         } catch (Exception e) {

@@ -23,6 +23,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -34,12 +38,14 @@ import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -104,6 +110,11 @@ public class OpenCGAMain {
             optionsParser.printUsage();
             System.exit(1);
         }
+        if (optionsParser.getGeneralOptions().version) {
+            System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
+            System.out.println("git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+            System.exit(0);
+        }
 
         userConfigFile = loadUserFile();
 
@@ -145,6 +156,9 @@ public class OpenCGAMain {
         } else {
             try {
                 System.exit(opencgaMain.runCommand(optionsParser));
+            } catch (RuntimeException e) {
+                logger.error(e.getMessage(), e);
+                System.exit(1);
             } catch (Exception e) {
                 logger.error(e.getMessage());
                 logger.debug(e.getMessage(), e);
@@ -177,7 +191,8 @@ public class OpenCGAMain {
     private int runCommand(OptionsParser optionsParser) throws Exception {
         int returnValue = 0;
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
-            catalogManager = new CatalogManager(Config.getCatalogProperties());
+            Properties catalogProperties = Config.getCatalogProperties();
+            catalogManager = new CatalogManager(catalogProperties);
         }
 
         String sessionId = login(optionsParser.getUserAndPasswordOptions());
@@ -307,8 +322,10 @@ public class OpenCGAMain {
                         }
                         Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
                         int projectId = catalogManager.getProjectId(c.projectId);
+                        ObjectMap attributes = new ObjectMap();
+                        attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, dataStoreMap, null, null, c.cOpt.getQueryOptions(), sessionId);
+                                null, c.description, null, null, null, uri, dataStoreMap, null, attributes, c.cOpt.getQueryOptions(), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(), new QueryOptions("path", ""), sessionId).first();
                             new FileScanner(catalogManager).scan(root, uri, FileScanner.FileScannerPolicy.REPLACE, true, false, sessionId);
@@ -414,19 +431,14 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        int studyId = catalogManager.getStudyId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
+
+                        queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
 
                         break;
                     }
@@ -770,7 +782,10 @@ public class OpenCGAMain {
                         }
 
                         if (cohorts.isEmpty()) {
-
+                            if (c.tagmap != null) {
+                                List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
+                                System.out.println(createOutput(c.cOpt, queryResults, null));
+                            }
                         } else {
                             List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
@@ -802,6 +817,12 @@ public class OpenCGAMain {
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+                        if (c.tagmap != null) {
+                            queryOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), c.tagmap);
+                        } else if (c.cohortIds == null) {
+                            logger.error("--cohort-id nor --aggregation-mapping-file provided");
+                            throw new IllegalArgumentException("--cohort-id or --aggregation-mapping-file is required to specify cohorts");
+                        }
                         System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
 
                         break;
@@ -840,7 +861,18 @@ public class OpenCGAMain {
 
                         /** Record output **/
                         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                        outputRecorder.recordJobOutput(job, c.error);
+                        if (c.discardOutput) {
+                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+                            if (ioManager.exists(job.getTmpOutDirUri())) {
+                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
+                                ioManager.deleteDirectory(job.getTmpOutDirUri());
+                            } else {
+                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
+                            }
+                        } else {
+                            outputRecorder.recordJobOutput(job);
+                        }
+                        outputRecorder.postProcessJob(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
@@ -858,6 +890,48 @@ public class OpenCGAMain {
 
                         break;
                     }
+                    case "status": {
+                        OptionsParser.JobsCommands.StatusCommand c = optionsParser.getJobsCommands().statusCommand;
+
+                        final List<Integer> studyIds;
+                        if (c.studyId == null || c.studyId.isEmpty()) {
+                            studyIds = catalogManager.getAllStudies(new QueryOptions("include", "id"), sessionId)
+                                    .getResult().stream().map(Study::getId).collect(Collectors.toList());
+                        } else {
+                            studyIds = new LinkedList<>();
+                            for (String s : c.studyId.split(",")) {
+                                studyIds.add(catalogManager.getStudyId(s));
+                            }
+                        }
+                        for (Integer studyId : studyIds) {
+                            QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
+                                    new QueryOptions("status", Collections.singletonList(Job.Status.RUNNING.toString())), sessionId);
+
+                            for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
+                                Job job = iterator.next();
+                                System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
+                                URI tmpOutDirUri = job.getTmpOutDirUri();
+                                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+                                ioManager.listFilesStream(tmpOutDirUri)
+                                        .sorted()
+                                        .forEach(uri -> {
+                                                    String count;
+                                                    try {
+                                                        long fileSize = ioManager.getFileSize(uri);
+                                                        count = humanReadableByteCount(fileSize, false);
+                                                    } catch (CatalogIOException e) {
+                                                        count = "ERROR";
+                                                    }
+                                                    System.out.format("\t%s [%s]\n", tmpOutDirUri.relativize(uri), count);
+                                                }
+                                        );
+                                if (iterator.hasNext()) {
+                                    System.out.println("-----------------------------------------");
+                                }
+                            }
+                        }
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;
@@ -870,18 +944,20 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.ToolCommands.CreateCommand c = optionsParser.getToolCommands().createCommand;
 
+                        Path path = Paths.get(c.path);
+                        FileUtils.checkDirectory(path);
+
                         QueryResult<Tool> tool = catalogManager.createTool(c.alias, c.description, null, null,
-                                c.path, c.openTool, sessionId);
-                        System.out.println(tool);
+                                path.toAbsolutePath().toString(), c.openTool, sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
 
                         break;
                     }
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        QueryResult<Tool> tool = catalogManager.getTool(c.id, sessionId);
-                        System.out.println(tool);
-
+                        QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
+                        System.out.println(createOutput(c.cOpt, tool, null));
                         break;
                     }
                     default: {
@@ -905,6 +981,23 @@ public class OpenCGAMain {
 
         return returnValue;
     }
+
+    private static List<QueryResult<Cohort>> createCohorts(String sessionId, int studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
+        List<QueryResult<Cohort>> queryResults = new ArrayList<>();
+        Properties tagmap = new Properties();
+        tagmap.load(new FileInputStream(tagmapPath));
+        Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
+        for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
+            if (!catalogCohorts.contains(cohortName)) {
+                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.<Integer>emptyList(), null, sessionId);
+                queryResults.add(cohort);
+            } else {
+                logger.warn("cohort {} was already created", cohortName);
+            }
+        }
+        return queryResults;
+    }
+
 
     private Map<File.Bioformat, DataStore> parseBioformatDataStoreMap(OptionsParser.StudyCommands.CreateCommand c) throws Exception {
         Map<File.Bioformat, DataStore> dataStoreMap;
@@ -1176,6 +1269,12 @@ public class OpenCGAMain {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        rootLogger.setLevel(Level.toLevel(logLevel));
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 

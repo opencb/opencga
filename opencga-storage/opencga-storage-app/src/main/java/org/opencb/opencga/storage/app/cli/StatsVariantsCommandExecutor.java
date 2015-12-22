@@ -28,6 +28,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
@@ -66,6 +68,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
             options.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
         }
         options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+        options.put(VariantStorageManager.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
         if (statsVariantsCommandOptions.fileId != 0) {
             options.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
         }
@@ -87,6 +90,18 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
                     samples = new ArrayList<>();
                 }
                 cohorts.put(entry.getKey(), new HashSet<>(samples));
+            }
+        }
+
+        options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
+
+        if (statsVariantsCommandOptions.aggregationMappingFile != null) {
+            Properties aggregationMappingProperties = new Properties();
+            try {
+                aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
+                options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+            } catch (FileNotFoundException e) {
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions.aggregationMappingFile);
             }
         }
 
@@ -122,13 +137,15 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
 
         try {
 
-            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
+            Map<String, Integer> cohortIds = statsVariantsCommandOptions.cohortIds.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
 
             QueryOptions queryOptions = new QueryOptions(options);
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, 
+                        studyConfiguration, queryOptions);
             }
 
             if (doLoad) {
