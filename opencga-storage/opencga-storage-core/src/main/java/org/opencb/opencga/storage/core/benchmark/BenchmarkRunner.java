@@ -45,7 +45,7 @@ public abstract class BenchmarkRunner {
 
     public abstract BenchmarkStats query();
 
-    public abstract BenchmarkStats query(int numRepetitions, Set<String> query);
+    public abstract BenchmarkStats query(int numRepetitions, Set<String> queries);
 
 
 }

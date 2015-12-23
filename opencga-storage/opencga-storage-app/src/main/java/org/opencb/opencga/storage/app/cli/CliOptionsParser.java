@@ -515,13 +515,13 @@ public class CliOptionsParser {
         @Parameter(names = {"--load"}, description = "File name with absolute path", required = false, arity = 1)
         public String load;
 
-        @Parameter(names = {"--query"}, description = "Query to fetch the data from tables", required = true, arity = 1)
-        public String query;
+        @Parameter(names = {"--queries"}, description = "Queries to fetch the data from tables", required = false, arity = 1)
+        public String queries;
 
         @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
         public int repetition = 3;
 
-        @Parameter(names = {"--table-name"}, description = "Benchmark variants", required = true, arity = 1)
+        @Parameter(names = {"--table-name"}, description = "Benchmark variants", required = false, arity = 1)
         public String tableName;
 
     }

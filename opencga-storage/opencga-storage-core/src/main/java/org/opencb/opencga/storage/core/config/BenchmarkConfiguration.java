@@ -27,6 +27,8 @@ public class BenchmarkConfiguration {
     private int numRepetitions;
     private boolean load;
 
+    private List<String> queries;
+    private List<String> tables;
 
     @Override
     public String toString() {
@@ -34,6 +36,8 @@ public class BenchmarkConfiguration {
         sb.append("storageEngines=").append(storageEngines);
         sb.append(", numRepetitions=").append(numRepetitions);
         sb.append(", load=").append(load);
+        sb.append(", queries=").append(queries);
+        sb.append(", tables=").append(tables);
         sb.append('}');
         return sb.toString();
     }
@@ -62,4 +66,19 @@ public class BenchmarkConfiguration {
         this.load = load;
     }
 
+    public List<String> getQueries() {
+        return queries;
+    }
+
+    public void setQueries(List<String> queries) {
+        this.queries = queries;
+    }
+
+    public List<String> getTables() {
+        return tables;
+    }
+
+    public void setTables(List<String> tables) {
+        this.tables = tables;
+    }
 }

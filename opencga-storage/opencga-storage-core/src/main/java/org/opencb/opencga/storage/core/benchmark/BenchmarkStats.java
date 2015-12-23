@@ -51,11 +51,26 @@ public class BenchmarkStats {
         return 0.0f;
     }
 
+    double variance(String counter) {
+        List<Integer> integers = counters.get(counter);
+        double mean = avg(counter);
+        double temp = 0;
+        for(double a : integers)
+            temp += (mean - a) * (mean - a);
+        return temp/integers.size();
+    }
+
+    double standardDeviation(String counter) {
+        return Math.sqrt(variance(counter));
+    }
+
     public void printSummary() {
         for (String key : counters.keySet()) {
             System.out.print("Counter: " + key + ", ");
-            System.out.print("values: " + counters.get(key).toString());
-            System.out.print("avg: " + avg(key));
+            System.out.print("values: " + counters.get(key).toString() + ", ");
+            System.out.print("avg: " + avg(key) + ", ");
+            System.out.print("variance: " + variance(key) + ", ");
+            System.out.print("standard deviation: " + standardDeviation(key));
             System.out.println();
         }
     }

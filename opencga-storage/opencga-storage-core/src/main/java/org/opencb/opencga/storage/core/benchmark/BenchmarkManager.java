@@ -28,11 +28,11 @@ import java.util.HashSet;
 public class BenchmarkManager {
 
     private StorageConfiguration storageConfiguration;
-    String load = null;
+//    String load = null;
 //    String numOfRepetition = null;
-    String tableName = null;
-    String query = null;
-    boolean isLoadRequired;
+//    String tableName = null;
+//    String query = null;
+//    boolean isLoadRequired;
 
     public BenchmarkManager(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
@@ -42,9 +42,10 @@ public class BenchmarkManager {
             InstantiationException, IllegalAccessException {
 
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
-//        BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(), new HashSet<>(Arrays.asList(dbQuery.split(","))));
+        BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(),
+                new HashSet<>(storageConfiguration.getBenchmark().getQueries()));
 
-        return null;
+        return benchmarkStats;
     }
 
     //Load data if user provide the loading option with file path

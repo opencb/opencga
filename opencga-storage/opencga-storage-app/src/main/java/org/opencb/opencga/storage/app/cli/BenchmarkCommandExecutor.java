@@ -51,7 +51,17 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
         if (benchmarkCommandOptions.storageEngine != null) {
             configuration.getBenchmark().setStorageEngines(Arrays.asList(benchmarkCommandOptions.storageEngine.split(",")));
         }
+
+        if (benchmarkCommandOptions.tableName != null) {
+            configuration.getBenchmark().setTables(Arrays.asList(benchmarkCommandOptions.tableName.split(",")));
+        }
+
+        if (benchmarkCommandOptions.queries != null) {
+            configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+        }
         configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+//        configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+//        configuration.getBenchmark().setTables(Arrays.asList(benchmarkCommandOptions.tableName.split(",")));
         System.out.println(configuration.getBenchmark());
 
 
