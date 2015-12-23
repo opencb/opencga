@@ -23,31 +23,35 @@ import java.util.List;
  */
 public class BenchmarkConfiguration {
 
-    private List<String> storageEngines;
+    private String storageEngine;
     private int numRepetitions;
     private boolean load;
-
     private List<String> queries;
-    private List<String> tables;
+
+    private String databaseName;
+    private String table;
+    private DatabaseCredentials database;
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BenchmarkConfiguration{");
-        sb.append("storageEngines=").append(storageEngines);
+        sb.append("storageEngine='").append(storageEngine).append('\'');
         sb.append(", numRepetitions=").append(numRepetitions);
         sb.append(", load=").append(load);
         sb.append(", queries=").append(queries);
-        sb.append(", tables=").append(tables);
+        sb.append(", databaseName='").append(databaseName).append('\'');
+        sb.append(", table='").append(table).append('\'');
+        sb.append(", database=").append(database);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<String> getStorageEngines() {
-        return storageEngines;
+    public String getStorageEngine() {
+        return storageEngine;
     }
 
-    public void setStorageEngines(List<String> storageEngines) {
-        this.storageEngines = storageEngines;
+    public void setStorageEngine(String storageEngine) {
+        this.storageEngine = storageEngine;
     }
 
     public int getNumRepetitions() {
@@ -74,11 +78,28 @@ public class BenchmarkConfiguration {
         this.queries = queries;
     }
 
-    public List<String> getTables() {
-        return tables;
+    public String getDatabaseName() {
+        return databaseName;
     }
 
-    public void setTables(List<String> tables) {
-        this.tables = tables;
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
     }
+
+    public String getTable() {
+        return table;
+    }
+
+    public void setTable(String table) {
+        this.table = table;
+    }
+
+    public DatabaseCredentials getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(DatabaseCredentials database) {
+        this.database = database;
+    }
+
 }

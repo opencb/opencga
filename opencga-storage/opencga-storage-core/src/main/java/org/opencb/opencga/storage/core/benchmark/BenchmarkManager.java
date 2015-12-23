@@ -38,8 +38,8 @@ public class BenchmarkManager {
         this.storageConfiguration = storageConfiguration;
     }
 
-    public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageManagerException,
-            InstantiationException, IllegalAccessException {
+    public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageManagerException, InstantiationException,
+            IllegalAccessException {
 
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
         BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(),

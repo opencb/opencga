@@ -109,7 +109,7 @@ public class StorageConfiguration {
 //                this.include = sto
 //                  for(conf.d) ...
 //            }
-//            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getStorageEngines()) {
+//            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getStorageEngine()) {
 //                this.storageEngines.add(storageEngineConfiguration);
 //            }
         }
@@ -283,11 +283,11 @@ public class StorageConfiguration {
 //        this.server = server;
 //    }
 //
-//    public List<StorageEngineConfiguration> getStorageEngines() {
+//    public List<StorageEngineConfiguration> getStorageEngine() {
 //        return storageEngines;
 //    }
 //
-//    public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
+//    public void setStorageEngine(List<StorageEngineConfiguration> storageEngines) {
 //        this.storageEngines = storageEngines;
 //    }
 //

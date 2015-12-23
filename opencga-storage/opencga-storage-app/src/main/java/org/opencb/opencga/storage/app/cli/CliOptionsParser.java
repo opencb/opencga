@@ -132,7 +132,7 @@ public class CliOptionsParser {
         public boolean help;
 
         @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel;
+        public String logLevel = "info";
 
         @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
         public String logFile;
@@ -512,17 +512,23 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"benchmark"}, commandDescription = "Benchmark load and fetch variants with different databases")
     public class BenchmarkCommandOptions extends CommonCommandOptions {
 
+        @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
+        public int repetition = 3;
+
         @Parameter(names = {"--load"}, description = "File name with absolute path", required = false, arity = 1)
         public String load;
 
         @Parameter(names = {"--queries"}, description = "Queries to fetch the data from tables", required = false, arity = 1)
         public String queries;
 
-        @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
-        public int repetition = 3;
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        public String database;
 
-        @Parameter(names = {"--table-name"}, description = "Benchmark variants", required = false, arity = 1)
-        public String tableName;
+        @Parameter(names = {"-t", "--table"}, description = "Benchmark variants", required = false, arity = 1)
+        public String table;
+
+        @Parameter(names = {"--host"}, description = "DataBase name", required = false, arity = 1)
+        public String host;
 
     }
 

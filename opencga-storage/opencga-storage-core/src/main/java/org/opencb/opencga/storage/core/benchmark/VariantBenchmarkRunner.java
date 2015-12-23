@@ -27,7 +27,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Created by imedina on 16/06/15.
@@ -44,7 +47,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     public VariantBenchmarkRunner(String storageEngine, StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
         this.storageEngine = storageEngine;
         this.storageConfiguration = storageConfiguration;
-
         logger = LoggerFactory.getLogger(this.getClass());
         init(storageEngine);
     }
@@ -52,8 +54,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     private void init(String storageEngine) throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         StorageManagerFactory storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
-        variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration
-                .getStorageEngine(storageEngine).getVariant().getOptions().get("database.name").toString());
+        variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
     }
 
 
@@ -83,8 +84,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
             Iterator<String> iterator = benchmarkTests.iterator();
             while (iterator.hasNext()) {
                 String next = iterator.next();
-                queryType = next.split("-");
 
+                queryType = next.split("-");
                 if (queryType.length >= 2) {
                     queryParams = queryType[1];
                 }
@@ -95,9 +96,9 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                     case "count":
                         executionTime = count();
                         break;
-//                    case "distinct":
-//                        executionTime = distinct();
-//                        break;
+                    case "distinct":
+                        executionTime = distinct();
+                        break;
                     case "queryById":
                         executionTime = queryById();
                         break;
@@ -136,15 +137,16 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         Query query = new Query();
         QueryResult<Long> count = variantDBAdaptor.count(query);
         System.out.println(count.getDbTime());
+        System.out.println("count: " + count.getResult().get(0));
         return count.getDbTime();
     }
 
-//    private int distinct() {
-//        Query query = new Query();
-//        QueryResult distinct = variantDBAdaptor.distinct(query, queryParams);
-//        System.out.println(distinct.getDbTime());
-//        return distinct.getDbTime();
-//    }
+    private int distinct() {
+        QueryResult distinct = variantDBAdaptor.distinct(new Query(), "gene");
+        System.out.println(distinct.getDbTime());
+        System.out.println("distinct: " + distinct.getResult().size());
+        return distinct.getDbTime();
+    }
 
     private int queryById() {
         Query query = new Query();
@@ -214,27 +216,22 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     private int queryByAlternate() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
-
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
         QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
 
-        System.out.println(variantQueryResultByChr.getDbTime());
+        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+        logger.debug("queryByAlternate: {}", variantQueryResultByChr.getDbTime());
         return variantQueryResultByChr.getDbTime();
     }
 
     private int queryByStudies() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
-
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
         QueryOptions queryOptions = new QueryOptions();
+
         QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
 
         System.out.println(variantQueryResultByChr.getDbTime());
         return variantQueryResultByChr.getDbTime();
     }
-
-
 
 }

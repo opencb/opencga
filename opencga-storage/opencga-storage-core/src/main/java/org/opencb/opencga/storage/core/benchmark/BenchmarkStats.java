@@ -55,9 +55,10 @@ public class BenchmarkStats {
         List<Integer> integers = counters.get(counter);
         double mean = avg(counter);
         double temp = 0;
-        for(double a : integers)
-            temp += (mean - a) * (mean - a);
-        return temp/integers.size();
+        for (int a : integers) {
+            temp += Math.pow((mean - a), 2);
+        }
+        return temp / integers.size();
     }
 
     double standardDeviation(String counter) {

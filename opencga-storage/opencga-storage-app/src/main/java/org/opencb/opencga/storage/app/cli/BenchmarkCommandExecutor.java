@@ -1,8 +1,10 @@
 package org.opencb.opencga.storage.app.cli;
 
+import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
-import org.opencb.opencga.storage.core.config.BenchmarkConfiguration;
+import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -29,67 +31,52 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     @Override
     public void execute() throws Exception {
 
-        String storageEngine = (benchmarkCommandOptions.storageEngine != null && !benchmarkCommandOptions.storageEngine.isEmpty())
-                ? benchmarkCommandOptions.storageEngine
-                : configuration.getDefaultStorageEngineId();
-        logger.debug("Storage Engine set to '{}'", storageEngine);
-
-
-        StorageEngineConfiguration storageConfiguration = configuration.getStorageEngine(storageEngine);
-
-        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
-        VariantStorageManager variantStorageManager;
-        if (storageEngine == null || storageEngine.isEmpty()) {
-            variantStorageManager = storageManagerFactory.getVariantStorageManager();
-        } else {
-            variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
-        }
-        storageConfiguration.getVariant().getOptions().putAll(benchmarkCommandOptions.params);
-
-
         // Overwrite default options from configuration.yaml with CLI parameters
-        if (benchmarkCommandOptions.storageEngine != null) {
-            configuration.getBenchmark().setStorageEngines(Arrays.asList(benchmarkCommandOptions.storageEngine.split(",")));
+        if (benchmarkCommandOptions.storageEngine != null && !benchmarkCommandOptions.storageEngine.isEmpty()) {
+            configuration.getBenchmark().setStorageEngine(benchmarkCommandOptions.storageEngine);
+        } else {
+            configuration.getBenchmark().setStorageEngine(configuration.getDefaultStorageEngineId());
+            logger.debug("Storage Engine for benchmarking set to '{}'", configuration.getDefaultStorageEngineId());
         }
 
-        if (benchmarkCommandOptions.tableName != null) {
-            configuration.getBenchmark().setTables(Arrays.asList(benchmarkCommandOptions.tableName.split(",")));
+        if (benchmarkCommandOptions.repetition > 0) {
+            configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+        }
+
+        if (benchmarkCommandOptions.database != null && !benchmarkCommandOptions.database.isEmpty()) {
+            configuration.getBenchmark().setDatabaseName(benchmarkCommandOptions.database);
+        }
+
+        if (benchmarkCommandOptions.table != null && !benchmarkCommandOptions.table.isEmpty()) {
+            configuration.getBenchmark().setTable(benchmarkCommandOptions.table);
         }
 
         if (benchmarkCommandOptions.queries != null) {
             configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
         }
-        configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
-//        configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
-//        configuration.getBenchmark().setTables(Arrays.asList(benchmarkCommandOptions.tableName.split(",")));
-        System.out.println(configuration.getBenchmark());
+
+        DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
+        if (benchmarkCommandOptions.host != null && !benchmarkCommandOptions.host.isEmpty()) {
+            databaseCredentials.setHosts(Arrays.asList(benchmarkCommandOptions.host.split(",")));
+        }
+
+        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
+
+        // validate
+        checkParams();
 
 
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
-
-//        benchmark();
+//        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
         BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
         benchmarkManager.variantBenchmark();
-
     }
 
+    private void checkParams() {
+        if (configuration.getBenchmark().getDatabaseName() == null || configuration.getBenchmark().getDatabaseName().isEmpty()) {
+            System.out.println("...");
+            throw new ParameterException("");
+        }
 
-//    private void benchmark() throws Exception {
-//        String load = benchmarkCommandOptions.load;
-//        int numOfRepetition = benchmarkCommandOptions.repetition;
-//        String tableName = benchmarkCommandOptions.tableName;
-//        String query  = benchmarkCommandOptions.query;
-//        boolean loadRequired;
-//
-//        if (load != null) {
-//            loadRequired = true;
-//        } else {
-//            loadRequired = false;
-//        }
-//        String[] args = {load, "" + numOfRepetition, tableName, query, Boolean.toString(loadRequired)};
-//
-//        new BenchmarkManager().run(args);
-//
-//    }
+    }
 
 }
