@@ -27,9 +27,11 @@ import java.util.Map;
 public class BenchmarkStats {
 
     private Map<String, List<Integer>> counters;
+    private Map<String, List<Double>> std;
 
     public BenchmarkStats() {
         counters = new LinkedHashMap<>();
+        std = new LinkedHashMap<>();
     }
 
     public void addExecutionTime(String counter, int time) {
@@ -37,6 +39,13 @@ public class BenchmarkStats {
             counters.put(counter, new ArrayList<>());
         }
         counters.get(counter).add(time);
+    }
+
+    public void addStdDeviation(String counter, double time) {
+        if (!std.containsKey(counter)) {
+            std.put(counter, new ArrayList<>());
+        }
+        std.get(counter).add(time);
     }
 
     public double avg(String counter) {

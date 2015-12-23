@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by imedina on 08/10/15.
@@ -39,7 +40,7 @@ public class BenchmarkManager {
     }
 
     public BenchmarkStats variantBenchmark() throws ClassNotFoundException, StorageManagerException, InstantiationException,
-            IllegalAccessException {
+            IllegalAccessException, ExecutionException, InterruptedException {
 
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
         BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(),

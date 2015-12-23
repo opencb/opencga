@@ -27,18 +27,17 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Created by imedina on 16/06/15.
  */
 public class VariantBenchmarkRunner extends BenchmarkRunner {
 
-    String[] queryType;
-    String queryParams;
+    private String[] queryType;
+    private String queryParams;
+    private BenchmarkStats benchmarkStats;
 
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
         this(storageConfiguration.getDefaultStorageEngineId(), storageConfiguration);
@@ -69,17 +68,17 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     @Override
-    public BenchmarkStats query() {
+    public BenchmarkStats query() throws ExecutionException, InterruptedException {
         return query(3, new HashSet<>(Arrays.asList("count", "queryByRegion")));
     }
 
     @Override
-    public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) {
+    public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException, InterruptedException {
         System.out.println("numRepetitions = " + numRepetitions);
 
         int executionTime = 0;
 
-        BenchmarkStats benchmarkStats = new BenchmarkStats();
+        benchmarkStats = new BenchmarkStats();
         for (int i = 0; i < numRepetitions; i++) {
             Iterator<String> iterator = benchmarkTests.iterator();
             while (iterator.hasNext()) {
@@ -94,144 +93,170 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //                System.out.println("queryParams = " + queryParams);
                 switch (queryType[0]) {
                     case "count":
-                        executionTime = count();
+                        executeThreads(queryType[0], () -> variantDBAdaptor.count(new Query()));
+//                        executionTime = count();
                         break;
-                    case "distinct":
-                        executionTime = distinct();
-                        break;
-                    case "queryById":
-                        executionTime = queryById();
-                        break;
-                    case "queryByRegion":
-                        executionTime = queryByRegion();
-                        break;
-                    case "queryByChromosome":
-                        executionTime = queryByChromosome();
-                        break;
-                    case "queryByGene":
-                        executionTime = queryByGene();
-                        break;
-                    case "queryByType":
-                        executionTime = queryByType();
-                        break;
-                    case "queryByReference":
-                        executionTime = queryByReference();
-                        break;
-                    case "queryByAlternate":
-                        executionTime = queryByAlternate();
-                        break;
-                    case "queryByStudies":
-                        executionTime = queryByStudies();
-                        break;
+//                    case "distinct":
+//                        executionTime = distinct();
+//                        break;
+//                    case "queryById":
+//                        executionTime = queryById();
+//                        break;
+//                    case "queryByRegion":
+//                        executionTime = queryByRegion();
+//                        break;
+//                    case "queryByChromosome":
+//                        executionTime = queryByChromosome();
+//                        break;
+//                    case "queryByGene":
+//                        executionTime = queryByGene();
+//                        break;
+//                    case "queryByType":
+//                        executionTime = queryByType();
+//                        break;
+//                    case "queryByReference":
+//                        executionTime = queryByReference();
+//                        break;
+//                    case "queryByAlternate":
+//                        executionTime = queryByAlternate();
+//                        break;
+//                    case "queryByStudies":
+//                        executionTime = queryByStudies();
+//                        break;
                     default:
                         break;
                 }
-                benchmarkStats.addExecutionTime(next, executionTime);
+//                benchmarkStats.addExecutionTime(next, executionTime);
             }
         }
         benchmarkStats.printSummary();
         return benchmarkStats;
     }
+    private <T> List<Future<T>> executeThreads(String test, Callable<T> task) throws ExecutionException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(10); // storageConfiguration.getBenchmark().getConcurrent()
+        List<Future<T>> futureList = new ArrayList<>(10);
+        for (int i = 0; i < 10; i++) {
+            futureList.add(executorService.submit(task));
+        }
 
-    private int count() {
-        Query query = new Query();
-        QueryResult<Long> count = variantDBAdaptor.count(query);
-        System.out.println(count.getDbTime());
-        System.out.println("count: " + count.getResult().get(0));
-        return count.getDbTime();
+        int totalTime = 0;
+        for (Future<T> queryResultFuture : futureList) {
+            totalTime += ((QueryResult) queryResultFuture.get()).getDbTime();
+//            System.out.println("queryResultFuture.get().getDbTime() = " + queryResultFuture.get().getDbTime());
+//            System.out.println("queryResultFuture.get().getResult().size() = " + queryResultFuture.get().getResult().get(0));
+        }
+
+        benchmarkStats.addExecutionTime(test, totalTime);
+        benchmarkStats.addStdDeviation(test, 0.2);
+
+        return futureList;
     }
 
-    private int distinct() {
-        QueryResult distinct = variantDBAdaptor.distinct(new Query(), "gene");
-        System.out.println(distinct.getDbTime());
-        System.out.println("distinct: " + distinct.getResult().size());
-        return distinct.getDbTime();
-    }
 
-    private int queryById() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryParams);
+//    private int count() throws ExecutionException, InterruptedException {
+//        List<Future<QueryResult<Long>>> futures = executeThreads("count", () -> variantDBAdaptor.count(new Query()));
+////        for (Future<QueryResult<Long>> queryResultFuture : futures) {
+////            System.out.println("queryResultFuture.get().getDbTime() = " + queryResultFuture.get().getDbTime());
+////            System.out.println("queryResultFuture.get().getResult().size() = " + queryResultFuture.get().getResult().get(0));
+////        }
+////        QueryResult<Long> count = variantDBAdaptor.count(query);
+////        return count.getDbTime();
+//        return 2;
+//    }
 
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByRegion = variantDBAdaptor.get(query, queryOptions);
+//    private int distinct() {
+//        QueryResult distinct = variantDBAdaptor.distinct(new Query(), "gene");
+//        System.out.println(distinct.getDbTime());
+//        System.out.println("distinct: " + distinct.getResult().size());
+//        return distinct.getDbTime();
+//    }
+//
+//    private int queryById() {
+//        Query query = new Query();
+//        query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByRegion = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByRegion.getDbTime());
+//        return variantQueryResultByRegion.getDbTime();
+//    }
+//
+//    private int queryByRegion() {
+//        Query query = new Query();
+////        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:333-116666");
+//        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByRegion = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByRegion.getDbTime());
+//        return variantQueryResultByRegion.getDbTime();
+//    }
+//
+//    private int queryByChromosome() {
+//        Query query = new Query();
+//        query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
+//
+//    private int queryByGene() {
+//        Query query = new Query();
+//        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
+//
+//    private int queryByType() {
+//        Query query = new Query();
+//        query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
+//
+//    private int queryByReference() {
+//        Query query = new Query();
+//        query.put(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryParams);
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
+//
+//    private int queryByAlternate() {
+//        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
+//        QueryOptions queryOptions = new QueryOptions();
+//
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//        logger.debug("queryByAlternate: {}", variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
+//
+//    private int queryByStudies() {
+//        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
+//        QueryOptions queryOptions = new QueryOptions();
+//
+//        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
+//
+//        System.out.println(variantQueryResultByChr.getDbTime());
+//        return variantQueryResultByChr.getDbTime();
+//    }
 
-        System.out.println(variantQueryResultByRegion.getDbTime());
-        return variantQueryResultByRegion.getDbTime();
-    }
 
-    private int queryByRegion() {
-        Query query = new Query();
-//        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:333-116666");
-        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryParams);
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByRegion = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByRegion.getDbTime());
-        return variantQueryResultByRegion.getDbTime();
-    }
-
-    private int queryByChromosome() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), queryParams);
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
-
-    private int queryByGene() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryParams);
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
-
-    private int queryByType() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryParams);
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
-
-    private int queryByReference() {
-        Query query = new Query();
-        query.put(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryParams);
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
-
-    private int queryByAlternate() {
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
-        QueryOptions queryOptions = new QueryOptions();
-
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-        logger.debug("queryByAlternate: {}", variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
-
-    private int queryByStudies() {
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
-        QueryOptions queryOptions = new QueryOptions();
-
-        QueryResult<Variant> variantQueryResultByChr = variantDBAdaptor.get(query, queryOptions);
-
-        System.out.println(variantQueryResultByChr.getDbTime());
-        return variantQueryResultByChr.getDbTime();
-    }
 
 }
