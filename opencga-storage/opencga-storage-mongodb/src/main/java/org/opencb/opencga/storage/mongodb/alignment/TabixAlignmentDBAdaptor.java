@@ -53,7 +53,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 @Deprecated
@@ -61,10 +60,10 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private TabixCredentials tabixCredentials;
     private CellbaseCredentials cellbaseCredentials;
-    
+
     private SqliteCredentials sqliteCredentials;
     private SqliteManager sqliteManager;
-    
+
     protected static org.slf4j.Logger logger = LoggerFactory.getLogger(TabixAlignmentDBAdaptor.class);
 
     public TabixAlignmentDBAdaptor(SqliteCredentials sqliteCredentials,
@@ -75,7 +74,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         this.cellbaseCredentials = cellbaseCredentials;
         this.sqliteManager = new SqliteManager();
     }
-    
+
     @Override
     public QueryResult<Alignment> getAllAlignmentsByRegion(List<Region> regions, QueryOptions options) {
         Region region = regions.get(0);
@@ -92,18 +91,18 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
-        
+
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         return queryResult;
     }
 
-    
+
     @Override
     public QueryResult<Alignment> getAllAlignmentsByGene(String gene, QueryOptions options) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    
+
     @Override
     public QueryResult<RegionCoverage> getCoverageByRegion(Region region, QueryOptions options) {
         QueryResult<RegionCoverage> queryResult = new QueryResult<>(
@@ -118,25 +117,25 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
-        
+
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
-        return queryResult;  
+        return queryResult;
     }
-    
-    
+
+
     @Override
     public QueryResult<ObjectMap> getAlignmentsHistogramByRegion(Region region, boolean histogramLogarithm, int histogramMax) {
-        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d", 
+        QueryResult<ObjectMap> queryResult = new QueryResult<>(String.format("%s:%d-%d",
                 region.getChromosome(), region.getStart(), region.getEnd())); // TODO Fill metadata
         List<ObjectMap> data = new ArrayList<>();
-        
+
         long startTime = System.currentTimeMillis();
-        
+
         Path metaDir = getMetaDir(sqliteCredentials.getPath());
         String fileName = sqliteCredentials.getPath().getFileName().toString();
 
         try {
-            long startDbTime = System.currentTimeMillis(); 
+            long startDbTime = System.currentTimeMillis();
             sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
             System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
             String queryString = "SELECT * FROM chunk WHERE chromosome='" + region.getChromosome() +
@@ -144,7 +143,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
             List<XObject> queryResults = sqliteManager.query(queryString);
             sqliteManager.disconnect(true);
             queryResult.setDbTime((int) (System.currentTimeMillis() - startDbTime));
-            
+
             int resultSize = queryResults.size();
 
             if (resultSize > histogramMax) { // Need to group results to fit maximum size of the histogram
@@ -152,7 +151,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 int i = 0, j = 0;
                 int featuresCount = 0;
                 ObjectMap item = null;
-                
+
                 for (XObject result : queryResults) {
                     featuresCount += result.getInt("features_count");
                     if (i == 0) {
@@ -188,15 +187,15 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
                     data.add(item);
                 }
             }
-        } catch (ClassNotFoundException | SQLException ex ) {
+        } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
-        
+
         queryResult.setResult(data);
         queryResult.setNumResults(data.size());
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
-        
+
         return queryResult;
     }
 
@@ -212,7 +211,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         QueryResult<AlignmentRegion> queryResult = new QueryResult<>(
                 String.format("%s:%d-%d", region.getChromosome(), region.getStart(), region.getEnd()));
         long startTime = System.currentTimeMillis();
-        
+
         try {
             List<SAMRecord> records = getSamRecordsByRegion(region);
             List<Alignment> alignments = getAlignmentsFromSamRecords(region, records, options);
@@ -223,30 +222,30 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Logger.getLogger(TabixAlignmentDBAdaptor.class.getName()).log(Level.SEVERE, null, ex);
             queryResult.setErrorMsg(ex.getMessage());
         }
-        
+
         queryResult.setTime((int) (System.currentTimeMillis() - startTime));
         queryResult.addResult(alignmentRegion);
         queryResult.setNumResults(1);
-        return queryResult;  
+        return queryResult;
     }
 
     
     /* ******************************************
      *              Auxiliary queries           *
      * ******************************************/
-    
-    private List<SAMRecord> getSamRecordsByRegion(Region region) 
+
+    private List<SAMRecord> getSamRecordsByRegion(Region region)
             throws ClassNotFoundException, SQLException, AlignmentIndexNotExistsException {
         List<SAMRecord> records = new ArrayList<>();
-        
+
         Path filePath = sqliteCredentials.getPath();
         Path metaDir = getMetaDir(filePath);
         String fileName = filePath.getFileName().toString();
 
-        long startDbTime = System.currentTimeMillis(); 
+        long startDbTime = System.currentTimeMillis();
         sqliteManager.connect(metaDir.resolve(Paths.get(fileName)), true);
         System.out.println("SQLite path: " + metaDir.resolve(Paths.get(fileName)).toString());
-        String queryString = "SELECT id, start FROM record_query_fields WHERE chromosome='" + 
+        String queryString = "SELECT id, start FROM record_query_fields WHERE chromosome='" +
                 region.getChromosome() + "' AND start <= " + region.getEnd() + " AND end >= " + region.getStart();
         List<XObject> queryResults = sqliteManager.query(queryString);
         sqliteManager.disconnect(true);
@@ -257,7 +256,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         for (XObject r : queryResults) {
             queryResultsMap.put(r.getString("id") + r.getString("start"), r);
         }
-        
+
         // Query using Picard
         File inputBamFile = new File(filePath.toString());
         File inputBamIndexFile = checkBamIndex(filePath);
@@ -265,7 +264,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
             logger.warn("Index for file " + filePath + " does not exist");
             throw new AlignmentIndexNotExistsException("Index for file " + filePath + " does not exist");
         }
-        
+
         SAMFileReader inputSam = new SAMFileReader(inputBamFile, inputBamIndexFile);
         inputSam.setValidationStringency(SAMFileReader.getDefaultValidationStringency().valueOf("LENIENT"));
 //        System.out.println("hasIndex " + inputSam.hasIndex());
@@ -286,14 +285,14 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 //        System.out.println(records.size() + " ");
         System.out.println("Filter time " + (System.currentTimeMillis() - t1) + "ms");
-        
+
         return records;
     }
-    
-    
+
+
     private List<Alignment> getAlignmentsFromSamRecords(Region region, List<SAMRecord> records, QueryOptions params) throws IOException {
         List<Alignment> alignments = new ArrayList<>();
-        
+
         if (params.get("view_as_pairs") != null) {
             // If must be shown as pairs, create new comparator by read name
             if (((Boolean) params.get("view_as_pairs")).booleanValue()) {
@@ -308,24 +307,24 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 });
             }
         }
-        
+
         // Get genome sequence
         String referenceSequence = getSequence(region, params);
-        
+
         // Create an Alignment per SAMRecord object
         for (SAMRecord record : records) {
             if (record.getReadUnmappedFlag()) {
                 continue;
             }
-            
+
             Map<String, Object> attributes = new HashMap<>();
             for (SAMRecord.SAMTagAndValue attr : record.getAttributes()) {
                 attributes.put(attr.tag, attr.value.toString().replace("\\", "\\\\").replace("\"", "\\\""));
             }
 
             String referenceSubstring = referenceSequence.substring(
-                    (500 + record.getUnclippedStart() - ((int)region.getStart())), 
-                    (500 + record.getUnclippedEnd() - ((int)region.getStart()) + 1));
+                    (500 + record.getUnclippedStart() - ((int) region.getStart())),
+                    (500 + record.getUnclippedEnd() - ((int) region.getStart()) + 1));
 
             // Build alignment object, including differences calculation
             Alignment alignment = AlignmentConverter.buildAlignment(record, attributes, referenceSubstring);
@@ -334,13 +333,13 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         return alignments;
     }
-    
-    
+
+
     private RegionCoverage getCoverageFromSamRecords(Region region, List<SAMRecord> records, QueryOptions params) {
         RegionCoverage coverage = new RegionCoverage();
         int start = (int) region.getStart();
         int end = (int) region.getEnd();
-        
+
         if (params.get("view_as_pairs") != null) {
             // If must be shown as pairs, create new comparator by read name
             if (((Boolean) params.get("view_as_pairs")).booleanValue()) {
@@ -363,20 +362,21 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         short[] gBaseArray = new short[end - start + 1];
         short[] tBaseArray = new short[end - start + 1];
 
-        
+
         for (SAMRecord record : records) {
             if (record.getReadUnmappedFlag()) {
                 continue;
             }
-            
+
             String readStr = record.getReadString();
             int referenceOffset = 0, readOffset = 0;
 
             for (int i = 0; i < record.getCigar().getCigarElements().size(); i++) {
                 CigarElement element = record.getCigar().getCigarElement(i);
-                switch(element.getOperator()) {
+                switch (element.getOperator()) {
                     case M:
-                        for (int j = record.getAlignmentStart() - start + referenceOffset, cont = 0; cont < element.getLength(); j++, cont++) {
+                        for (int j = record.getAlignmentStart() - start + referenceOffset, cont = 0; cont < element.getLength(); j++,
+                                cont++) {
                             if (j >= 0 && j < allBasesArray.length) {
                                 allBasesArray[j]++;
                                 switch (readStr.charAt(cont + readOffset)) {
@@ -419,7 +419,7 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         coverage.setG(gBaseArray);
         coverage.setT(tBaseArray);
         coverage.setAll(allBasesArray);
-        
+
         return coverage;
     }
 
@@ -427,24 +427,24 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
     /* ******************************************
      *          Path and index checking         *
      * ******************************************/
-    
+
     private Path getMetaDir(Path file) {
         String inputName = file.getFileName().toString();
         return file.getParent().resolve(".meta_" + inputName);
     }
 
-    
+
     private File checkBamIndex(Path inputBamPath) {
         Path metaDir = getMetaDir(inputBamPath);
         String fileName = inputBamPath.getFileName().toString();
-        
+
         //name.bam & name.bam.bai
         Path inputBamIndexFile = metaDir.resolve(Paths.get(fileName + ".bai"));
         logger.info(inputBamIndexFile.toString());
         if (Files.exists(inputBamIndexFile)) {
             return inputBamIndexFile.toFile();
         }
-        
+
         //name.bam & name.bai
         fileName = IOUtils.removeExtension(fileName);
         inputBamIndexFile = metaDir.resolve(Paths.get(fileName + ".bai"));
@@ -452,15 +452,15 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         if (Files.exists(inputBamIndexFile)) {
             return inputBamIndexFile.toFile();
         }
-        
+
         return null;
     }
-    
-    
+
+
     private String getSequence(Region region, QueryOptions params) throws IOException {
         String cellbaseHost = params.getString("cellbasehost", "http://ws-beta.bioinfo.cipf.es/cellbase/rest/latest");
         String species = params.getString("species", "hsapiens");
-        
+
 //        if (species.equals("cclementina")) {
 //            cellbasehost = "http://citrusgenn.bioinfo.cipf.es/cellbasecitrus/rest/v3";
 //        }

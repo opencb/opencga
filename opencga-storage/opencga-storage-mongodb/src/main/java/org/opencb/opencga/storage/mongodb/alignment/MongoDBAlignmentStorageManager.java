@@ -34,11 +34,12 @@ import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 /**
@@ -53,7 +54,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
-    @Deprecated public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR      = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_SEQUENCE_DBADAPTOR = "OPENCGA.STORAGE.SEQUENCE.DB.ROOTDIR";
 
     public MongoDBAlignmentStorageManager() {
         this(null);
@@ -74,15 +76,17 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
     public AlignmentDBAdaptor getDBAdaptor(String dbName) {
         SequenceDBAdaptor adaptor;
         if (dbName == null || dbName.isEmpty()) {
-            dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
+            dbName = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.DB_NAME.key(),
+                    Options.DB_NAME.defaultValue());
             logger.info("Using default dbName '{}' in MongoDBAlignmentStorageManager.getDBAdaptor()", dbName);
         }
         logger.debug("Using {} : '{}'", Options.DB_NAME.key(), dbName);
-        Path path = Paths.get(configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
+        Path path = Paths.get(configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString
+                (OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
         if (path == null || path.toString() == null || path.toString().isEmpty() || !path.toFile().exists()) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
-            if(path.toString().endsWith("sqlite.db")) {
+            if (path.toString().endsWith("sqlite.db")) {
                 adaptor = new SqliteSequenceDBAdaptor(path);
             } else {
                 adaptor = new CellBaseSequenceDBAdaptor(path);
@@ -92,7 +96,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         return new IndexedAlignmentDBAdaptor(adaptor, getMongoCredentials(dbName));
     }
 
-    private MongoCredentials getMongoCredentials(String mongoDbName){
+    private MongoCredentials getMongoCredentials(String mongoDbName) {
         try {   //TODO: Use user and password
             String hosts = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getDatabase().getHosts()
                     .stream().map(String::toString).collect(Collectors.joining(","));
@@ -144,7 +148,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName);
 
         //Runner
-        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>(), 1);
+        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>
+                (), 1);
 
         logger.info("Loading coverage...");
         long start = System.currentTimeMillis();

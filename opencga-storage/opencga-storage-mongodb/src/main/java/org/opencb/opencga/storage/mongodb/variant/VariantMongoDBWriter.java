@@ -53,10 +53,10 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private DBObjectToStudyVariantEntryConverter sourceEntryConverter;
     private DBObjectToSamplesConverter sampleConverter;
 
-//    private long numVariantsWritten;
+    //    private long numVariantsWritten;
     private static long staticNumVariantsWritten;
 
-//    private long checkExistsTime = 0;
+    //    private long checkExistsTime = 0;
 //    private long checkExistsDBTime = 0;
     private long insertionTime = 0;
     private StudyConfiguration studyConfiguration;
@@ -110,9 +110,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     public boolean write(List<Variant> data) {
 //        return write_setOnInsert(data);
         synchronized (variantSourceWritten) {
-            long l = staticNumVariantsWritten/1000;
+            long l = staticNumVariantsWritten / 1000;
             staticNumVariantsWritten += data.size();
-            if (staticNumVariantsWritten/1000 != l) {
+            if (staticNumVariantsWritten / 1000 != l) {
                 logger.info("Num variants written " + staticNumVariantsWritten);
             }
         }
@@ -120,7 +120,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (!data.isEmpty()) {
             coveredChromosomes.add(data.get(0).getChromosome());
         }
-        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this
+                .sourceEntryConverter, studyConfiguration, loadedSampleIds);
 
         MongoDBVariantWriteResult batchWriteResult = queryResult.first();
         logger.debug("New batch of {} elements. WriteResult: {}", data.size(), batchWriteResult);
@@ -131,22 +132,26 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildBatchRaw(List<Variant> data) {
         return true;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildEffectRaw(List<Variant> variants) {
         return false;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildBatchIndex(List<Variant> data) {
         return false;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean writeBatch(List<Variant> batch) {
         return true;
     }
@@ -203,7 +208,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeSamples = b;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public final void includeEffect(boolean b) {
     }
 

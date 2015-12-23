@@ -46,6 +46,7 @@ import java.util.List;
 
 /**
  * Created by jacobo on 9/01/15.
+ *
  * @author Javier Lopez &lt;fjlopez@ebi.ac.uk&gt;
  */
 public class VariantAnnotationManager {
@@ -53,7 +54,7 @@ public class VariantAnnotationManager {
     public static final String SPECIES = "species";
     public static final String ASSEMBLY = "assembly";
     public static final String ANNOTATION_SOURCE = "annotationSource";
-//    public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
+    //    public static final String ANNOTATOR_PROPERTIES = "annotatorProperties";
     public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
 
     public static final String CLEAN = "clean";
@@ -70,7 +71,7 @@ public class VariantAnnotationManager {
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
 
     public VariantAnnotationManager(VariantAnnotator variantAnnotator, VariantDBAdaptor dbAdaptor) {
-        if(dbAdaptor == null || variantAnnotator == null) {
+        if (dbAdaptor == null || variantAnnotator == null) {
             throw new NullPointerException();
         }
         this.dbAdaptor = dbAdaptor;
@@ -96,23 +97,25 @@ public class VariantAnnotationManager {
     /**
      * Creates a variant annotation file from an specific source based on the content of a Variant DataBase.
      *
-     * @param outDir                File outdir.
-     * @param fileName              Generated file name.
-     * @param query                 Query for those variants to annotate.
-     * @param options               Specific options.
-     * @return                      URI of the generated file.
-     * @throws IOException
+     * @param outDir   File outdir.
+     * @param fileName Generated file name.
+     * @param query    Query for those variants to annotate.
+     * @param options  Specific options.
+     * @return URI of the generated file.
+     * @throws IOException IOException thrown
      */
     public URI createAnnotation(Path outDir, String fileName, Query query, QueryOptions options) throws IOException {
 
         boolean gzip = options == null || options.getBoolean("gzip", true);
         boolean avro = options == null || options.getBoolean("avro", false);
-        Path path = Paths.get(outDir != null? outDir.toString() : "/tmp" ,fileName + ".annot" + (avro? ".avro" : ".json") + (gzip? ".gz" : ""));
+        Path path = Paths.get(outDir != null
+                ? outDir.toString()
+                : "/tmp", fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
         URI fileUri = path.toUri();
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions;
-        if(options == null) {
+        if (options == null) {
             iteratorQueryOptions = new QueryOptions();
         } else {
             iteratorQueryOptions = new QueryOptions(options);
@@ -122,7 +125,7 @@ public class VariantAnnotationManager {
 
         int batchSize = 200;
         int numThreads = 8;
-        if(options != null) { //Parse query options
+        if (options != null) { //Parse query options
             batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, batchSize);
             numThreads = options.getInt(VariantAnnotationManager.NUM_THREADS, numThreads);
         }
@@ -139,7 +142,8 @@ public class VariantAnnotationManager {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(), (System.currentTimeMillis() - start) / 1000.0);
+                logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(),
+                        (System.currentTimeMillis() - start) / 1000.0);
                 return variantAnnotationList;
             };
 
@@ -151,7 +155,8 @@ public class VariantAnnotationManager {
             }
 
             ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
-            ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
+            ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
+                    new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
         } catch (IOException e) {
             throw e;
@@ -163,11 +168,11 @@ public class VariantAnnotationManager {
     }
 
     /**
-     * Loads variant annotations from an specified file into the selected Variant DataBase
+     * Loads variant annotations from an specified file into the selected Variant DataBase.
      *
-     * @param uri                   URI of the annotation file
-     * @param options               Specific options.
-     * @throws IOException
+     * @param uri     URI of the annotation file
+     * @param options Specific options.
+     * @throws IOException IOException thrown
      */
     public void loadAnnotation(URI uri, QueryOptions options) throws IOException {
 
@@ -230,11 +235,15 @@ public class VariantAnnotationManager {
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
-                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class).newInstance(configuration, options);
+                        return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class)
+                                .newInstance(configuration, options);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }
-                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+                    e.printStackTrace();
+                    throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
+                } catch (InvocationTargetException e) {
                     e.printStackTrace();
                     throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
                 }

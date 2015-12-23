@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.QueryResult;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantEntryConverter.*;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
@@ -45,7 +43,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public static final Object UNKNOWN_FIELD = -1;
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
-    private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
+    private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null
+    // . Use "getIndexedIdSamplesMap()"
     private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private LinkedHashSet<String> returnedSamples;
@@ -72,7 +71,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * Create a converter from DBObject to a Map of samples, providing the list
      * of sample names.
      *
-     * @param samples The list of samples, if any
+     * @param samples         The list of samples, if any
      * @param defaultGenotype
      */
     public DBObjectToSamplesConverter(int studyId, List<String> samples, String defaultGenotype) {
@@ -84,13 +83,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * of sample names.
      *
      * @param fileId
-     * @param samples The list of samples, if any
+     * @param samples         The list of samples, if any
      * @param defaultGenotype
      */
     public DBObjectToSamplesConverter(int studyId, Integer fileId, List<String> samples, String defaultGenotype) {
         this();
         setSamples(studyId, fileId, samples);
-        studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
+        studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton
+                (defaultGenotype));
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
@@ -123,22 +123,23 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
     /**
-     *
-     * @param object Mongo object
-     * @param study  If not null, will be filled with Format, SamplesData and SamplesPosition
+     * @param object  Mongo object
+     * @param study   If not null, will be filled with Format, SamplesData and SamplesPosition
      * @param studyId StudyId
      * @return Samples Data
      */
     public List<List<String>> convertToDataModelType(DBObject object, StudyEntry study, int studyId) {
 
-        if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument, need to query
+        if (!studyConfigurations.containsKey(studyId) && studyConfigurationManager != null) { // Samples not set as constructor argument,
+            // need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
-            if(queryResult.first() == null) {
-                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for VariantSource", studyId);
+            if (queryResult.first() == null) {
+                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for " +
+                        "VariantSource", studyId);
 
                 if (sourceDbAdaptor != null) {
                     QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), null);
-                    if(samplesBySource.getResult().isEmpty()) {
+                    if (samplesBySource.getResult().isEmpty()) {
                         logger.warn("DBObjectToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
                     } else {
                         setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
@@ -157,7 +158,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
         final BiMap<String, Integer> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+                .key());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList());
             return Collections.emptyList();
@@ -231,7 +233,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         return samplesData;
     }
 
-    private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData) {
+    private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields,
+                                      List<List<String>> samplesData) {
         //If != null, just return samplesData
         if (study != null) {
             //Set FORMAT
@@ -304,7 +307,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
 
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+                .key());
         for (String extraField : extraFields) {
             List<Object> values = new ArrayList<>(samplesPosition.size());
             for (int size = samplesPosition.size(); size > 0; size--) {
@@ -344,7 +348,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     public void setSamples(int studyId, Integer fileId, List<String> samples) {
         int i = 0;
-        int size = samples == null? 0 : samples.size();
+        int size = samples == null ? 0 : samples.size();
         LinkedHashMap<String, Integer> sampleIdsMap = new LinkedHashMap<>(size);
         LinkedHashSet<Integer> sampleIds = new LinkedHashSet<>(size);
         if (samples != null) {
@@ -488,7 +492,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     public List<String> getFormat(int studyId) {
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+                .key());
         if (extraFields.isEmpty()) {
             return Collections.singletonList("GT");
         } else {

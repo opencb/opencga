@@ -35,11 +35,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class DBObjectToVariantConverterTest {
-    
+
     private BasicDBObject mongoVariant;
     private Variant variant;
     protected StudyEntry studyEntry;
@@ -87,30 +86,33 @@ public class DBObjectToVariantConverterTest {
         chunkIds.add("1_1_1k");
         chunkIds.add("1_0_10k");
         mongoVariant.append("_at", new BasicDBObject("chunkIds", chunkIds));
-        
+
         BasicDBList hgvs = new BasicDBList();
         hgvs.add(new BasicDBObject("type", "genomic").append("name", "1:g.1000A>C"));
         mongoVariant.append("hgvs", hgvs);
     }
-    
+
     @Test
     public void testConvertToDataModelTypeWithFiles() {
         // MongoDB object
 
-        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry.getStudyId()));
+        BasicDBObject mongoStudy = new BasicDBObject(DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, Integer.parseInt(studyEntry
+                .getStudyId()));
 
 //        mongoStudy.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, variantSourceEntry.getFormat());
         mongoStudy.append(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, new BasicDBObject("0/1", Collections.singletonList(1)))
                 .append("dp", Arrays.asList(4, 5));
 
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToStudyVariantEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry.getFiles().get(0).getFileId()))
+        BasicDBObject mongoFile = new BasicDBObject(DBObjectToStudyVariantEntryConverter.FILEID_FIELD, Integer.parseInt(studyEntry
+                .getFiles().get(0).getFileId()))
                 .append(DBObjectToStudyVariantEntryConverter.ATTRIBUTES_FIELD, new BasicDBObject("QUAL", 0.01).append("AN", 2));
 
         mongoStudy.append(DBObjectToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
 
         mongoVariant.append(DBObjectToVariantConverter.STUDIES_FIELD, Collections.singletonList(mongoStudy));
-        
-        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, studyId.toString(), fileId, fileId.toString());//studyId, fileId, sampleNames, "0/0"
+
+        StudyConfiguration studyConfiguration = new StudyConfiguration(studyId, studyId.toString(), fileId, fileId.toString());//studyId,
+        // fileId, sampleNames, "0/0"
         studyConfiguration.getIndexedFiles().add(fileId);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(0, 1)));
         studyConfiguration.getSampleIds().put("NA001", 0);
@@ -124,7 +126,7 @@ public class DBObjectToVariantConverterTest {
                         new DBObjectToSamplesConverter(studyConfiguration)),
                 new DBObjectToVariantStatsConverter());
         Variant converted = converter.convertToDataModelType(mongoVariant);
-        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(),variant, converted);
+        assertEquals("\n" + variant.toJson() + "\n" + converted.toJson(), variant, converted);
     }
 
     @Test
@@ -149,7 +151,7 @@ public class DBObjectToVariantConverterTest {
         BasicDBList studies = new BasicDBList();
         studies.add(mongoStudy);
         mongoVariant.append(DBObjectToVariantConverter.STUDIES_FIELD, studies);
-        
+
         List<String> sampleNames = Lists.newArrayList("NA001", "NA002");
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter(
                 new DBObjectToStudyVariantEntryConverter(
@@ -183,19 +185,19 @@ public class DBObjectToVariantConverterTest {
     @Test
     public void testBuildStorageId() {
         DBObjectToVariantConverter converter = new DBObjectToVariantConverter();
-        
+
         // SNV
         Variant v1 = new Variant("1", 1000, 1000, "A", "C");
         assertEquals("1_1000_A_C", converter.buildStorageId(v1));
-        
+
         // Indel
         Variant v2 = new Variant("1", 1000, 1002, "", "CA");
         assertEquals("1_1000__CA", converter.buildStorageId(v2));
-        
+
         // Structural
         String alt = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         Variant v3 = new Variant("1", 1000, 1002, "TAG", alt);
         assertEquals("1_1000_TAG_" + new String(CryptoUtils.encryptSha1(alt)), converter.buildStorageId(v3));
     }
-    
+
 }

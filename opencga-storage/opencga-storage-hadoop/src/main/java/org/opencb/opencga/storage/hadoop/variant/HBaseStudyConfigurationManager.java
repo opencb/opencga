@@ -60,12 +60,12 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
@@ -104,7 +104,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());

@@ -38,19 +38,23 @@ public class StorageConfigurationTest {
 
         StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
                 "mongodb",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap
+                        (), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
                 options);
 
         StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
                 "hadoop",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
                 options);
 
 
-
-        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
+        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
+                (Arrays.asList("localhost"), "user", "password"));
         QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
 
         storageConfiguration.setDefaultStorageEngineId("mongodb");
@@ -70,7 +74,8 @@ public class StorageConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml").openStream());
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml")
+                .openStream());
         System.out.println("storageConfiguration = " + storageConfiguration);
     }
 

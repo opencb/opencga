@@ -19,9 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
-import java.net.UnknownHostException;
-import java.util.*;
-
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
@@ -32,11 +29,13 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
@@ -94,7 +93,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and change for getSamplesBySource(String studyId, QueryOptions options)
+    public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and
+        // change for getSamplesBySource(String studyId, QueryOptions options)
         if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
                 if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
@@ -149,16 +149,16 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     private void parseQueryOptions(QueryOptions options, QueryBuilder builder) {
 
-        if(options.containsKey("studyId")) {
+        if (options.containsKey("studyId")) {
             andIs(DBObjectToVariantSourceConverter.STUDYID_FIELD, options.get("studyId"), builder);
         }
-        if(options.containsKey("studyName")) {
+        if (options.containsKey("studyName")) {
             andIs(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, options.get("studyId"), builder);
         }
-        if(options.containsKey("fileId")) {
+        if (options.containsKey("fileId")) {
             andIs(DBObjectToVariantSourceConverter.FILEID_FIELD, options.get("fileId"), builder);
         }
-        if(options.containsKey("fileName")) {
+        if (options.containsKey("fileName")) {
             andIs(DBObjectToVariantSourceConverter.FILENAME_FIELD, options.get("fileName"), builder);
         }
 
@@ -166,7 +166,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     private QueryBuilder andIs(String fieldName, Object object, QueryBuilder builder) {
-        if(object == null) {
+        if (object == null) {
             return builder;
         } else if (object instanceof Collection) {
             return builder.and(fieldName).in(object);
@@ -192,7 +192,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         MongoDBCollection coll = db.getCollection(collectionName);
         DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
                 .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
-        QueryResult queryResult = coll.find((DBObject)null, projection, null);
+        QueryResult queryResult = coll.find((DBObject) null, projection, null);
 
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
@@ -249,7 +249,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
 
     @Override
-    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
+    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions
+            queryOptions) {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         VariantGlobalStats global = variantSourceStats.getFileStats();

@@ -363,7 +363,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
-            QueryOptions queryOptions) {
+            QueryOptions options) {
         // TODO Auto-generated method stub
         return null;
     }

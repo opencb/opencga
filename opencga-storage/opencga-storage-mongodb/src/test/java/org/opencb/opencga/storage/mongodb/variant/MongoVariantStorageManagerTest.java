@@ -16,11 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.config.DataStoreConfiguration;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;

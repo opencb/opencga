@@ -47,7 +47,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
     private boolean includeSrc;
     private Set<Integer> returnedFiles;
 
-//    private Integer fileId;
+    //    private Integer fileId;
     private DBObjectToSamplesConverter samplesConverter;
     private StudyConfigurationManager studyConfigurationManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
@@ -91,7 +91,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
     public DBObjectToStudyVariantEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
                                                 DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
-        this.returnedFiles = (returnedFiles != null)? new HashSet<>(returnedFiles) : null;
+        this.returnedFiles = (returnedFiles != null) ? new HashSet<>(returnedFiles) : null;
         this.samplesConverter = samplesConverter;
     }
 
@@ -146,7 +146,8 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
                                 }
                             }
                         } else {
-                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
+                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry
+                                    .getValue().toString());
                         }
                     }
                 }
@@ -268,10 +269,10 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         }
         String call = object.getFile(Integer.toString(fileId)).getCall();
         if (call != null && !call.isEmpty()) {
-                int indexOf = call.lastIndexOf(":");
-                fileObject.append(ORI_FIELD,
-                        new BasicDBObject("s", call.substring(0, indexOf))
-                                .append("i", Integer.parseInt(call.substring(indexOf + 1))));
+            int indexOf = call.lastIndexOf(":");
+            fileObject.append(ORI_FIELD,
+                    new BasicDBObject("s", call.substring(0, indexOf))
+                            .append("i", Integer.parseInt(call.substring(indexOf + 1))));
         }
 
         int studyId = Integer.parseInt(object.getStudyId());

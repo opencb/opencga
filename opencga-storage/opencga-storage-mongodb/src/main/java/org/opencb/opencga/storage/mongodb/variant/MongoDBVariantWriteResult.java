@@ -22,7 +22,7 @@ public class MongoDBVariantWriteResult {
         this.nonInsertedVariants = nonInsertedVariants;
     }
 
-    public void merge(MongoDBVariantWriteResult ... others) {
+    public void merge(MongoDBVariantWriteResult... others) {
         for (MongoDBVariantWriteResult other : others) {
             newDocuments += other.newDocuments;
             updatedObjects += other.updatedObjects;
@@ -79,14 +79,14 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MongoDBVariantWriteResult)) return false;
+        if (this == o) { return true; }
+        if (!(o instanceof MongoDBVariantWriteResult)) { return false; }
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
 
-        if (newDocuments != that.newDocuments) return false;
-        if (updatedObjects != that.updatedObjects) return false;
-        if (skippedVariants != that.skippedVariants) return false;
+        if (newDocuments != that.newDocuments) { return false; }
+        if (updatedObjects != that.updatedObjects) { return false; }
+        if (skippedVariants != that.skippedVariants) { return false; }
         return nonInsertedVariants == that.nonInsertedVariants;
 
     }

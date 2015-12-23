@@ -40,15 +40,18 @@ public abstract class StudyConfigurationManager {
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(ObjectMap objectMap) {}
+    public StudyConfigurationManager(ObjectMap objectMap) {
+    }
 
-    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options);
-    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options);
+
+    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
     //FIXME This is a temporary method
-    public void setDefaultQueryOptions(QueryOptions options) {}
+    public void setDefaultQueryOptions(QueryOptions options) {
+    }
 
-    protected abstract QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
@@ -62,7 +65,7 @@ public abstract class StudyConfigurationManager {
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = _getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = internalGetStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
@@ -71,14 +74,14 @@ public abstract class StudyConfigurationManager {
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = _getStudyConfiguration(studyName, null, options);
+            result = internalGetStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName()) ) {
+            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName())) {
                 stringStudyConfigurationMap.put(studyName, studyConfiguration);
             }
             if (!readOnly) {
@@ -99,9 +102,9 @@ public abstract class StudyConfigurationManager {
                 if (!readOnly) {
                     studyConfiguration = studyConfiguration.clone();
                 }
-                return  new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = _getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = internalGetStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
@@ -110,7 +113,7 @@ public abstract class StudyConfigurationManager {
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = _getStudyConfiguration(studyId, null, options);
+            result = internalGetStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -133,10 +136,10 @@ public abstract class StudyConfigurationManager {
         studyConfiguration.setTimeStamp(System.currentTimeMillis());
         stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
         intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-        return _updateStudyConfiguration(studyConfiguration, options);
+        return internalUpdateStudyConfiguration(studyConfiguration, options);
     }
 
-    static public StudyConfigurationManager build(String className, ObjectMap params)
+    public static StudyConfigurationManager build(String className, ObjectMap params)
             throws ReflectiveOperationException {
         try {
             Class<?> clazz = Class.forName(className);
@@ -147,7 +150,8 @@ public abstract class StudyConfigurationManager {
                 throw new ReflectiveOperationException("Clazz " + className + " is not a subclass of StudyConfigurationManager");
             }
 
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             logger.error("Unable to create StudyConfigurationManager");
             throw e;
         }
