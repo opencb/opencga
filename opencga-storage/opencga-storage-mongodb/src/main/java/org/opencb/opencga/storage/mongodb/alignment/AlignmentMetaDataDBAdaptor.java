@@ -71,7 +71,7 @@ public class AlignmentMetaDataDBAdaptor {
     public String registerPath(Path path) {
         String p = path.toAbsolutePath().toString();
         if (bamFiles.containsValue(p)) {
-            return null;//bamFiles.getProperty(p);
+            return null; //bamFiles.getProperty(p);
         } else {
             String index = Integer.toString(bamFiles.size());
             bamFiles.setProperty(index, p);

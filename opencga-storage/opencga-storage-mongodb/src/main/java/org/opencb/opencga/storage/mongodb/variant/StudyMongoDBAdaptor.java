@@ -49,7 +49,7 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     @Override
     public QueryResult listStudies() {
 //        db.files.aggregate( { $project : { _id : 0, sid : 1, sname : 1 } },
-//                    { $group : { _id : { studyId : "$sid", studyName : "$sname"} }}, 
+//                    { $group : { _id : { studyId : "$sid", studyName : "$sname"} }},
 //                    { $project : { "studyId" : "$_id.studyId", "studyName" : "$_id.studyName", "_id" : 0 }} )
         MongoDBCollection coll = db.getCollection(collectionName);
         DBObject project1 = new BasicDBObject("$project", new BasicDBObject("_id", 0)
@@ -74,8 +74,8 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     public QueryResult findStudyNameOrStudyId(String study, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
-        qb.or(new BasicDBObject(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, study), new BasicDBObject
-                (DBObjectToVariantSourceConverter.STUDYID_FIELD, study));
+        qb.or(new BasicDBObject(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, study),
+                new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, study));
 //        parseQueryOptions(options, qb);
 
         DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1).append("_id", 0);
@@ -87,11 +87,11 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     @Override
     public QueryResult getStudyById(String studyId, QueryOptions options) {
-        // db.files.aggregate( { $match : { "studyId" : "abc" } }, 
-        //                     { $project : { _id : 0, studyId : 1, studyName : 1 } }, 
+        // db.files.aggregate( { $match : { "studyId" : "abc" } },
+        //                     { $project : { _id : 0, studyId : 1, studyName : 1 } },
         //                     { $group : {
-        //                           _id : { studyId : "$studyId", studyName : "$studyName"}, 
-        //                           numSources : { $sum : 1} 
+        //                           _id : { studyId : "$studyId", studyName : "$studyName"},
+        //                           numSources : { $sum : 1}
         //                     }} )
         MongoDBCollection coll = db.getCollection(collectionName);
 
@@ -113,8 +113,8 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         DBObject dbo = results.iterator().next();
         DBObject dboId = (DBObject) dbo.get("_id");
 
-        DBObject outputDbo = new BasicDBObject("studyId", dboId.get("studyId")).append("studyName", dboId.get("studyName")).append
-                ("numFiles", dbo.get("numFiles"));
+        DBObject outputDbo = new BasicDBObject("studyId", dboId.get("studyId")).append("studyName", dboId.get("studyName"))
+                .append("numFiles", dbo.get("numFiles"));
         QueryResult transformedResult = new QueryResult(aggregationResult.getId(), aggregationResult.getDbTime(),
                 aggregationResult.getNumResults(), aggregationResult.getNumTotalResults(),
                 aggregationResult.getWarningMsg(), aggregationResult.getErrorMsg(), Arrays.asList(outputDbo));

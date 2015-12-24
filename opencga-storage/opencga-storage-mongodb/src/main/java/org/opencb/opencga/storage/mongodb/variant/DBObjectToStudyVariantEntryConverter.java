@@ -35,12 +35,12 @@ import java.util.logging.Logger;
  */
 public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverter<StudyEntry, DBObject> {
 
-    public final static String FILEID_FIELD = "fid";
-    public final static String STUDYID_FIELD = "sid";
-    public final static String ALTERNATES_FIELD = "alts";
-    public final static String ATTRIBUTES_FIELD = "attrs";
-    //    public final static String FORMAT_FIELD = "fm";
-    public final static String GENOTYPES_FIELD = "gt";
+    public static final String FILEID_FIELD = "fid";
+    public static final String STUDYID_FIELD = "sid";
+    public static final String ALTERNATES_FIELD = "alts";
+    public static final String ATTRIBUTES_FIELD = "attrs";
+    //    public static final String FORMAT_FIELD = "fm";
+    public static final String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
     public static final String ORI_FIELD = "_ori";
 
@@ -146,15 +146,14 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
                                 }
                             }
                         } else {
-                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry
-                                    .getValue().toString());
+                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."),
+                                    entry.getValue().toString());
                         }
                     }
                 }
                 if (fileObject.containsField(ORI_FIELD)) {
-                    DBObject _ori = (DBObject) fileObject.get(ORI_FIELD);
-                    String ori = _ori.get("s") + ":" + _ori.get("i");
-                    fileEntry.setCall(ori);
+                    DBObject ori = (DBObject) fileObject.get(ORI_FIELD);
+                    fileEntry.setCall(ori.get("s") + ":" + ori.get("i"));
                 } else {
                     fileEntry.setCall("");
                 }
@@ -249,7 +248,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
                         } catch (NumberFormatException notALong) {
                             try {
                                 value = Double.parseDouble(stringValue);
-                            } catch (NumberFormatException NotADouble) {
+                            } catch (NumberFormatException notADouble) {
                                 // leave it as a String
                             }
                         }

@@ -31,7 +31,7 @@ import java.util.Properties;
  */
 public class MongoCredentials implements OpenCGACredentials {
 
-    List<DataStoreServerAddress> dataStoreServerAddresses;
+    private List<DataStoreServerAddress> dataStoreServerAddresses;
     private final String mongoDbName;
     @Deprecated
     private MongoCredential mongoCredentials;

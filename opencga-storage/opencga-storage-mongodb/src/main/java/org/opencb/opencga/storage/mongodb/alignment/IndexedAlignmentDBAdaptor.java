@@ -339,7 +339,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
 
-    private QueryResult _getAllIntervalFrequencies(Region region, QueryOptions options) {
+    private QueryResult privateGetAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME);
 
@@ -446,7 +446,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     private List<Alignment> getAlignmentsInRegion(List<Alignment> alignments, Region region) {
-        LinkedList<Alignment> filteredAlignments = new LinkedList<Alignment>();
+        LinkedList<Alignment> filteredAlignments = new LinkedList<>();
         for (Alignment alignment : alignments) {
             if (alignment.getStart() >= region.getStart() /*&& alignment.getEnd() <= region.getEnd()*/) {
                 filteredAlignments.addLast(alignment);
@@ -456,13 +456,16 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     private static String getIndexFromBam(String bam) {
-        String bai;
-        if (Paths.get((bai = bam + ".bai")).toFile().exists()) {
-            return bai;
-        } else if (Paths.get(bai = (IOUtils.removeExtension(bam) + ".bai")).toFile().exists()) {
+        String bai = bam + ".bai";
+        if (Paths.get(bai).toFile().exists()) {
             return bai;
         } else {
-            return "";
+            bai = IOUtils.removeExtension(bam) + ".bai";
+            if (Paths.get(bai).toFile().exists()) {
+                return bai;
+            } else {
+                return "";
+            }
         }
     }
 

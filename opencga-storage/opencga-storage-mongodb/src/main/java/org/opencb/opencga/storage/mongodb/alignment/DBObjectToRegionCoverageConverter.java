@@ -43,7 +43,6 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
             chunkId = size + "";
         }
 
-
         return String.format("%s_%d_%s", regionCoverage.getChromosome(), regionCoverage.getStart() / size, chunkId);
     }
 
@@ -56,8 +55,8 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
 
         BasicDBList coverageList;
         if (dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
-            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get
-                    (CoverageMongoDBWriter.COVERAGE_FIELD);
+            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0))
+                    .get(CoverageMongoDBWriter.COVERAGE_FIELD);
         } else if (dbObject.containsField(CoverageMongoDBWriter.COVERAGE_FIELD)) {
             coverageList = (BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD);
         } else {

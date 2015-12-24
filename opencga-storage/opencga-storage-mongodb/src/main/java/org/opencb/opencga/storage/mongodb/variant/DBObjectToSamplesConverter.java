@@ -52,11 +52,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private StudyConfigurationManager studyConfigurationManager;
     private String returnedUnknownGenotype;
 
-    public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
 
-    /**
-     * Create a converter from a Map of samples to DBObject entities.
-     **/
+
     DBObjectToSamplesConverter() {
         studyConfigurations = new HashMap<>();
         __studySamplesId = new HashMap<>();
@@ -71,8 +69,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * Create a converter from DBObject to a Map of samples, providing the list
      * of sample names.
      *
+     * @param studyId StudyId
      * @param samples         The list of samples, if any
-     * @param defaultGenotype
+     * @param defaultGenotype Default genotype
      */
     public DBObjectToSamplesConverter(int studyId, List<String> samples, String defaultGenotype) {
         this(studyId, null, samples, defaultGenotype);
@@ -82,37 +81,29 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
      * Create a converter from DBObject to a Map of samples, providing the list
      * of sample names.
      *
-     * @param fileId
-     * @param samples         The list of samples, if any
-     * @param defaultGenotype
+     * @param studyId StudyId
+     * @param fileId File id
+     * @param samples The list of samples, if any
+     * @param defaultGenotype Default genotype
      */
     public DBObjectToSamplesConverter(int studyId, Integer fileId, List<String> samples, String defaultGenotype) {
         this();
         setSamples(studyId, fileId, samples);
-        studyConfigurations.get(studyId).getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton
-                (defaultGenotype));
+        studyConfigurations.get(studyId).getAttributes()
+                .put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
-    /**
-     *
-     */
     public DBObjectToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
         this();
         this.sourceDbAdaptor = variantSourceDBAdaptor;
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    /**
-     *
-     */
     public DBObjectToSamplesConverter(StudyConfiguration studyConfiguration) {
         this(Collections.singletonList(studyConfiguration));
     }
 
-    /**
-     *
-     */
     public DBObjectToSamplesConverter(List<StudyConfiguration> studyConfigurations) {
         this();
         studyConfigurations.forEach(this::addStudyConfiguration);
@@ -134,8 +125,8 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             // need to query
             QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, null);
             if (queryResult.first() == null) {
-                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for " +
-                        "VariantSource", studyId);
+                logger.warn("DBObjectToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for "
+                        + "VariantSource", studyId);
 
                 if (sourceDbAdaptor != null) {
                     QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(FILEID_FIELD).toString(), null);

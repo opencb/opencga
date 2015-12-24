@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
-    /**
+    /*
      * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
@@ -69,8 +69,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
     @Deprecated
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION" +
-            ".DB";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTH_DB = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
     @Deprecated
@@ -78,8 +77,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
     @Deprecated
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION" +
-            ".VARIANTS";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLL_VARIANTS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
     @Deprecated
@@ -91,8 +89,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
     @Deprecated
-    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD" +
-            ".COMPRESS_GENOTYPES";
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GT = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
     //StorageEngine specific options
 //    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
@@ -166,8 +163,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
         String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
 
-        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions().getString
-                (AUTHENTICATION_DB, null);
+        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()
+                .getString(AUTHENTICATION_DB, null);
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
@@ -233,8 +230,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
         Long count = countResult.first();
         if (count != 0) {
-            logger.warn("Resume mode. There are already loaded variants from the file " + studyConfiguration.getFileIds().inverse().get
-                    (fileId) + " : " + fileId + " ");
+            logger.warn("Resume mode. There are already loaded variants from the file "
+                    + studyConfiguration.getFileIds().inverse().get(fileId) + " : " + fileId + " ");
             options.put(ALREADY_LOADED_VARIANTS, count);
         }
 
@@ -382,7 +379,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                         try {
                             remapIdsTask.apply(batch);
                         } catch (IOException e) {
-                            throw new UncheckedIOException(e);// IMPOSSIBLE
+                            throw new UncheckedIOException(e); // IMPOSSIBLE
                         }
                         writer.write(batch);
                         return batch;
@@ -593,9 +590,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     return false; // This is NOT a new batch of samples
                 }
             } else if (someSamplesRepeated) {
-                //ERROR
-                throw new StorageManagerException("There was some already indexed samples, but not all of them. Unable to load in " +
-                        "Storage-MongoDB");
+                throw new StorageManagerException("There was some already indexed samples, but not all of them. "
+                        + "Unable to load in Storage-MongoDB");
             }
         }
         return true; // This is a new batch of samples

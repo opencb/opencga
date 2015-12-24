@@ -152,7 +152,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     /**
-     * converts all the cohortstats within the sourceEntries
+     * converts all the cohortstats within the sourceEntries.
      *
      * @param sourceEntries for instance, you can pass in variant.getSourceEntries()
      * @return list of VariantStats (as DBObjects)

@@ -37,27 +37,27 @@ import java.util.logging.Logger;
  */
 public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<VariantSource, DBObject> {
 
-    public final static String FILEID_FIELD = "fid";
-    public final static String FILENAME_FIELD = "fname";
-    public final static String STUDYID_FIELD = "sid";
-    public final static String STUDYNAME_FIELD = "sname";
-    //    public final static String STUDYTYPE_FIELD = "stype";
-    public final static String DATE_FIELD = "date";
-    public final static String SAMPLES_FIELD = "samp";
+    public static final String FILEID_FIELD = "fid";
+    public static final String FILENAME_FIELD = "fname";
+    public static final String STUDYID_FIELD = "sid";
+    public static final String STUDYNAME_FIELD = "sname";
+    //    public static final String STUDYTYPE_FIELD = "stype";
+    public static final String DATE_FIELD = "date";
+    public static final String SAMPLES_FIELD = "samp";
 
-    public final static String STATS_FIELD = "st";
-    public final static String NUMSAMPLES_FIELD = "nSamp";
-    public final static String NUMVARIANTS_FIELD = "nVar";
-    public final static String NUMSNPS_FIELD = "nSnp";
-    public final static String NUMINDELS_FIELD = "nIndel";
-    public final static String NUMSTRUCTURAL_FIELD = "nSv";
-    public final static String NUMPASSFILTERS_FIELD = "nPass";
-    public final static String NUMTRANSITIONS_FIELD = "nTi";
-    public final static String NUMTRANSVERSIONS_FIELD = "nTv";
-    public final static String MEANQUALITY_FIELD = "meanQ";
+    public static final String STATS_FIELD = "st";
+    public static final String NUMSAMPLES_FIELD = "nSamp";
+    public static final String NUMVARIANTS_FIELD = "nVar";
+    public static final String NUMSNPS_FIELD = "nSnp";
+    public static final String NUMINDELS_FIELD = "nIndel";
+    public static final String NUMSTRUCTURAL_FIELD = "nSv";
+    public static final String NUMPASSFILTERS_FIELD = "nPass";
+    public static final String NUMTRANSITIONS_FIELD = "nTi";
+    public static final String NUMTRANSVERSIONS_FIELD = "nTv";
+    public static final String MEANQUALITY_FIELD = "meanQ";
 
-    public final static String METADATA_FIELD = "meta";
-    public final static String HEADER_FIELD = "header";
+    public static final String METADATA_FIELD = "meta";
+    public static final String HEADER_FIELD = "header";
     static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
 
 

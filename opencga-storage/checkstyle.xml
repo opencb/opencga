@@ -19,7 +19,9 @@
   -->
 
 <module name="Checker">
-    <module name="FileLength"/>
+    <module name="FileLength">
+        <property name="max" value="2750"/>
+    </module>
     <module name="FileTabCharacter"/>
     <module name="NewlineAtEndOfFile"/>
 
@@ -67,9 +69,11 @@
             <property name="max" value="140"/>
         </module>
         <module name="MethodLength">
-            <property name="max" value="250"/>
+            <property name="max" value="400"/>
         </module>
-        <module name="ParameterNumber"/>
+        <module name="ParameterNumber">
+            <property name="max" value="15"/>
+        </module>
         <module name="OuterTypeNumber"/>
 
         <!-- Checks for whitespace                               -->

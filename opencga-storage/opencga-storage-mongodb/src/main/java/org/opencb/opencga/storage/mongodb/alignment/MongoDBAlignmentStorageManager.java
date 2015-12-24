@@ -21,7 +21,6 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAda
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.run.Runner;
-import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.UriUtils;
@@ -49,7 +48,7 @@ import java.util.stream.Collectors;
  */
 public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
 
-    /**
+    /*
      * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
@@ -81,8 +80,8 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
             logger.info("Using default dbName '{}' in MongoDBAlignmentStorageManager.getDBAdaptor()", dbName);
         }
         logger.debug("Using {} : '{}'", Options.DB_NAME.key(), dbName);
-        Path path = Paths.get(configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString
-                (OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
+        Path path = Paths.get(configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions()
+                .getString(OPENCGA_STORAGE_SEQUENCE_DBADAPTOR, ""));
         if (path == null || path.toString() == null || path.toString().isEmpty() || !path.toFile().exists()) {
             adaptor = new CellBaseSequenceDBAdaptor();
         } else {
@@ -148,8 +147,7 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName);
 
         //Runner
-        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<Task<AlignmentRegion>>
-                (), 1);
+        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<>(), 1);
 
         logger.info("Loading coverage...");
         long start = System.currentTimeMillis();

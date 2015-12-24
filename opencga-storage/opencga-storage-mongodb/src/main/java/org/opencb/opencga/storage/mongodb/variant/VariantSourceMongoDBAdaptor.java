@@ -40,7 +40,7 @@ import java.util.*;
  */
 public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
-    private static final Map<String, List> samplesInSources = new HashMap<>();
+    private static final Map<String, List> SAMPLES_IN_SOURCES = new HashMap<>();
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
@@ -95,9 +95,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     @Override
     public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and
         // change for getSamplesBySource(String studyId, QueryOptions options)
-        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+        if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
-                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+                if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
                     QueryResult queryResult = populateSamplesInSources();
                     populateSamplesQueryResult(fileId, queryResult);
                     return queryResult;
@@ -112,9 +112,9 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
-        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+        if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
             synchronized (StudyMongoDBAdaptor.class) {
-                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+                if (SAMPLES_IN_SOURCES.size() != (long) countSources().getResult().get(0)) {
                     QueryResult queryResult = populateSamplesInSources();
                     populateSamplesQueryResult(fileIds, queryResult);
                     return queryResult;
@@ -161,8 +161,6 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         if (options.containsKey("fileName")) {
             andIs(DBObjectToVariantSourceConverter.FILENAME_FIELD, options.get("fileName"), builder);
         }
-
-
     }
 
     private QueryBuilder andIs(String fieldName, Object object, QueryBuilder builder) {
@@ -201,7 +199,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
             }
             String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
-            samplesInSources.put(key, new ArrayList(value.toMap().keySet()));
+            SAMPLES_IN_SOURCES.put(key, new ArrayList(value.toMap().keySet()));
         }
 
         return queryResult;
@@ -209,7 +207,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     private void populateSamplesQueryResult(String fileId, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(1);
-        List<String> samplesInSource = samplesInSources.get(fileId);
+        List<String> samplesInSource = SAMPLES_IN_SOURCES.get(fileId);
 
         if (samplesInSource == null || samplesInSource.isEmpty()) {
             queryResult.setWarningMsg("Source " + fileId + " not found");
@@ -225,7 +223,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         List<List> samples = new ArrayList<>(fileIds.size());
 
         for (String fileId : fileIds) {
-            List<String> samplesInSource = samplesInSources.get(fileId);
+            List<String> samplesInSource = SAMPLES_IN_SOURCES.get(fileId);
 
             if (samplesInSource == null || samplesInSource.isEmpty()) {
                 // Samples not found

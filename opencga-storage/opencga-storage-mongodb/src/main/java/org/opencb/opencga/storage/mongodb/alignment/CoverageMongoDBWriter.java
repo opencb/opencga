@@ -132,24 +132,24 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
         boolean fileExists = true;
 
         //Check if the document exists
-        {
-            QueryResult countId = collection.count(query);
-            if (countId.getNumResults() == 1 && countId.getResultType().equals(Long.class.getCanonicalName())) {
-                if ((Long) countId.getResult().get(0) < 1) {
-                    DBObject document = BasicDBObjectBuilder.start()
-                            .append(FILES_FIELD, new BasicDBList())
-                            .append(CHR_FIELD, chromosome)
-                            .append(START_FIELD, start)
-                            .append(SIZE_FIELD, size)
-                            .get();
-                    document.putAll(query);             //{_id:<chunkId>, files:[]}
-                    collection.insert(document, null);        //Insert a document with empty files array.
-                    fileExists = false;
-                }
-            } else {
-                logger.error(countId.getErrorMsg(), countId);
+//        {
+        QueryResult countId = collection.count(query);
+        if (countId.getNumResults() == 1 && countId.getResultType().equals(Long.class.getCanonicalName())) {
+            if ((Long) countId.getResult().get(0) < 1) {
+                DBObject document = BasicDBObjectBuilder.start()
+                        .append(FILES_FIELD, new BasicDBList())
+                        .append(CHR_FIELD, chromosome)
+                        .append(START_FIELD, start)
+                        .append(SIZE_FIELD, size)
+                        .get();
+                document.putAll(query);             //{_id:<chunkId>, files:[]}
+                collection.insert(document, null);        //Insert a document with empty files array.
+                fileExists = false;
             }
+        } else {
+            logger.error(countId.getErrorMsg(), countId);
         }
+//        }
 
         if (documentExists) {
             //Check if the file exists

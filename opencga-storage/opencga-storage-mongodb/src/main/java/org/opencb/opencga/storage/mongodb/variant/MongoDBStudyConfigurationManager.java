@@ -103,8 +103,8 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         if (studyConfiguration == null) {
             return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 0, 0, "", "", Collections.emptyList());
         } else {
-            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList
-                    (studyConfiguration));
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "",
+                    Collections.singletonList(studyConfiguration));
         }
     }
 

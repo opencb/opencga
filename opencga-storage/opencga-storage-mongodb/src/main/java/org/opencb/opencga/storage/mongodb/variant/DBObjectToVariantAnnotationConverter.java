@@ -39,9 +39,9 @@ import java.util.*;
  */
 public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, DBObject> {
 
-    public final static String ANNOT_ID_FIELD = "id";
+    public static final String ANNOT_ID_FIELD = "id";
 
-    public final static String CONSEQUENCE_TYPE_FIELD = "ct";
+    public static final String CONSEQUENCE_TYPE_FIELD = "ct";
     public static final String GENE_NAME_FIELD = "gn";
     public static final String ENSEMBL_GENE_ID_FIELD = "ensg";
     public static final String ENSEMBL_TRANSCRIPT_ID_FIELD = "enst";
@@ -60,8 +60,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String SIFT_FIELD = "sift";
 
     public static final String XREFS_FIELD = "xrefs";
-    public final static String XREF_ID_FIELD = "id";
-    public final static String XREF_SOURCE_FIELD = "src";
+    public static final String XREF_ID_FIELD = "id";
+    public static final String XREF_SOURCE_FIELD = "src";
 
     public static final String POPULATION_FREQUENCIES_FIELD = "popFq";
     public static final String POPULATION_FREQUENCY_STUDY_FIELD = "study";
@@ -76,9 +76,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String DRUG_FIELD = "drug";
     public static final String DRUG_NAME_FIELD = "dn";
     public static final String DRUG_SOURCE_FIELD = "src";
-    public final static String SCORE_SCORE_FIELD = "sc";
-    public final static String SCORE_SOURCE_FIELD = "src";
-    public final static String SCORE_DESCRIPTION_FIELD = "desc";
+    public static final String SCORE_SCORE_FIELD = "sc";
+    public static final String SCORE_SOURCE_FIELD = "src";
+    public static final String SCORE_DESCRIPTION_FIELD = "desc";
 
     public static final String CLINICAL_DATA_FIELD = "clinical";
     public static final String COSMIC_FIELD = "cosmic";
@@ -247,10 +247,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     }
 
     private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
-                                                 String biotype, Integer cDnaPosition, Integer cdsPosition, String codon, Integer
-                                                         aaPosition,
-                                                 String aaReference, String aaAlternate, List<Score> proteinSubstitutionScores,
-                                                 List<String> soNameList) {
+                                                 String biotype, Integer cDnaPosition, Integer cdsPosition, String codon,
+                                                 Integer aaPosition, String aaReference, String aaAlternate,
+                                                 List<Score> proteinSubstitutionScores, List<String> soNameList) {
         List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
         for (String soName : soNameList) {
             soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
