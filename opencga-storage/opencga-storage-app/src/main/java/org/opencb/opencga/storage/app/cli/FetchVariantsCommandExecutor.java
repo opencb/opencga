@@ -21,11 +21,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
@@ -45,7 +44,10 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMix
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -95,7 +97,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
         }
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.params);
-//        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(queryVariantsCommandOptions.backend);
+//        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager
+// (queryVariantsCommandOptions.backend);
 
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
@@ -114,7 +117,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             FileUtils.checkFile(gffPath);
             String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
                 String[] array = line.split("\t");
-                return new String(array[0].replace("chr", "")+":"+array[3]+"-"+array[4]);
+                return new String(array[0].replace("chr", "") + ":" + array[3] + "-" + array[4]);
             }).collect(Collectors.joining(","));
             query.put(REGION.key(), regionsFromFile);
         }
@@ -159,8 +162,16 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         if (queryVariantsCommandOptions.proteinSubstitution != null && !queryVariantsCommandOptions.proteinSubstitution.isEmpty()) {
             String[] fields = queryVariantsCommandOptions.proteinSubstitution.split(",");
             for (String field : fields) {
-                String[] arr = field.replaceAll("==", " ").replaceAll(">=", " ").replaceAll("<=", " ").replaceAll("=", " ").replaceAll("<", " ").replaceAll(">", " ").split(" ");
-                if(arr != null && arr.length > 1) {
+                String[] arr = field
+                        .replaceAll("==", " ")
+                        .replaceAll(">=", " ")
+                        .replaceAll("<=", " ")
+                        .replaceAll("=", " ")
+                        .replaceAll("<", " ")
+                        .replaceAll(">", " ")
+                        .split(" ");
+
+                if (arr != null && arr.length > 1) {
                     switch (arr[0]) {
                         case "sift":
                             query.put(SIFT.key(), field.replaceAll("sift", ""));
@@ -177,7 +188,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
 
-        /**
+        /*
          * Stats parameters
          */
         if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
@@ -214,13 +225,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         addParam(query, MISSING_GENOTYPES, queryVariantsCommandOptions.missingGenotypeCount);
 
 
-
-        /**
+        /*
          * Output parameters
          */
         String outputFormat = "vcf";
         boolean gzip = true;
-        if(queryVariantsCommandOptions.outputFormat != null && !queryVariantsCommandOptions.outputFormat.isEmpty()) {
+        if (queryVariantsCommandOptions.outputFormat != null && !queryVariantsCommandOptions.outputFormat.isEmpty()) {
             switch (queryVariantsCommandOptions.outputFormat) {
                 case "vcf":
                     gzip = false;
@@ -246,10 +256,11 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
-            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
+            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one
+                    // study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
-                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study. " +
-                        "Available studies: [ " + String.join(", ", studyNames) + " ]");
+                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
+                        + "study. " + "Available studies: [ " + String.join(", ", studyNames) + " ]");
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
                     query.put(RETURNED_STUDIES.key(), studyNames.get(0));
@@ -257,9 +268,9 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
 
-        // output format has priority over output name  
+        // output format has priority over output name
         OutputStream outputStream;
-        if(queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
+        if (queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
             outputStream = System.out;
         } else {
             if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
@@ -272,7 +283,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
-        logger.debug("using %s output stream", gzip? "gzipped": "plain");
+        logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
 
         /*
          * Setting QueryOptions parameters
@@ -324,7 +335,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                         }
 
 //                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
-                        if(queryVariantsCommandOptions.annotations != null) {
+                        if (queryVariantsCommandOptions.annotations != null) {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
                         VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
@@ -353,8 +364,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         ObjectMapper objectMapper = new ObjectMapper();
         String field = queryVariantsCommandOptions.rank;
         boolean asc = false;
-        if(queryVariantsCommandOptions.rank.contains(":")) {  //  eg. gene:-1
-            String[] arr= queryVariantsCommandOptions.rank.split(":");
+        if (queryVariantsCommandOptions.rank.contains(":")) {  //  eg. gene:-1
+            String[] arr = queryVariantsCommandOptions.rank.split(":");
             field = arr[0];
             if (arr[1].endsWith("-1")) {
                 asc = true;
@@ -377,7 +388,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
     }
 
     @Deprecated
-    private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter printWriter) {
+    private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter
+            printWriter) {
 
         Map<String, StudyConfiguration> studyConfigurationMap = null;
         while (variantDBIterator.hasNext()) {
@@ -390,7 +402,8 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 //                    String studyName = vcfIterator.next();
 //                    logger.debug(studyName);
 //                    studyConfigurationMap.put(studyName, studyConfigurationManager
-//                            .getStudyConfiguration(studyName, new QueryOptions("sessionId", queryVariantsCommandOptions.params.get("sessionId")))
+//                            .getStudyConfiguration(studyName, new QueryOptions("sessionId", queryVariantsCommandOptions.params.get
+// ("sessionId")))
 //                            .getResult().get(0));
 //                }
 //            }
@@ -408,11 +421,11 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
 
 
             // If there is only one study returned
-            if(variant.getSourceEntries().keySet().size() == 1) {
-
-            } else {
-
-            }
+//            if (variant.getSourceEntries().keySet().size() == 1) {
+//
+//            } else {
+//
+//            }
 
             Iterator<String> vcfIterator = variant.getSourceEntries().keySet().iterator();
             while (vcfIterator.hasNext()) {

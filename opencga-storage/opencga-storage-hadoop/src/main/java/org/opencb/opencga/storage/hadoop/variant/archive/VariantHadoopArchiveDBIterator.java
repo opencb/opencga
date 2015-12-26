@@ -15,10 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.Callable;
 
 /**
- * Created on 04/11/15
+ * Created on 04/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -75,7 +74,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         }
         VcfSliceProtos.VcfRecord vcfRecord = vcfRecordIterator.next();
 
-        Variant variant = null;
+        Variant variant;
         try {
             count++;
             variant = convert(() -> converter.convert(vcfRecord, vcfSlice.getChromosome(), vcfSlice.getPosition()));
@@ -84,8 +83,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             System.err.println("vcfSlice.getPosition() = " + vcfSlice.getPosition());
             System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
             System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
-            variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(), vcfRecord.getReference(), vcfRecord.getAlternate(0));
-            System.err.println("variant " + variant.toString());
+            variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(),
+                    vcfRecord.getReference(), vcfRecord.getAlternate(0));
+            logger.debug("variant: {}", variant.toString());
         }
         return variant;
     }
@@ -93,7 +93,8 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public void close() {
-        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0,
+                getTimeConverting() / 1000000.0);
         resultScanner.close();
     }
 

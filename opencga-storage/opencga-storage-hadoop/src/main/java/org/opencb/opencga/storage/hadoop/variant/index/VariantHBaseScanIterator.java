@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Created on 23/11/15
+ * Created on 23/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -29,7 +29,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     private long limit = Long.MAX_VALUE;
     private long count = 0;
 
-    public VariantHBaseScanIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options) throws IOException {
+    public VariantHBaseScanIterator(ResultScanner resultScanner, VariantTableHelper variantTableHelper, QueryOptions options)
+            throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = variantTableHelper;
         iterator = resultScanner.iterator();
@@ -37,8 +38,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         setLimit(options.getLong("limit"));
     }
 
-    public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm, QueryOptions options)
-            throws IOException {
+    public VariantHBaseScanIterator(ResultScanner resultScanner, GenomeHelper genomeHelper, StudyConfigurationManager scm,
+                                    QueryOptions options) throws IOException {
         this.resultScanner = resultScanner;
         this.genomeHelper = genomeHelper;
         iterator = resultScanner.iterator();
@@ -63,7 +64,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
 
     @Override
     public void close() {
-        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
+                getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultScanner.close();
     }
 

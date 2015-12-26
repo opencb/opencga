@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- * Created on 20/11/15
+ * Created on 20/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -54,15 +54,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     @Override
     public Variant convert(Result result) {
-        return convert(
-                genomeHelper.extractVariantFromVariantRowKey(result.getRow()),
-                VariantTableStudyRow.parse(result, genomeHelper),
+        return convert(genomeHelper.extractVariantFromVariantRowKey(result.getRow()), VariantTableStudyRow.parse(result, genomeHelper),
                 annotationConverter.convert(result));
     }
 
     public Variant convert(ResultSet resultSet) throws SQLException {
-        Variant variant = new Variant(
-                resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
+        Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
                 resultSet.getInt(VariantPhoenixHelper.Columns.POSITION.column()),
                 resultSet.getString(VariantPhoenixHelper.Columns.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.Columns.ALTERNATE.column())
@@ -79,7 +76,6 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             StudyConfiguration studyConfiguration = queryResult.first();
             StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
-
 
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
             studyEntry.setSamplesPosition(returnedSamplesPosition);
@@ -108,7 +104,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             if (homRef != row.getHomRefCount()) {
-                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row.getHomRefCount();
+                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row
+                        .getHomRefCount();
 //                throw new IllegalArgumentException(message);
                 logger.warn(message);
             }
@@ -123,8 +120,6 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
         return variant;
     }
-
-
 
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
@@ -149,4 +144,5 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         }
         return returnedSamplesPosition.get(studyConfiguration.getStudyId());
     }
+
 }

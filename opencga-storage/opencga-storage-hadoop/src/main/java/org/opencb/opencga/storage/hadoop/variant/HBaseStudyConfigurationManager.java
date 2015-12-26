@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -22,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created on 12/11/15
+ * Created on 12/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -170,7 +169,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
             createTableIfMissing();
-            try(Table table = getConnection().getTable(TableName.valueOf(tableName))) {
+            try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn, bytes);
@@ -197,7 +196,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     public Connection getConnection() throws IOException {
-        if(null == connection){
+        if (null == connection) {
             connection = ConnectionFactory.createConnection(configuration);
         }
         return connection;

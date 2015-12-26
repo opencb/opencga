@@ -12,7 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Created on 16/12/15
+ * Created on 16/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -26,18 +26,19 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     private boolean hasNext = false;
 
-    public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm, QueryOptions options)
-            throws SQLException {
+    public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
+                                         QueryOptions options) throws SQLException {
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
         this.scm = scm;
         converter = new HBaseToVariantConverter(this.genomeHelper, this.scm);
-        hasNext = fetch(() -> resultSet.next());
+        hasNext = fetch(resultSet::next);
     }
 
     @Override
     public void close() throws SQLException {
-        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms", getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
+                getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultSet.close();
     }
 

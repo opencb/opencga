@@ -103,7 +103,8 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
         String codec = options.getString("transform.avro.codec", "deflate");
-//        String hpg_bigdata_bin = options.getString("hpg-bigdata.bin", System.getProperty("user.home") + "/appl/hpg-bigdata/build/bin/hpg-bigdata.sh");
+//        String hpg_bigdata_bin = options.getString("hpg-bigdata.bin", System.getProperty("user.home") +
+// "/appl/hpg-bigdata/build/bin/hpg-bigdata.sh");
         Configuration conf = getConf();
 
 

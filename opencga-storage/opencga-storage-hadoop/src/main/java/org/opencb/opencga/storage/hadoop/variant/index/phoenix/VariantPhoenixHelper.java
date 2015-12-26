@@ -16,7 +16,7 @@ import java.util.Collection;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
 
 /**
- * Created on 15/12/15
+ * Created on 15/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -38,8 +38,7 @@ public class VariantPhoenixHelper {
         PHASTCONS("PHASTCONS", PFloat.INSTANCE),
         PHYLOP("PHYLOP", PFloat.INSTANCE),
 
-        FULL_ANNOTATION("FULL_ANNOTATION", PVarchar.INSTANCE),
-        ;
+        FULL_ANNOTATION("FULL_ANNOTATION", PVarchar.INSTANCE);
 
         private final String columnName;
         private final byte[] columnNameBytes;
@@ -121,22 +120,19 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateView(String tableName, String columnFamily) {
-        return "CREATE VIEW IF NOT EXISTS \"" + tableName + "\" " +
-                "(" +
-                    CHROMOSOME + " " + CHROMOSOME.sqlType() + " NOT NULL, " +
-                    POSITION + " " + POSITION.sqlType() + " NOT NULL, " +
-                    REFERENCE + " " + REFERENCE.sqlType() + " , " +
-                    ALTERNATE + " " + ALTERNATE.sqlType() + " , " +
-                    GENES + " " + GENES.sqlType() + " , " +
-                    BIOTYPE + " " + BIOTYPE.sqlType() + " , " +
-                    SO + " " + SO.sqlType() + " , " +
-                    PHYLOP + " " + PHYLOP.sqlType() + " , " +
-                    PHASTCONS + " " + PHASTCONS.sqlType() + " , " +
-                    FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " " +
-                    "CONSTRAINT PK PRIMARY KEY (" + CHROMOSOME + ", " + POSITION + ", " + REFERENCE + ", " + ALTERNATE + ") " +
-                ") " +
-                "DEFAULT_COLUMN_FAMILY='" + columnFamily + "'"
-                ;
+        return "CREATE VIEW IF NOT EXISTS \"" + tableName + "\" " + "("
+                + CHROMOSOME + " " + CHROMOSOME.sqlType() + " NOT NULL, "
+                + POSITION + " " + POSITION.sqlType() + " NOT NULL, "
+                + REFERENCE + " " + REFERENCE.sqlType() + " , "
+                + ALTERNATE + " " + ALTERNATE.sqlType() + " , "
+                + GENES + " " + GENES.sqlType() + " , "
+                + BIOTYPE + " " + BIOTYPE.sqlType() + " , "
+                + SO + " " + SO.sqlType() + " , "
+                + PHYLOP + " " + PHYLOP.sqlType() + " , "
+                + PHASTCONS + " " + PHASTCONS.sqlType() + " , "
+                + FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " "
+                + "CONSTRAINT PK PRIMARY KEY (" + CHROMOSOME + ", " + POSITION + ", " + REFERENCE + ", " + ALTERNATE + ") " + ") "
+                + "DEFAULT_COLUMN_FAMILY='" + columnFamily + "'";
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type) {
@@ -153,7 +149,5 @@ public class VariantPhoenixHelper {
         PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);
         return arrayType.toBytes(phoenixArray);
     }
-
-
 
 }

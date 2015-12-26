@@ -20,7 +20,6 @@ import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.util.*;
@@ -35,7 +34,7 @@ public class OptionsParser {
 
     private final GeneralParameters generalParameters;
     private final CommandCreateAccessions accessions;
-//    private final CommandTransformVariants transform;
+    //    private final CommandTransformVariants transform;
 //    private final CommandLoadVariants load;
 //    private final CommandTransformAlignments transformAlignments;
 //    private final CommandLoadAlignments loadAlignments;
@@ -78,21 +77,21 @@ public class OptionsParser {
     }
 
     /**
-     -h | --help
-     -v | --version
-     --log-level INT
-     --verbose
-     --storage-engine TEXT
-     --storage-engine-config FILE
+     * -h | --help
+     * -v | --version
+     * --log-level INT
+     * --verbose
+     * --storage-engine TEXT
+     * --storage-engine-config FILE
      */
     class GeneralParameters extends Command {
-        @Parameter(names = { "--properties-path" }, description = "Properties path")
+        @Parameter(names = {"--properties-path"}, description = "Properties path")
         String propertiesPath = null;
 
-        @Parameter(names = { "--sm-name" }, description = "StorageManager class name. (Must be in the classpath)")
+        @Parameter(names = {"--sm-name"}, description = "StorageManager class name. (Must be in the classpath)")
         String storageManagerName;
 
-        @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         boolean help;
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
@@ -107,19 +106,21 @@ public class OptionsParser {
         @Parameter(names = {"--log-level"}, description = "one of {error, warn, info, debug, trace}")
         String logLevel = null; // TODO add validation?
 
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in OPENCGA.STORAGE.ENGINES, in storage.properties")
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed ones in OPENCGA.STORAGE.ENGINES, in storage" +
+                ".properties")
         String storageEngine = null;
 
-        @Parameter(names = {"--storage-engine-config"}, arity = 1, description = "Path of the file with options to overwrite storage-<Plugin>.properties")
+        @Parameter(names = {"--storage-engine-config"}, arity = 1, description = "Path of the file with options to overwrite " +
+                "storage-<Plugin>.properties")
         String storageEngineConfig = null;
 
         @Override
         public String toString() {
             String paramsString = "{";
-            for(Map.Entry<String, String> e :  params.entrySet()){
-                paramsString += e.getKey()+" = "+e.getValue() + ", ";
+            for (Map.Entry<String, String> e : params.entrySet()) {
+                paramsString += e.getKey() + " = " + e.getValue() + ", ";
             }
-            paramsString+="}";
+            paramsString += "}";
             return "GeneralParameters{" +
                     "configFile='" + propertiesPath + '\'' +
                     ", storageManagerName='" + storageManagerName + '\'' +
@@ -139,11 +140,13 @@ public class OptionsParser {
         @Parameter(names = {"-p", "--prefix"}, description = "Accession IDs prefix", arity = 1)
         String prefix;
 
-        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for prefixes)",
+        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for " +
+                "prefixes)",
                 required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
-        String studyId;
+                String studyId;
 
-        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
+        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)" +
+                "", arity = 1)
         String resumeFromAccession;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where the output file will be saved", arity = 1)
@@ -172,10 +175,12 @@ public class OptionsParser {
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be transformed", required = true, arity = 1)
         String fileId;
 
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity
+                = 1)
         String study;
 
-        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
         String studyId;
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
@@ -207,10 +212,12 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "Prefix of files to save in the selected backend", required = true, arity = 1)
         String input;
 
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)",
+                required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials;
 
         @Parameter(names = {"--include-annot"}, description = "Save variant annot information (optional)")
@@ -236,34 +243,37 @@ public class OptionsParser {
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be transformed", required = false, arity = 1)
         String fileId;
 
-//        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+//        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true,
+// arity = 1)
 //        String study;
 
-      //  @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
-      //  String studyId;
+        //  @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true,
+        // arity = 1)
+        //  String studyId;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", arity = 1)
         String outdir = "./";
-        
-        
+
+
         @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
         boolean plain = false;
-        
+
         @Parameter(names = {"--include-coverage"}, description = "Save coverage information (optional)", required = false, arity = 0)
         boolean includeCoverage = false;
-        
+
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
         @Parameter(names = "--mean-coverage", description = "Add mean coverage values (optional)", required = false)
         List<String> meanCoverage = new LinkedList<String>();
-        
-        
+
+
 //        @Parameters(commandNames = {"--include-coverage"}, commandDescription = "Save coverage information (optional)")
 //        class CommandCoverage extends Command {
 //            @Parameter(names = {"--plain"}, description = "Do not compress the output (optional)", required = false)
 //            boolean plain = false;
 //        }
-        
-//        @Parameter(names = {"--compact"}, description = "Compact sequence differences with reference genome (optional)", required = false, arity = 0)
+
+//        @Parameter(names = {"--compact"}, description = "Compact sequence differences with reference genome (optional)", required =
+// false, arity = 0)
 //        boolean compact = false;
 
 
@@ -272,48 +282,55 @@ public class OptionsParser {
     @Deprecated
     @Parameters(commandNames = {"load-alignments"}, commandDescription = "Loads an already generated data model into a backend")
     class CommandLoadAlignments extends Command {
-        
+
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be loaded", required = true, arity = 1)
         String fileId;
 
         @Parameter(names = {"-i", "--input"}, description = "Main file to save in the selected backend", required = true, arity = 1)
         String input;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials = "";
 
         @Parameter(names = {"-d", "--dbName"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase " +
+                "(pending)", required = false, arity = 1)
         String backend = "mongodb";
     }
 
 
     @Parameters(commandNames = {"download-alignments"}, commandDescription = "Downloads a data model from the backend")
     class CommandDownloadAlignments extends Command {
-        
+
         @Parameter(names = {"-a", "--alias"}, description = "Unique ID for the file to be extracted", required = true, arity = 1)
         String alias;
 
-        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", required = true, arity
+                = 1)
         String study;
-        
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = true, arity = 1)
+
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                true, arity = 1)
         String credentials;
 
-//        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+//        @Parameter(names = {"--study-alias"}, description = "Unique ID for the study where the file is classified", required = true,
+// arity = 1)
 //        String studyId;
-        
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required = false, arity = 1)
+
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: hbase (default) or hive (pending)", required =
+                false, arity = 1)
         String backend = "hbase";
-        
+
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
         String outdir;
 
-        @Parameter(names = {"--region"}, description = "Limits the Alignments to a region <chromosome>[:<start>-<end>] (optional)", arity = 1)
+        @Parameter(names = {"--region"}, description = "Limits the Alignments to a region <chromosome>[:<start>-<end>] (optional)", arity
+                = 1)
         String region;
-        
+
         @Parameter(names = {"-f", "--format"}, description = "Outfile format: sam (default), bam, json, json.gz ", arity = 1)
         String format = "json.gz";
 
@@ -322,8 +339,8 @@ public class OptionsParser {
 
         @Parameter(names = {"--remove"}, description = "Remove file from system (pending)", hidden = true)
         boolean remove;
-        
-        
+
+
     }
 
     class CommandIndex extends Command {
@@ -331,25 +348,30 @@ public class OptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         String input;
 
-//        @Parameter(names = {"-T", "--temporal-dir"}, description = "Directory where place temporal files (pending)", required = false, arity = 1)
+//        @Parameter(names = {"-T", "--temporal-dir"}, description = "Directory where place temporal files (pending)", required = false,
+// arity = 1)
 //        String tmp = "";
 
 //        @Parameter(names = {"--delete-temporal"}, description = "Delete temporal files (pending)", required = false)
 //        boolean delete = false;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required
+                = false)
         String outdir = "";
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         int fileId;
 
-        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga" +
+                ".storage.core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials = "";
 
-//        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+//        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase
+// (pending)", required = false, arity = 1)
 //        String backend = "mongodb";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
@@ -359,13 +381,16 @@ public class OptionsParser {
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
     class CommandIndexVariants extends CommandIndex {
 
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity
+                = 1)
         String studyName;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false,
+                arity = 1)
         int studyId;
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "[UNUSED] File containing pedigree information (in PED format, optional)", arity = 1)
+        @Parameter(names = {"-p", "--pedigree"}, description = "[UNUSED] File containing pedigree information (in PED format, optional)",
+                arity = 1)
         String pedigree;
 
         @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
@@ -389,10 +414,12 @@ public class OptionsParser {
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+                "file")
         String aggregationMappingFile = null;
-        
-        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
+
+        @Parameter(names = {"-t", "--study-type"}, description = "Study type (optional) \n{FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
+                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES}", arity = 1)
         VariantStudy.StudyType studyType = VariantStudy.StudyType.COLLECTION;
 
         @Parameter(names = {"--transform"}, description = "Run only the transform phase")
@@ -406,7 +433,8 @@ public class OptionsParser {
         @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
         boolean bgzip = false;
 
-        @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load step (optional)")
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate statistics information over de indexed variants after the load" +
+                " step (optional)")
         boolean calculateStats = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step (optional)")
@@ -436,7 +464,8 @@ public class OptionsParser {
         boolean calculateCoverage = false;
 
         //Acceptes values: ^[0-9]+(.[0-9]+)?[kKmMgG]?$  -->   <float>[KMG]
-        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag " +
+                "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
         List<String> meanCoverage = Collections.singletonList("200");
     }
 
@@ -447,17 +476,19 @@ public class OptionsParser {
 
     class CommandFetch extends Command {
         //File location parameters
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase " +
+                "(pending)", required = false, arity = 1)
         String backend = "mongodb";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials = "";
 
         //Region parameters
-        @Parameter(names = {"-r","--region"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-r", "--region"}, description = " [CSV]", required = false)
         List<String> regions = new LinkedList<>();
 
         @Parameter(names = {"--region-gff-file"}, description = "", required = false)
@@ -467,7 +498,8 @@ public class OptionsParser {
         @Parameter(names = {"-o", "--output"}, description = "Output file. Default: stdout", required = false, arity = 1)
         String output;
 
-        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false, arity = 1)
+        @Parameter(names = {"--output-format"}, description = "Output format: vcf(default), vcf.gz, json, json.gz", required = false,
+                arity = 1)
         String outputFormat = "vcf";
 
     }
@@ -497,7 +529,7 @@ public class OptionsParser {
         @Parameter(names = {"--reference"}, description = " [CSV]", required = false)
         String reference;
 
-        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
         List<String> stats = new LinkedList<>();
 
         @Parameter(names = {"--annot-filter"}, description = " [CSV]", required = false)
@@ -530,7 +562,7 @@ public class OptionsParser {
         @Parameter(names = {"--process-differences"}, description = " ", required = false)
         boolean processDifferences;
 
-        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
         List<String> stats = new LinkedList<>();
 
     }
@@ -551,7 +583,8 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials = "";
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
@@ -566,7 +599,8 @@ public class OptionsParser {
         @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
         String assembly = "GRCh37";
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by " +
+                "--output-filename)")
         boolean create = false;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
@@ -575,13 +609,15 @@ public class OptionsParser {
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
+                .class)
         List<String> filterChromosome = null;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+                splitter = CommaParameterSplitter.class)
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
     }
 
@@ -589,10 +625,12 @@ public class OptionsParser {
     @Parameters(commandNames = {"create-annotations"}, commandDescription = "Create an annotation file.")
     class CommandCreateAnnotations extends Command {
 
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)",
+                required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials;
 
         @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to read variants.", required = true, arity = 1)
@@ -642,10 +680,12 @@ public class OptionsParser {
     @Parameters(commandNames = {"load-annotations"}, commandDescription = "Load an annotation file.")
     class CommandLoadAnnotations extends Command {
 
-        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "Storage to save files into: mongodb (default) or hbase (pending)",
+                required = false, arity = 1)
         String backend = "mongodb";
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials;
 
         @Parameter(names = {"-d", "--dbName"}, description = "OpenCGA DB name to annotate variants.", required = true, arity = 1)
@@ -671,10 +711,12 @@ public class OptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         String dbName;
 
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         String credentials = "";
 
-        @Parameter(names = {"-o", "--output-filename"}, description = "Output file name. Default: ./<study>_<file>.<timestamp>", required = false, arity = 1)
+        @Parameter(names = {"-o", "--output-filename"}, description = "Output file name. Default: ./<study>_<file>.<timestamp>", required
+                = false, arity = 1)
         String fileName = "";
 
         // this is confusing, lets try only with output-filename
@@ -684,29 +726,35 @@ public class OptionsParser {
 //        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
 //        boolean create = false;
 //
-//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
+//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is
+// a prefix with structure <INPUT_FILENAME>.<TIME>")
 //        String load = null;
 
-        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>" +
+                "(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
         Map<String, String> cohort = new HashMap<>();
 
-        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.", assignment = ":")
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, " +
+                "cohortIds will be auto-generated.", assignment = ":")
         Map<String, String> cohortIds = new HashMap<>();
 
-        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @Parameter(names = {"-C", "--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga" +
+                ".storage.core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
+        .class)
         List<String> filterChromosome = null;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+        splitter = CommaParameterSplitter.class)
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
         */
     }
@@ -714,7 +762,7 @@ public class OptionsParser {
     String parse(String[] args) throws ParameterException {
         jcommander.parse(args);
         String parsedCommand = jcommander.getParsedCommand();
-        return parsedCommand != null? parsedCommand: "";
+        return parsedCommand != null ? parsedCommand : "";
     }
 
     Command getCommand() {
@@ -732,7 +780,7 @@ public class OptionsParser {
     String usage() {
         StringBuilder builder = new StringBuilder();
         String parsedCommand = jcommander.getParsedCommand();
-        if(parsedCommand != null && !parsedCommand.isEmpty()){
+        if (parsedCommand != null && !parsedCommand.isEmpty()) {
             jcommander.usage(parsedCommand, builder);
         } else {
             jcommander.usage(builder);
@@ -787,6 +835,7 @@ public class OptionsParser {
     CommandAnnotateVariants getCommandAnnotateVariants() {
         return commandAnnotateVariants;
     }
+
     CommandStatsVariants getCommandStatsVariants() {
         return commandStatsVariants;
     }

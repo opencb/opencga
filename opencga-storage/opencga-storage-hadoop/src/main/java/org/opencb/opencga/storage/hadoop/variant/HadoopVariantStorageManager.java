@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -22,8 +21,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,14 +54,15 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         getLogger().info("Pre input: " + input);
         getLogger().info("Pre output: " + output);
-        
+
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()), options.getString(Options.STUDY_NAME.key()));
+            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()),
+                    options.getString(Options.STUDY_NAME.key()));
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         }
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
@@ -74,7 +74,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             loadArch = true;
             loadVar = true;
         }
-
 
 //        VariantSource variantSource = readVariantSource(Paths.get(input), null);
         VariantSource source = readVariantSource(input, options);
@@ -128,9 +127,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
 //            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
         }
-        if (loadVar) {
-            // TODO
-        }
+
+        // TODO
+//        if (loadVar) {
+//        }
 
         return input;
     }
@@ -165,7 +165,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         options.put(Options.TRANSFORM_FORMAT.key(), "avro");
         return super.preTransform(input);
     }
-
 
 
     @Override
@@ -224,10 +223,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return input; // TODO  change return value?
     }
 
-    private HadoopCredentials getDbCredentials() throws StorageManagerException{
+    private HadoopCredentials getDbCredentials() throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         String dbName = options.getString(Options.DB_NAME.key(), null);
-        HadoopCredentials cr =  buildCredentials(dbName);
+        HadoopCredentials cr = buildCredentials(dbName);
         return cr;
     }
 
@@ -245,11 +244,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(storageEngineId),
                     getHadoopConfiguration(configuration.getStorageEngine(storageEngineId).getOptions()));
         } catch (IOException e) {
-            throw new StorageManagerException("Problems creating DB Adapter",e);
+            throw new StorageManagerException("Problems creating DB Adapter", e);
         }
     }
 
-    public HadoopCredentials buildCredentials(String table) throws IllegalStateException{
+    public HadoopCredentials buildCredentials(String table) throws IllegalStateException {
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
 
         DatabaseCredentials db = vStore.getDatabase();
@@ -260,20 +259,20 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             throw new IllegalStateException("Expect only one server name");
         }
         String target = hostList.get(0);
-        try{
+        try {
             URI uri = new URI(target);
             String server = uri.getHost();
             Integer port = uri.getPort() > 0 ? uri.getPort() : 60000;
-    //        String tablename = uri.getPath();
-    //        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
-    //        String master = String.join(":", server, port.toString());
-            HadoopCredentials credentials = new HadoopCredentials(server, table, user,pass, port);
+            //        String tablename = uri.getPath();
+            //        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
+            //        String master = String.join(":", server, port.toString());
+            HadoopCredentials credentials = new HadoopCredentials(server, table, user, pass, port);
             return credentials;
-        } catch (URISyntaxException e){
+        } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }
     }
-    
+
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
@@ -297,18 +296,21 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException {
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
+            StorageManagerException {
         // TODO
     }
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-        return input;  // TODO 
+        return input; // TODO
     }
-    
+
     @Override
     @Deprecated
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException { return null;}
+    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
+        return null;
+    }
 
     public static Logger getLogger() {
         return logger;
@@ -333,7 +335,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         //
 
         if (conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY) == null) {
-            throw new StorageManagerException("Missing configuration parameter \"" + CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY + "\"");
+            throw new StorageManagerException("Missing configuration parameter \""
+                    + CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY + "\"");
         }
 
         options.entrySet().stream()

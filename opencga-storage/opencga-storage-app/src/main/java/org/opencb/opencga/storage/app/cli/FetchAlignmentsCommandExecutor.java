@@ -52,7 +52,8 @@ public class FetchAlignmentsCommandExecutor extends CommandExecutor {
         /**
          * Open connection
          */
-        AlignmentStorageManager alignmentStorageManager = new StorageManagerFactory(configuration).getAlignmentStorageManager(queryAlignmentsCommandOptions.backend);
+        AlignmentStorageManager alignmentStorageManager =
+                new StorageManagerFactory(configuration).getAlignmentStorageManager(queryAlignmentsCommandOptions.backend);
 //            if (queryAlignmentsCommandOptions.credentials != null && !queryAlignmentsCommandOptions.credentials.isEmpty()) {
 //                alignmentStorageManager.addConfigUri(new URI(null, queryAlignmentsCommandOptions.credentials, null));
 //            }

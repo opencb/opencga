@@ -82,7 +82,7 @@ public class CliOptionsParser {
     }
 
     public String getCommand() {
-        return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand(): "";
+        return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand() : "";
     }
 
     public boolean isHelp() {
@@ -121,7 +121,7 @@ public class CliOptionsParser {
 
     public class CommonCommandOptions {
 
-        @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
 
         @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
@@ -133,13 +133,14 @@ public class CliOptionsParser {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"-C", "--conf" }, description = "Configuration file path.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
         public String configFile;
 
         @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
         public String storageEngine;
 
-        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb.compression=snappy", hidden = false)
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
+                ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
 
 //        @Deprecated
@@ -161,11 +162,13 @@ public class CliOptionsParser {
         @Parameter(names = {"-p", "--prefix"}, description = "Accession IDs prefix", arity = 1)
         public String prefix;
 
-        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for prefixes)",
+        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for " +
+                "prefixes)",
                 required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
         public String studyId;
 
-        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)", arity = 1)
+        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)" +
+                "", arity = 1)
         public String resumeFromAccession;
 
     }
@@ -176,7 +179,8 @@ public class CliOptionsParser {
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         public String input;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required
+                = false)
         public String outdir;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
@@ -186,13 +190,15 @@ public class CliOptionsParser {
         boolean load = false;
 
         @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         public String credentials;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
         public String dbName;
 
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
     }
@@ -206,17 +212,20 @@ public class CliOptionsParser {
         @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
         public boolean calculateCoverage = true;
 
-        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag \"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag " +
+                "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
         public List<String> meanCoverage;
     }
 
     @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
     public class IndexVariantsCommandOptions extends IndexCommandOptions {
 
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity
+                = 1)
         public String study;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false,
+                arity = 1)
         public String studyId = VariantStorageManager.Options.STUDY_ID.defaultValue().toString();
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
@@ -249,10 +258,12 @@ public class CliOptionsParser {
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+                "file")
         public String aggregationMappingFile = null;
 
-        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
+        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
+                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--gvcf"}, description = "[PENDING] The input file is in gvcf format")
@@ -279,7 +290,6 @@ public class CliOptionsParser {
     }
 
 
-
     class QueryCommandOptions extends CommonCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
@@ -288,7 +298,8 @@ public class CliOptionsParser {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
 
-        @Parameter(names = {"-r","--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000", required = false)
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
+                required = false)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
@@ -313,11 +324,13 @@ public class CliOptionsParser {
         public boolean count;
 
         @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         public String credentials;
 
         @Deprecated
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase (pending)", required = false, arity = 1)
+        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase " +
+                "(pending)", required = false, arity = 1)
         public String backend = "mongodb";
 
     }
@@ -344,7 +357,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--process-differences"}, description = " ", required = false)
         public boolean processDifferences;
 
-        @Parameter(names = {"-S","--stats-filter"}, description = " [CSV]", required = false)
+        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
         public List<String> stats = new LinkedList<>();
 
     }
@@ -364,34 +377,41 @@ public class CliOptionsParser {
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
 
-        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, example: NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
+        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
+                "NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
         public String sampleGenotype;
 
         @Deprecated
-        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false, arity = 1)
+        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false,
+                arity = 1)
         public String file;
 
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
         public String type;
 
 
-//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
+//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false,
+// arity = 0)
 //        public boolean includeAnnotations;
 
         @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
-                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
+                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required =
+                false, arity = 1)
         public String annotations;
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046", required = false, arity = 1)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
+                required = false, arity = 1)
         public String consequenceType;
 
         @Parameter(names = {"--biotype"}, description = "Biotype CSV", required = false, arity = 1)
         public String biotype;
 
-        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}\"", required = false, arity = 1)
+        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}\"", required = false, arity = 1)
         public String populationFreqs;
 
-        @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: phastCons>0.5,phylop<0.1", required = false, arity = 1)
+        @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
+                "phastCons>0.5,phylop<0.1", required = false, arity = 1)
         public String conservation;
 
         @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
@@ -407,54 +427,66 @@ public class CliOptionsParser {
         public String clinvar;
 
 
-
         @Deprecated
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
 
-        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4", required = false)
+        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0" +
+                ".4", required = false)
         public String maf;
 
-        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4", required = false)
+        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: " +
+                "1000g:all<=0.4", required = false)
         public String mgf;
 
-        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: 1000g:all=5", required = false)
+        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example:" +
+                " 1000g:all=5", required = false)
         public String missingAlleleCount;
 
-        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, example: 1000g:all!=0", required = false)
+        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, " +
+                "example: 1000g:all!=0", required = false)
         public String missingGenotypeCount;
 
 
-        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is" +
+                " affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+                required = false)
         public String dominant;
 
-        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if " +
+                "is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+                required = false)
         public String recessive;
 
-        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER," +
+                "CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff," +
+                "1000g:NA002:unaff,1000g:NA003:aff", required = false)
         public String compoundHeterozygous;
 
 
         @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
         public String returnStudy;
 
-        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
+        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned",
+                required = false)
         public String returnSample;
 
-        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false)
+        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./" +
+                ".]", required = false)
         public String unknownGenotype = "./.";
 
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false,
+                arity = 1)
         public String outputFormat = "vcf";
 
     }
 
 
-
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
     public class AnnotateVariantsCommandOptions extends CommonCommandOptions {
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by " +
+                "--output-filename)")
         public boolean create = false;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
@@ -474,7 +506,8 @@ public class CliOptionsParser {
         public String dbName;
 
         @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required = false, arity = 1)
+        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
+                false, arity = 1)
         public String credentials;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
@@ -492,17 +525,18 @@ public class CliOptionsParser {
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public List<String> filterRegion;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
+                .class)
         public List<String> filterChromosome;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         public String filterGene;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+                splitter = CommaParameterSplitter.class)
         public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
 
     }
-
 
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
@@ -511,16 +545,19 @@ public class CliOptionsParser {
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         public boolean create = false;
 
-        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a prefix with structure <INPUT_FILENAME>.<TIME>")
+        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a " +
+                "prefix with structure <INPUT_FILENAME>.<TIME>")
         public boolean load = false;
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
-        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. Assumes that existing stats are correct")
+        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. Assumes that existing stats are" +
+                " correct")
         public boolean updateStats = false;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
         public int studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
@@ -535,38 +572,44 @@ public class CliOptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
         public String outdir = ".";
 
-        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>" +
+                "(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
         Map<String, String> cohort = new HashMap<>();
 
-        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, cohortIds will be auto-generated.", assignment = ":")
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, " +
+                "cohortIds will be auto-generated.", assignment = ":")
         Map<String, String> cohortIds = new HashMap<>();
 
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage.core.StudyConfiguration", required = false, arity = 1)
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+                "file")
         public String aggregationMappingFile;
 
 /* TODO: filters?
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         List<String> filterRegion = null;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
+        .class)
         List<String> filterChromosome = null;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         String filterGene = null;
 
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters", splitter = CommaParameterSplitter.class)
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+        splitter = CommaParameterSplitter.class)
         List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
         */
     }
 
-    public void printUsage(){
-        if(getCommand().isEmpty()) {
+    public void printUsage() {
+        if (getCommand().isEmpty()) {
             System.err.println("");
             System.err.println("Program:     OpenCGA Storage (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
@@ -634,7 +677,8 @@ public class CliOptionsParser {
 
     private String getType(ParameterDescription parameterDescription) {
         String type = "";
-        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter().arity() != 0) {
+        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter()
+                .arity() != 0) {
             type = parameterDescription.getParameterized().getGenericType().getTypeName();
             type = type.substring(1 + Math.max(type.lastIndexOf("."), type.lastIndexOf("$")));
             type = Arrays.asList(StringUtils.splitByCharacterTypeCamelCase(type)).stream()

@@ -101,7 +101,8 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
                 aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
                 options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
-                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions.aggregationMappingFile);
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions
+                        .aggregationMappingFile);
             }
         }
 
@@ -110,7 +111,8 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
          */
         VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager(storageEngine);
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
-//        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we remove fileId
+//        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
+// remove fileId
         StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(options);
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
@@ -118,9 +120,10 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
         /**
          * Create and load stats
          */
-        URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null? "" : statsVariantsCommandOptions.fileName);
+        URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), statsVariantsCommandOptions.fileId)
+        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(),
+                statsVariantsCommandOptions.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
         assertDirectoryExists(directoryUri);
         VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
@@ -144,7 +147,7 @@ public class StatsVariantsCommandExecutor extends CommandExecutor {
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds, 
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortIds,
                         studyConfiguration, queryOptions);
             }
 

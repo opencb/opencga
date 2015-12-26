@@ -49,27 +49,34 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        /**
+        /*
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(annotateVariantsCommandOptions.storageEngine);
-
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get()
+                .getVariantStorageManager(annotateVariantsCommandOptions.storageEngine);
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(annotateVariantsCommandOptions.dbName);
 
-        /**
+        /*
          * Create Annotator
          */
-
         ObjectMap options = configuration.getStorageEngine(annotateVariantsCommandOptions.storageEngine).getVariant().getOptions();
-        if (annotateVariantsCommandOptions.annotator != null) options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
-        if (annotateVariantsCommandOptions.species != null) options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);
-        if (annotateVariantsCommandOptions.assembly != null) options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
+        if (annotateVariantsCommandOptions.annotator != null) {
+            options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
+        }
+        if (annotateVariantsCommandOptions.species != null) {
+            options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);
+        }
+        if (annotateVariantsCommandOptions.assembly != null) {
+            options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
+        }
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, annotateVariantsCommandOptions.storageEngine);
-//            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
+        VariantAnnotator annotator = VariantAnnotationManager
+                .buildVariantAnnotator(configuration, annotateVariantsCommandOptions.storageEngine);
+//            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
+// annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
         VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
 
-        /**
+        /*
          * Annotation options
          */
         Query query = new Query();
@@ -83,7 +90,8 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
             query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), annotateVariantsCommandOptions.filterGene);
         }
         if (annotateVariantsCommandOptions.filterAnnotConsequenceType != null) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), annotateVariantsCommandOptions.filterAnnotConsequenceType);
+            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+                    annotateVariantsCommandOptions.filterAnnotConsequenceType);
         }
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
             query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
@@ -91,7 +99,7 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
-        /**
+        /*
          * Create and load annotations
          */
         boolean doCreate = annotateVariantsCommandOptions.create, doLoad = annotateVariantsCommandOptions.load != null;
@@ -104,9 +112,9 @@ public class AnnotateVariantsCommandExecutor extends CommandExecutor {
         if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir,
-                    annotateVariantsCommandOptions.fileName == null ? annotateVariantsCommandOptions.dbName : annotateVariantsCommandOptions.fileName,
-                    query, new QueryOptions());
+            annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null
+                    ? annotateVariantsCommandOptions.dbName
+                    : annotateVariantsCommandOptions.fileName, query, new QueryOptions());
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 

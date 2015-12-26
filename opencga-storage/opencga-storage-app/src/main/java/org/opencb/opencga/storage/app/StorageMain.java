@@ -28,10 +28,10 @@ import java.io.IOException;
 public class StorageMain {
 
     public static void main(String[] args) {
-        System.exit(Main(args));
+        System.exit(privateMain(args));
     }
 
-    public static int Main(String[] args) {
+    public static int privateMain(String[] args) {
 
         CliOptionsParser cliOptionsParser = new CliOptionsParser();
         try {
@@ -43,13 +43,13 @@ public class StorageMain {
         }
 
         String parsedCommand = cliOptionsParser.getCommand();
-        if(parsedCommand == null || parsedCommand.isEmpty()) {
-            if(cliOptionsParser.getGeneralOptions().version) {
+        if (parsedCommand == null || parsedCommand.isEmpty()) {
+            if (cliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
                 System.out.println("git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
 //                System.out.println(GitRepositoryState.get());
                 return 0;
-            } else if(cliOptionsParser.getGeneralOptions().help) {
+            } else if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
                 return 0;
             } else {
@@ -59,7 +59,7 @@ public class StorageMain {
         } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
-            if(cliOptionsParser.isHelp()) {
+            if (cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
                 return 0;
             } else {

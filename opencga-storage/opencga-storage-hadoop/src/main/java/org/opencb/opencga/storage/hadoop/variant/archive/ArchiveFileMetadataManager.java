@@ -19,12 +19,11 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created on 16/11/15
+ * Created on 16/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ArchiveFileMetadataManager implements AutoCloseable {
-
 
     private final String tableName;
     private final Configuration configuration;
@@ -47,10 +46,10 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration, ObjectMap options)
-        throws IOException {
+            throws IOException {
         this.tableName = tableName;
         this.configuration = configuration;
-        this.options = options == null? new ObjectMap() : options;
+        this.options = options == null ? new ObjectMap() : options;
         genomeHelper = new GenomeHelper(configuration);
         connection = con;
         objectMapper = new ObjectMapper();
@@ -102,11 +101,12 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public void updateVcfMetaData(VariantSource variantSource) throws IOException {
-        if( hBaseManager.createTableIfNeeded(connection, tableName, genomeHelper.getColumnFamily())){
+        if (hBaseManager.createTableIfNeeded(connection, tableName, genomeHelper.getColumnFamily())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = new Put(genomeHelper.getMetaRowKey());
-        put.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()), variantSource.getImpl().toString().getBytes());
+        put.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()),
+                variantSource.getImpl().toString().getBytes());
         hBaseManager.act(connection, tableName, table -> {
             table.put(put);
         });

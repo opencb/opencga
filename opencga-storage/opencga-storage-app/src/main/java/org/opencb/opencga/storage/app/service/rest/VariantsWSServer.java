@@ -22,7 +22,6 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-//import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 
@@ -35,8 +34,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+//import org.opencb.opencga.storage.core.variant.adaptors.CatalogVariantDBAdaptor;
+
 /**
- * @author Jacobo Coll <jacobo167@gmail.com>
+ * @author Jacobo Coll <jacobo167@gmail.com>.
  */
 @Path("/variants")
 public class VariantsWSServer extends StorageWSServer {
@@ -44,7 +45,8 @@ public class VariantsWSServer extends StorageWSServer {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
+            httpServletRequest) throws IOException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -68,7 +70,8 @@ public class VariantsWSServer extends StorageWSServer {
 
     public static class VariantFetcher {
 
-        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions queryOptions)
+        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions
+                queryOptions)
                 throws StorageManagerException, ClassNotFoundException, IllegalAccessException, InstantiationException {
             VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
@@ -106,20 +109,21 @@ public class VariantsWSServer extends StorageWSServer {
             } else {
                 queryResult = dbAdaptor.get(query, queryOptions);
             }
-    //            else if (regionsSize <= 1000000) {
-    //                if (regions.size() == 0) {
-    //                    if (!queryOptions.containsKey("id") && !queryOptions.containsKey("gene")) {
-    //                        return createErrorResponse("Some positional filer is needed, like region, gene or id.");
-    //                    } else {
-    //                        return createOkResponse(variants.get(query, queryOptions));
-    //                    }
-    //                } else {
-    //                    return createOkResponse(variants.get(query, queryOptions));
-    //                }
-    //            } else {
-    //                return createErrorResponse("The total size of all regions provided can't exceed 1 million positions. "
-    //                        + "If you want to browse a larger number of positions, please provide the parameter 'histogram=true'");
-    //            }
+            //            else if (regionsSize <= 1000000) {
+            //                if (regions.size() == 0) {
+            //                    if (!queryOptions.containsKey("id") && !queryOptions.containsKey("gene")) {
+            //                        return createErrorResponse("Some positional filer is needed, like region, gene or id.");
+            //                    } else {
+            //                        return createOkResponse(variants.get(query, queryOptions));
+            //                    }
+            //                } else {
+            //                    return createOkResponse(variants.get(query, queryOptions));
+            //                }
+            //            } else {
+            //                return createErrorResponse("The total size of all regions provided can't exceed 1 million positions. "
+            //                        + "If you want to browse a larger number of positions, please provide the parameter
+            // 'histogram=true'");
+            //            }
 
             return queryResult;
         }

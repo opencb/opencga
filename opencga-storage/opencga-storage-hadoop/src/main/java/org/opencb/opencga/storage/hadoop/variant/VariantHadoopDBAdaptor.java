@@ -6,7 +6,6 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
@@ -29,19 +28,22 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.BIOTYPE;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.GENES;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -115,10 +117,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     *
      * @param tableName Use {@link ArchiveHelper#getTableName(int)} to get the table
      * @param options   Extra options
-     * @throws IOException
+     * @return A valid ArchiveFileMetadataManager object
+     * @throws IOException If any IO problem occurs
      */
     public ArchiveFileMetadataManager getArchiveFileMetadataManager(String tableName, ObjectMap options)
             throws IOException {
@@ -140,11 +142,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public boolean close() {
         boolean closeCorrect = true;
         try {
-            if(!hbaseCon.isClosed()){
+            if (!hbaseCon.isClosed()) {
                 hbaseCon.close();
             }
         } catch (IOException e) {
-            getLog().error("Problems closing connection",e);
+            getLog().error("Problems closing connection", e);
             closeCorrect = false;
         }
 
@@ -153,7 +155,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 phoenixCon.close();
             }
         } catch (SQLException e) {
-            getLog().error("Problems closing connection",e);
+            getLog().error("Problems closing connection", e);
             closeCorrect = false;
         }
 
@@ -167,7 +169,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setDataWriter(DataWriter dataWriter) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
@@ -316,13 +318,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void forEach(Consumer<? super Variant> action) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
@@ -363,7 +365,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
-            QueryOptions options) {
+                                   QueryOptions options) {
         // TODO Auto-generated method stub
         return null;
     }
@@ -382,13 +384,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
-            QueryOptions queryOptions) {
+                                      QueryOptions queryOptions) {
         return updateAnnotations(variantAnnotations, queryOptions);
     }
 
     @Override
     public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
-            QueryOptions queryOptions) {
+                                         QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
 
@@ -460,7 +462,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             KeyOnlyFilter keyOnlyFilter = new KeyOnlyFilter();
             filters.addFilter(keyOnlyFilter);
         } else {
-            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
+            MultipleColumnPrefixFilter columnPrefixFilter = new MultipleColumnPrefixFilter(columnPrefixes.toArray(new byte[columnPrefixes
+                    .size()][]));
             filters.addFilter(columnPrefixFilter);
         }
 

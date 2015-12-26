@@ -12,7 +12,8 @@ public class VariantHadoopDBAdaptorTest {
 
     @Test
     public void myTest() throws IOException {
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(this.getClass().getResourceAsStream("storage-configuration.yml"));
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(this.getClass().getResourceAsStream("storage-configuration" +
+                ".yml"));
 
         HadoopVariantStorageManager sm = new HadoopVariantStorageManager();
 //        VariantHadoopDBAdaptor vdb = new VariantHadoopDBAdaptor(sm.buildCredentials("test-table"));
