@@ -73,8 +73,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
      * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToStudyVariantEntryConverter(boolean includeSrc,
-                                                DBObjectToSamplesConverter samplesConverter) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc, DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
     }

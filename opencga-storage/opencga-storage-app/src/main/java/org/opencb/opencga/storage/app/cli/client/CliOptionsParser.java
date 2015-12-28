@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli;
+package org.opencb.opencga.storage.app.cli.client;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 02/03/15.
@@ -35,46 +37,39 @@ public class CliOptionsParser {
     private final JCommander jcommander;
 
     private final GeneralOptions generalOptions;
-    private final CommonCommandOptions commonCommandOptions;
+    private final CommonOptions commonOptions;
 
-    private final CreateAccessionsCommandOption createAccessionsCommandOption;
+    //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
+    private FeatureCommandOptions featureCommandOptions;
+    private AlignmentCommandOptions alignmentCommandOptions;
+    private VariantCommandOptions variantCommandOptions;
 
-    private final IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
-    private final IndexVariantsCommandOptions indexVariantsCommandOptions;
-//    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
-
-    private final QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
-    private final QueryVariantsCommandOptions queryVariantsCommandOptions;
-
-    private final AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
-    private final StatsVariantsCommandOptions statsVariantsCommandOptions;
 
     public CliOptionsParser() {
 
         generalOptions = new GeneralOptions();
-
         jcommander = new JCommander(generalOptions);
-        jcommander.setProgramName("opencga-storage2.sh");
 
-        commonCommandOptions = new CommonCommandOptions();
+        commonOptions = new CommonOptions();
 
-        createAccessionsCommandOption = new CreateAccessionsCommandOption();
-        indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
-        indexVariantsCommandOptions = new IndexVariantsCommandOptions();
-//        indexSequenceCommandOptions = new IndexSequenceCommandOptions();
-        queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
-        queryVariantsCommandOptions = new QueryVariantsCommandOptions();
-        annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
-        statsVariantsCommandOptions = new StatsVariantsCommandOptions();
+//        featureCommandOptions = new FeatureCommandOptions();
+//        jcommander.addCommand("feature", featureCommandOptions);
+//        JCommander featureSubCommands = jcommander.getCommands().get("feature");
 
-        jcommander.addCommand("create-accessions", createAccessionsCommandOption);
-        jcommander.addCommand("index-alignments", indexAlignmentsCommandOptions);
-        jcommander.addCommand("index-variants", indexVariantsCommandOptions);
-//        jcommander.addCommand("index-sequence", indexSequenceCommandOptions);
-        jcommander.addCommand("fetch-alignments", queryAlignmentsCommandOptions);
-        jcommander.addCommand("fetch-variants", queryVariantsCommandOptions);
-        jcommander.addCommand("annotate-variants", annotateVariantsCommandOptions);
-        jcommander.addCommand("stats-variants", statsVariantsCommandOptions);
+        alignmentCommandOptions = new AlignmentCommandOptions();
+        jcommander.addCommand("alignment", alignmentCommandOptions);
+        JCommander alignmentSubCommands = jcommander.getCommands().get("alignment");
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentsCommandOptions);
+        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentsCommandOptions);
+
+        variantCommandOptions = new VariantCommandOptions();
+        jcommander.addCommand("variant", variantCommandOptions);
+        JCommander variantSubCommands = jcommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
+        variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
+        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
+
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -85,29 +80,28 @@ public class CliOptionsParser {
         return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand() : "";
     }
 
+    public String getSubCommand() {
+        String parsedCommand = jcommander.getParsedCommand();
+        if (jcommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
+        } else {
+            return null;
+        }
+    }
+
     public boolean isHelp() {
         String parsedCommand = jcommander.getParsedCommand();
         if (parsedCommand != null) {
             JCommander jCommander = jcommander.getCommands().get(parsedCommand);
             List<Object> objects = jCommander.getObjects();
-            if (!objects.isEmpty() && objects.get(0) instanceof CommonCommandOptions) {
-                return ((CommonCommandOptions) objects.get(0)).help;
+            if (!objects.isEmpty() && objects.get(0) instanceof CommonOptions) {
+                return ((CommonOptions) objects.get(0)).help;
             }
         }
-        return getCommonCommandOptions().help;
+        return getCommonOptions().help;
     }
 
-//    @Deprecated
-//    public String usage() {
-//        StringBuilder builder = new StringBuilder();
-//        String parsedCommand = jcommander.getParsedCommand();
-//        if(parsedCommand != null && !parsedCommand.isEmpty()){
-//            jcommander.usage(parsedCommand, builder);
-//        } else {
-//            jcommander.usage(builder);
-//        }
-//        return builder.toString();//.replaceAll("\\^.*Default: false\\$\n", "");
-//    }
 
     public class GeneralOptions {
 
@@ -119,7 +113,34 @@ public class CliOptionsParser {
 
     }
 
-    public class CommonCommandOptions {
+    /**
+     * This class contains all those parameters available for all 'commands'
+     */
+    public class CommandOptions {
+
+        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
+        public boolean help;
+
+        public JCommander getSubCommand() {
+            return jcommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
+        }
+
+        public String getParsedSubCommand() {
+            String parsedCommand = jcommander.getParsedCommand();
+            if (jcommander.getCommands().containsKey(parsedCommand)) {
+                String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
+                return subCommand != null ? subCommand: "";
+            } else {
+                return "";
+            }
+        }
+    }
+
+
+    /**
+     * This class contains all those common parameters available for all 'subcommands'
+     */
+    public class CommonOptions {
 
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
@@ -143,44 +164,62 @@ public class CliOptionsParser {
                 ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
 
-//        @Deprecated
-//        @Parameter(names = { "--sm-name" }, description = "StorageManager class name (Must be in the classpath).")
-//        public String storageManagerName;
-
     }
 
 
-    @Parameters(commandNames = {"create-accessions"}, commandDescription = "Creates accession IDs for an input file")
-    public class CreateAccessionsCommandOption extends CommonCommandOptions {
+    /*
+     * Feature (GFF, BED) CLI options
+     */
+    @Parameters(commandNames = {"feature"}, commandDescription = "Implements different tools for working with BAM files")
+    public class FeatureCommandOptions extends CommandOptions {
 
-        @Parameter(names = {"-i", "--input"}, description = "File to annotation with accession IDs", required = true, arity = 1)
-        public String input;
+        public FeatureCommandOptions() {
+        }
+    }
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where the output file will be saved", arity = 1)
-        public String outdir;
+    /*
+     * Alignment (BAM, CRAM) CLI options
+     */
+    @Parameters(commandNames = {"alignment"}, commandDescription = "Implements different tools for working with BAM files")
+    public class AlignmentCommandOptions extends CommandOptions {
 
-        @Parameter(names = {"-p", "--prefix"}, description = "Accession IDs prefix", arity = 1)
-        public String prefix;
+        IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
+        QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
 
-        @Parameter(names = {"-s", "--study-alias"}, description = "Unique ID for the study where the file is classified (used for " +
-                "prefixes)",
-                required = true, arity = 1)//, validateValueWith = StudyIdValidator.class)
-        public String studyId;
+        public AlignmentCommandOptions() {
+            this.indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
+            this.queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
+        }
+    }
 
-        @Parameter(names = {"-r", "--resume-from-accession"}, description = "Starting point to generate accessions (will not be included)" +
-                "", arity = 1)
-        public String resumeFromAccession;
+    /*
+     * Variant (VCF, BCF) CLI options
+     */
+    @Parameters(commandNames = {"variant"}, commandDescription = "Implements different tools for working with gVCF/VCF files")
+    public class VariantCommandOptions extends CommandOptions {
 
+        IndexVariantsCommandOptions indexVariantsCommandOptions;
+        QueryVariantsCommandOptions queryVariantsCommandOptions;
+        AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
+        StatsVariantsCommandOptions statsVariantsCommandOptions;
+
+        public VariantCommandOptions() {
+            this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
+            this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
+            this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
+            this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
+        }
     }
 
 
-    class IndexCommandOptions extends CommonCommandOptions {
+
+
+    class IndexCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
         public String input;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required
-                = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
@@ -206,6 +245,10 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentsCommandOptions extends IndexCommandOptions {
 
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         public String fileId;
 
@@ -217,15 +260,17 @@ public class CliOptionsParser {
         public List<String> meanCoverage;
     }
 
-    @Parameters(commandNames = {"index-variants"}, commandDescription = "Index variants file")
+    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
     public class IndexVariantsCommandOptions extends IndexCommandOptions {
 
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity
-                = 1)
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", required = false, arity = 1)
         public String study;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false,
-                arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
         public String studyId = VariantStorageManager.Options.STUDY_ID.defaultValue().toString();
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
@@ -290,7 +335,7 @@ public class CliOptionsParser {
     }
 
 
-    class QueryCommandOptions extends CommonCommandOptions {
+    class QueryCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
         public String output;
@@ -335,10 +380,13 @@ public class CliOptionsParser {
 
     }
 
-    @Parameters(commandNames = {"fetch-alignments"}, commandDescription = "Search over indexed alignments")
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
     public class QueryAlignmentsCommandOptions extends QueryCommandOptions {
 
-        //Filter parameters
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
         @Parameter(names = {"-a", "--alias"}, description = "File unique ID.", required = false, arity = 1)
         public String fileId;
 
@@ -362,8 +410,12 @@ public class CliOptionsParser {
 
     }
 
-    @Parameters(commandNames = {"fetch-variants"}, commandDescription = "Search over indexed variants")
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
     public class QueryVariantsCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
 
         @Parameter(names = {"--id"}, description = "CSV list of variant ids", required = false)
         public String id;
@@ -483,10 +535,13 @@ public class CliOptionsParser {
 
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
-    public class AnnotateVariantsCommandOptions extends CommonCommandOptions {
+    public class AnnotateVariantsCommandOptions {
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by " +
-                "--output-filename)")
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create = false;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
@@ -525,8 +580,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public List<String> filterRegion;
 
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
-                .class)
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
         public List<String> filterChromosome;
 
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
@@ -540,7 +594,11 @@ public class CliOptionsParser {
 
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
-    public class StatsVariantsCommandOptions extends CommonCommandOptions {
+    public class StatsVariantsCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         public boolean create = false;
@@ -587,32 +645,18 @@ public class CliOptionsParser {
         @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
-                "file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
 
-/* TODO: filters?
-        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
-        List<String> filterRegion = null;
-
-        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter
-        .class)
-        List<String> filterChromosome = null;
-
-        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
-        String filterGene = null;
-
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
-        splitter = CommaParameterSplitter.class)
-        List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
-        */
     }
 
     public void printUsage() {
-        if (getCommand().isEmpty()) {
+        String parsedCommand = getCommand();
+        if (parsedCommand.isEmpty()) {
             System.err.println("");
             System.err.println("Program:     OpenCGA Storage (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
+            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
             System.err.println("Usage:       opencga-storage.sh [-h|--help] [--version] <command> [options]");
@@ -621,74 +665,35 @@ public class CliOptionsParser {
             printMainUsage();
             System.err.println("");
         } else {
-            String parsedCommand = getCommand();
-            System.err.println("");
-            System.err.println("Usage:   opencga-storage.sh " + parsedCommand + " [options]");
-            System.err.println("");
-            System.err.println("Options:");
-            printCommandUsage(jcommander.getCommands().get(parsedCommand));
-            System.err.println("");
+            String parsedSubCommand = getSubCommand();
+            if (parsedSubCommand.isEmpty()) {
+                System.err.println("");
+                System.err.println("Usage:   opencga-storage.sh " + parsedCommand + " [options]");
+                System.err.println("");
+                System.err.println("Subcommands:");
+                printCommands(jcommander.getCommands().get(parsedCommand));
+                System.err.println("");
+            } else {
+                System.err.println("");
+                System.err.println("Usage:   opencga-storage.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("");
+                System.err.println("Options:");
+                CommandLineUtils.printCommandUsage(jcommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
+                System.err.println("");
+            }
         }
     }
 
     private void printMainUsage() {
         for (String s : jcommander.getCommands().keySet()) {
-            System.err.printf("%20s  %s\n", s, jcommander.getCommandDescription(s));
+            System.err.printf("%14s  %s\n", s, jcommander.getCommandDescription(s));
         }
     }
 
-    private void printCommandUsage(JCommander commander) {
-
-        Integer paramNameMaxSize = Math.max(commander.getParameters().stream()
-                .map(pd -> pd.getNames().length())
-                .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(20), 20);
-        Integer typeMaxSize = Math.max(commander.getParameters().stream()
-                .map(pd -> getType(pd).length())
-                .collect(Collectors.maxBy(Comparator.<Integer>naturalOrder())).orElse(10), 10);
-
-        int nameAndTypeLength = paramNameMaxSize + typeMaxSize + 8;
-        int descriptionLength = 100;
-        int maxLineLength = nameAndTypeLength + descriptionLength;  //160
-
-        Comparator<ParameterDescription> parameterDescriptionComparator = (e1, e2) -> e1.getLongestName().compareTo(e2.getLongestName());
-        commander.getParameters().stream().sorted(parameterDescriptionComparator).forEach(parameterDescription -> {
-            String type = getType(parameterDescription);
-            String usage = String.format("%5s %-" + paramNameMaxSize + "s %-" + typeMaxSize + "s %s %s\n",
-                    (parameterDescription.getParameterized().getParameter() != null
-                            && parameterDescription.getParameterized().getParameter().required()) ? "*" : "",
-                    parameterDescription.getNames(),
-                    type,
-                    parameterDescription.getDescription(),
-                    parameterDescription.getDefault() == null ? "" : ("[" + parameterDescription.getDefault() + "]"));
-
-            // if lines are longer than the maximum they are trimmed and printed in several lines
-            List<String> lines = new LinkedList<>();
-            while (usage.length() > maxLineLength + 1) {
-                int splitPosition = Math.min(1 + usage.lastIndexOf(" ", maxLineLength), usage.length());
-                lines.add(usage.substring(0, splitPosition) + "\n");
-                usage = String.format("%" + nameAndTypeLength + "s", "") + usage.substring(splitPosition);
-            }
-            // this is empty for short lines and so no prints anything
-            lines.forEach(System.err::print);
-            // in long lines this prints the last trimmed line
-            System.err.print(usage);
-        });
-    }
-
-    private String getType(ParameterDescription parameterDescription) {
-        String type = "";
-        if (parameterDescription.getParameterized().getParameter() != null && parameterDescription.getParameterized().getParameter()
-                .arity() != 0) {
-            type = parameterDescription.getParameterized().getGenericType().getTypeName();
-            type = type.substring(1 + Math.max(type.lastIndexOf("."), type.lastIndexOf("$")));
-            type = Arrays.asList(StringUtils.splitByCharacterTypeCamelCase(type)).stream()
-                    .map(String::toUpperCase)
-                    .collect(Collectors.joining("_"));
-            if (type.equals("BOOLEAN") && parameterDescription.getParameterized().getParameter().arity() == -1) {
-                type = "";
-            }
+    private void printCommands(JCommander commander) {
+        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
+            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
         }
-        return type;
     }
 
 
@@ -696,36 +701,20 @@ public class CliOptionsParser {
         return generalOptions;
     }
 
-    public CommonCommandOptions getCommonCommandOptions() {
-        return commonCommandOptions;
+    public CommonOptions getCommonOptions() {
+        return commonOptions;
     }
 
-    public CreateAccessionsCommandOption getCreateAccessionsCommandOption() {
-        return createAccessionsCommandOption;
+    public FeatureCommandOptions getFeatureCommandOptions() {
+        return featureCommandOptions;
     }
 
-    public IndexAlignmentsCommandOptions getIndexAlignmentsCommandOptions() {
-        return indexAlignmentsCommandOptions;
+    public AlignmentCommandOptions getAlignmentCommandOptions() {
+        return alignmentCommandOptions;
     }
 
-    public IndexVariantsCommandOptions getIndexVariantsCommandOptions() {
-        return indexVariantsCommandOptions;
-    }
-
-    public QueryAlignmentsCommandOptions getQueryAlignmentsCommandOptions() {
-        return queryAlignmentsCommandOptions;
-    }
-
-    public QueryVariantsCommandOptions getQueryVariantsCommandOptions() {
-        return queryVariantsCommandOptions;
-    }
-
-    public AnnotateVariantsCommandOptions getAnnotateVariantsCommandOptions() {
-        return annotateVariantsCommandOptions;
-    }
-
-    public StatsVariantsCommandOptions getStatsVariantsCommandOptions() {
-        return statsVariantsCommandOptions;
+    public VariantCommandOptions getVariantCommandOptions() {
+        return variantCommandOptions;
     }
 
 }

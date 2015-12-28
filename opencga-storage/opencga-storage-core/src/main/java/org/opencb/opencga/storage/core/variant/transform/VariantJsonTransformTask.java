@@ -50,6 +50,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
     private final ObjectMapper jsonObjectMapper;
     private final Path outputFileJsonFile;
     protected static Logger logger = LoggerFactory.getLogger(VariantJsonTransformTask.class);
+    @Deprecated
     private boolean includeSrc;
     private final VariantGlobalStatsCalculator variantStatsTask;
 

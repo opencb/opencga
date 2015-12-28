@@ -247,9 +247,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
+//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), Options.INCLUDE_STATS.defaultValue());
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
+//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
 
         Set<String> defaultGenotype;
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE)) {
@@ -314,8 +314,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName);
 //            variantDBWriter.setBulkSize(bulkSize);
-            variantDBWriter.includeSrc(includeSrc);
-            variantDBWriter.includeSamples(includeSamples);
+//            variantDBWriter.includeSrc(includeSrc);
+//            variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
 //            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
 //            variantDBWriter.setDefaultGenotype(defaultGenotype);

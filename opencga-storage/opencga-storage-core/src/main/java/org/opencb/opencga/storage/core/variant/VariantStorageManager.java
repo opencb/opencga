@@ -103,11 +103,11 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
-        @Deprecated
-        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)
+//        @Deprecated
+//        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)
         EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
-        @Deprecated
-        INCLUDE_SRC("include.src", false),                  //Include original source file on the transformed file and the final db
+//        @Deprecated
+//        INCLUDE_SRC("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
 
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
@@ -230,9 +230,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
         Path output = Paths.get(outputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
+//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", "htsjdk");
 
@@ -307,8 +307,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
             //Writers
             VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-            jsonWriter.includeSrc(includeSrc);
-            jsonWriter.includeSamples(includeSamples);
+//            jsonWriter.includeSrc(includeSrc);
+//            jsonWriter.includeSamples(includeSamples);
             jsonWriter.includeStats(includeStats);
 
             List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
@@ -404,7 +404,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             try {
                 VariantJsonTransformTask variantJsonTransformTask =
                         new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
-                variantJsonTransformTask.setIncludeSrc(includeSrc);
+//                variantJsonTransformTask.setIncludeSrc(includeSrc);
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
                         variantJsonTransformTask,
