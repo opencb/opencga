@@ -40,7 +40,9 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -108,6 +110,7 @@ public class VariantTableMapperTest {
         }
         studyConfiguration = new StudyConfiguration(1, "1-test");
         studyConfiguration.getSampleIds().put("Sample1", 1);
+        studyConfiguration.getSampleIds().put("Sample2", 2);
         variantCollection = variantCollection.stream().
                 sorted( (a,b) -> a.getStart().compareTo(b.getStart())).collect(Collectors.toList());
         
@@ -206,6 +209,25 @@ public class VariantTableMapperTest {
                 new Genotype("1/2", "A", Arrays.asList("T","G")))));
     }
     
+//    @Test
+    public void testResolveConflict(){
+        // TODO refine test
+        HashMap<String, Integer> map = new HashMap<String, Integer>();
+        map.put("Sample1", 0);
+        Variant v1 = 
+                tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1).get(0);
+        Variant v1copy = new Variant(VariantAvro.newBuilder(v1.getImpl()).build());
+        v1.setEnd(v1.getEnd()+1);
+        Variant v2 = copyAsReference(v1copy);
+        assertTrue(tm.resolveConflicts(Arrays.asList(v1,v2)).size() == 1);
+        v2 = new Variant(VariantAvro.newBuilder(v1copy.getImpl()).build());
+        v2.setEnd(v2.getEnd()+3);
+        assertTrue(tm.resolveConflicts(Arrays.asList(v1,v2)).size() == 2);
+        
+//        resolveConflicts
+    }
+    
     @Test
     public void testNewVariantOneVar(){
         HashMap<String, Integer> map = new HashMap<String, Integer>();
@@ -222,6 +244,50 @@ public class VariantTableMapperTest {
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
         assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_REF).size());
         assertEquals(1,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
+    }
+    
+    private Variant copyAsReference(Variant v){
+        VariantAvro ai = v.getImpl();
+
+        VariantAvro va = VariantAvro.newBuilder(ai)
+                .setAlternate("")
+                .build();
+        Variant variant = new Variant(va);
+        variant.setType(VariantType.NO_VARIATION);
+        StudyEntry se = variant.getStudies().get(0);
+        se.setSamplesData(Arrays.asList(Arrays.asList(new String[]{"0/0"})));
+        return variant;
+    }
+    
+//    @Test
+    public void testNewVariantOneVarOneRef(){
+        // TODO refine test
+        HashMap<String, Integer> map = new HashMap<String, Integer>();
+        map.put("Sample1", 0);
+
+        HashMap<String, Integer> map2 = new HashMap<String, Integer>();
+        map.put("Sample2", 0);
+        List<Variant> sublist = 
+                tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP,VariantType.SNV)
+                .collect(Collectors.toList()).subList(0, 1);
+        Set<Integer> pos = sublist.stream().map(v -> v.getStart()).collect(Collectors.toSet());
+        Variant conflict = copyAsReference(sublist.get(0));
+        conflict.setStart(conflict.getStart()-10);
+        conflict.setEnd(conflict.getEnd() + 1);
+        
+        sublist.add(conflict);
+        sublist.forEach(v -> {v.getStudies().get(0).setSamplesPosition(map);});
+        
+        List<Variant> refList = sublist.stream().map(v -> copyAsReference(v)).collect(Collectors.toList());
+        refList.forEach(v -> {v.getStudies().get(0).setSamplesPosition(map2);});
+        
+        sublist.addAll(refList);
+
+        Map<ByteArray, VariantTableStudyRow> res = tm.createNewVar(ctx, sublist,pos);
+        assertEquals(0, res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.OTHER).size());
+        assertEquals(0,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HOM_VAR).size());
+        assertEquals(1,res.values().stream().findFirst().get().getSampleIds(VariantTableStudyRow.HET_REF).size());
+        assertEquals(1,res.values().stream().findFirst().get().getHomRefCount().intValue());
         
     }
     

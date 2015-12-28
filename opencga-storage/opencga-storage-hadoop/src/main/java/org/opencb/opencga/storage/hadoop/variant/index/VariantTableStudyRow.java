@@ -305,5 +305,16 @@ public class VariantTableStudyRow {
 //        }
 //        return map;
 //    }
+    
+    public String toSummaryString() {
+        return String.format(
+                "Submit %s: hr: %s; 0/1: %s; 1/1: %s; ?: %s",
+                getPos(),
+                getHomRefCount(), 
+                Arrays.toString(getSampleIds("0/1").toArray()), 
+                Arrays.toString(getSampleIds("1/1").toArray()), 
+                Arrays.toString(getSampleIds("?").toArray())
+                );
+    }
 
 }
