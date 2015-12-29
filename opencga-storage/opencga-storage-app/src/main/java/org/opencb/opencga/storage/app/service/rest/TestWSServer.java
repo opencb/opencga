@@ -33,7 +33,8 @@ import java.io.IOException;
 @Path("/test")
 public class TestWSServer extends StorageWSServer {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException {
         super(version, uriInfo, httpServletRequest);
         System.out.println("Build TestServlet");
     }

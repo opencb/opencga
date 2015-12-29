@@ -28,14 +28,12 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
-import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.io.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,12 +44,13 @@ import java.util.List;
  */
 public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String, String> {
 
-    final VariantFactory factory;
-    final ObjectWriter objectWriter;
+    private final VariantFactory factory;
+    private final ObjectWriter objectWriter;
     private final VariantSource source;
     private final ObjectMapper jsonObjectMapper;
     private final Path outputFileJsonFile;
     protected static Logger logger = LoggerFactory.getLogger(VariantJsonTransformTask.class);
+    @Deprecated
     private boolean includeSrc;
     private final VariantGlobalStatsCalculator variantStatsTask;
 
@@ -126,7 +125,7 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
                     String e = variant.toJson();
                     outputBatch.add(e);
                     outputBatch.add("\n");
-                }  catch (Exception e) {
+                } catch (Exception e) {
                     logger.error("Error parsing line: {}", line);
                     throw e;
                 }
@@ -140,4 +139,5 @@ public class VariantJsonTransformTask implements ParallelTaskRunner.Task<String,
         batch.addAll(outputBatch);
         return batch;
     }
+
 }

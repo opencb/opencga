@@ -58,10 +58,11 @@ public class StorageConfiguration {
         this.server = new QueryServerConfiguration();
     }
 
-    /**
+    /*
      * This method attempts to find and load the configuration from installation directory,
-     * if not exists then loads JAR storage-configuration.yml
-     * @throws IOException
+     * if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
      */
     @Deprecated
     public static StorageConfiguration load() throws IOException {
@@ -101,18 +102,6 @@ public class StorageConfiguration {
                 break;
         }
 
-        if(storageConfiguration != null) {
-//            if (storageConfiguration.getDefaultStorageEngineId() != null) {
-//                this.defaultStorageEngineId = storageConfiguration.getDefaultStorageEngineId();
-//            }
-//            if (storageConfiguration.get) {
-//                this.include = sto
-//                  for(conf.d) ...
-//            }
-//            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getStorageEngine()) {
-//                this.storageEngines.add(storageEngineConfiguration);
-//            }
-        }
         return storageConfiguration;
     }
 
@@ -134,7 +123,7 @@ public class StorageConfiguration {
             }
         }
 
-        if(storageEngineConfiguration == null && storageEngines.size() > 0) {
+        if (storageEngineConfiguration == null && storageEngines.size() > 0) {
             storageEngineConfiguration = storageEngines.get(0);
         }
 
@@ -161,22 +150,23 @@ public class StorageConfiguration {
                 break;
         }
 
-        if(storageEngineConfiguration != null) {
+        if (storageEngineConfiguration != null) {
             this.storageEngines.add(storageEngineConfiguration);
         }
     }
 
     @Override
     public String toString() {
-        return "StorageConfiguration{" +
-                "defaultStorageEngineId='" + defaultStorageEngineId + '\'' +
-                ", logLevel='" + logLevel + '\'' +
-                ", logFile='" + logFile + '\'' +
-                ", studyMetadataManager='" + studyMetadataManager + '\'' +
-                ", cellbase=" + cellbase +
-                ", server=" + server +
-                ", storageEngines=" + storageEngines +
-                '}';
+        final StringBuilder sb = new StringBuilder("StorageConfiguration{");
+        sb.append("defaultStorageEngineId='").append(defaultStorageEngineId).append('\'');
+        sb.append(", logLevel='").append(logLevel).append('\'');
+        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", studyMetadataManager='").append(studyMetadataManager).append('\'');
+        sb.append(", cellbase=").append(cellbase);
+        sb.append(", server=").append(server);
+        sb.append(", storageEngines=").append(storageEngines);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getDefaultStorageEngineId() {

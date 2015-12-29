@@ -33,12 +33,12 @@ import java.util.Properties;
 public class OpenCGAStorageServiceMain {
 
 
-    public static Properties properties;
+    private static Properties properties;
     private static String opencgaHome;
 
     private static Logger logger = LoggerFactory.getLogger(OpenCGAStorageServiceMain.class);
 
-    public static void main(String args[]) throws IOException {
+    public static void main(String[] args) throws IOException {
         OptionParser optionParser = new OptionParser();
 
         String command = optionParser.parse(args);
@@ -64,7 +64,7 @@ public class OpenCGAStorageServiceMain {
         }
         Config.setOpenCGAHome(opencgaHome);
         File configFile;
-        if(opts.conf.isEmpty()) {
+        if (opts.conf.isEmpty()) {
             configFile = Paths.get(opencgaHome, "conf", "storage-service.properties").toFile();
         } else {
             configFile = Paths.get(opts.conf).toFile();

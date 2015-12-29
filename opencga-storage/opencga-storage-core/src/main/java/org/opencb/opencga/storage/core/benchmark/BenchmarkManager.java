@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.benchmark;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 

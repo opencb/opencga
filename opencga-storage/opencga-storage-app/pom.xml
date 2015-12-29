@@ -195,14 +195,14 @@
             </properties>
         </profile>
         <profile>
-            <id>STORAGE-HBASE1</id>
+            <id>STORAGE-HADOOP</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <build>
                 <resources>
                     <resource>
-                        <directory>../opencga-storage-hbase/src/main/resources</directory>
+                        <directory>../opencga-storage-hadoop/src/main/resources</directory>
                         <filtering>true</filtering>
                         <targetPath>${basedir}/build/conf</targetPath>
                     </resource>
@@ -211,7 +211,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>

@@ -2,9 +2,9 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -46,7 +46,8 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
     public static void beforeClass() throws IOException {
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+                StandardCopyOption.REPLACE_EXISTING);
         inputUri = inputPath.toUri();
         tagMap.load(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(MAPPING_FILE));
     }
@@ -78,7 +79,8 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
 
 
         //Calculate stats
-        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), null, Collections.emptyMap(), studyConfiguration, options);
+        URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("aggregated.stats"), null, Collections.emptyMap(), studyConfiguration,
+                options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
 
@@ -97,7 +99,7 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
 
                     assertNotEquals("Stats seem with no valid values, for instance (chr=" + variant.getChromosome()
                                     + ", start=" + variant.getStart() + ", ref=" + variant.getReference() + ", alt="
-                                    + variant.getAlternate() +  "), gtc=" + cohortStats.get(entry.getKey()).getGenotypesCount().toString(),
+                                    + variant.getAlternate() + "), gtc=" + cohortStats.get(entry.getKey()).getGenotypesCount().toString(),
                             0,
                             cohortStats.get(entry.getKey()).getGenotypesCount().size());
                 }

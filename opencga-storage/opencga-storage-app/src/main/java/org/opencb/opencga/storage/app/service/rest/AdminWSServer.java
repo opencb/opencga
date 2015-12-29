@@ -13,14 +13,15 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 /**
- * Created on 03/09/15
+ * Created on 03/09/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Path("/admin")
 public class AdminWSServer extends StorageWSServer {
 
-    public AdminWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public AdminWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException {
         super(version, uriInfo, httpServletRequest);
         System.out.println("Build AdminWSServer");
     }

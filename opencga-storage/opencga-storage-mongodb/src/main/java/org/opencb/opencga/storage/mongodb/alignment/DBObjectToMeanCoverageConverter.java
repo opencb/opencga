@@ -24,18 +24,18 @@ import org.opencb.datastore.core.ComplexTypeConverter;
 
 /**
  * Created by Jacobo Coll on 26/08/14.
- *
  */
 public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<MeanCoverage, DBObject> {
 
     // <size>_<chromosome>_<chunk_number>
 
-    public DBObject getIdObject(MeanCoverage meanCoverage){
+    public DBObject getIdObject(MeanCoverage meanCoverage) {
         return new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, getIdField(meanCoverage));
     }
 
-    public String getIdField(MeanCoverage meanCoverage){
-        return String.format("%s_%d_%s", meanCoverage.getRegion().getChromosome(), meanCoverage.getRegion().getStart() / meanCoverage.getSize(), meanCoverage.getName().toLowerCase());
+    public String getIdField(MeanCoverage meanCoverage) {
+        return String.format("%s_%d_%s", meanCoverage.getRegion().getChromosome(), meanCoverage.getRegion().getStart() / meanCoverage
+                .getSize(), meanCoverage.getName().toLowerCase());
     }
 
     @Override
@@ -44,21 +44,23 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
 
         float averageFloat;
         Object average;
-        if(dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
-            average = ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter.AVERAGE_FIELD);
-            //coverage = ((Double) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get(CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
-        } else if(dbObject.containsField(CoverageMongoDBWriter.AVERAGE_FIELD)){
+        if (dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
+            average = ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter
+                    .AVERAGE_FIELD);
+            //coverage = ((Double) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get
+            // (CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
+        } else if (dbObject.containsField(CoverageMongoDBWriter.AVERAGE_FIELD)) {
             average = dbObject.get(CoverageMongoDBWriter.AVERAGE_FIELD);
             //coverage = ((Double) dbObject.get(CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
         } else {
             //TODO: Show a error message
             return null;
         }
-        if(average instanceof Float){
+        if (average instanceof Float) {
             averageFloat = (Float) average;
-        } else if(average instanceof Double) {
+        } else if (average instanceof Double) {
             averageFloat = ((Double) average).floatValue();
-        } else if(average == null) {
+        } else if (average == null) {
             return null;
         } else {
             averageFloat = Float.parseFloat(average.toString());

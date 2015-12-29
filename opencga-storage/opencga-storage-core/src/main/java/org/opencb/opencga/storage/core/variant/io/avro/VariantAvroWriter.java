@@ -13,11 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Created on 01/10/15
+ * Created on 01/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -82,4 +81,5 @@ public class VariantAvroWriter implements DataWriter<Variant> {
         }
         return true;
     }
+
 }

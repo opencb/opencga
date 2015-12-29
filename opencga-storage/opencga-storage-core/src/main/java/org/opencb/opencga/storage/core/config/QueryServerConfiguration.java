@@ -36,10 +36,11 @@ public class QueryServerConfiguration {
 
     @Override
     public String toString() {
-        return "QueryServerConfiguration{" +
-                "port=" + port +
-                ", authorizedHosts=" + authorizedHosts +
-                '}';
+        final StringBuilder sb = new StringBuilder("QueryServerConfiguration{");
+        sb.append("port=").append(port);
+        sb.append(", authorizedHosts=").append(authorizedHosts);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getPort() {

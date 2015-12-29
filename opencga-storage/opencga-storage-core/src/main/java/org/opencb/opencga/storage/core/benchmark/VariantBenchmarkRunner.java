@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -39,18 +38,21 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     private String queryParams;
     private BenchmarkStats benchmarkStats;
 
-    public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
+    public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException,
+            InstantiationException, StorageManagerException {
         this(storageConfiguration.getDefaultStorageEngineId(), storageConfiguration);
     }
 
-    public VariantBenchmarkRunner(String storageEngine, StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
+    public VariantBenchmarkRunner(String storageEngine, StorageConfiguration storageConfiguration)
+            throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
         this.storageEngine = storageEngine;
         this.storageConfiguration = storageConfiguration;
         logger = LoggerFactory.getLogger(this.getClass());
         init(storageEngine);
     }
 
-    private void init(String storageEngine) throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
+    private void init(String storageEngine)
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         StorageManagerFactory storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
         variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
@@ -150,6 +152,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         benchmarkStats.printSummary();
         return benchmarkStats;
     }
+
     private <T> List<Future<T>> executeThreads(String test, Callable<T> task) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(10); // storageConfiguration.getBenchmark().getConcurrent()
         List<Future<T>> futureList = new ArrayList<>(10);
@@ -276,3 +279,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //    }
 
 }
+
+
+

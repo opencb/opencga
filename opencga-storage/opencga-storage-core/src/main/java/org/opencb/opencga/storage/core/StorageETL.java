@@ -38,13 +38,6 @@ public class StorageETL {
     public StorageETL() {
     }
 
-    /**
-     * This method extracts the data from the data source. This data source can be a database or a remote
-     * file system. URI objects are used to allow all possibilities.
-     *
-     * @param from Data source origin
-     * @param to   Final location of data
-     */
     public final URI extract(URI from, URI to, ObjectMap params) {
         return null;
     }
@@ -72,4 +65,5 @@ public class StorageETL {
     public final URI postLoad(URI input, URI output, ObjectMap params) throws IOException {
         return null;
     }
+
 }

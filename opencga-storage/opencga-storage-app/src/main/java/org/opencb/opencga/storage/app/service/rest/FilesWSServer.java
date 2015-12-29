@@ -34,13 +34,15 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
 /**
  * Created by jacobo on 14/11/14.
  */
 @Path("/files")
 public class FilesWSServer extends StorageWSServer {
 
-    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException {
+    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException {
         super(version, uriInfo, httpServletRequest);
         params = uriInfo.getQueryParameters();
     }
@@ -48,16 +50,14 @@ public class FilesWSServer extends StorageWSServer {
     @GET
     @Path("/{fileId}/info")
     @Produces("application/json")
-    public Response info(@PathParam(value = "fileId") @DefaultValue("") String fileId
-    ) {
+    public Response info(@PathParam(value = "fileId") @DefaultValue("") String fileId) {
         return createErrorResponse("Unimplemented!");
     }
 
     @GET
     @Path("/{fileId}/index")
     @Produces("application/json")
-    public Response index(@PathParam(value = "fileId") @DefaultValue("") String fileId
-    ) {
+    public Response index(@PathParam(value = "fileId") @DefaultValue("") String fileId) {
         return createErrorResponse("Unimplemented!");
     }
 
@@ -71,18 +71,18 @@ public class FilesWSServer extends StorageWSServer {
                           @QueryParam("region") String region,
 
                           @QueryParam("path") @DefaultValue("") String path,
-                          @QueryParam("view_as_pairs") @DefaultValue("false") boolean view_as_pairs,
-                          @QueryParam("include_coverage") @DefaultValue("true") boolean include_coverage,
-                          @QueryParam("process_differences") @DefaultValue("true") boolean process_differences,
+                          @QueryParam("view_as_pairs") @DefaultValue("false") boolean viewAsPairs,
+                          @QueryParam("include_coverage") @DefaultValue("true") boolean includeCoverage,
+                          @QueryParam("process_differences") @DefaultValue("true") boolean processDifferences,
                           @QueryParam("histogram") @DefaultValue("false") boolean histogram,
-                          @QueryParam("interval") @DefaultValue("2000") int interval
-    ) {
+                          @QueryParam("interval") @DefaultValue("2000") int interval) {
 
         try {
             switch (bioformat) {
                 case "vcf":
                     queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
-                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval, queryOptions));
+                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
+                            queryOptions));
                 case "bam":
                     AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
                     ObjectMap params = new ObjectMap();
@@ -90,13 +90,14 @@ public class FilesWSServer extends StorageWSServer {
 
                     QueryOptions options = new QueryOptions();
                     if (path != null && !path.isEmpty()) {
-                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR", "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
-                        options.put(AlignmentDBAdaptor.QO_BAM_PATH, Paths.get(rootDir, path.replace(":","/")).toString());
+                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR",
+                                "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
+                        options.put(AlignmentDBAdaptor.QO_BAM_PATH, Paths.get(rootDir, path.replace(":", "/")).toString());
                     }
                     options.put(AlignmentDBAdaptor.QO_FILE_ID, fileId);
-                    options.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
-                    options.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
-                    options.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, process_differences);
+                    options.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, viewAsPairs);
+                    options.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, includeCoverage);
+                    options.put(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, processDifferences);
                     options.put(AlignmentDBAdaptor.QO_INTERVAL_SIZE, interval);
                     options.put(AlignmentDBAdaptor.QO_HISTOGRAM, histogram);
 //                    options.put(AlignmentDBAdaptor.QO_COVERAGE_CHUNK_SIZE, chunkSize);

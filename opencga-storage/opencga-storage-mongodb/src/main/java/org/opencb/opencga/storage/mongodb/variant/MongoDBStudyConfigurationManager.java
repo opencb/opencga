@@ -32,9 +32,7 @@ import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -68,15 +66,17 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(null, studyName, timeStamp, options);
-    }
-    @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(studyId, null, timeStamp, options);
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+        return internalGetStudyConfiguration(null, studyName, timeStamp, options);
     }
 
-    private QueryResult<StudyConfiguration> _getStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions options) {
+    @Override
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return internalGetStudyConfiguration(studyId, null, timeStamp, options);
+    }
+
+    private QueryResult<StudyConfiguration> internalGetStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions
+            options) {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration;
 
@@ -103,12 +103,13 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         if (studyConfiguration == null) {
             return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 0, 0, "", "", Collections.emptyList());
         } else {
-            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+            return new QueryResult<>(studyName, ((int) (System.currentTimeMillis() - start)), 1, 1, "", "",
+                    Collections.singletonList(studyConfiguration));
         }
     }
 
     @Override
-    public QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 

@@ -18,25 +18,21 @@ package org.opencb.opencga.storage.core.config;
 
 import org.opencb.datastore.core.ObjectMap;
 
-import java.util.Map;
-
 /**
  * Created by imedina on 09/05/15.
  */
 public class StorageEtlConfiguration {
 
     private String manager;
-    /**
-     * options parameter defines database-specific parameters
-     */
-//    private Map<String, String> options;
-    private ObjectMap options;
 
+    /**
+     * options parameter defines database-specific parameters.
+     */
+    private ObjectMap options;
     private DatabaseCredentials database;
 
 
     public StorageEtlConfiguration() {
-
     }
 
 //    public StorageEtlConfiguration(String manager, Map<String, String> options, DatabaseCredentials database) {
@@ -51,16 +47,15 @@ public class StorageEtlConfiguration {
         this.database = database;
     }
 
-
     @Override
     public String toString() {
-        return "StorageEtlConfiguration{" +
-                "manager='" + manager + '\'' +
-                ", options=" + options +
-                ", database=" + database +
-                '}';
+        final StringBuilder sb = new StringBuilder("StorageEtlConfiguration{");
+        sb.append("manager='").append(manager).append('\'');
+        sb.append(", options=").append(options);
+        sb.append(", database=").append(database);
+        sb.append('}');
+        return sb.toString();
     }
-
 
     public String getManager() {
         return manager;
@@ -85,4 +80,5 @@ public class StorageEtlConfiguration {
     public void setDatabase(DatabaseCredentials database) {
         this.database = database;
     }
+
 }

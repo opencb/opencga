@@ -35,19 +35,19 @@ import java.util.logging.Logger;
  */
 public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverter<StudyEntry, DBObject> {
 
-    public final static String FILEID_FIELD = "fid";
-    public final static String STUDYID_FIELD = "sid";
-    public final static String ALTERNATES_FIELD = "alts";
-    public final static String ATTRIBUTES_FIELD = "attrs";
-    //    public final static String FORMAT_FIELD = "fm";
-    public final static String GENOTYPES_FIELD = "gt";
+    public static final String FILEID_FIELD = "fid";
+    public static final String STUDYID_FIELD = "sid";
+    public static final String ALTERNATES_FIELD = "alts";
+    public static final String ATTRIBUTES_FIELD = "attrs";
+    //    public static final String FORMAT_FIELD = "fm";
+    public static final String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
     public static final String ORI_FIELD = "_ori";
 
     private boolean includeSrc;
     private Set<Integer> returnedFiles;
 
-//    private Integer fileId;
+    //    private Integer fileId;
     private DBObjectToSamplesConverter samplesConverter;
     private StudyConfigurationManager studyConfigurationManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
@@ -73,8 +73,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
      * @param includeSrc       If true, will include and gzip the "src" attribute in the DBObject
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DBObjectToStudyVariantEntryConverter(boolean includeSrc,
-                                                DBObjectToSamplesConverter samplesConverter) {
+    public DBObjectToStudyVariantEntryConverter(boolean includeSrc, DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.samplesConverter = samplesConverter;
     }
@@ -91,7 +90,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
     public DBObjectToStudyVariantEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
                                                 DBObjectToSamplesConverter samplesConverter) {
         this(includeSrc);
-        this.returnedFiles = (returnedFiles != null)? new HashSet<>(returnedFiles) : null;
+        this.returnedFiles = (returnedFiles != null) ? new HashSet<>(returnedFiles) : null;
         this.samplesConverter = samplesConverter;
     }
 
@@ -146,14 +145,14 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
                                 }
                             }
                         } else {
-                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."), entry.getValue().toString());
+                            attributes.put(entry.getKey().replace(DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS, "."),
+                                    entry.getValue().toString());
                         }
                     }
                 }
                 if (fileObject.containsField(ORI_FIELD)) {
-                    DBObject _ori = (DBObject) fileObject.get(ORI_FIELD);
-                    String ori = _ori.get("s") + ":" + _ori.get("i");
-                    fileEntry.setCall(ori);
+                    DBObject ori = (DBObject) fileObject.get(ORI_FIELD);
+                    fileEntry.setCall(ori.get("s") + ":" + ori.get("i"));
                 } else {
                     fileEntry.setCall("");
                 }
@@ -248,7 +247,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
                         } catch (NumberFormatException notALong) {
                             try {
                                 value = Double.parseDouble(stringValue);
-                            } catch (NumberFormatException NotADouble) {
+                            } catch (NumberFormatException notADouble) {
                                 // leave it as a String
                             }
                         }
@@ -268,10 +267,10 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         }
         String call = object.getFile(Integer.toString(fileId)).getCall();
         if (call != null && !call.isEmpty()) {
-                int indexOf = call.lastIndexOf(":");
-                fileObject.append(ORI_FIELD,
-                        new BasicDBObject("s", call.substring(0, indexOf))
-                                .append("i", Integer.parseInt(call.substring(indexOf + 1))));
+            int indexOf = call.lastIndexOf(":");
+            fileObject.append(ORI_FIELD,
+                    new BasicDBObject("s", call.substring(0, indexOf))
+                            .append("i", Integer.parseInt(call.substring(indexOf + 1))));
         }
 
         int studyId = Integer.parseInt(object.getStudyId());

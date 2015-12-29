@@ -21,7 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,8 +40,10 @@ public class StringDataReader implements DataReader<String> {
 
     protected BufferedReader reader;
     protected final Path path;
+    protected long readLines = 0L;
+
     protected static Logger logger = LoggerFactory.getLogger(StringDataReader.class);
-    protected long readLines = 0l;
+
     public StringDataReader(Path path) {
         this.path = path;
     }
@@ -88,7 +93,7 @@ public class StringDataReader implements DataReader<String> {
     @Override
     public List<String> read() {
         try {
-            if ( ++readLines % 1000 == 0) {
+            if (++readLines % 1000 == 0) {
                 logger.info("read lines = " + readLines);
             }
             return Collections.singletonList(reader.readLine());
@@ -108,7 +113,7 @@ public class StringDataReader implements DataReader<String> {
                     return batch;
                 }
                 batch.add(line);
-                if ( ++readLines % 1000 == 0) {
+                if (++readLines % 1000 == 0) {
                     logger.info("read lines = " + readLines);
                 }
             }

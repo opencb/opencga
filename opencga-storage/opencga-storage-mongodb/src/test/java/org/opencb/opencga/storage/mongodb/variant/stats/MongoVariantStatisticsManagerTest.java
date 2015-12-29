@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.stats;
 
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.MongoVariantStorageManagerTestUtils;
 
 /**
