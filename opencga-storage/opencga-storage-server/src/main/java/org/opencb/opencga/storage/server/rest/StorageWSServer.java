@@ -33,6 +33,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.*;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
@@ -86,8 +87,11 @@ public class StorageWSServer {
     @QueryParam("version")
     protected String version;
 
+//    @Context
+//    private ServletContext context;
+
     public StorageWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
-            httpServletRequest) throws IOException {
+            httpServletRequest, @Context ServletContext context) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
@@ -95,6 +99,10 @@ public class StorageWSServer {
 //        logger.debug(uriInfo.getRequestUri().toString());
         this.queryOptions = new QueryOptions(params, true);
         this.sessionIp = httpServletRequest.getRemoteAddr();
+
+        System.out.println(">>>>>>>>>>>>>>>>>>>" + context.getInitParameter("sessionManager"));
+        System.out.println(">>>>>>>>>>>>>>>>>>>" + context.getServletContextName());
+        System.out.println(">>>>>>>>>>>>>>>>>>>" + context.getContext("opencga").getInitParameter("sessionManager"));
     }
 
 

@@ -50,6 +50,11 @@
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-server</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

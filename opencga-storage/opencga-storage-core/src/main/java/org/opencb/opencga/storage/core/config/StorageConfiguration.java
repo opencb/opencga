@@ -105,9 +105,9 @@ public class StorageConfiguration {
         return storageConfiguration;
     }
 
-    public void serialize(OutputStream configurationOututStream) throws IOException {
+    public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
     public StorageEngineConfiguration getStorageEngine() {

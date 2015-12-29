@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -40,9 +41,9 @@ import java.util.Arrays;
 @Path("/files")
 public class FilesWSServer extends StorageWSServer {
 
-    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException {
-        super(version, uriInfo, httpServletRequest);
+    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                         @Context ServletContext context) throws IOException {
+        super(version, uriInfo, httpServletRequest, context);
         params = uriInfo.getQueryParameters();
     }
 

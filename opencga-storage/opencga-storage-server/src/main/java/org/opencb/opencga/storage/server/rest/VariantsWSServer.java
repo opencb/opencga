@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -45,9 +46,9 @@ public class VariantsWSServer extends StorageWSServer {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
-            httpServletRequest) throws IOException {
-        super(version, uriInfo, httpServletRequest);
+    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                            @Context ServletContext context) throws IOException {
+        super(version, uriInfo, httpServletRequest, context);
     }
 
     @GET
