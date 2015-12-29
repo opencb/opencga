@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;

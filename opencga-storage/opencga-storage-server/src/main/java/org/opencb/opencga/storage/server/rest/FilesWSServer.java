@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -90,8 +89,9 @@ public class FilesWSServer extends StorageWSServer {
 
                     QueryOptions options = new QueryOptions();
                     if (path != null && !path.isEmpty()) {
-                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR",
-                                "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
+//                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR",
+//                                "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
+                        String rootDir = "";
                         options.put(AlignmentDBAdaptor.QO_BAM_PATH, Paths.get(rootDir, path.replace(":", "/")).toString());
                     }
                     options.put(AlignmentDBAdaptor.QO_FILE_ID, fileId);
