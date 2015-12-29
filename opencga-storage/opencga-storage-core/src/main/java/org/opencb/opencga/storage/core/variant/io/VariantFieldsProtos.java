@@ -23,3021 +23,3390 @@ import com.google.protobuf.AbstractMessage;
 
 @Deprecated
 public final class VariantFieldsProtos {
-  private VariantFieldsProtos() {}
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
-  }
-  public interface VariantInfoOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
-
-    // repeated string info = 1;
-    java.util.List<String> getInfoList();
-    int getInfoCount();
-    String getInfo(int index);
-
-    // repeated string filters = 2;
-    java.util.List<String> getFiltersList();
-    int getFiltersCount();
-    String getFilters(int index);
-
-    // repeated string format = 3;
-    java.util.List<String> getFormatList();
-    int getFormatCount();
-    String getFormat(int index);
-
-    // optional string reference = 4;
-    boolean hasReference();
-    String getReference();
-
-    // repeated string alternate = 5;
-    java.util.List<String> getAlternateList();
-    int getAlternateCount();
-    String getAlternate(int index);
-
-    // optional string quality = 6;
-    boolean hasQuality();
-    String getQuality();
-  }
-  public static final class VariantInfo extends
-      com.google.protobuf.GeneratedMessage
-      implements VariantInfoOrBuilder {
-    // Use VariantInfo.newBuilder() to construct.
-    private VariantInfo(Builder builder) {
-      super(builder);
-    }
-    private VariantInfo(boolean noInit) {}
-
-    private static final VariantInfo defaultInstance;
-    public static VariantInfo getDefaultInstance() {
-      return defaultInstance;
+    private VariantFieldsProtos() {
     }
 
-    public VariantInfo getDefaultInstanceForType() {
-      return defaultInstance;
+    public static void registerAllExtensions(
+            com.google.protobuf.ExtensionRegistry registry) {
     }
 
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public interface VariantInfoOrBuilder
+            extends com.google.protobuf.MessageOrBuilder {
+
+        // repeated string info = 1;
+        java.util.List<String> getInfoList();
+
+        int getInfoCount();
+
+        String getInfo(int index);
+
+        // repeated string filters = 2;
+        java.util.List<String> getFiltersList();
+
+        int getFiltersCount();
+
+        String getFilters(int index);
+
+        // repeated string format = 3;
+        java.util.List<String> getFormatList();
+
+        int getFormatCount();
+
+        String getFormat(int index);
+
+        // optional string reference = 4;
+        boolean hasReference();
+
+        String getReference();
+
+        // repeated string alternate = 5;
+        java.util.List<String> getAlternateList();
+
+        int getAlternateCount();
+
+        String getAlternate(int index);
+
+        // optional string quality = 6;
+        boolean hasQuality();
+
+        String getQuality();
+    }
+
+    public static final class VariantInfo extends
+            com.google.protobuf.GeneratedMessage
+            implements VariantInfoOrBuilder {
+        // Use VariantInfo.newBuilder() to construct.
+        private VariantInfo(Builder builder) {
+            super(builder);
+        }
+
+        private VariantInfo(boolean noInit) {
+        }
+
+        private static final VariantInfo defaultInstance;
+
+        public static VariantInfo getDefaultInstance() {
+            return defaultInstance;
+        }
+
+        public VariantInfo getDefaultInstanceForType() {
+            return defaultInstance;
+        }
+
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
-    }
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
+        }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
-    }
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
+        }
 
-    private int bitField0_;
-    // repeated string info = 1;
-    public static final int INFO_FIELD_NUMBER = 1;
-    private com.google.protobuf.LazyStringList info_;
-    public java.util.List<String>
+        private int bitField0_;
+        // repeated string info = 1;
+        public static final int INFO_FIELD_NUMBER = 1;
+        private com.google.protobuf.LazyStringList info_;
+
+        public java.util.List<String>
         getInfoList() {
-      return info_;
-    }
-    public int getInfoCount() {
-      return info_.size();
-    }
-    public String getInfo(int index) {
-      return info_.get(index);
-    }
+            return info_;
+        }
 
-    // repeated string filters = 2;
-    public static final int FILTERS_FIELD_NUMBER = 2;
-    private com.google.protobuf.LazyStringList filters_;
-    public java.util.List<String>
+        public int getInfoCount() {
+            return info_.size();
+        }
+
+        public String getInfo(int index) {
+            return info_.get(index);
+        }
+
+        // repeated string filters = 2;
+        public static final int FILTERS_FIELD_NUMBER = 2;
+        private com.google.protobuf.LazyStringList filters_;
+
+        public java.util.List<String>
         getFiltersList() {
-      return filters_;
-    }
-    public int getFiltersCount() {
-      return filters_.size();
-    }
-    public String getFilters(int index) {
-      return filters_.get(index);
-    }
+            return filters_;
+        }
 
-    // repeated string format = 3;
-    public static final int FORMAT_FIELD_NUMBER = 3;
-    private com.google.protobuf.LazyStringList format_;
-    public java.util.List<String>
+        public int getFiltersCount() {
+            return filters_.size();
+        }
+
+        public String getFilters(int index) {
+            return filters_.get(index);
+        }
+
+        // repeated string format = 3;
+        public static final int FORMAT_FIELD_NUMBER = 3;
+        private com.google.protobuf.LazyStringList format_;
+
+        public java.util.List<String>
         getFormatList() {
-      return format_;
-    }
-    public int getFormatCount() {
-      return format_.size();
-    }
-    public String getFormat(int index) {
-      return format_.get(index);
-    }
-
-    // optional string reference = 4;
-    public static final int REFERENCE_FIELD_NUMBER = 4;
-    private java.lang.Object reference_;
-    public boolean hasReference() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public String getReference() {
-      java.lang.Object ref = reference_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          reference_ = s;
+            return format_;
         }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getReferenceBytes() {
-      java.lang.Object ref = reference_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        reference_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
 
-    // repeated string alternate = 5;
-    public static final int ALTERNATE_FIELD_NUMBER = 5;
-    private com.google.protobuf.LazyStringList alternate_;
-    public java.util.List<String>
+        public int getFormatCount() {
+            return format_.size();
+        }
+
+        public String getFormat(int index) {
+            return format_.get(index);
+        }
+
+        // optional string reference = 4;
+        public static final int REFERENCE_FIELD_NUMBER = 4;
+        private java.lang.Object reference_;
+
+        public boolean hasReference() {
+            return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+
+        public String getReference() {
+            java.lang.Object ref = reference_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    reference_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getReferenceBytes() {
+            java.lang.Object ref = reference_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                reference_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // repeated string alternate = 5;
+        public static final int ALTERNATE_FIELD_NUMBER = 5;
+        private com.google.protobuf.LazyStringList alternate_;
+
+        public java.util.List<String>
         getAlternateList() {
-      return alternate_;
-    }
-    public int getAlternateCount() {
-      return alternate_.size();
-    }
-    public String getAlternate(int index) {
-      return alternate_.get(index);
-    }
-
-    // optional string quality = 6;
-    public static final int QUALITY_FIELD_NUMBER = 6;
-    private java.lang.Object quality_;
-    public boolean hasQuality() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public String getQuality() {
-      java.lang.Object ref = quality_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          quality_ = s;
+            return alternate_;
         }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getQualityBytes() {
-      java.lang.Object ref = quality_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        quality_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
 
-    private void initFields() {
-      info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      reference_ = "";
-      alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      quality_ = "";
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      for (int i = 0; i < info_.size(); i++) {
-        output.writeBytes(1, info_.getByteString(i));
-      }
-      for (int i = 0; i < filters_.size(); i++) {
-        output.writeBytes(2, filters_.getByteString(i));
-      }
-      for (int i = 0; i < format_.size(); i++) {
-        output.writeBytes(3, format_.getByteString(i));
-      }
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(4, getReferenceBytes());
-      }
-      for (int i = 0; i < alternate_.size(); i++) {
-        output.writeBytes(5, alternate_.getByteString(i));
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(6, getQualityBytes());
-      }
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      {
-        int dataSize = 0;
-        for (int i = 0; i < info_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(info_.getByteString(i));
+        public int getAlternateCount() {
+            return alternate_.size();
         }
-        size += dataSize;
-        size += 1 * getInfoList().size();
-      }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < filters_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(filters_.getByteString(i));
-        }
-        size += dataSize;
-        size += 1 * getFiltersList().size();
-      }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < format_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(format_.getByteString(i));
-        }
-        size += dataSize;
-        size += 1 * getFormatList().size();
-      }
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(4, getReferenceBytes());
-      }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < alternate_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(alternate_.getByteString(i));
-        }
-        size += dataSize;
-        size += 1 * getAlternateList().size();
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, getQualityBytes());
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
 
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantInfo parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantInfo parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(VariantFieldsProtos.VariantInfo prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements VariantFieldsProtos.VariantInfoOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
-      }
-
-      // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantInfo.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        public String getAlternate(int index) {
+            return alternate_.get(index);
         }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
 
-      public Builder clear() {
-        super.clear();
-        info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        reference_ = "";
-        bitField0_ = (bitField0_ & ~0x00000008);
-        alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        quality_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
-        return this;
-      }
+        // optional string quality = 6;
+        public static final int QUALITY_FIELD_NUMBER = 6;
+        private java.lang.Object quality_;
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
+        public boolean hasQuality() {
+            return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
 
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return VariantFieldsProtos.VariantInfo.getDescriptor();
-      }
+        public String getQuality() {
+            java.lang.Object ref = quality_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    quality_ = s;
+                }
+                return s;
+            }
+        }
 
-      public VariantFieldsProtos.VariantInfo getDefaultInstanceForType() {
-        return VariantFieldsProtos.VariantInfo.getDefaultInstance();
-      }
+        private com.google.protobuf.ByteString getQualityBytes() {
+            java.lang.Object ref = quality_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                quality_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
 
-      public VariantFieldsProtos.VariantInfo build() {
-        VariantFieldsProtos.VariantInfo result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+        private void initFields() {
+            info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+            filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+            format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+            reference_ = "";
+            alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+            quality_ = "";
         }
-        return result;
-      }
 
-      private VariantFieldsProtos.VariantInfo buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        VariantFieldsProtos.VariantInfo result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
+        private byte memoizedIsInitialized = -1;
 
-      public VariantFieldsProtos.VariantInfo buildPartial() {
-        VariantFieldsProtos.VariantInfo result = new VariantFieldsProtos.VariantInfo(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          info_ = new com.google.protobuf.UnmodifiableLazyStringList(
-              info_);
-          bitField0_ = (bitField0_ & ~0x00000001);
-        }
-        result.info_ = info_;
-        if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          filters_ = new com.google.protobuf.UnmodifiableLazyStringList(
-              filters_);
-          bitField0_ = (bitField0_ & ~0x00000002);
-        }
-        result.filters_ = filters_;
-        if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          format_ = new com.google.protobuf.UnmodifiableLazyStringList(
-              format_);
-          bitField0_ = (bitField0_ & ~0x00000004);
-        }
-        result.format_ = format_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.reference_ = reference_;
-        if (((bitField0_ & 0x00000010) == 0x00000010)) {
-          alternate_ = new com.google.protobuf.UnmodifiableLazyStringList(
-              alternate_);
-          bitField0_ = (bitField0_ & ~0x00000010);
-        }
-        result.alternate_ = alternate_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.quality_ = quality_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
+        public final boolean isInitialized() {
+            byte isInitialized = memoizedIsInitialized;
+            if (isInitialized != -1) {
+                return isInitialized == 1;
+            }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof VariantFieldsProtos.VariantInfo) {
-          return mergeFrom((VariantFieldsProtos.VariantInfo)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
+            memoizedIsInitialized = 1;
+            return true;
         }
-      }
 
-      public Builder mergeFrom(VariantFieldsProtos.VariantInfo other) {
-        if (other == VariantFieldsProtos.VariantInfo.getDefaultInstance()) return this;
-        if (!other.info_.isEmpty()) {
-          if (info_.isEmpty()) {
-            info_ = other.info_;
-            bitField0_ = (bitField0_ & ~0x00000001);
-          } else {
-            ensureInfoIsMutable();
-            info_.addAll(other.info_);
-          }
-          onChanged();
+        public void writeTo(com.google.protobuf.CodedOutputStream output)
+                throws java.io.IOException {
+            getSerializedSize();
+            for (int i = 0; i < info_.size(); i++) {
+                output.writeBytes(1, info_.getByteString(i));
+            }
+            for (int i = 0; i < filters_.size(); i++) {
+                output.writeBytes(2, filters_.getByteString(i));
+            }
+            for (int i = 0; i < format_.size(); i++) {
+                output.writeBytes(3, format_.getByteString(i));
+            }
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                output.writeBytes(4, getReferenceBytes());
+            }
+            for (int i = 0; i < alternate_.size(); i++) {
+                output.writeBytes(5, alternate_.getByteString(i));
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                output.writeBytes(6, getQualityBytes());
+            }
+            getUnknownFields().writeTo(output);
         }
-        if (!other.filters_.isEmpty()) {
-          if (filters_.isEmpty()) {
-            filters_ = other.filters_;
-            bitField0_ = (bitField0_ & ~0x00000002);
-          } else {
-            ensureFiltersIsMutable();
-            filters_.addAll(other.filters_);
-          }
-          onChanged();
-        }
-        if (!other.format_.isEmpty()) {
-          if (format_.isEmpty()) {
-            format_ = other.format_;
-            bitField0_ = (bitField0_ & ~0x00000004);
-          } else {
-            ensureFormatIsMutable();
-            format_.addAll(other.format_);
-          }
-          onChanged();
-        }
-        if (other.hasReference()) {
-          setReference(other.getReference());
-        }
-        if (!other.alternate_.isEmpty()) {
-          if (alternate_.isEmpty()) {
-            alternate_ = other.alternate_;
-            bitField0_ = (bitField0_ & ~0x00000010);
-          } else {
-            ensureAlternateIsMutable();
-            alternate_.addAll(other.alternate_);
-          }
-          onChanged();
-        }
-        if (other.hasQuality()) {
-          setQuality(other.getQuality());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
 
-      public final boolean isInitialized() {
-        return true;
-      }
+        private int memoizedSerializedSize = -1;
 
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
+        public int getSerializedSize() {
+            int size = memoizedSerializedSize;
+            if (size != -1) {
+                return size;
+            }
+
+            size = 0;
+            {
+                int dataSize = 0;
+                for (int i = 0; i < info_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeBytesSizeNoTag(info_.getByteString(i));
+                }
+                size += dataSize;
+                size += 1 * getInfoList().size();
+            }
+            {
+                int dataSize = 0;
+                for (int i = 0; i < filters_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeBytesSizeNoTag(filters_.getByteString(i));
+                }
+                size += dataSize;
+                size += 1 * getFiltersList().size();
+            }
+            {
+                int dataSize = 0;
+                for (int i = 0; i < format_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeBytesSizeNoTag(format_.getByteString(i));
+                }
+                size += dataSize;
+                size += 1 * getFormatList().size();
+            }
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(4, getReferenceBytes());
+            }
+            {
+                int dataSize = 0;
+                for (int i = 0; i < alternate_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeBytesSizeNoTag(alternate_.getByteString(i));
+                }
+                size += dataSize;
+                size += 1 * getAlternateList().size();
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(6, getQualityBytes());
+            }
+            size += getUnknownFields().getSerializedSize();
+            memoizedSerializedSize = size;
+            return size;
+        }
+
+        private static final long serialVersionUID = 0L;
+
+        @java.lang.Override
+        protected java.lang.Object writeReplace()
+                throws java.io.ObjectStreamException {
+            return super.writeReplace();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                com.google.protobuf.ByteString data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                com.google.protobuf.ByteString data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(byte[] data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                byte[] data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseDelimitedFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseDelimitedFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                com.google.protobuf.CodedInputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantInfo parseFrom(
+                com.google.protobuf.CodedInputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static Builder newBuilder() {
+            return Builder.create();
+        }
+
+        public Builder newBuilderForType() {
+            return newBuilder();
+        }
+
+        public static Builder newBuilder(VariantFieldsProtos.VariantInfo prototype) {
+            return newBuilder().mergeFrom(prototype);
+        }
+
+        public Builder toBuilder() {
+            return newBuilder(this);
+        }
+
+        @java.lang.Override
+        protected Builder newBuilderForType(
+                com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            Builder builder = new Builder(parent);
+            return builder;
+        }
+
+        public static final class Builder extends
+                com.google.protobuf.GeneratedMessage.Builder<Builder>
+                implements VariantFieldsProtos.VariantInfoOrBuilder {
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
+            }
+
+            protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return VariantFieldsProtos
+                        .internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
+            }
+
+            // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantInfo.newBuilder()
+            private Builder() {
+                maybeForceBuilderInitialization();
+            }
+
+            private Builder(BuilderParent parent) {
+                super(parent);
+                maybeForceBuilderInitialization();
+            }
+
+            private void maybeForceBuilderInitialization() {
+                if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                }
+            }
+
+            private static Builder create() {
+                return new Builder();
+            }
+
+            public Builder clear() {
+                super.clear();
+                info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000001);
+                filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000002);
+                format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000004);
+                reference_ = "";
+                bitField0_ = (bitField0_ & ~0x00000008);
+                alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000010);
+                quality_ = "";
+                bitField0_ = (bitField0_ & ~0x00000020);
+                return this;
+            }
+
+            public Builder clone() {
+                return create().mergeFrom(buildPartial());
+            }
+
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return VariantFieldsProtos.VariantInfo.getDescriptor();
+            }
+
+            public VariantFieldsProtos.VariantInfo getDefaultInstanceForType() {
+                return VariantFieldsProtos.VariantInfo.getDefaultInstance();
+            }
+
+            public VariantFieldsProtos.VariantInfo build() {
+                VariantFieldsProtos.VariantInfo result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(result);
+                }
+                return result;
+            }
+
+            private VariantFieldsProtos.VariantInfo buildParsed()
+                    throws com.google.protobuf.InvalidProtocolBufferException {
+                VariantFieldsProtos.VariantInfo result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(
+                            result).asInvalidProtocolBufferException();
+                }
+                return result;
+            }
+
+            public VariantFieldsProtos.VariantInfo buildPartial() {
+                VariantFieldsProtos.VariantInfo result = new VariantFieldsProtos.VariantInfo(this);
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                    info_ = new com.google.protobuf.UnmodifiableLazyStringList(
+                            info_);
+                    bitField0_ = (bitField0_ & ~0x00000001);
+                }
+                result.info_ = info_;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                    filters_ = new com.google.protobuf.UnmodifiableLazyStringList(
+                            filters_);
+                    bitField0_ = (bitField0_ & ~0x00000002);
+                }
+                result.filters_ = filters_;
+                if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                    format_ = new com.google.protobuf.UnmodifiableLazyStringList(
+                            format_);
+                    bitField0_ = (bitField0_ & ~0x00000004);
+                }
+                result.format_ = format_;
+                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+                    to_bitField0_ |= 0x00000001;
+                }
+                result.reference_ = reference_;
+                if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                    alternate_ = new com.google.protobuf.UnmodifiableLazyStringList(
+                            alternate_);
+                    bitField0_ = (bitField0_ & ~0x00000010);
+                }
+                result.alternate_ = alternate_;
+                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+                    to_bitField0_ |= 0x00000002;
+                }
+                result.quality_ = quality_;
+                result.bitField0_ = to_bitField0_;
+                onBuilt();
+                return result;
+            }
+
+            public Builder mergeFrom(com.google.protobuf.Message other) {
+                if (other instanceof VariantFieldsProtos.VariantInfo) {
+                    return mergeFrom((VariantFieldsProtos.VariantInfo) other);
+                } else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
+
+            public Builder mergeFrom(VariantFieldsProtos.VariantInfo other) {
+                if (other == VariantFieldsProtos.VariantInfo.getDefaultInstance()) {
+                    return this;
+                }
+                if (!other.info_.isEmpty()) {
+                    if (info_.isEmpty()) {
+                        info_ = other.info_;
+                        bitField0_ = (bitField0_ & ~0x00000001);
+                    } else {
+                        ensureInfoIsMutable();
+                        info_.addAll(other.info_);
+                    }
+                    onChanged();
+                }
+                if (!other.filters_.isEmpty()) {
+                    if (filters_.isEmpty()) {
+                        filters_ = other.filters_;
+                        bitField0_ = (bitField0_ & ~0x00000002);
+                    } else {
+                        ensureFiltersIsMutable();
+                        filters_.addAll(other.filters_);
+                    }
+                    onChanged();
+                }
+                if (!other.format_.isEmpty()) {
+                    if (format_.isEmpty()) {
+                        format_ = other.format_;
+                        bitField0_ = (bitField0_ & ~0x00000004);
+                    } else {
+                        ensureFormatIsMutable();
+                        format_.addAll(other.format_);
+                    }
+                    onChanged();
+                }
+                if (other.hasReference()) {
+                    setReference(other.getReference());
+                }
+                if (!other.alternate_.isEmpty()) {
+                    if (alternate_.isEmpty()) {
+                        alternate_ = other.alternate_;
+                        bitField0_ = (bitField0_ & ~0x00000010);
+                    } else {
+                        ensureAlternateIsMutable();
+                        alternate_.addAll(other.alternate_);
+                    }
+                    onChanged();
+                }
+                if (other.hasQuality()) {
+                    setQuality(other.getQuality());
+                }
+                this.mergeUnknownFields(other.getUnknownFields());
+                return this;
+            }
+
+            public final boolean isInitialized() {
+                return true;
+            }
+
+            public Builder mergeFrom(
+                    com.google.protobuf.CodedInputStream input,
+                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                        com.google.protobuf.UnknownFieldSet.newBuilder(
+                                this.getUnknownFields());
+                while (true) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            this.setUnknownFields(unknownFields.build());
+                            onChanged();
+                            return this;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                this.setUnknownFields(unknownFields.build());
+                                onChanged();
+                                return this;
+                            }
+                            break;
+                        }
+                        case 10: {
+                            ensureInfoIsMutable();
+                            info_.add(input.readBytes());
+                            break;
+                        }
+                        case 18: {
+                            ensureFiltersIsMutable();
+                            filters_.add(input.readBytes());
+                            break;
+                        }
+                        case 26: {
+                            ensureFormatIsMutable();
+                            format_.add(input.readBytes());
+                            break;
+                        }
+                        case 34: {
+                            bitField0_ |= 0x00000008;
+                            reference_ = input.readBytes();
+                            break;
+                        }
+                        case 42: {
+                            ensureAlternateIsMutable();
+                            alternate_.add(input.readBytes());
+                            break;
+                        }
+                        case 50: {
+                            bitField0_ |= 0x00000020;
+                            quality_ = input.readBytes();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private int bitField0_;
+
+            // repeated string info = 1;
+            private com.google.protobuf.LazyStringList info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+
+            private void ensureInfoIsMutable() {
+                if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+                    info_ = new com.google.protobuf.LazyStringArrayList(info_);
+                    bitField0_ |= 0x00000001;
+                }
+            }
+
+            public java.util.List<String>
+            getInfoList() {
+                return java.util.Collections.unmodifiableList(info_);
+            }
+
+            public int getInfoCount() {
+                return info_.size();
+            }
+
+            public String getInfo(int index) {
+                return info_.get(index);
+            }
+
+            public Builder setInfo(
+                    int index, String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureInfoIsMutable();
+                info_.set(index, value);
                 onChanged();
                 return this;
-              }
-              break;
             }
-            case 10: {
-              ensureInfoIsMutable();
-              info_.add(input.readBytes());
-              break;
-            }
-            case 18: {
-              ensureFiltersIsMutable();
-              filters_.add(input.readBytes());
-              break;
-            }
-            case 26: {
-              ensureFormatIsMutable();
-              format_.add(input.readBytes());
-              break;
-            }
-            case 34: {
-              bitField0_ |= 0x00000008;
-              reference_ = input.readBytes();
-              break;
-            }
-            case 42: {
-              ensureAlternateIsMutable();
-              alternate_.add(input.readBytes());
-              break;
-            }
-            case 50: {
-              bitField0_ |= 0x00000020;
-              quality_ = input.readBytes();
-              break;
-            }
-          }
-        }
-      }
 
-      private int bitField0_;
-
-      // repeated string info = 1;
-      private com.google.protobuf.LazyStringList info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureInfoIsMutable() {
-        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-          info_ = new com.google.protobuf.LazyStringArrayList(info_);
-          bitField0_ |= 0x00000001;
-         }
-      }
-      public java.util.List<String>
-          getInfoList() {
-        return java.util.Collections.unmodifiableList(info_);
-      }
-      public int getInfoCount() {
-        return info_.size();
-      }
-      public String getInfo(int index) {
-        return info_.get(index);
-      }
-      public Builder setInfo(
-          int index, String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureInfoIsMutable();
-        info_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addInfo(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureInfoIsMutable();
-        info_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllInfo(
-          java.lang.Iterable<String> values) {
-        ensureInfoIsMutable();
-        super.addAll(values, info_);
-        onChanged();
-        return this;
-      }
-      public Builder clearInfo() {
-        info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        onChanged();
-        return this;
-      }
-      void addInfo(com.google.protobuf.ByteString value) {
-        ensureInfoIsMutable();
-        info_.add(value);
-        onChanged();
-      }
-
-      // repeated string filters = 2;
-      private com.google.protobuf.LazyStringList filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureFiltersIsMutable() {
-        if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-          filters_ = new com.google.protobuf.LazyStringArrayList(filters_);
-          bitField0_ |= 0x00000002;
-         }
-      }
-      public java.util.List<String>
-          getFiltersList() {
-        return java.util.Collections.unmodifiableList(filters_);
-      }
-      public int getFiltersCount() {
-        return filters_.size();
-      }
-      public String getFilters(int index) {
-        return filters_.get(index);
-      }
-      public Builder setFilters(
-          int index, String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureFiltersIsMutable();
-        filters_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addFilters(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureFiltersIsMutable();
-        filters_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllFilters(
-          java.lang.Iterable<String> values) {
-        ensureFiltersIsMutable();
-        super.addAll(values, filters_);
-        onChanged();
-        return this;
-      }
-      public Builder clearFilters() {
-        filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        onChanged();
-        return this;
-      }
-      void addFilters(com.google.protobuf.ByteString value) {
-        ensureFiltersIsMutable();
-        filters_.add(value);
-        onChanged();
-      }
-
-      // repeated string format = 3;
-      private com.google.protobuf.LazyStringList format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureFormatIsMutable() {
-        if (!((bitField0_ & 0x00000004) == 0x00000004)) {
-          format_ = new com.google.protobuf.LazyStringArrayList(format_);
-          bitField0_ |= 0x00000004;
-         }
-      }
-      public java.util.List<String>
-          getFormatList() {
-        return java.util.Collections.unmodifiableList(format_);
-      }
-      public int getFormatCount() {
-        return format_.size();
-      }
-      public String getFormat(int index) {
-        return format_.get(index);
-      }
-      public Builder setFormat(
-          int index, String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureFormatIsMutable();
-        format_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addFormat(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureFormatIsMutable();
-        format_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllFormat(
-          java.lang.Iterable<String> values) {
-        ensureFormatIsMutable();
-        super.addAll(values, format_);
-        onChanged();
-        return this;
-      }
-      public Builder clearFormat() {
-        format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        onChanged();
-        return this;
-      }
-      void addFormat(com.google.protobuf.ByteString value) {
-        ensureFormatIsMutable();
-        format_.add(value);
-        onChanged();
-      }
-
-      // optional string reference = 4;
-      private java.lang.Object reference_ = "";
-      public boolean hasReference() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      public String getReference() {
-        java.lang.Object ref = reference_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          reference_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setReference(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
-        reference_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearReference() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        reference_ = getDefaultInstance().getReference();
-        onChanged();
-        return this;
-      }
-      void setReference(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000008;
-        reference_ = value;
-        onChanged();
-      }
-
-      // repeated string alternate = 5;
-      private com.google.protobuf.LazyStringList alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-      private void ensureAlternateIsMutable() {
-        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
-          alternate_ = new com.google.protobuf.LazyStringArrayList(alternate_);
-          bitField0_ |= 0x00000010;
-         }
-      }
-      public java.util.List<String>
-          getAlternateList() {
-        return java.util.Collections.unmodifiableList(alternate_);
-      }
-      public int getAlternateCount() {
-        return alternate_.size();
-      }
-      public String getAlternate(int index) {
-        return alternate_.get(index);
-      }
-      public Builder setAlternate(
-          int index, String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureAlternateIsMutable();
-        alternate_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addAlternate(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureAlternateIsMutable();
-        alternate_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllAlternate(
-          java.lang.Iterable<String> values) {
-        ensureAlternateIsMutable();
-        super.addAll(values, alternate_);
-        onChanged();
-        return this;
-      }
-      public Builder clearAlternate() {
-        alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        onChanged();
-        return this;
-      }
-      void addAlternate(com.google.protobuf.ByteString value) {
-        ensureAlternateIsMutable();
-        alternate_.add(value);
-        onChanged();
-      }
-
-      // optional string quality = 6;
-      private java.lang.Object quality_ = "";
-      public boolean hasQuality() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      public String getQuality() {
-        java.lang.Object ref = quality_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          quality_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setQuality(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        quality_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearQuality() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        quality_ = getDefaultInstance().getQuality();
-        onChanged();
-        return this;
-      }
-      void setQuality(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000020;
-        quality_ = value;
-        onChanged();
-      }
-
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantInfo)
-    }
-
-    static {
-      defaultInstance = new VariantInfo(true);
-      defaultInstance.initFields();
-    }
-
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantInfo)
-  }
-
-  public interface VariantSampleOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
-
-    // required string sample = 1;
-    boolean hasSample();
-    String getSample();
-  }
-  public static final class VariantSample extends
-      com.google.protobuf.GeneratedMessage
-      implements VariantSampleOrBuilder {
-    // Use VariantSample.newBuilder() to construct.
-    private VariantSample(Builder builder) {
-      super(builder);
-    }
-    private VariantSample(boolean noInit) {}
-
-    private static final VariantSample defaultInstance;
-    public static VariantSample getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public VariantSample getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
-    }
-
-    private int bitField0_;
-    // required string sample = 1;
-    public static final int SAMPLE_FIELD_NUMBER = 1;
-    private java.lang.Object sample_;
-    public boolean hasSample() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public String getSample() {
-      java.lang.Object ref = sample_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          sample_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getSampleBytes() {
-      java.lang.Object ref = sample_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        sample_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
-    private void initFields() {
-      sample_ = "";
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-
-      if (!hasSample()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getSampleBytes());
-      }
-      getUnknownFields().writeTo(output);
-    }
-
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getSampleBytes());
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantSample parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantSample parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(VariantFieldsProtos.VariantSample prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements VariantFieldsProtos.VariantSampleOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
-      }
-
-      // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantSample.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-
-      public Builder clear() {
-        super.clear();
-        sample_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        return this;
-      }
-
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return VariantFieldsProtos.VariantSample.getDescriptor();
-      }
-
-      public VariantFieldsProtos.VariantSample getDefaultInstanceForType() {
-        return VariantFieldsProtos.VariantSample.getDefaultInstance();
-      }
-
-      public VariantFieldsProtos.VariantSample build() {
-        VariantFieldsProtos.VariantSample result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      private VariantFieldsProtos.VariantSample buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        VariantFieldsProtos.VariantSample result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-
-      public VariantFieldsProtos.VariantSample buildPartial() {
-        VariantFieldsProtos.VariantSample result = new VariantFieldsProtos.VariantSample(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.sample_ = sample_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof VariantFieldsProtos.VariantSample) {
-          return mergeFrom((VariantFieldsProtos.VariantSample)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(VariantFieldsProtos.VariantSample other) {
-        if (other == VariantFieldsProtos.VariantSample.getDefaultInstance()) return this;
-        if (other.hasSample()) {
-          setSample(other.getSample());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        if (!hasSample()) {
-
-          return false;
-        }
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
+            public Builder addInfo(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureInfoIsMutable();
+                info_.add(value);
                 onChanged();
                 return this;
-              }
-              break;
             }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              sample_ = input.readBytes();
-              break;
+
+            public Builder addAllInfo(
+                    java.lang.Iterable<String> values) {
+                ensureInfoIsMutable();
+                super.addAll(values, info_);
+                onChanged();
+                return this;
             }
-          }
+
+            public Builder clearInfo() {
+                info_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000001);
+                onChanged();
+                return this;
+            }
+
+            void addInfo(com.google.protobuf.ByteString value) {
+                ensureInfoIsMutable();
+                info_.add(value);
+                onChanged();
+            }
+
+            // repeated string filters = 2;
+            private com.google.protobuf.LazyStringList filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+
+            private void ensureFiltersIsMutable() {
+                if (!((bitField0_ & 0x00000002) == 0x00000002)) {
+                    filters_ = new com.google.protobuf.LazyStringArrayList(filters_);
+                    bitField0_ |= 0x00000002;
+                }
+            }
+
+            public java.util.List<String>
+            getFiltersList() {
+                return java.util.Collections.unmodifiableList(filters_);
+            }
+
+            public int getFiltersCount() {
+                return filters_.size();
+            }
+
+            public String getFilters(int index) {
+                return filters_.get(index);
+            }
+
+            public Builder setFilters(
+                    int index, String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureFiltersIsMutable();
+                filters_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addFilters(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureFiltersIsMutable();
+                filters_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllFilters(
+                    java.lang.Iterable<String> values) {
+                ensureFiltersIsMutable();
+                super.addAll(values, filters_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFilters() {
+                filters_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000002);
+                onChanged();
+                return this;
+            }
+
+            void addFilters(com.google.protobuf.ByteString value) {
+                ensureFiltersIsMutable();
+                filters_.add(value);
+                onChanged();
+            }
+
+            // repeated string format = 3;
+            private com.google.protobuf.LazyStringList format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+
+            private void ensureFormatIsMutable() {
+                if (!((bitField0_ & 0x00000004) == 0x00000004)) {
+                    format_ = new com.google.protobuf.LazyStringArrayList(format_);
+                    bitField0_ |= 0x00000004;
+                }
+            }
+
+            public java.util.List<String>
+            getFormatList() {
+                return java.util.Collections.unmodifiableList(format_);
+            }
+
+            public int getFormatCount() {
+                return format_.size();
+            }
+
+            public String getFormat(int index) {
+                return format_.get(index);
+            }
+
+            public Builder setFormat(
+                    int index, String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureFormatIsMutable();
+                format_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addFormat(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureFormatIsMutable();
+                format_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllFormat(
+                    java.lang.Iterable<String> values) {
+                ensureFormatIsMutable();
+                super.addAll(values, format_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFormat() {
+                format_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000004);
+                onChanged();
+                return this;
+            }
+
+            void addFormat(com.google.protobuf.ByteString value) {
+                ensureFormatIsMutable();
+                format_.add(value);
+                onChanged();
+            }
+
+            // optional string reference = 4;
+            private java.lang.Object reference_ = "";
+
+            public boolean hasReference() {
+                return ((bitField0_ & 0x00000008) == 0x00000008);
+            }
+
+            public String getReference() {
+                java.lang.Object ref = reference_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    reference_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setReference(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000008;
+                reference_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearReference() {
+                bitField0_ = (bitField0_ & ~0x00000008);
+                reference_ = getDefaultInstance().getReference();
+                onChanged();
+                return this;
+            }
+
+            void setReference(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000008;
+                reference_ = value;
+                onChanged();
+            }
+
+            // repeated string alternate = 5;
+            private com.google.protobuf.LazyStringList alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+
+            private void ensureAlternateIsMutable() {
+                if (!((bitField0_ & 0x00000010) == 0x00000010)) {
+                    alternate_ = new com.google.protobuf.LazyStringArrayList(alternate_);
+                    bitField0_ |= 0x00000010;
+                }
+            }
+
+            public java.util.List<String>
+            getAlternateList() {
+                return java.util.Collections.unmodifiableList(alternate_);
+            }
+
+            public int getAlternateCount() {
+                return alternate_.size();
+            }
+
+            public String getAlternate(int index) {
+                return alternate_.get(index);
+            }
+
+            public Builder setAlternate(
+                    int index, String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureAlternateIsMutable();
+                alternate_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAlternate(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                ensureAlternateIsMutable();
+                alternate_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllAlternate(
+                    java.lang.Iterable<String> values) {
+                ensureAlternateIsMutable();
+                super.addAll(values, alternate_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAlternate() {
+                alternate_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+                bitField0_ = (bitField0_ & ~0x00000010);
+                onChanged();
+                return this;
+            }
+
+            void addAlternate(com.google.protobuf.ByteString value) {
+                ensureAlternateIsMutable();
+                alternate_.add(value);
+                onChanged();
+            }
+
+            // optional string quality = 6;
+            private java.lang.Object quality_ = "";
+
+            public boolean hasQuality() {
+                return ((bitField0_ & 0x00000020) == 0x00000020);
+            }
+
+            public String getQuality() {
+                java.lang.Object ref = quality_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    quality_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setQuality(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000020;
+                quality_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearQuality() {
+                bitField0_ = (bitField0_ & ~0x00000020);
+                quality_ = getDefaultInstance().getQuality();
+                onChanged();
+                return this;
+            }
+
+            void setQuality(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000020;
+                quality_ = value;
+                onChanged();
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantInfo)
         }
-      }
 
-      private int bitField0_;
-
-      // required string sample = 1;
-      private java.lang.Object sample_ = "";
-      public boolean hasSample() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public String getSample() {
-        java.lang.Object ref = sample_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          sample_ = s;
-          return s;
-        } else {
-          return (String) ref;
+        static {
+            defaultInstance = new VariantInfo(true);
+            defaultInstance.initFields();
         }
-      }
-      public Builder setSample(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        sample_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearSample() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        sample_ = getDefaultInstance().getSample();
-        onChanged();
-        return this;
-      }
-      void setSample(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000001;
-        sample_ = value;
-        onChanged();
-      }
 
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantSample)
+        // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantInfo)
     }
 
-    static {
-      defaultInstance = new VariantSample(true);
-      defaultInstance.initFields();
+    public interface VariantSampleOrBuilder
+            extends com.google.protobuf.MessageOrBuilder {
+
+        // required string sample = 1;
+        boolean hasSample();
+
+        String getSample();
     }
 
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantSample)
-  }
+    public static final class VariantSample extends
+            com.google.protobuf.GeneratedMessage
+            implements VariantSampleOrBuilder {
+        // Use VariantSample.newBuilder() to construct.
+        private VariantSample(Builder builder) {
+            super(builder);
+        }
 
-  public interface VariantStatsOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+        private VariantSample(boolean noInit) {
+        }
 
-    // required int32 num_alleles = 1;
-    boolean hasNumAlleles();
-    int getNumAlleles();
+        private static final VariantSample defaultInstance;
 
-    // required string maf_allele = 2;
-    boolean hasMafAllele();
-    String getMafAllele();
+        public static VariantSample getDefaultInstance() {
+            return defaultInstance;
+        }
 
-    // required string mgf_genotype = 3;
-    boolean hasMgfGenotype();
-    String getMgfGenotype();
+        public VariantSample getDefaultInstanceForType() {
+            return defaultInstance;
+        }
 
-    // required float maf = 4;
-    boolean hasMaf();
-    float getMaf();
-
-    // required float mgf = 5;
-    boolean hasMgf();
-    float getMgf();
-
-    // repeated int32 alleles_count = 6;
-    java.util.List<java.lang.Integer> getAllelesCountList();
-    int getAllelesCountCount();
-    int getAllelesCount(int index);
-
-    // repeated int32 genotypes_count = 7;
-    java.util.List<java.lang.Integer> getGenotypesCountList();
-    int getGenotypesCountCount();
-    int getGenotypesCount(int index);
-
-    // repeated float alleles_freq = 8;
-    java.util.List<java.lang.Float> getAllelesFreqList();
-    int getAllelesFreqCount();
-    float getAllelesFreq(int index);
-
-    // repeated float genotypes_freq = 9;
-    java.util.List<java.lang.Float> getGenotypesFreqList();
-    int getGenotypesFreqCount();
-    float getGenotypesFreq(int index);
-
-    // required int32 missing_alleles = 10;
-    boolean hasMissingAlleles();
-    int getMissingAlleles();
-
-    // required int32 missing_genotypes = 11;
-    boolean hasMissingGenotypes();
-    int getMissingGenotypes();
-
-    // optional int32 mendelian_errors = 12;
-    boolean hasMendelianErrors();
-    int getMendelianErrors();
-
-    // optional bool is_indel = 13;
-    boolean hasIsIndel();
-    boolean getIsIndel();
-
-    // optional float cases_percent_dominant = 14;
-    boolean hasCasesPercentDominant();
-    float getCasesPercentDominant();
-
-    // optional float controls_percent_dominant = 15;
-    boolean hasControlsPercentDominant();
-    float getControlsPercentDominant();
-
-    // optional float cases_percent_recessive = 16;
-    boolean hasCasesPercentRecessive();
-    float getCasesPercentRecessive();
-
-    // optional float controls_percent_recessive = 17;
-    boolean hasControlsPercentRecessive();
-    float getControlsPercentRecessive();
-
-    // optional float hardy_weinberg = 18;
-    boolean hasHardyWeinberg();
-    float getHardyWeinberg();
-  }
-  public static final class VariantStats extends
-      com.google.protobuf.GeneratedMessage
-      implements VariantStatsOrBuilder {
-    // Use VariantStats.newBuilder() to construct.
-    private VariantStats(Builder builder) {
-      super(builder);
-    }
-    private VariantStats(boolean noInit) {}
-
-    private static final VariantStats defaultInstance;
-    public static VariantStats getDefaultInstance() {
-      return defaultInstance;
-    }
-
-    public VariantStats getDefaultInstanceForType() {
-      return defaultInstance;
-    }
-
-    public static final com.google.protobuf.Descriptors.Descriptor
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
-    }
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
+        }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
-    }
-
-    private int bitField0_;
-    // required int32 num_alleles = 1;
-    public static final int NUM_ALLELES_FIELD_NUMBER = 1;
-    private int numAlleles_;
-    public boolean hasNumAlleles() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public int getNumAlleles() {
-      return numAlleles_;
-    }
-
-    // required string maf_allele = 2;
-    public static final int MAF_ALLELE_FIELD_NUMBER = 2;
-    private java.lang.Object mafAllele_;
-    public boolean hasMafAllele() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public String getMafAllele() {
-      java.lang.Object ref = mafAllele_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          mafAllele_ = s;
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
         }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getMafAlleleBytes() {
-      java.lang.Object ref = mafAllele_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        mafAllele_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
 
-    // required string mgf_genotype = 3;
-    public static final int MGF_GENOTYPE_FIELD_NUMBER = 3;
-    private java.lang.Object mgfGenotype_;
-    public boolean hasMgfGenotype() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    public String getMgfGenotype() {
-      java.lang.Object ref = mgfGenotype_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          mgfGenotype_ = s;
+        private int bitField0_;
+        // required string sample = 1;
+        public static final int SAMPLE_FIELD_NUMBER = 1;
+        private java.lang.Object sample_;
+
+        public boolean hasSample() {
+            return ((bitField0_ & 0x00000001) == 0x00000001);
         }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getMgfGenotypeBytes() {
-      java.lang.Object ref = mgfGenotype_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b =
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        mgfGenotype_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+
+        public String getSample() {
+            java.lang.Object ref = sample_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    sample_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getSampleBytes() {
+            java.lang.Object ref = sample_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                sample_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        private void initFields() {
+            sample_ = "";
+        }
+
+        private byte memoizedIsInitialized = -1;
+
+        public final boolean isInitialized() {
+            byte isInitialized = memoizedIsInitialized;
+            if (isInitialized != -1) {
+                return isInitialized == 1;
+            }
+
+            if (!hasSample()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            memoizedIsInitialized = 1;
+            return true;
+        }
+
+        public void writeTo(com.google.protobuf.CodedOutputStream output)
+                throws java.io.IOException {
+            getSerializedSize();
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                output.writeBytes(1, getSampleBytes());
+            }
+            getUnknownFields().writeTo(output);
+        }
+
+        private int memoizedSerializedSize = -1;
+
+        public int getSerializedSize() {
+            int size = memoizedSerializedSize;
+            if (size != -1) {
+                return size;
+            }
+
+            size = 0;
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(1, getSampleBytes());
+            }
+            size += getUnknownFields().getSerializedSize();
+            memoizedSerializedSize = size;
+            return size;
+        }
+
+        private static final long serialVersionUID = 0L;
+
+        @java.lang.Override
+        protected java.lang.Object writeReplace()
+                throws java.io.ObjectStreamException {
+            return super.writeReplace();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                com.google.protobuf.ByteString data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                com.google.protobuf.ByteString data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(byte[] data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                byte[] data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseDelimitedFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantSample parseDelimitedFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                com.google.protobuf.CodedInputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantSample parseFrom(
+                com.google.protobuf.CodedInputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static Builder newBuilder() {
+            return Builder.create();
+        }
+
+        public Builder newBuilderForType() {
+            return newBuilder();
+        }
+
+        public static Builder newBuilder(VariantFieldsProtos.VariantSample prototype) {
+            return newBuilder().mergeFrom(prototype);
+        }
+
+        public Builder toBuilder() {
+            return newBuilder(this);
+        }
+
+        @java.lang.Override
+        protected Builder newBuilderForType(
+                com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            Builder builder = new Builder(parent);
+            return builder;
+        }
+
+        public static final class Builder extends
+                com.google.protobuf.GeneratedMessage.Builder<Builder>
+                implements VariantFieldsProtos.VariantSampleOrBuilder {
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
+            }
+
+            protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return VariantFieldsProtos
+                        .internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
+            }
+
+            // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantSample.newBuilder()
+            private Builder() {
+                maybeForceBuilderInitialization();
+            }
+
+            private Builder(BuilderParent parent) {
+                super(parent);
+                maybeForceBuilderInitialization();
+            }
+
+            private void maybeForceBuilderInitialization() {
+                if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                }
+            }
+
+            private static Builder create() {
+                return new Builder();
+            }
+
+            public Builder clear() {
+                super.clear();
+                sample_ = "";
+                bitField0_ = (bitField0_ & ~0x00000001);
+                return this;
+            }
+
+            public Builder clone() {
+                return create().mergeFrom(buildPartial());
+            }
+
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return VariantFieldsProtos.VariantSample.getDescriptor();
+            }
+
+            public VariantFieldsProtos.VariantSample getDefaultInstanceForType() {
+                return VariantFieldsProtos.VariantSample.getDefaultInstance();
+            }
+
+            public VariantFieldsProtos.VariantSample build() {
+                VariantFieldsProtos.VariantSample result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(result);
+                }
+                return result;
+            }
+
+            private VariantFieldsProtos.VariantSample buildParsed()
+                    throws com.google.protobuf.InvalidProtocolBufferException {
+                VariantFieldsProtos.VariantSample result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(
+                            result).asInvalidProtocolBufferException();
+                }
+                return result;
+            }
+
+            public VariantFieldsProtos.VariantSample buildPartial() {
+                VariantFieldsProtos.VariantSample result = new VariantFieldsProtos.VariantSample(this);
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
+                }
+                result.sample_ = sample_;
+                result.bitField0_ = to_bitField0_;
+                onBuilt();
+                return result;
+            }
+
+            public Builder mergeFrom(com.google.protobuf.Message other) {
+                if (other instanceof VariantFieldsProtos.VariantSample) {
+                    return mergeFrom((VariantFieldsProtos.VariantSample) other);
+                } else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
+
+            public Builder mergeFrom(VariantFieldsProtos.VariantSample other) {
+                if (other == VariantFieldsProtos.VariantSample.getDefaultInstance()) {
+                    return this;
+                }
+                if (other.hasSample()) {
+                    setSample(other.getSample());
+                }
+                this.mergeUnknownFields(other.getUnknownFields());
+                return this;
+            }
+
+            public final boolean isInitialized() {
+                if (!hasSample()) {
+
+                    return false;
+                }
+                return true;
+            }
+
+            public Builder mergeFrom(
+                    com.google.protobuf.CodedInputStream input,
+                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                        com.google.protobuf.UnknownFieldSet.newBuilder(
+                                this.getUnknownFields());
+                while (true) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            this.setUnknownFields(unknownFields.build());
+                            onChanged();
+                            return this;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                this.setUnknownFields(unknownFields.build());
+                                onChanged();
+                                return this;
+                            }
+                            break;
+                        }
+                        case 10: {
+                            bitField0_ |= 0x00000001;
+                            sample_ = input.readBytes();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private int bitField0_;
+
+            // required string sample = 1;
+            private java.lang.Object sample_ = "";
+
+            public boolean hasSample() {
+                return ((bitField0_ & 0x00000001) == 0x00000001);
+            }
+
+            public String getSample() {
+                java.lang.Object ref = sample_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    sample_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setSample(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000001;
+                sample_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearSample() {
+                bitField0_ = (bitField0_ & ~0x00000001);
+                sample_ = getDefaultInstance().getSample();
+                onChanged();
+                return this;
+            }
+
+            void setSample(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000001;
+                sample_ = value;
+                onChanged();
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantSample)
+        }
+
+        static {
+            defaultInstance = new VariantSample(true);
+            defaultInstance.initFields();
+        }
+
+        // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantSample)
     }
 
-    // required float maf = 4;
-    public static final int MAF_FIELD_NUMBER = 4;
-    private float maf_;
-    public boolean hasMaf() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    public float getMaf() {
-      return maf_;
+    public interface VariantStatsOrBuilder
+            extends com.google.protobuf.MessageOrBuilder {
+
+        // required int32 num_alleles = 1;
+        boolean hasNumAlleles();
+
+        int getNumAlleles();
+
+        // required string maf_allele = 2;
+        boolean hasMafAllele();
+
+        String getMafAllele();
+
+        // required string mgf_genotype = 3;
+        boolean hasMgfGenotype();
+
+        String getMgfGenotype();
+
+        // required float maf = 4;
+        boolean hasMaf();
+
+        float getMaf();
+
+        // required float mgf = 5;
+        boolean hasMgf();
+
+        float getMgf();
+
+        // repeated int32 alleles_count = 6;
+        java.util.List<java.lang.Integer> getAllelesCountList();
+
+        int getAllelesCountCount();
+
+        int getAllelesCount(int index);
+
+        // repeated int32 genotypes_count = 7;
+        java.util.List<java.lang.Integer> getGenotypesCountList();
+
+        int getGenotypesCountCount();
+
+        int getGenotypesCount(int index);
+
+        // repeated float alleles_freq = 8;
+        java.util.List<java.lang.Float> getAllelesFreqList();
+
+        int getAllelesFreqCount();
+
+        float getAllelesFreq(int index);
+
+        // repeated float genotypes_freq = 9;
+        java.util.List<java.lang.Float> getGenotypesFreqList();
+
+        int getGenotypesFreqCount();
+
+        float getGenotypesFreq(int index);
+
+        // required int32 missing_alleles = 10;
+        boolean hasMissingAlleles();
+
+        int getMissingAlleles();
+
+        // required int32 missing_genotypes = 11;
+        boolean hasMissingGenotypes();
+
+        int getMissingGenotypes();
+
+        // optional int32 mendelian_errors = 12;
+        boolean hasMendelianErrors();
+
+        int getMendelianErrors();
+
+        // optional bool is_indel = 13;
+        boolean hasIsIndel();
+
+        boolean getIsIndel();
+
+        // optional float cases_percent_dominant = 14;
+        boolean hasCasesPercentDominant();
+
+        float getCasesPercentDominant();
+
+        // optional float controls_percent_dominant = 15;
+        boolean hasControlsPercentDominant();
+
+        float getControlsPercentDominant();
+
+        // optional float cases_percent_recessive = 16;
+        boolean hasCasesPercentRecessive();
+
+        float getCasesPercentRecessive();
+
+        // optional float controls_percent_recessive = 17;
+        boolean hasControlsPercentRecessive();
+
+        float getControlsPercentRecessive();
+
+        // optional float hardy_weinberg = 18;
+        boolean hasHardyWeinberg();
+
+        float getHardyWeinberg();
     }
 
-    // required float mgf = 5;
-    public static final int MGF_FIELD_NUMBER = 5;
-    private float mgf_;
-    public boolean hasMgf() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    public float getMgf() {
-      return mgf_;
-    }
+    public static final class VariantStats extends
+            com.google.protobuf.GeneratedMessage
+            implements VariantStatsOrBuilder {
+        // Use VariantStats.newBuilder() to construct.
+        private VariantStats(Builder builder) {
+            super(builder);
+        }
 
-    // repeated int32 alleles_count = 6;
-    public static final int ALLELES_COUNT_FIELD_NUMBER = 6;
-    private java.util.List<java.lang.Integer> allelesCount_;
-    public java.util.List<java.lang.Integer>
+        private VariantStats(boolean noInit) {
+        }
+
+        private static final VariantStats defaultInstance;
+
+        public static VariantStats getDefaultInstance() {
+            return defaultInstance;
+        }
+
+        public VariantStats getDefaultInstanceForType() {
+            return defaultInstance;
+        }
+
+        public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+            return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
+        }
+
+        private int bitField0_;
+        // required int32 num_alleles = 1;
+        public static final int NUM_ALLELES_FIELD_NUMBER = 1;
+        private int numAlleles_;
+
+        public boolean hasNumAlleles() {
+            return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+
+        public int getNumAlleles() {
+            return numAlleles_;
+        }
+
+        // required string maf_allele = 2;
+        public static final int MAF_ALLELE_FIELD_NUMBER = 2;
+        private java.lang.Object mafAllele_;
+
+        public boolean hasMafAllele() {
+            return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+
+        public String getMafAllele() {
+            java.lang.Object ref = mafAllele_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    mafAllele_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getMafAlleleBytes() {
+            java.lang.Object ref = mafAllele_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                mafAllele_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // required string mgf_genotype = 3;
+        public static final int MGF_GENOTYPE_FIELD_NUMBER = 3;
+        private java.lang.Object mgfGenotype_;
+
+        public boolean hasMgfGenotype() {
+            return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+
+        public String getMgfGenotype() {
+            java.lang.Object ref = mgfGenotype_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    mgfGenotype_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getMgfGenotypeBytes() {
+            java.lang.Object ref = mgfGenotype_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                mgfGenotype_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // required float maf = 4;
+        public static final int MAF_FIELD_NUMBER = 4;
+        private float maf_;
+
+        public boolean hasMaf() {
+            return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+
+        public float getMaf() {
+            return maf_;
+        }
+
+        // required float mgf = 5;
+        public static final int MGF_FIELD_NUMBER = 5;
+        private float mgf_;
+
+        public boolean hasMgf() {
+            return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+
+        public float getMgf() {
+            return mgf_;
+        }
+
+        // repeated int32 alleles_count = 6;
+        public static final int ALLELES_COUNT_FIELD_NUMBER = 6;
+        private java.util.List<java.lang.Integer> allelesCount_;
+
+        public java.util.List<java.lang.Integer>
         getAllelesCountList() {
-      return allelesCount_;
-    }
-    public int getAllelesCountCount() {
-      return allelesCount_.size();
-    }
-    public int getAllelesCount(int index) {
-      return allelesCount_.get(index);
-    }
+            return allelesCount_;
+        }
 
-    // repeated int32 genotypes_count = 7;
-    public static final int GENOTYPES_COUNT_FIELD_NUMBER = 7;
-    private java.util.List<java.lang.Integer> genotypesCount_;
-    public java.util.List<java.lang.Integer>
+        public int getAllelesCountCount() {
+            return allelesCount_.size();
+        }
+
+        public int getAllelesCount(int index) {
+            return allelesCount_.get(index);
+        }
+
+        // repeated int32 genotypes_count = 7;
+        public static final int GENOTYPES_COUNT_FIELD_NUMBER = 7;
+        private java.util.List<java.lang.Integer> genotypesCount_;
+
+        public java.util.List<java.lang.Integer>
         getGenotypesCountList() {
-      return genotypesCount_;
-    }
-    public int getGenotypesCountCount() {
-      return genotypesCount_.size();
-    }
-    public int getGenotypesCount(int index) {
-      return genotypesCount_.get(index);
-    }
+            return genotypesCount_;
+        }
 
-    // repeated float alleles_freq = 8;
-    public static final int ALLELES_FREQ_FIELD_NUMBER = 8;
-    private java.util.List<java.lang.Float> allelesFreq_;
-    public java.util.List<java.lang.Float>
+        public int getGenotypesCountCount() {
+            return genotypesCount_.size();
+        }
+
+        public int getGenotypesCount(int index) {
+            return genotypesCount_.get(index);
+        }
+
+        // repeated float alleles_freq = 8;
+        public static final int ALLELES_FREQ_FIELD_NUMBER = 8;
+        private java.util.List<java.lang.Float> allelesFreq_;
+
+        public java.util.List<java.lang.Float>
         getAllelesFreqList() {
-      return allelesFreq_;
-    }
-    public int getAllelesFreqCount() {
-      return allelesFreq_.size();
-    }
-    public float getAllelesFreq(int index) {
-      return allelesFreq_.get(index);
-    }
+            return allelesFreq_;
+        }
 
-    // repeated float genotypes_freq = 9;
-    public static final int GENOTYPES_FREQ_FIELD_NUMBER = 9;
-    private java.util.List<java.lang.Float> genotypesFreq_;
-    public java.util.List<java.lang.Float>
+        public int getAllelesFreqCount() {
+            return allelesFreq_.size();
+        }
+
+        public float getAllelesFreq(int index) {
+            return allelesFreq_.get(index);
+        }
+
+        // repeated float genotypes_freq = 9;
+        public static final int GENOTYPES_FREQ_FIELD_NUMBER = 9;
+        private java.util.List<java.lang.Float> genotypesFreq_;
+
+        public java.util.List<java.lang.Float>
         getGenotypesFreqList() {
-      return genotypesFreq_;
-    }
-    public int getGenotypesFreqCount() {
-      return genotypesFreq_.size();
-    }
-    public float getGenotypesFreq(int index) {
-      return genotypesFreq_.get(index);
-    }
+            return genotypesFreq_;
+        }
 
-    // required int32 missing_alleles = 10;
-    public static final int MISSING_ALLELES_FIELD_NUMBER = 10;
-    private int missingAlleles_;
-    public boolean hasMissingAlleles() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
-    }
-    public int getMissingAlleles() {
-      return missingAlleles_;
-    }
+        public int getGenotypesFreqCount() {
+            return genotypesFreq_.size();
+        }
 
-    // required int32 missing_genotypes = 11;
-    public static final int MISSING_GENOTYPES_FIELD_NUMBER = 11;
-    private int missingGenotypes_;
-    public boolean hasMissingGenotypes() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
-    }
-    public int getMissingGenotypes() {
-      return missingGenotypes_;
-    }
+        public float getGenotypesFreq(int index) {
+            return genotypesFreq_.get(index);
+        }
 
-    // optional int32 mendelian_errors = 12;
-    public static final int MENDELIAN_ERRORS_FIELD_NUMBER = 12;
-    private int mendelianErrors_;
-    public boolean hasMendelianErrors() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
-    }
-    public int getMendelianErrors() {
-      return mendelianErrors_;
-    }
+        // required int32 missing_alleles = 10;
+        public static final int MISSING_ALLELES_FIELD_NUMBER = 10;
+        private int missingAlleles_;
 
-    // optional bool is_indel = 13;
-    public static final int IS_INDEL_FIELD_NUMBER = 13;
-    private boolean isIndel_;
-    public boolean hasIsIndel() {
-      return ((bitField0_ & 0x00000100) == 0x00000100);
-    }
-    public boolean getIsIndel() {
-      return isIndel_;
-    }
+        public boolean hasMissingAlleles() {
+            return ((bitField0_ & 0x00000020) == 0x00000020);
+        }
 
-    // optional float cases_percent_dominant = 14;
-    public static final int CASES_PERCENT_DOMINANT_FIELD_NUMBER = 14;
-    private float casesPercentDominant_;
-    public boolean hasCasesPercentDominant() {
-      return ((bitField0_ & 0x00000200) == 0x00000200);
-    }
-    public float getCasesPercentDominant() {
-      return casesPercentDominant_;
-    }
+        public int getMissingAlleles() {
+            return missingAlleles_;
+        }
 
-    // optional float controls_percent_dominant = 15;
-    public static final int CONTROLS_PERCENT_DOMINANT_FIELD_NUMBER = 15;
-    private float controlsPercentDominant_;
-    public boolean hasControlsPercentDominant() {
-      return ((bitField0_ & 0x00000400) == 0x00000400);
-    }
-    public float getControlsPercentDominant() {
-      return controlsPercentDominant_;
-    }
+        // required int32 missing_genotypes = 11;
+        public static final int MISSING_GENOTYPES_FIELD_NUMBER = 11;
+        private int missingGenotypes_;
 
-    // optional float cases_percent_recessive = 16;
-    public static final int CASES_PERCENT_RECESSIVE_FIELD_NUMBER = 16;
-    private float casesPercentRecessive_;
-    public boolean hasCasesPercentRecessive() {
-      return ((bitField0_ & 0x00000800) == 0x00000800);
-    }
-    public float getCasesPercentRecessive() {
-      return casesPercentRecessive_;
-    }
+        public boolean hasMissingGenotypes() {
+            return ((bitField0_ & 0x00000040) == 0x00000040);
+        }
 
-    // optional float controls_percent_recessive = 17;
-    public static final int CONTROLS_PERCENT_RECESSIVE_FIELD_NUMBER = 17;
-    private float controlsPercentRecessive_;
-    public boolean hasControlsPercentRecessive() {
-      return ((bitField0_ & 0x00001000) == 0x00001000);
-    }
-    public float getControlsPercentRecessive() {
-      return controlsPercentRecessive_;
-    }
+        public int getMissingGenotypes() {
+            return missingGenotypes_;
+        }
 
-    // optional float hardy_weinberg = 18;
-    public static final int HARDY_WEINBERG_FIELD_NUMBER = 18;
-    private float hardyWeinberg_;
-    public boolean hasHardyWeinberg() {
-      return ((bitField0_ & 0x00002000) == 0x00002000);
-    }
-    public float getHardyWeinberg() {
-      return hardyWeinberg_;
-    }
+        // optional int32 mendelian_errors = 12;
+        public static final int MENDELIAN_ERRORS_FIELD_NUMBER = 12;
+        private int mendelianErrors_;
 
-    private void initFields() {
-      numAlleles_ = 0;
-      mafAllele_ = "";
-      mgfGenotype_ = "";
-      maf_ = 0F;
-      mgf_ = 0F;
-      allelesCount_ = java.util.Collections.emptyList();;
-      genotypesCount_ = java.util.Collections.emptyList();;
-      allelesFreq_ = java.util.Collections.emptyList();;
-      genotypesFreq_ = java.util.Collections.emptyList();;
-      missingAlleles_ = 0;
-      missingGenotypes_ = 0;
-      mendelianErrors_ = 0;
-      isIndel_ = false;
-      casesPercentDominant_ = 0F;
-      controlsPercentDominant_ = 0F;
-      casesPercentRecessive_ = 0F;
-      controlsPercentRecessive_ = 0F;
-      hardyWeinberg_ = 0F;
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+        public boolean hasMendelianErrors() {
+            return ((bitField0_ & 0x00000080) == 0x00000080);
+        }
 
-      if (!hasNumAlleles()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMafAllele()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMgfGenotype()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMaf()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMgf()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMissingAlleles()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasMissingGenotypes()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
+        public int getMendelianErrors() {
+            return mendelianErrors_;
+        }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeInt32(1, numAlleles_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getMafAlleleBytes());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getMgfGenotypeBytes());
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeFloat(4, maf_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeFloat(5, mgf_);
-      }
-      for (int i = 0; i < allelesCount_.size(); i++) {
-        output.writeInt32(6, allelesCount_.get(i));
-      }
-      for (int i = 0; i < genotypesCount_.size(); i++) {
-        output.writeInt32(7, genotypesCount_.get(i));
-      }
-      for (int i = 0; i < allelesFreq_.size(); i++) {
-        output.writeFloat(8, allelesFreq_.get(i));
-      }
-      for (int i = 0; i < genotypesFreq_.size(); i++) {
-        output.writeFloat(9, genotypesFreq_.get(i));
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeInt32(10, missingAlleles_);
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeInt32(11, missingGenotypes_);
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeInt32(12, mendelianErrors_);
-      }
-      if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        output.writeBool(13, isIndel_);
-      }
-      if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        output.writeFloat(14, casesPercentDominant_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        output.writeFloat(15, controlsPercentDominant_);
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        output.writeFloat(16, casesPercentRecessive_);
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        output.writeFloat(17, controlsPercentRecessive_);
-      }
-      if (((bitField0_ & 0x00002000) == 0x00002000)) {
-        output.writeFloat(18, hardyWeinberg_);
-      }
-      getUnknownFields().writeTo(output);
-    }
+        // optional bool is_indel = 13;
+        public static final int IS_INDEL_FIELD_NUMBER = 13;
+        private boolean isIndel_;
 
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
+        public boolean hasIsIndel() {
+            return ((bitField0_ & 0x00000100) == 0x00000100);
+        }
 
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(1, numAlleles_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getMafAlleleBytes());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getMgfGenotypeBytes());
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(4, maf_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(5, mgf_);
-      }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < allelesCount_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(allelesCount_.get(i));
+        public boolean getIsIndel() {
+            return isIndel_;
         }
-        size += dataSize;
-        size += 1 * getAllelesCountList().size();
-      }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < genotypesCount_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(genotypesCount_.get(i));
-        }
-        size += dataSize;
-        size += 1 * getGenotypesCountList().size();
-      }
-      {
-        int dataSize = 0;
-        dataSize = 4 * getAllelesFreqList().size();
-        size += dataSize;
-        size += 1 * getAllelesFreqList().size();
-      }
-      {
-        int dataSize = 0;
-        dataSize = 4 * getGenotypesFreqList().size();
-        size += dataSize;
-        size += 1 * getGenotypesFreqList().size();
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(10, missingAlleles_);
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(11, missingGenotypes_);
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(12, mendelianErrors_);
-      }
-      if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(13, isIndel_);
-      }
-      if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(14, casesPercentDominant_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(15, controlsPercentDominant_);
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(16, casesPercentRecessive_);
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(17, controlsPercentRecessive_);
-      }
-      if (((bitField0_ & 0x00002000) == 0x00002000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(18, hardyWeinberg_);
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
 
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
+        // optional float cases_percent_dominant = 14;
+        public static final int CASES_PERCENT_DOMINANT_FIELD_NUMBER = 14;
+        private float casesPercentDominant_;
 
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantStats parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantFieldsProtos.VariantStats parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
+        public boolean hasCasesPercentDominant() {
+            return ((bitField0_ & 0x00000200) == 0x00000200);
+        }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(VariantFieldsProtos.VariantStats prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
+        public float getCasesPercentDominant() {
+            return casesPercentDominant_;
+        }
 
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements VariantFieldsProtos.VariantStatsOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
-      }
+        // optional float controls_percent_dominant = 15;
+        public static final int CONTROLS_PERCENT_DOMINANT_FIELD_NUMBER = 15;
+        private float controlsPercentDominant_;
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
-      }
+        public boolean hasControlsPercentDominant() {
+            return ((bitField0_ & 0x00000400) == 0x00000400);
+        }
 
-      // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantStats.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
+        public float getControlsPercentDominant() {
+            return controlsPercentDominant_;
+        }
 
-      private Builder(BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
+        // optional float cases_percent_recessive = 16;
+        public static final int CASES_PERCENT_RECESSIVE_FIELD_NUMBER = 16;
+        private float casesPercentRecessive_;
 
-      public Builder clear() {
-        super.clear();
-        numAlleles_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        mafAllele_ = "";
-        bitField0_ = (bitField0_ & ~0x00000002);
-        mgfGenotype_ = "";
-        bitField0_ = (bitField0_ & ~0x00000004);
-        maf_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00000008);
-        mgf_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        allelesCount_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000020);
-        genotypesCount_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000040);
-        allelesFreq_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000080);
-        genotypesFreq_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000100);
-        missingAlleles_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000200);
-        missingGenotypes_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000400);
-        mendelianErrors_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000800);
-        isIndel_ = false;
-        bitField0_ = (bitField0_ & ~0x00001000);
-        casesPercentDominant_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00002000);
-        controlsPercentDominant_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00004000);
-        casesPercentRecessive_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00008000);
-        controlsPercentRecessive_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00010000);
-        hardyWeinberg_ = 0F;
-        bitField0_ = (bitField0_ & ~0x00020000);
-        return this;
-      }
+        public boolean hasCasesPercentRecessive() {
+            return ((bitField0_ & 0x00000800) == 0x00000800);
+        }
 
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
+        public float getCasesPercentRecessive() {
+            return casesPercentRecessive_;
+        }
 
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return VariantFieldsProtos.VariantStats.getDescriptor();
-      }
+        // optional float controls_percent_recessive = 17;
+        public static final int CONTROLS_PERCENT_RECESSIVE_FIELD_NUMBER = 17;
+        private float controlsPercentRecessive_;
 
-      public VariantFieldsProtos.VariantStats getDefaultInstanceForType() {
-        return VariantFieldsProtos.VariantStats.getDefaultInstance();
-      }
+        public boolean hasControlsPercentRecessive() {
+            return ((bitField0_ & 0x00001000) == 0x00001000);
+        }
 
-      public VariantFieldsProtos.VariantStats build() {
-        VariantFieldsProtos.VariantStats result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
+        public float getControlsPercentRecessive() {
+            return controlsPercentRecessive_;
         }
-        return result;
-      }
 
-      private VariantFieldsProtos.VariantStats buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        VariantFieldsProtos.VariantStats result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
+        // optional float hardy_weinberg = 18;
+        public static final int HARDY_WEINBERG_FIELD_NUMBER = 18;
+        private float hardyWeinberg_;
 
-      public VariantFieldsProtos.VariantStats buildPartial() {
-        VariantFieldsProtos.VariantStats result = new VariantFieldsProtos.VariantStats(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
+        public boolean hasHardyWeinberg() {
+            return ((bitField0_ & 0x00002000) == 0x00002000);
         }
-        result.numAlleles_ = numAlleles_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.mafAllele_ = mafAllele_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.mgfGenotype_ = mgfGenotype_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.maf_ = maf_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.mgf_ = mgf_;
-        if (((bitField0_ & 0x00000020) == 0x00000020)) {
-          allelesCount_ = java.util.Collections.unmodifiableList(allelesCount_);
-          bitField0_ = (bitField0_ & ~0x00000020);
-        }
-        result.allelesCount_ = allelesCount_;
-        if (((bitField0_ & 0x00000040) == 0x00000040)) {
-          genotypesCount_ = java.util.Collections.unmodifiableList(genotypesCount_);
-          bitField0_ = (bitField0_ & ~0x00000040);
-        }
-        result.genotypesCount_ = genotypesCount_;
-        if (((bitField0_ & 0x00000080) == 0x00000080)) {
-          allelesFreq_ = java.util.Collections.unmodifiableList(allelesFreq_);
-          bitField0_ = (bitField0_ & ~0x00000080);
-        }
-        result.allelesFreq_ = allelesFreq_;
-        if (((bitField0_ & 0x00000100) == 0x00000100)) {
-          genotypesFreq_ = java.util.Collections.unmodifiableList(genotypesFreq_);
-          bitField0_ = (bitField0_ & ~0x00000100);
-        }
-        result.genotypesFreq_ = genotypesFreq_;
-        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
-          to_bitField0_ |= 0x00000020;
-        }
-        result.missingAlleles_ = missingAlleles_;
-        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
-          to_bitField0_ |= 0x00000040;
-        }
-        result.missingGenotypes_ = missingGenotypes_;
-        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
-          to_bitField0_ |= 0x00000080;
-        }
-        result.mendelianErrors_ = mendelianErrors_;
-        if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
-          to_bitField0_ |= 0x00000100;
-        }
-        result.isIndel_ = isIndel_;
-        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
-          to_bitField0_ |= 0x00000200;
-        }
-        result.casesPercentDominant_ = casesPercentDominant_;
-        if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
-          to_bitField0_ |= 0x00000400;
-        }
-        result.controlsPercentDominant_ = controlsPercentDominant_;
-        if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
-          to_bitField0_ |= 0x00000800;
-        }
-        result.casesPercentRecessive_ = casesPercentRecessive_;
-        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
-          to_bitField0_ |= 0x00001000;
-        }
-        result.controlsPercentRecessive_ = controlsPercentRecessive_;
-        if (((from_bitField0_ & 0x00020000) == 0x00020000)) {
-          to_bitField0_ |= 0x00002000;
-        }
-        result.hardyWeinberg_ = hardyWeinberg_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof VariantFieldsProtos.VariantStats) {
-          return mergeFrom((VariantFieldsProtos.VariantStats)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
+        public float getHardyWeinberg() {
+            return hardyWeinberg_;
         }
-      }
 
-      public Builder mergeFrom(VariantFieldsProtos.VariantStats other) {
-        if (other == VariantFieldsProtos.VariantStats.getDefaultInstance()) return this;
-        if (other.hasNumAlleles()) {
-          setNumAlleles(other.getNumAlleles());
+        private void initFields() {
+            numAlleles_ = 0;
+            mafAllele_ = "";
+            mgfGenotype_ = "";
+            maf_ = 0F;
+            mgf_ = 0F;
+            allelesCount_ = java.util.Collections.emptyList();
+            ;
+            genotypesCount_ = java.util.Collections.emptyList();
+            ;
+            allelesFreq_ = java.util.Collections.emptyList();
+            ;
+            genotypesFreq_ = java.util.Collections.emptyList();
+            ;
+            missingAlleles_ = 0;
+            missingGenotypes_ = 0;
+            mendelianErrors_ = 0;
+            isIndel_ = false;
+            casesPercentDominant_ = 0F;
+            controlsPercentDominant_ = 0F;
+            casesPercentRecessive_ = 0F;
+            controlsPercentRecessive_ = 0F;
+            hardyWeinberg_ = 0F;
         }
-        if (other.hasMafAllele()) {
-          setMafAllele(other.getMafAllele());
-        }
-        if (other.hasMgfGenotype()) {
-          setMgfGenotype(other.getMgfGenotype());
-        }
-        if (other.hasMaf()) {
-          setMaf(other.getMaf());
-        }
-        if (other.hasMgf()) {
-          setMgf(other.getMgf());
-        }
-        if (!other.allelesCount_.isEmpty()) {
-          if (allelesCount_.isEmpty()) {
-            allelesCount_ = other.allelesCount_;
-            bitField0_ = (bitField0_ & ~0x00000020);
-          } else {
-            ensureAllelesCountIsMutable();
-            allelesCount_.addAll(other.allelesCount_);
-          }
-          onChanged();
-        }
-        if (!other.genotypesCount_.isEmpty()) {
-          if (genotypesCount_.isEmpty()) {
-            genotypesCount_ = other.genotypesCount_;
-            bitField0_ = (bitField0_ & ~0x00000040);
-          } else {
-            ensureGenotypesCountIsMutable();
-            genotypesCount_.addAll(other.genotypesCount_);
-          }
-          onChanged();
-        }
-        if (!other.allelesFreq_.isEmpty()) {
-          if (allelesFreq_.isEmpty()) {
-            allelesFreq_ = other.allelesFreq_;
-            bitField0_ = (bitField0_ & ~0x00000080);
-          } else {
-            ensureAllelesFreqIsMutable();
-            allelesFreq_.addAll(other.allelesFreq_);
-          }
-          onChanged();
-        }
-        if (!other.genotypesFreq_.isEmpty()) {
-          if (genotypesFreq_.isEmpty()) {
-            genotypesFreq_ = other.genotypesFreq_;
-            bitField0_ = (bitField0_ & ~0x00000100);
-          } else {
-            ensureGenotypesFreqIsMutable();
-            genotypesFreq_.addAll(other.genotypesFreq_);
-          }
-          onChanged();
-        }
-        if (other.hasMissingAlleles()) {
-          setMissingAlleles(other.getMissingAlleles());
-        }
-        if (other.hasMissingGenotypes()) {
-          setMissingGenotypes(other.getMissingGenotypes());
-        }
-        if (other.hasMendelianErrors()) {
-          setMendelianErrors(other.getMendelianErrors());
-        }
-        if (other.hasIsIndel()) {
-          setIsIndel(other.getIsIndel());
-        }
-        if (other.hasCasesPercentDominant()) {
-          setCasesPercentDominant(other.getCasesPercentDominant());
-        }
-        if (other.hasControlsPercentDominant()) {
-          setControlsPercentDominant(other.getControlsPercentDominant());
-        }
-        if (other.hasCasesPercentRecessive()) {
-          setCasesPercentRecessive(other.getCasesPercentRecessive());
-        }
-        if (other.hasControlsPercentRecessive()) {
-          setControlsPercentRecessive(other.getControlsPercentRecessive());
-        }
-        if (other.hasHardyWeinberg()) {
-          setHardyWeinberg(other.getHardyWeinberg());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
 
-      public final boolean isInitialized() {
-        if (!hasNumAlleles()) {
+        private byte memoizedIsInitialized = -1;
 
-          return false;
+        public final boolean isInitialized() {
+            byte isInitialized = memoizedIsInitialized;
+            if (isInitialized != -1) {
+                return isInitialized == 1;
+            }
+
+            if (!hasNumAlleles()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMafAllele()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMgfGenotype()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMaf()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMgf()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMissingAlleles()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasMissingGenotypes()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            memoizedIsInitialized = 1;
+            return true;
         }
-        if (!hasMafAllele()) {
 
-          return false;
+        public void writeTo(com.google.protobuf.CodedOutputStream output)
+                throws java.io.IOException {
+            getSerializedSize();
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                output.writeInt32(1, numAlleles_);
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                output.writeBytes(2, getMafAlleleBytes());
+            }
+            if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                output.writeBytes(3, getMgfGenotypeBytes());
+            }
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                output.writeFloat(4, maf_);
+            }
+            if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                output.writeFloat(5, mgf_);
+            }
+            for (int i = 0; i < allelesCount_.size(); i++) {
+                output.writeInt32(6, allelesCount_.get(i));
+            }
+            for (int i = 0; i < genotypesCount_.size(); i++) {
+                output.writeInt32(7, genotypesCount_.get(i));
+            }
+            for (int i = 0; i < allelesFreq_.size(); i++) {
+                output.writeFloat(8, allelesFreq_.get(i));
+            }
+            for (int i = 0; i < genotypesFreq_.size(); i++) {
+                output.writeFloat(9, genotypesFreq_.get(i));
+            }
+            if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                output.writeInt32(10, missingAlleles_);
+            }
+            if (((bitField0_ & 0x00000040) == 0x00000040)) {
+                output.writeInt32(11, missingGenotypes_);
+            }
+            if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                output.writeInt32(12, mendelianErrors_);
+            }
+            if (((bitField0_ & 0x00000100) == 0x00000100)) {
+                output.writeBool(13, isIndel_);
+            }
+            if (((bitField0_ & 0x00000200) == 0x00000200)) {
+                output.writeFloat(14, casesPercentDominant_);
+            }
+            if (((bitField0_ & 0x00000400) == 0x00000400)) {
+                output.writeFloat(15, controlsPercentDominant_);
+            }
+            if (((bitField0_ & 0x00000800) == 0x00000800)) {
+                output.writeFloat(16, casesPercentRecessive_);
+            }
+            if (((bitField0_ & 0x00001000) == 0x00001000)) {
+                output.writeFloat(17, controlsPercentRecessive_);
+            }
+            if (((bitField0_ & 0x00002000) == 0x00002000)) {
+                output.writeFloat(18, hardyWeinberg_);
+            }
+            getUnknownFields().writeTo(output);
         }
-        if (!hasMgfGenotype()) {
 
-          return false;
+        private int memoizedSerializedSize = -1;
+
+        public int getSerializedSize() {
+            int size = memoizedSerializedSize;
+            if (size != -1) {
+                return size;
+            }
+
+            size = 0;
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(1, numAlleles_);
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(2, getMafAlleleBytes());
+            }
+            if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(3, getMgfGenotypeBytes());
+            }
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(4, maf_);
+            }
+            if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(5, mgf_);
+            }
+            {
+                int dataSize = 0;
+                for (int i = 0; i < allelesCount_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeInt32SizeNoTag(allelesCount_.get(i));
+                }
+                size += dataSize;
+                size += 1 * getAllelesCountList().size();
+            }
+            {
+                int dataSize = 0;
+                for (int i = 0; i < genotypesCount_.size(); i++) {
+                    dataSize += com.google.protobuf.CodedOutputStream
+                            .computeInt32SizeNoTag(genotypesCount_.get(i));
+                }
+                size += dataSize;
+                size += 1 * getGenotypesCountList().size();
+            }
+            {
+                int dataSize = 0;
+                dataSize = 4 * getAllelesFreqList().size();
+                size += dataSize;
+                size += 1 * getAllelesFreqList().size();
+            }
+            {
+                int dataSize = 0;
+                dataSize = 4 * getGenotypesFreqList().size();
+                size += dataSize;
+                size += 1 * getGenotypesFreqList().size();
+            }
+            if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(10, missingAlleles_);
+            }
+            if (((bitField0_ & 0x00000040) == 0x00000040)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(11, missingGenotypes_);
+            }
+            if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(12, mendelianErrors_);
+            }
+            if (((bitField0_ & 0x00000100) == 0x00000100)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBoolSize(13, isIndel_);
+            }
+            if (((bitField0_ & 0x00000200) == 0x00000200)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(14, casesPercentDominant_);
+            }
+            if (((bitField0_ & 0x00000400) == 0x00000400)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(15, controlsPercentDominant_);
+            }
+            if (((bitField0_ & 0x00000800) == 0x00000800)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(16, casesPercentRecessive_);
+            }
+            if (((bitField0_ & 0x00001000) == 0x00001000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(17, controlsPercentRecessive_);
+            }
+            if (((bitField0_ & 0x00002000) == 0x00002000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeFloatSize(18, hardyWeinberg_);
+            }
+            size += getUnknownFields().getSerializedSize();
+            memoizedSerializedSize = size;
+            return size;
         }
-        if (!hasMaf()) {
 
-          return false;
+        private static final long serialVersionUID = 0L;
+
+        @java.lang.Override
+        protected java.lang.Object writeReplace()
+                throws java.io.ObjectStreamException {
+            return super.writeReplace();
         }
-        if (!hasMgf()) {
 
-          return false;
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                com.google.protobuf.ByteString data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
         }
-        if (!hasMissingAlleles()) {
 
-          return false;
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                com.google.protobuf.ByteString data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
         }
-        if (!hasMissingGenotypes()) {
 
-          return false;
+        public static VariantFieldsProtos.VariantStats parseFrom(byte[] data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
         }
-        return true;
-      }
 
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                byte[] data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantStats parseFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantStats parseDelimitedFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantStats parseDelimitedFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                com.google.protobuf.CodedInputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantFieldsProtos.VariantStats parseFrom(
+                com.google.protobuf.CodedInputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static Builder newBuilder() {
+            return Builder.create();
+        }
+
+        public Builder newBuilderForType() {
+            return newBuilder();
+        }
+
+        public static Builder newBuilder(VariantFieldsProtos.VariantStats prototype) {
+            return newBuilder().mergeFrom(prototype);
+        }
+
+        public Builder toBuilder() {
+            return newBuilder(this);
+        }
+
+        @java.lang.Override
+        protected Builder newBuilderForType(
+                com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            Builder builder = new Builder(parent);
+            return builder;
+        }
+
+        public static final class Builder extends
+                com.google.protobuf.GeneratedMessage.Builder<Builder>
+                implements VariantFieldsProtos.VariantStatsOrBuilder {
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return VariantFieldsProtos.internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
+            }
+
+            protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return VariantFieldsProtos
+                        .internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
+            }
+
+            // Construct using org.opencb.opencga.storage.core.variant.io.VariantFieldsProtos.VariantStats.newBuilder()
+            private Builder() {
+                maybeForceBuilderInitialization();
+            }
+
+            private Builder(BuilderParent parent) {
+                super(parent);
+                maybeForceBuilderInitialization();
+            }
+
+            private void maybeForceBuilderInitialization() {
+                if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                }
+            }
+
+            private static Builder create() {
+                return new Builder();
+            }
+
+            public Builder clear() {
+                super.clear();
+                numAlleles_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000001);
+                mafAllele_ = "";
+                bitField0_ = (bitField0_ & ~0x00000002);
+                mgfGenotype_ = "";
+                bitField0_ = (bitField0_ & ~0x00000004);
+                maf_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00000008);
+                mgf_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00000010);
+                allelesCount_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000020);
+                genotypesCount_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000040);
+                allelesFreq_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000080);
+                genotypesFreq_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000100);
+                missingAlleles_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000200);
+                missingGenotypes_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000400);
+                mendelianErrors_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000800);
+                isIndel_ = false;
+                bitField0_ = (bitField0_ & ~0x00001000);
+                casesPercentDominant_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00002000);
+                controlsPercentDominant_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00004000);
+                casesPercentRecessive_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00008000);
+                controlsPercentRecessive_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00010000);
+                hardyWeinberg_ = 0F;
+                bitField0_ = (bitField0_ & ~0x00020000);
+                return this;
+            }
+
+            public Builder clone() {
+                return create().mergeFrom(buildPartial());
+            }
+
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return VariantFieldsProtos.VariantStats.getDescriptor();
+            }
+
+            public VariantFieldsProtos.VariantStats getDefaultInstanceForType() {
+                return VariantFieldsProtos.VariantStats.getDefaultInstance();
+            }
+
+            public VariantFieldsProtos.VariantStats build() {
+                VariantFieldsProtos.VariantStats result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(result);
+                }
+                return result;
+            }
+
+            private VariantFieldsProtos.VariantStats buildParsed()
+                    throws com.google.protobuf.InvalidProtocolBufferException {
+                VariantFieldsProtos.VariantStats result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(
+                            result).asInvalidProtocolBufferException();
+                }
+                return result;
+            }
+
+            public VariantFieldsProtos.VariantStats buildPartial() {
+                VariantFieldsProtos.VariantStats result = new VariantFieldsProtos.VariantStats(this);
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
+                }
+                result.numAlleles_ = numAlleles_;
+                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+                    to_bitField0_ |= 0x00000002;
+                }
+                result.mafAllele_ = mafAllele_;
+                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+                    to_bitField0_ |= 0x00000004;
+                }
+                result.mgfGenotype_ = mgfGenotype_;
+                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+                    to_bitField0_ |= 0x00000008;
+                }
+                result.maf_ = maf_;
+                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+                    to_bitField0_ |= 0x00000010;
+                }
+                result.mgf_ = mgf_;
+                if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                    allelesCount_ = java.util.Collections.unmodifiableList(allelesCount_);
+                    bitField0_ = (bitField0_ & ~0x00000020);
+                }
+                result.allelesCount_ = allelesCount_;
+                if (((bitField0_ & 0x00000040) == 0x00000040)) {
+                    genotypesCount_ = java.util.Collections.unmodifiableList(genotypesCount_);
+                    bitField0_ = (bitField0_ & ~0x00000040);
+                }
+                result.genotypesCount_ = genotypesCount_;
+                if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                    allelesFreq_ = java.util.Collections.unmodifiableList(allelesFreq_);
+                    bitField0_ = (bitField0_ & ~0x00000080);
+                }
+                result.allelesFreq_ = allelesFreq_;
+                if (((bitField0_ & 0x00000100) == 0x00000100)) {
+                    genotypesFreq_ = java.util.Collections.unmodifiableList(genotypesFreq_);
+                    bitField0_ = (bitField0_ & ~0x00000100);
+                }
+                result.genotypesFreq_ = genotypesFreq_;
+                if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+                    to_bitField0_ |= 0x00000020;
+                }
+                result.missingAlleles_ = missingAlleles_;
+                if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+                    to_bitField0_ |= 0x00000040;
+                }
+                result.missingGenotypes_ = missingGenotypes_;
+                if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+                    to_bitField0_ |= 0x00000080;
+                }
+                result.mendelianErrors_ = mendelianErrors_;
+                if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
+                    to_bitField0_ |= 0x00000100;
+                }
+                result.isIndel_ = isIndel_;
+                if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+                    to_bitField0_ |= 0x00000200;
+                }
+                result.casesPercentDominant_ = casesPercentDominant_;
+                if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
+                    to_bitField0_ |= 0x00000400;
+                }
+                result.controlsPercentDominant_ = controlsPercentDominant_;
+                if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
+                    to_bitField0_ |= 0x00000800;
+                }
+                result.casesPercentRecessive_ = casesPercentRecessive_;
+                if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
+                    to_bitField0_ |= 0x00001000;
+                }
+                result.controlsPercentRecessive_ = controlsPercentRecessive_;
+                if (((from_bitField0_ & 0x00020000) == 0x00020000)) {
+                    to_bitField0_ |= 0x00002000;
+                }
+                result.hardyWeinberg_ = hardyWeinberg_;
+                result.bitField0_ = to_bitField0_;
+                onBuilt();
+                return result;
+            }
+
+            public Builder mergeFrom(com.google.protobuf.Message other) {
+                if (other instanceof VariantFieldsProtos.VariantStats) {
+                    return mergeFrom((VariantFieldsProtos.VariantStats) other);
+                } else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
+
+            public Builder mergeFrom(VariantFieldsProtos.VariantStats other) {
+                if (other == VariantFieldsProtos.VariantStats.getDefaultInstance()) {
+                    return this;
+                }
+                if (other.hasNumAlleles()) {
+                    setNumAlleles(other.getNumAlleles());
+                }
+                if (other.hasMafAllele()) {
+                    setMafAllele(other.getMafAllele());
+                }
+                if (other.hasMgfGenotype()) {
+                    setMgfGenotype(other.getMgfGenotype());
+                }
+                if (other.hasMaf()) {
+                    setMaf(other.getMaf());
+                }
+                if (other.hasMgf()) {
+                    setMgf(other.getMgf());
+                }
+                if (!other.allelesCount_.isEmpty()) {
+                    if (allelesCount_.isEmpty()) {
+                        allelesCount_ = other.allelesCount_;
+                        bitField0_ = (bitField0_ & ~0x00000020);
+                    } else {
+                        ensureAllelesCountIsMutable();
+                        allelesCount_.addAll(other.allelesCount_);
+                    }
+                    onChanged();
+                }
+                if (!other.genotypesCount_.isEmpty()) {
+                    if (genotypesCount_.isEmpty()) {
+                        genotypesCount_ = other.genotypesCount_;
+                        bitField0_ = (bitField0_ & ~0x00000040);
+                    } else {
+                        ensureGenotypesCountIsMutable();
+                        genotypesCount_.addAll(other.genotypesCount_);
+                    }
+                    onChanged();
+                }
+                if (!other.allelesFreq_.isEmpty()) {
+                    if (allelesFreq_.isEmpty()) {
+                        allelesFreq_ = other.allelesFreq_;
+                        bitField0_ = (bitField0_ & ~0x00000080);
+                    } else {
+                        ensureAllelesFreqIsMutable();
+                        allelesFreq_.addAll(other.allelesFreq_);
+                    }
+                    onChanged();
+                }
+                if (!other.genotypesFreq_.isEmpty()) {
+                    if (genotypesFreq_.isEmpty()) {
+                        genotypesFreq_ = other.genotypesFreq_;
+                        bitField0_ = (bitField0_ & ~0x00000100);
+                    } else {
+                        ensureGenotypesFreqIsMutable();
+                        genotypesFreq_.addAll(other.genotypesFreq_);
+                    }
+                    onChanged();
+                }
+                if (other.hasMissingAlleles()) {
+                    setMissingAlleles(other.getMissingAlleles());
+                }
+                if (other.hasMissingGenotypes()) {
+                    setMissingGenotypes(other.getMissingGenotypes());
+                }
+                if (other.hasMendelianErrors()) {
+                    setMendelianErrors(other.getMendelianErrors());
+                }
+                if (other.hasIsIndel()) {
+                    setIsIndel(other.getIsIndel());
+                }
+                if (other.hasCasesPercentDominant()) {
+                    setCasesPercentDominant(other.getCasesPercentDominant());
+                }
+                if (other.hasControlsPercentDominant()) {
+                    setControlsPercentDominant(other.getControlsPercentDominant());
+                }
+                if (other.hasCasesPercentRecessive()) {
+                    setCasesPercentRecessive(other.getCasesPercentRecessive());
+                }
+                if (other.hasControlsPercentRecessive()) {
+                    setControlsPercentRecessive(other.getControlsPercentRecessive());
+                }
+                if (other.hasHardyWeinberg()) {
+                    setHardyWeinberg(other.getHardyWeinberg());
+                }
+                this.mergeUnknownFields(other.getUnknownFields());
+                return this;
+            }
+
+            public final boolean isInitialized() {
+                if (!hasNumAlleles()) {
+
+                    return false;
+                }
+                if (!hasMafAllele()) {
+
+                    return false;
+                }
+                if (!hasMgfGenotype()) {
+
+                    return false;
+                }
+                if (!hasMaf()) {
+
+                    return false;
+                }
+                if (!hasMgf()) {
+
+                    return false;
+                }
+                if (!hasMissingAlleles()) {
+
+                    return false;
+                }
+                if (!hasMissingGenotypes()) {
+
+                    return false;
+                }
+                return true;
+            }
+
+            public Builder mergeFrom(
+                    com.google.protobuf.CodedInputStream input,
+                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                        com.google.protobuf.UnknownFieldSet.newBuilder(
+                                this.getUnknownFields());
+                while (true) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            this.setUnknownFields(unknownFields.build());
+                            onChanged();
+                            return this;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                this.setUnknownFields(unknownFields.build());
+                                onChanged();
+                                return this;
+                            }
+                            break;
+                        }
+                        case 8: {
+                            bitField0_ |= 0x00000001;
+                            numAlleles_ = input.readInt32();
+                            break;
+                        }
+                        case 18: {
+                            bitField0_ |= 0x00000002;
+                            mafAllele_ = input.readBytes();
+                            break;
+                        }
+                        case 26: {
+                            bitField0_ |= 0x00000004;
+                            mgfGenotype_ = input.readBytes();
+                            break;
+                        }
+                        case 37: {
+                            bitField0_ |= 0x00000008;
+                            maf_ = input.readFloat();
+                            break;
+                        }
+                        case 45: {
+                            bitField0_ |= 0x00000010;
+                            mgf_ = input.readFloat();
+                            break;
+                        }
+                        case 48: {
+                            ensureAllelesCountIsMutable();
+                            allelesCount_.add(input.readInt32());
+                            break;
+                        }
+                        case 50: {
+                            int length = input.readRawVarint32();
+                            int limit = input.pushLimit(length);
+                            while (input.getBytesUntilLimit() > 0) {
+                                addAllelesCount(input.readInt32());
+                            }
+                            input.popLimit(limit);
+                            break;
+                        }
+                        case 56: {
+                            ensureGenotypesCountIsMutable();
+                            genotypesCount_.add(input.readInt32());
+                            break;
+                        }
+                        case 58: {
+                            int length = input.readRawVarint32();
+                            int limit = input.pushLimit(length);
+                            while (input.getBytesUntilLimit() > 0) {
+                                addGenotypesCount(input.readInt32());
+                            }
+                            input.popLimit(limit);
+                            break;
+                        }
+                        case 69: {
+                            ensureAllelesFreqIsMutable();
+                            allelesFreq_.add(input.readFloat());
+                            break;
+                        }
+                        case 66: {
+                            int length = input.readRawVarint32();
+                            int limit = input.pushLimit(length);
+                            while (input.getBytesUntilLimit() > 0) {
+                                addAllelesFreq(input.readFloat());
+                            }
+                            input.popLimit(limit);
+                            break;
+                        }
+                        case 77: {
+                            ensureGenotypesFreqIsMutable();
+                            genotypesFreq_.add(input.readFloat());
+                            break;
+                        }
+                        case 74: {
+                            int length = input.readRawVarint32();
+                            int limit = input.pushLimit(length);
+                            while (input.getBytesUntilLimit() > 0) {
+                                addGenotypesFreq(input.readFloat());
+                            }
+                            input.popLimit(limit);
+                            break;
+                        }
+                        case 80: {
+                            bitField0_ |= 0x00000200;
+                            missingAlleles_ = input.readInt32();
+                            break;
+                        }
+                        case 88: {
+                            bitField0_ |= 0x00000400;
+                            missingGenotypes_ = input.readInt32();
+                            break;
+                        }
+                        case 96: {
+                            bitField0_ |= 0x00000800;
+                            mendelianErrors_ = input.readInt32();
+                            break;
+                        }
+                        case 104: {
+                            bitField0_ |= 0x00001000;
+                            isIndel_ = input.readBool();
+                            break;
+                        }
+                        case 117: {
+                            bitField0_ |= 0x00002000;
+                            casesPercentDominant_ = input.readFloat();
+                            break;
+                        }
+                        case 125: {
+                            bitField0_ |= 0x00004000;
+                            controlsPercentDominant_ = input.readFloat();
+                            break;
+                        }
+                        case 133: {
+                            bitField0_ |= 0x00008000;
+                            casesPercentRecessive_ = input.readFloat();
+                            break;
+                        }
+                        case 141: {
+                            bitField0_ |= 0x00010000;
+                            controlsPercentRecessive_ = input.readFloat();
+                            break;
+                        }
+                        case 149: {
+                            bitField0_ |= 0x00020000;
+                            hardyWeinberg_ = input.readFloat();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private int bitField0_;
+
+            // required int32 num_alleles = 1;
+            private int numAlleles_;
+
+            public boolean hasNumAlleles() {
+                return ((bitField0_ & 0x00000001) == 0x00000001);
+            }
+
+            public int getNumAlleles() {
+                return numAlleles_;
+            }
+
+            public Builder setNumAlleles(int value) {
+                bitField0_ |= 0x00000001;
+                numAlleles_ = value;
                 onChanged();
                 return this;
-              }
-              break;
             }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              numAlleles_ = input.readInt32();
-              break;
+
+            public Builder clearNumAlleles() {
+                bitField0_ = (bitField0_ & ~0x00000001);
+                numAlleles_ = 0;
+                onChanged();
+                return this;
             }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              mafAllele_ = input.readBytes();
-              break;
+
+            // required string maf_allele = 2;
+            private java.lang.Object mafAllele_ = "";
+
+            public boolean hasMafAllele() {
+                return ((bitField0_ & 0x00000002) == 0x00000002);
             }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              mgfGenotype_ = input.readBytes();
-              break;
+
+            public String getMafAllele() {
+                java.lang.Object ref = mafAllele_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    mafAllele_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 37: {
-              bitField0_ |= 0x00000008;
-              maf_ = input.readFloat();
-              break;
+
+            public Builder setMafAllele(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000002;
+                mafAllele_ = value;
+                onChanged();
+                return this;
             }
-            case 45: {
-              bitField0_ |= 0x00000010;
-              mgf_ = input.readFloat();
-              break;
+
+            public Builder clearMafAllele() {
+                bitField0_ = (bitField0_ & ~0x00000002);
+                mafAllele_ = getDefaultInstance().getMafAllele();
+                onChanged();
+                return this;
             }
-            case 48: {
-              ensureAllelesCountIsMutable();
-              allelesCount_.add(input.readInt32());
-              break;
+
+            void setMafAllele(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000002;
+                mafAllele_ = value;
+                onChanged();
             }
-            case 50: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addAllelesCount(input.readInt32());
-              }
-              input.popLimit(limit);
-              break;
+
+            // required string mgf_genotype = 3;
+            private java.lang.Object mgfGenotype_ = "";
+
+            public boolean hasMgfGenotype() {
+                return ((bitField0_ & 0x00000004) == 0x00000004);
             }
-            case 56: {
-              ensureGenotypesCountIsMutable();
-              genotypesCount_.add(input.readInt32());
-              break;
+
+            public String getMgfGenotype() {
+                java.lang.Object ref = mgfGenotype_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    mgfGenotype_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 58: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addGenotypesCount(input.readInt32());
-              }
-              input.popLimit(limit);
-              break;
+
+            public Builder setMgfGenotype(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000004;
+                mgfGenotype_ = value;
+                onChanged();
+                return this;
             }
-            case 69: {
-              ensureAllelesFreqIsMutable();
-              allelesFreq_.add(input.readFloat());
-              break;
+
+            public Builder clearMgfGenotype() {
+                bitField0_ = (bitField0_ & ~0x00000004);
+                mgfGenotype_ = getDefaultInstance().getMgfGenotype();
+                onChanged();
+                return this;
             }
-            case 66: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addAllelesFreq(input.readFloat());
-              }
-              input.popLimit(limit);
-              break;
+
+            void setMgfGenotype(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000004;
+                mgfGenotype_ = value;
+                onChanged();
             }
-            case 77: {
-              ensureGenotypesFreqIsMutable();
-              genotypesFreq_.add(input.readFloat());
-              break;
+
+            // required float maf = 4;
+            private float maf_;
+
+            public boolean hasMaf() {
+                return ((bitField0_ & 0x00000008) == 0x00000008);
             }
-            case 74: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              while (input.getBytesUntilLimit() > 0) {
-                addGenotypesFreq(input.readFloat());
-              }
-              input.popLimit(limit);
-              break;
+
+            public float getMaf() {
+                return maf_;
             }
-            case 80: {
-              bitField0_ |= 0x00000200;
-              missingAlleles_ = input.readInt32();
-              break;
+
+            public Builder setMaf(float value) {
+                bitField0_ |= 0x00000008;
+                maf_ = value;
+                onChanged();
+                return this;
             }
-            case 88: {
-              bitField0_ |= 0x00000400;
-              missingGenotypes_ = input.readInt32();
-              break;
+
+            public Builder clearMaf() {
+                bitField0_ = (bitField0_ & ~0x00000008);
+                maf_ = 0F;
+                onChanged();
+                return this;
             }
-            case 96: {
-              bitField0_ |= 0x00000800;
-              mendelianErrors_ = input.readInt32();
-              break;
+
+            // required float mgf = 5;
+            private float mgf_;
+
+            public boolean hasMgf() {
+                return ((bitField0_ & 0x00000010) == 0x00000010);
             }
-            case 104: {
-              bitField0_ |= 0x00001000;
-              isIndel_ = input.readBool();
-              break;
+
+            public float getMgf() {
+                return mgf_;
             }
-            case 117: {
-              bitField0_ |= 0x00002000;
-              casesPercentDominant_ = input.readFloat();
-              break;
+
+            public Builder setMgf(float value) {
+                bitField0_ |= 0x00000010;
+                mgf_ = value;
+                onChanged();
+                return this;
             }
-            case 125: {
-              bitField0_ |= 0x00004000;
-              controlsPercentDominant_ = input.readFloat();
-              break;
+
+            public Builder clearMgf() {
+                bitField0_ = (bitField0_ & ~0x00000010);
+                mgf_ = 0F;
+                onChanged();
+                return this;
             }
-            case 133: {
-              bitField0_ |= 0x00008000;
-              casesPercentRecessive_ = input.readFloat();
-              break;
+
+            // repeated int32 alleles_count = 6;
+            private java.util.List<java.lang.Integer> allelesCount_ = java.util.Collections.emptyList();
+            ;
+
+            private void ensureAllelesCountIsMutable() {
+                if (!((bitField0_ & 0x00000020) == 0x00000020)) {
+                    allelesCount_ = new java.util.ArrayList<java.lang.Integer>(allelesCount_);
+                    bitField0_ |= 0x00000020;
+                }
             }
-            case 141: {
-              bitField0_ |= 0x00010000;
-              controlsPercentRecessive_ = input.readFloat();
-              break;
+
+            public java.util.List<java.lang.Integer>
+            getAllelesCountList() {
+                return java.util.Collections.unmodifiableList(allelesCount_);
             }
-            case 149: {
-              bitField0_ |= 0x00020000;
-              hardyWeinberg_ = input.readFloat();
-              break;
+
+            public int getAllelesCountCount() {
+                return allelesCount_.size();
             }
-          }
+
+            public int getAllelesCount(int index) {
+                return allelesCount_.get(index);
+            }
+
+            public Builder setAllelesCount(
+                    int index, int value) {
+                ensureAllelesCountIsMutable();
+                allelesCount_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllelesCount(int value) {
+                ensureAllelesCountIsMutable();
+                allelesCount_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllAllelesCount(
+                    java.lang.Iterable<? extends java.lang.Integer> values) {
+                ensureAllelesCountIsMutable();
+                super.addAll(values, allelesCount_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAllelesCount() {
+                allelesCount_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000020);
+                onChanged();
+                return this;
+            }
+
+            // repeated int32 genotypes_count = 7;
+            private java.util.List<java.lang.Integer> genotypesCount_ = java.util.Collections.emptyList();
+            ;
+
+            private void ensureGenotypesCountIsMutable() {
+                if (!((bitField0_ & 0x00000040) == 0x00000040)) {
+                    genotypesCount_ = new java.util.ArrayList<java.lang.Integer>(genotypesCount_);
+                    bitField0_ |= 0x00000040;
+                }
+            }
+
+            public java.util.List<java.lang.Integer>
+            getGenotypesCountList() {
+                return java.util.Collections.unmodifiableList(genotypesCount_);
+            }
+
+            public int getGenotypesCountCount() {
+                return genotypesCount_.size();
+            }
+
+            public int getGenotypesCount(int index) {
+                return genotypesCount_.get(index);
+            }
+
+            public Builder setGenotypesCount(
+                    int index, int value) {
+                ensureGenotypesCountIsMutable();
+                genotypesCount_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addGenotypesCount(int value) {
+                ensureGenotypesCountIsMutable();
+                genotypesCount_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllGenotypesCount(
+                    java.lang.Iterable<? extends java.lang.Integer> values) {
+                ensureGenotypesCountIsMutable();
+                super.addAll(values, genotypesCount_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearGenotypesCount() {
+                genotypesCount_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000040);
+                onChanged();
+                return this;
+            }
+
+            // repeated float alleles_freq = 8;
+            private java.util.List<java.lang.Float> allelesFreq_ = java.util.Collections.emptyList();
+            ;
+
+            private void ensureAllelesFreqIsMutable() {
+                if (!((bitField0_ & 0x00000080) == 0x00000080)) {
+                    allelesFreq_ = new java.util.ArrayList<java.lang.Float>(allelesFreq_);
+                    bitField0_ |= 0x00000080;
+                }
+            }
+
+            public java.util.List<java.lang.Float>
+            getAllelesFreqList() {
+                return java.util.Collections.unmodifiableList(allelesFreq_);
+            }
+
+            public int getAllelesFreqCount() {
+                return allelesFreq_.size();
+            }
+
+            public float getAllelesFreq(int index) {
+                return allelesFreq_.get(index);
+            }
+
+            public Builder setAllelesFreq(
+                    int index, float value) {
+                ensureAllelesFreqIsMutable();
+                allelesFreq_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllelesFreq(float value) {
+                ensureAllelesFreqIsMutable();
+                allelesFreq_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllAllelesFreq(
+                    java.lang.Iterable<? extends java.lang.Float> values) {
+                ensureAllelesFreqIsMutable();
+                super.addAll(values, allelesFreq_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAllelesFreq() {
+                allelesFreq_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000080);
+                onChanged();
+                return this;
+            }
+
+            // repeated float genotypes_freq = 9;
+            private java.util.List<java.lang.Float> genotypesFreq_ = java.util.Collections.emptyList();
+            ;
+
+            private void ensureGenotypesFreqIsMutable() {
+                if (!((bitField0_ & 0x00000100) == 0x00000100)) {
+                    genotypesFreq_ = new java.util.ArrayList<java.lang.Float>(genotypesFreq_);
+                    bitField0_ |= 0x00000100;
+                }
+            }
+
+            public java.util.List<java.lang.Float>
+            getGenotypesFreqList() {
+                return java.util.Collections.unmodifiableList(genotypesFreq_);
+            }
+
+            public int getGenotypesFreqCount() {
+                return genotypesFreq_.size();
+            }
+
+            public float getGenotypesFreq(int index) {
+                return genotypesFreq_.get(index);
+            }
+
+            public Builder setGenotypesFreq(
+                    int index, float value) {
+                ensureGenotypesFreqIsMutable();
+                genotypesFreq_.set(index, value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addGenotypesFreq(float value) {
+                ensureGenotypesFreqIsMutable();
+                genotypesFreq_.add(value);
+                onChanged();
+                return this;
+            }
+
+            public Builder addAllGenotypesFreq(
+                    java.lang.Iterable<? extends java.lang.Float> values) {
+                ensureGenotypesFreqIsMutable();
+                super.addAll(values, genotypesFreq_);
+                onChanged();
+                return this;
+            }
+
+            public Builder clearGenotypesFreq() {
+                genotypesFreq_ = java.util.Collections.emptyList();
+                ;
+                bitField0_ = (bitField0_ & ~0x00000100);
+                onChanged();
+                return this;
+            }
+
+            // required int32 missing_alleles = 10;
+            private int missingAlleles_;
+
+            public boolean hasMissingAlleles() {
+                return ((bitField0_ & 0x00000200) == 0x00000200);
+            }
+
+            public int getMissingAlleles() {
+                return missingAlleles_;
+            }
+
+            public Builder setMissingAlleles(int value) {
+                bitField0_ |= 0x00000200;
+                missingAlleles_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearMissingAlleles() {
+                bitField0_ = (bitField0_ & ~0x00000200);
+                missingAlleles_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // required int32 missing_genotypes = 11;
+            private int missingGenotypes_;
+
+            public boolean hasMissingGenotypes() {
+                return ((bitField0_ & 0x00000400) == 0x00000400);
+            }
+
+            public int getMissingGenotypes() {
+                return missingGenotypes_;
+            }
+
+            public Builder setMissingGenotypes(int value) {
+                bitField0_ |= 0x00000400;
+                missingGenotypes_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearMissingGenotypes() {
+                bitField0_ = (bitField0_ & ~0x00000400);
+                missingGenotypes_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // optional int32 mendelian_errors = 12;
+            private int mendelianErrors_;
+
+            public boolean hasMendelianErrors() {
+                return ((bitField0_ & 0x00000800) == 0x00000800);
+            }
+
+            public int getMendelianErrors() {
+                return mendelianErrors_;
+            }
+
+            public Builder setMendelianErrors(int value) {
+                bitField0_ |= 0x00000800;
+                mendelianErrors_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearMendelianErrors() {
+                bitField0_ = (bitField0_ & ~0x00000800);
+                mendelianErrors_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // optional bool is_indel = 13;
+            private boolean isIndel_;
+
+            public boolean hasIsIndel() {
+                return ((bitField0_ & 0x00001000) == 0x00001000);
+            }
+
+            public boolean getIsIndel() {
+                return isIndel_;
+            }
+
+            public Builder setIsIndel(boolean value) {
+                bitField0_ |= 0x00001000;
+                isIndel_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearIsIndel() {
+                bitField0_ = (bitField0_ & ~0x00001000);
+                isIndel_ = false;
+                onChanged();
+                return this;
+            }
+
+            // optional float cases_percent_dominant = 14;
+            private float casesPercentDominant_;
+
+            public boolean hasCasesPercentDominant() {
+                return ((bitField0_ & 0x00002000) == 0x00002000);
+            }
+
+            public float getCasesPercentDominant() {
+                return casesPercentDominant_;
+            }
+
+            public Builder setCasesPercentDominant(float value) {
+                bitField0_ |= 0x00002000;
+                casesPercentDominant_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearCasesPercentDominant() {
+                bitField0_ = (bitField0_ & ~0x00002000);
+                casesPercentDominant_ = 0F;
+                onChanged();
+                return this;
+            }
+
+            // optional float controls_percent_dominant = 15;
+            private float controlsPercentDominant_;
+
+            public boolean hasControlsPercentDominant() {
+                return ((bitField0_ & 0x00004000) == 0x00004000);
+            }
+
+            public float getControlsPercentDominant() {
+                return controlsPercentDominant_;
+            }
+
+            public Builder setControlsPercentDominant(float value) {
+                bitField0_ |= 0x00004000;
+                controlsPercentDominant_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearControlsPercentDominant() {
+                bitField0_ = (bitField0_ & ~0x00004000);
+                controlsPercentDominant_ = 0F;
+                onChanged();
+                return this;
+            }
+
+            // optional float cases_percent_recessive = 16;
+            private float casesPercentRecessive_;
+
+            public boolean hasCasesPercentRecessive() {
+                return ((bitField0_ & 0x00008000) == 0x00008000);
+            }
+
+            public float getCasesPercentRecessive() {
+                return casesPercentRecessive_;
+            }
+
+            public Builder setCasesPercentRecessive(float value) {
+                bitField0_ |= 0x00008000;
+                casesPercentRecessive_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearCasesPercentRecessive() {
+                bitField0_ = (bitField0_ & ~0x00008000);
+                casesPercentRecessive_ = 0F;
+                onChanged();
+                return this;
+            }
+
+            // optional float controls_percent_recessive = 17;
+            private float controlsPercentRecessive_;
+
+            public boolean hasControlsPercentRecessive() {
+                return ((bitField0_ & 0x00010000) == 0x00010000);
+            }
+
+            public float getControlsPercentRecessive() {
+                return controlsPercentRecessive_;
+            }
+
+            public Builder setControlsPercentRecessive(float value) {
+                bitField0_ |= 0x00010000;
+                controlsPercentRecessive_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearControlsPercentRecessive() {
+                bitField0_ = (bitField0_ & ~0x00010000);
+                controlsPercentRecessive_ = 0F;
+                onChanged();
+                return this;
+            }
+
+            // optional float hardy_weinberg = 18;
+            private float hardyWeinberg_;
+
+            public boolean hasHardyWeinberg() {
+                return ((bitField0_ & 0x00020000) == 0x00020000);
+            }
+
+            public float getHardyWeinberg() {
+                return hardyWeinberg_;
+            }
+
+            public Builder setHardyWeinberg(float value) {
+                bitField0_ |= 0x00020000;
+                hardyWeinberg_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearHardyWeinberg() {
+                bitField0_ = (bitField0_ & ~0x00020000);
+                hardyWeinberg_ = 0F;
+                onChanged();
+                return this;
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantStats)
         }
-      }
 
-      private int bitField0_;
-
-      // required int32 num_alleles = 1;
-      private int numAlleles_ ;
-      public boolean hasNumAlleles() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public int getNumAlleles() {
-        return numAlleles_;
-      }
-      public Builder setNumAlleles(int value) {
-        bitField0_ |= 0x00000001;
-        numAlleles_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearNumAlleles() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        numAlleles_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // required string maf_allele = 2;
-      private java.lang.Object mafAllele_ = "";
-      public boolean hasMafAllele() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public String getMafAllele() {
-        java.lang.Object ref = mafAllele_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          mafAllele_ = s;
-          return s;
-        } else {
-          return (String) ref;
+        static {
+            defaultInstance = new VariantStats(true);
+            defaultInstance.initFields();
         }
-      }
-      public Builder setMafAllele(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
-        mafAllele_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMafAllele() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        mafAllele_ = getDefaultInstance().getMafAllele();
-        onChanged();
-        return this;
-      }
-      void setMafAllele(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000002;
-        mafAllele_ = value;
-        onChanged();
-      }
 
-      // required string mgf_genotype = 3;
-      private java.lang.Object mgfGenotype_ = "";
-      public boolean hasMgfGenotype() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      public String getMgfGenotype() {
-        java.lang.Object ref = mgfGenotype_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          mgfGenotype_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setMgfGenotype(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        mgfGenotype_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMgfGenotype() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        mgfGenotype_ = getDefaultInstance().getMgfGenotype();
-        onChanged();
-        return this;
-      }
-      void setMgfGenotype(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000004;
-        mgfGenotype_ = value;
-        onChanged();
-      }
-
-      // required float maf = 4;
-      private float maf_ ;
-      public boolean hasMaf() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      public float getMaf() {
-        return maf_;
-      }
-      public Builder setMaf(float value) {
-        bitField0_ |= 0x00000008;
-        maf_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMaf() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        maf_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // required float mgf = 5;
-      private float mgf_ ;
-      public boolean hasMgf() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      public float getMgf() {
-        return mgf_;
-      }
-      public Builder setMgf(float value) {
-        bitField0_ |= 0x00000010;
-        mgf_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMgf() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        mgf_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // repeated int32 alleles_count = 6;
-      private java.util.List<java.lang.Integer> allelesCount_ = java.util.Collections.emptyList();;
-      private void ensureAllelesCountIsMutable() {
-        if (!((bitField0_ & 0x00000020) == 0x00000020)) {
-          allelesCount_ = new java.util.ArrayList<java.lang.Integer>(allelesCount_);
-          bitField0_ |= 0x00000020;
-         }
-      }
-      public java.util.List<java.lang.Integer>
-          getAllelesCountList() {
-        return java.util.Collections.unmodifiableList(allelesCount_);
-      }
-      public int getAllelesCountCount() {
-        return allelesCount_.size();
-      }
-      public int getAllelesCount(int index) {
-        return allelesCount_.get(index);
-      }
-      public Builder setAllelesCount(
-          int index, int value) {
-        ensureAllelesCountIsMutable();
-        allelesCount_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllelesCount(int value) {
-        ensureAllelesCountIsMutable();
-        allelesCount_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllAllelesCount(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensureAllelesCountIsMutable();
-        super.addAll(values, allelesCount_);
-        onChanged();
-        return this;
-      }
-      public Builder clearAllelesCount() {
-        allelesCount_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000020);
-        onChanged();
-        return this;
-      }
-
-      // repeated int32 genotypes_count = 7;
-      private java.util.List<java.lang.Integer> genotypesCount_ = java.util.Collections.emptyList();;
-      private void ensureGenotypesCountIsMutable() {
-        if (!((bitField0_ & 0x00000040) == 0x00000040)) {
-          genotypesCount_ = new java.util.ArrayList<java.lang.Integer>(genotypesCount_);
-          bitField0_ |= 0x00000040;
-         }
-      }
-      public java.util.List<java.lang.Integer>
-          getGenotypesCountList() {
-        return java.util.Collections.unmodifiableList(genotypesCount_);
-      }
-      public int getGenotypesCountCount() {
-        return genotypesCount_.size();
-      }
-      public int getGenotypesCount(int index) {
-        return genotypesCount_.get(index);
-      }
-      public Builder setGenotypesCount(
-          int index, int value) {
-        ensureGenotypesCountIsMutable();
-        genotypesCount_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addGenotypesCount(int value) {
-        ensureGenotypesCountIsMutable();
-        genotypesCount_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllGenotypesCount(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensureGenotypesCountIsMutable();
-        super.addAll(values, genotypesCount_);
-        onChanged();
-        return this;
-      }
-      public Builder clearGenotypesCount() {
-        genotypesCount_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000040);
-        onChanged();
-        return this;
-      }
-
-      // repeated float alleles_freq = 8;
-      private java.util.List<java.lang.Float> allelesFreq_ = java.util.Collections.emptyList();;
-      private void ensureAllelesFreqIsMutable() {
-        if (!((bitField0_ & 0x00000080) == 0x00000080)) {
-          allelesFreq_ = new java.util.ArrayList<java.lang.Float>(allelesFreq_);
-          bitField0_ |= 0x00000080;
-         }
-      }
-      public java.util.List<java.lang.Float>
-          getAllelesFreqList() {
-        return java.util.Collections.unmodifiableList(allelesFreq_);
-      }
-      public int getAllelesFreqCount() {
-        return allelesFreq_.size();
-      }
-      public float getAllelesFreq(int index) {
-        return allelesFreq_.get(index);
-      }
-      public Builder setAllelesFreq(
-          int index, float value) {
-        ensureAllelesFreqIsMutable();
-        allelesFreq_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllelesFreq(float value) {
-        ensureAllelesFreqIsMutable();
-        allelesFreq_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllAllelesFreq(
-          java.lang.Iterable<? extends java.lang.Float> values) {
-        ensureAllelesFreqIsMutable();
-        super.addAll(values, allelesFreq_);
-        onChanged();
-        return this;
-      }
-      public Builder clearAllelesFreq() {
-        allelesFreq_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000080);
-        onChanged();
-        return this;
-      }
-
-      // repeated float genotypes_freq = 9;
-      private java.util.List<java.lang.Float> genotypesFreq_ = java.util.Collections.emptyList();;
-      private void ensureGenotypesFreqIsMutable() {
-        if (!((bitField0_ & 0x00000100) == 0x00000100)) {
-          genotypesFreq_ = new java.util.ArrayList<java.lang.Float>(genotypesFreq_);
-          bitField0_ |= 0x00000100;
-         }
-      }
-      public java.util.List<java.lang.Float>
-          getGenotypesFreqList() {
-        return java.util.Collections.unmodifiableList(genotypesFreq_);
-      }
-      public int getGenotypesFreqCount() {
-        return genotypesFreq_.size();
-      }
-      public float getGenotypesFreq(int index) {
-        return genotypesFreq_.get(index);
-      }
-      public Builder setGenotypesFreq(
-          int index, float value) {
-        ensureGenotypesFreqIsMutable();
-        genotypesFreq_.set(index, value);
-        onChanged();
-        return this;
-      }
-      public Builder addGenotypesFreq(float value) {
-        ensureGenotypesFreqIsMutable();
-        genotypesFreq_.add(value);
-        onChanged();
-        return this;
-      }
-      public Builder addAllGenotypesFreq(
-          java.lang.Iterable<? extends java.lang.Float> values) {
-        ensureGenotypesFreqIsMutable();
-        super.addAll(values, genotypesFreq_);
-        onChanged();
-        return this;
-      }
-      public Builder clearGenotypesFreq() {
-        genotypesFreq_ = java.util.Collections.emptyList();;
-        bitField0_ = (bitField0_ & ~0x00000100);
-        onChanged();
-        return this;
-      }
-
-      // required int32 missing_alleles = 10;
-      private int missingAlleles_ ;
-      public boolean hasMissingAlleles() {
-        return ((bitField0_ & 0x00000200) == 0x00000200);
-      }
-      public int getMissingAlleles() {
-        return missingAlleles_;
-      }
-      public Builder setMissingAlleles(int value) {
-        bitField0_ |= 0x00000200;
-        missingAlleles_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMissingAlleles() {
-        bitField0_ = (bitField0_ & ~0x00000200);
-        missingAlleles_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // required int32 missing_genotypes = 11;
-      private int missingGenotypes_ ;
-      public boolean hasMissingGenotypes() {
-        return ((bitField0_ & 0x00000400) == 0x00000400);
-      }
-      public int getMissingGenotypes() {
-        return missingGenotypes_;
-      }
-      public Builder setMissingGenotypes(int value) {
-        bitField0_ |= 0x00000400;
-        missingGenotypes_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMissingGenotypes() {
-        bitField0_ = (bitField0_ & ~0x00000400);
-        missingGenotypes_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // optional int32 mendelian_errors = 12;
-      private int mendelianErrors_ ;
-      public boolean hasMendelianErrors() {
-        return ((bitField0_ & 0x00000800) == 0x00000800);
-      }
-      public int getMendelianErrors() {
-        return mendelianErrors_;
-      }
-      public Builder setMendelianErrors(int value) {
-        bitField0_ |= 0x00000800;
-        mendelianErrors_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearMendelianErrors() {
-        bitField0_ = (bitField0_ & ~0x00000800);
-        mendelianErrors_ = 0;
-        onChanged();
-        return this;
-      }
-
-      // optional bool is_indel = 13;
-      private boolean isIndel_ ;
-      public boolean hasIsIndel() {
-        return ((bitField0_ & 0x00001000) == 0x00001000);
-      }
-      public boolean getIsIndel() {
-        return isIndel_;
-      }
-      public Builder setIsIndel(boolean value) {
-        bitField0_ |= 0x00001000;
-        isIndel_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearIsIndel() {
-        bitField0_ = (bitField0_ & ~0x00001000);
-        isIndel_ = false;
-        onChanged();
-        return this;
-      }
-
-      // optional float cases_percent_dominant = 14;
-      private float casesPercentDominant_ ;
-      public boolean hasCasesPercentDominant() {
-        return ((bitField0_ & 0x00002000) == 0x00002000);
-      }
-      public float getCasesPercentDominant() {
-        return casesPercentDominant_;
-      }
-      public Builder setCasesPercentDominant(float value) {
-        bitField0_ |= 0x00002000;
-        casesPercentDominant_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearCasesPercentDominant() {
-        bitField0_ = (bitField0_ & ~0x00002000);
-        casesPercentDominant_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // optional float controls_percent_dominant = 15;
-      private float controlsPercentDominant_ ;
-      public boolean hasControlsPercentDominant() {
-        return ((bitField0_ & 0x00004000) == 0x00004000);
-      }
-      public float getControlsPercentDominant() {
-        return controlsPercentDominant_;
-      }
-      public Builder setControlsPercentDominant(float value) {
-        bitField0_ |= 0x00004000;
-        controlsPercentDominant_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearControlsPercentDominant() {
-        bitField0_ = (bitField0_ & ~0x00004000);
-        controlsPercentDominant_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // optional float cases_percent_recessive = 16;
-      private float casesPercentRecessive_ ;
-      public boolean hasCasesPercentRecessive() {
-        return ((bitField0_ & 0x00008000) == 0x00008000);
-      }
-      public float getCasesPercentRecessive() {
-        return casesPercentRecessive_;
-      }
-      public Builder setCasesPercentRecessive(float value) {
-        bitField0_ |= 0x00008000;
-        casesPercentRecessive_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearCasesPercentRecessive() {
-        bitField0_ = (bitField0_ & ~0x00008000);
-        casesPercentRecessive_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // optional float controls_percent_recessive = 17;
-      private float controlsPercentRecessive_ ;
-      public boolean hasControlsPercentRecessive() {
-        return ((bitField0_ & 0x00010000) == 0x00010000);
-      }
-      public float getControlsPercentRecessive() {
-        return controlsPercentRecessive_;
-      }
-      public Builder setControlsPercentRecessive(float value) {
-        bitField0_ |= 0x00010000;
-        controlsPercentRecessive_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearControlsPercentRecessive() {
-        bitField0_ = (bitField0_ & ~0x00010000);
-        controlsPercentRecessive_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // optional float hardy_weinberg = 18;
-      private float hardyWeinberg_ ;
-      public boolean hasHardyWeinberg() {
-        return ((bitField0_ & 0x00020000) == 0x00020000);
-      }
-      public float getHardyWeinberg() {
-        return hardyWeinberg_;
-      }
-      public Builder setHardyWeinberg(float value) {
-        bitField0_ |= 0x00020000;
-        hardyWeinberg_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearHardyWeinberg() {
-        bitField0_ = (bitField0_ & ~0x00020000);
-        hardyWeinberg_ = 0F;
-        onChanged();
-        return this;
-      }
-
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.VariantStats)
+        // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantStats)
     }
+
+    private static com.google.protobuf.Descriptors.Descriptor
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
+    private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
+    private static com.google.protobuf.Descriptors.Descriptor
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
+    private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
+    private static com.google.protobuf.Descriptors.Descriptor
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
+    private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
+
+    public static com.google.protobuf.Descriptors.FileDescriptor
+    getDescriptor() {
+        return descriptor;
+    }
+
+    private static com.google.protobuf.Descriptors.FileDescriptor
+            descriptor;
 
     static {
-      defaultInstance = new VariantStats(true);
-      defaultInstance.initFields();
+        java.lang.String[] descriptorData = {
+                "\n\023VariantFields.proto\0223org.opencb.common" +
+                        "s.bioformats.variant.vcf4.io.proto\"s\n\013Va" +
+                        "riantInfo\022\014\n\004info\030\001 \003(\t\022\017\n\007filters\030\002 \003(\t" +
+                        "\022\016\n\006format\030\003 \003(\t\022\021\n\treference\030\004 \001(\t\022\021\n\ta" +
+                        "lternate\030\005 \003(\t\022\017\n\007quality\030\006 \001(\t\"\037\n\rVaria" +
+                        "ntSample\022\016\n\006sample\030\001 \002(\t\"\305\003\n\014VariantStat" +
+                        "s\022\023\n\013num_alleles\030\001 \002(\005\022\022\n\nmaf_allele\030\002 \002" +
+                        "(\t\022\024\n\014mgf_genotype\030\003 \002(\t\022\013\n\003maf\030\004 \002(\002\022\013\n" +
+                        "\003mgf\030\005 \002(\002\022\025\n\ralleles_count\030\006 \003(\005\022\027\n\017gen" +
+                        "otypes_count\030\007 \003(\005\022\024\n\014alleles_freq\030\010 \003(\002",
+                "\022\026\n\016genotypes_freq\030\t \003(\002\022\027\n\017missing_alle" +
+                        "les\030\n \002(\005\022\031\n\021missing_genotypes\030\013 \002(\005\022\030\n\020" +
+                        "mendelian_errors\030\014 \001(\005\022\020\n\010is_indel\030\r \001(\010" +
+                        "\022\036\n\026cases_percent_dominant\030\016 \001(\002\022!\n\031cont" +
+                        "rols_percent_dominant\030\017 \001(\002\022\037\n\027cases_per" +
+                        "cent_recessive\030\020 \001(\002\022\"\n\032controls_percent" +
+                        "_recessive\030\021 \001(\002\022\026\n\016hardy_weinberg\030\022 \001(\002" +
+                        "B\025B\023VariantFieldsProtos"
+        };
+        com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+                new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+                    public com.google.protobuf.ExtensionRegistry assignDescriptors(
+                            com.google.protobuf.Descriptors.FileDescriptor root) {
+                        descriptor = root;
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor =
+                                getDescriptor().getMessageTypes().get(0);
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable = new
+                                com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+                                internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor,
+                                new java.lang.String[]{"Info", "Filters", "Format", "Reference", "Alternate", "Quality",},
+                                VariantFieldsProtos.VariantInfo.class,
+                                VariantFieldsProtos.VariantInfo.Builder.class);
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor =
+                                getDescriptor().getMessageTypes().get(1);
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable = new
+                                com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+                                internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor,
+                                new java.lang.String[]{"Sample",},
+                                VariantFieldsProtos.VariantSample.class,
+                                VariantFieldsProtos.VariantSample.Builder.class);
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor =
+                                getDescriptor().getMessageTypes().get(2);
+                        internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable = new
+                                com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+                                internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor,
+                                new java.lang.String[]{"NumAlleles", "MafAllele", "MgfGenotype", "Maf", "Mgf", "AllelesCount",
+                                        "GenotypesCount", "AllelesFreq", "GenotypesFreq", "MissingAlleles", "MissingGenotypes",
+                                        "MendelianErrors", "IsIndel", "CasesPercentDominant", "ControlsPercentDominant",
+                                        "CasesPercentRecessive", "ControlsPercentRecessive", "HardyWeinberg",},
+                                VariantFieldsProtos.VariantStats.class,
+                                VariantFieldsProtos.VariantStats.Builder.class);
+                        return null;
+                    }
+                };
+        com.google.protobuf.Descriptors.FileDescriptor
+                .internalBuildGeneratedFileFrom(descriptorData,
+                        new com.google.protobuf.Descriptors.FileDescriptor[]{
+                        }, assigner);
     }
 
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.VariantStats)
-  }
-
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor;
-  private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable;
-
-  public static com.google.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
-    return descriptor;
-  }
-  private static com.google.protobuf.Descriptors.FileDescriptor
-      descriptor;
-  static {
-    java.lang.String[] descriptorData = {
-      "\n\023VariantFields.proto\0223org.opencb.common" +
-      "s.bioformats.variant.vcf4.io.proto\"s\n\013Va" +
-      "riantInfo\022\014\n\004info\030\001 \003(\t\022\017\n\007filters\030\002 \003(\t" +
-      "\022\016\n\006format\030\003 \003(\t\022\021\n\treference\030\004 \001(\t\022\021\n\ta" +
-      "lternate\030\005 \003(\t\022\017\n\007quality\030\006 \001(\t\"\037\n\rVaria" +
-      "ntSample\022\016\n\006sample\030\001 \002(\t\"\305\003\n\014VariantStat" +
-      "s\022\023\n\013num_alleles\030\001 \002(\005\022\022\n\nmaf_allele\030\002 \002" +
-      "(\t\022\024\n\014mgf_genotype\030\003 \002(\t\022\013\n\003maf\030\004 \002(\002\022\013\n" +
-      "\003mgf\030\005 \002(\002\022\025\n\ralleles_count\030\006 \003(\005\022\027\n\017gen" +
-      "otypes_count\030\007 \003(\005\022\024\n\014alleles_freq\030\010 \003(\002",
-      "\022\026\n\016genotypes_freq\030\t \003(\002\022\027\n\017missing_alle" +
-      "les\030\n \002(\005\022\031\n\021missing_genotypes\030\013 \002(\005\022\030\n\020" +
-      "mendelian_errors\030\014 \001(\005\022\020\n\010is_indel\030\r \001(\010" +
-      "\022\036\n\026cases_percent_dominant\030\016 \001(\002\022!\n\031cont" +
-      "rols_percent_dominant\030\017 \001(\002\022\037\n\027cases_per" +
-      "cent_recessive\030\020 \001(\002\022\"\n\032controls_percent" +
-      "_recessive\030\021 \001(\002\022\026\n\016hardy_weinberg\030\022 \001(\002" +
-      "B\025B\023VariantFieldsProtos"
-    };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantInfo_descriptor,
-              new java.lang.String[] { "Info", "Filters", "Format", "Reference", "Alternate", "Quality", },
-              VariantFieldsProtos.VariantInfo.class,
-              VariantFieldsProtos.VariantInfo.Builder.class);
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantSample_descriptor,
-              new java.lang.String[] { "Sample", },
-              VariantFieldsProtos.VariantSample.class,
-              VariantFieldsProtos.VariantSample.Builder.class);
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_commons_bioformats_variant_vcf4_io_proto_VariantStats_descriptor,
-              new java.lang.String[] { "NumAlleles", "MafAllele", "MgfGenotype", "Maf", "Mgf", "AllelesCount", "GenotypesCount", "AllelesFreq", "GenotypesFreq", "MissingAlleles", "MissingGenotypes", "MendelianErrors", "IsIndel", "CasesPercentDominant", "ControlsPercentDominant", "CasesPercentRecessive", "ControlsPercentRecessive", "HardyWeinberg", },
-              VariantFieldsProtos.VariantStats.class,
-              VariantFieldsProtos.VariantStats.Builder.class);
-          return null;
-        }
-      };
-    com.google.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
-  }
-
-  // @@protoc_insertion_point(outer_class_scope)
+    // @@protoc_insertion_point(outer_class_scope)
 }

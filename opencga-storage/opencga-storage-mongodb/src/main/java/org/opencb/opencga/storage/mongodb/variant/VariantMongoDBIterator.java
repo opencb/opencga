@@ -36,7 +36,7 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter, int batchSize) { //Package protected
         this.dbCursor = dbCursor;
         this.dbObjectToVariantConverter = dbObjectToVariantConverter;
-        if(batchSize > 0) {
+        if (batchSize > 0) {
             dbCursor.batchSize(batchSize);
         }
     }
@@ -55,13 +55,17 @@ public class VariantMongoDBIterator extends VariantDBIterator {
         start = System.currentTimeMillis();
         Variant variant = dbObjectToVariantConverter.convertToDataModelType(dbObject);
         timeConverting += System.currentTimeMillis() - start;
-        
+
         return variant;
     }
 
     @Override
     public void remove() {
-        throw new UnsupportedOperationException( "can't remove from a cursor" );
+        throw new UnsupportedOperationException("can't remove from a cursor");
     }
 
+    @Override
+    public void close() {
+        dbCursor.close();
+    }
 }

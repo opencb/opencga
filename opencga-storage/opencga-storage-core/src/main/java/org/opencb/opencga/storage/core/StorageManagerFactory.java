@@ -87,10 +87,10 @@ public class StorageManagerFactory {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
          */
-        if(this.storageConfiguration == null) {
+        if (this.storageConfiguration == null) {
             throw new NullPointerException();
         }
-        if(!storageManagerMap.containsKey(storageEngineName)) {
+        if (!storageManagerMap.containsKey(storageEngineName)) {
             String clazz = null;
             switch (bioformat.toUpperCase()) {
                 case "ALIGNMENT":
@@ -98,6 +98,8 @@ public class StorageManagerFactory {
                     break;
                 case "VARIANT":
                     clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
+                    break;
+                default:
                     break;
             }
 
@@ -140,7 +142,9 @@ public class StorageManagerFactory {
     }
 
     public List<String> getDefaultStorageManagerNames() {
-        return storageConfiguration.getStorageEngines().stream().map(StorageEngineConfiguration::getId).collect(Collectors.<String>toList());
+        return storageConfiguration.getStorageEngines().stream()
+                .map(StorageEngineConfiguration::getId)
+                .collect(Collectors.<String>toList());
 //        return Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
     }
 

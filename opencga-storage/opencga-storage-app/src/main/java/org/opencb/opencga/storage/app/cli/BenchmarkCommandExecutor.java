@@ -1,13 +1,8 @@
 package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.ParameterException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.util.Arrays;
 

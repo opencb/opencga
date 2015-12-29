@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 /**
- * Created on 30/10/15
+ * Created on 30/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -22,7 +22,7 @@ public class MongoDBVariantWriteResult {
         this.nonInsertedVariants = nonInsertedVariants;
     }
 
-    public void merge(MongoDBVariantWriteResult ... others) {
+    public void merge(MongoDBVariantWriteResult... others) {
         for (MongoDBVariantWriteResult other : others) {
             newDocuments += other.newDocuments;
             updatedObjects += other.updatedObjects;
@@ -69,26 +69,35 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public String toString() {
-        return "MongoDBVariantWriteResult{" +
-                "newDocuments=" + newDocuments +
-                ", updatedObjects=" + updatedObjects +
-                ", skippedVariants=" + skippedVariants +
-                ", nonInsertedVariants=" + nonInsertedVariants +
-                '}';
+        final StringBuilder sb = new StringBuilder("MongoDBVariantWriteResult{");
+        sb.append("newDocuments=").append(newDocuments);
+        sb.append(", updatedObjects=").append(updatedObjects);
+        sb.append(", skippedVariants=").append(skippedVariants);
+        sb.append(", nonInsertedVariants=").append(nonInsertedVariants);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MongoDBVariantWriteResult)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MongoDBVariantWriteResult)) {
+            return false;
+        }
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
-
-        if (newDocuments != that.newDocuments) return false;
-        if (updatedObjects != that.updatedObjects) return false;
-        if (skippedVariants != that.skippedVariants) return false;
+        if (newDocuments != that.newDocuments) {
+            return false;
+        }
+        if (updatedObjects != that.updatedObjects) {
+            return false;
+        }
+        if (skippedVariants != that.skippedVariants) {
+            return false;
+        }
         return nonInsertedVariants == that.nonInsertedVariants;
-
     }
 
     @Override
@@ -99,4 +108,5 @@ public class MongoDBVariantWriteResult {
         result = 31 * result + (int) (nonInsertedVariants ^ (nonInsertedVariants >>> 32));
         return result;
     }
+
 }

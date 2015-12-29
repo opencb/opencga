@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -70,7 +69,7 @@ public class VariantDBReader implements VariantReader {
     @Override
     public boolean open() {
         QueryOptions iteratorQueryOptions = new QueryOptions();
-        if(options != null) { //Parse query options
+        if (options != null) { //Parse query options
             iteratorQueryOptions = options;
         }
 
@@ -93,10 +92,10 @@ public class VariantDBReader implements VariantReader {
         }
         logger.debug("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
         logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
-        
+
         iterator.setTimeConverting(0);
         iterator.setTimeFetching(0);
-        
+
         return variants;
     }
 }

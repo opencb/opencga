@@ -58,7 +58,7 @@ public class AnalysisStorageTestUtil {
         logger.info("Executing opencga-storage");
         logger.info("==========================================");
         String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
-        StorageMain.Main(Arrays.copyOfRange(args, 1, args.length));
+        StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
         logger.info("==========================================");
         logger.info("Finish opencga-storage");
         logger.info("==========================================");

@@ -1,5 +1,5 @@
 ---
-defaultStorageEngineId: "mongodb"
+defaultStorageEngineId: "${OPENCGA.STORAGE.ENGINE.DEFAULT}"
 logLevel: "info"
 logFile: ""
 
@@ -90,17 +90,28 @@ storageEngines:
   options: {}
   alignment:
     manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
-    options: {}
+    options:
+      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
-      - "who-master:60000"
-      user: "user"
-      password: "password"
+      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
-    options: {}
+    options:
+      #Generic options
+      database.name: "opencga"
+      annotator: cellbase_rest
+      species: "hsapiens"
+      assembly: "GRCh37"
+      #Plugin specific options
+      hadoop.bin: "hadoop"
+      hadoop.env: "HADOOP_USER_CLASSPATH_FIRST=true,HADOOP_CLASSPATH=${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-3.0.0-beta-1.jar"
+      opencga.storage.hadoop.jar-with-dependencies: "${OPENCGA.INSTALLATION.DIR}/opencga-storage-hadoop-0.7-dev-jar-with-dependencies.jar"
+      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
-      - "who-master:60000"
-      user: "user"
-      password: "password"
+      - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER}"
+      password: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD}"

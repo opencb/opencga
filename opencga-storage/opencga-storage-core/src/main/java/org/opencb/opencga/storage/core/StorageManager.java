@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 
@@ -25,9 +24,9 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * @author imedina
  * @param <DBWRITER>
  * @param <DBADAPTOR>
+ * @author imedina
  */
 public abstract class StorageManager<DBWRITER, DBADAPTOR> {
 
@@ -48,7 +47,7 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
         this.configuration = configuration;
     }
 
-    public void setConfiguration(StorageConfiguration configuration, String storageEngineId){
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
     }
@@ -73,9 +72,10 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
      */
 
 
-    /**
+    /*
      * This method extracts the data from the data source. This data source can be a database or a remote
      * file system. URI objects are used to allow all possibilities.
+     *
      * @param input Data source origin
      * @param ouput Final location of data
      */
@@ -94,20 +94,21 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
     /**
      * This method loads the transformed data file into a database, the database credentials are expected to be read
      * from configuration file.
-     * @param input
-     * @return
-     * @throws IOException
-     * @throws StorageManagerException
+     *
+     * @param input The URI of the file to be loaded
+     * @return The loaded file
+     * @throws IOException If any IO problem occurs
+     * @throws StorageManagerException If any other problem occurs
      */
     public abstract URI load(URI input) throws IOException, StorageManagerException;
 
     public abstract URI postLoad(URI input, URI output) throws IOException, StorageManagerException;
 
 
-    /**
+    /*
      * Storage Engines must implement these 2 methods in order to the ETL to be able to write and read from database:
-     *  - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
-     *  - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
+     * - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
+     * - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
     @Deprecated
     public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;

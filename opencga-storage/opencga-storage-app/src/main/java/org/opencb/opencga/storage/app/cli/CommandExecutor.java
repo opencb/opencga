@@ -57,7 +57,7 @@ public abstract class CommandExecutor {
         this.verbose = verbose;
         this.configFile = configFile;
 
-        /**
+        /*
          * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
          */
@@ -67,7 +67,7 @@ public abstract class CommandExecutor {
             logLevel = "debug";
         }
 
-        if(logLevel != null && !logLevel.isEmpty()) {
+        if (logLevel != null && !logLevel.isEmpty()) {
             // We must call to this method
             configureDefaultLog(logLevel);
         }
@@ -125,8 +125,9 @@ public abstract class CommandExecutor {
 
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml
-     * @throws IOException
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
      */
     public void loadStorageConfiguration() throws IOException {
         String loadedConfigurationFile;
@@ -141,8 +142,9 @@ public abstract class CommandExecutor {
                 this.configuration = StorageConfiguration
                         .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
             } else {
-                loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml").toString();
-                this.configuration =  StorageConfiguration
+                loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml")
+                        .toString();
+                this.configuration = StorageConfiguration
                         .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
             }
         }
@@ -170,7 +172,8 @@ public abstract class CommandExecutor {
             rootLogger.removeAppender("stderr");
 
             // Creating a RollingFileAppender to output the log
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"), this.configuration.getLogFile(), true);
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
+                    + "%m%n"), this.configuration.getLogFile(), true);
             rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
             rootLogger.addAppender(rollingFileAppender);
         }
@@ -179,7 +182,7 @@ public abstract class CommandExecutor {
     }
 
     @Deprecated
-    protected void assertDirectoryExists(URI outdir){
+    protected void assertDirectoryExists(URI outdir) {
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
             logger.error("given output directory {} does not exist, please create it first.", outdir);
             System.exit(1);

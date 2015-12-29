@@ -17,15 +17,15 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import org.junit.Test;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 
-import java.util.*;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -69,7 +69,8 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
 
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
-                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue().getStats().keySet().contains(deletedCohort));
+                assertFalse("The cohort '" + deletedCohort + "' is not completely deleted in variant: '" + variant + "'", entry.getValue
+                        ().getStats().keySet().contains(deletedCohort));
             }
         }
         QueryResult<Long> allVariants = dbAdaptor.count(new Query());

@@ -31,9 +31,10 @@ import java.util.Properties;
  */
 public class MongoCredentials implements OpenCGACredentials {
 
-    List<DataStoreServerAddress> dataStoreServerAddresses;
+    private List<DataStoreServerAddress> dataStoreServerAddresses;
     private final String mongoDbName;
-    @Deprecated private MongoCredential mongoCredentials;
+    @Deprecated
+    private MongoCredential mongoCredentials;
     private String authenticationDatabase;
 
 
@@ -112,7 +113,7 @@ public class MongoCredentials implements OpenCGACredentials {
     public String getUsername() {
         return mongoCredentials != null ? mongoCredentials.getUserName() : null;
     }
-    
+
     public char[] getPassword() {
         return mongoCredentials != null ? mongoCredentials.getPassword() : null;
     }

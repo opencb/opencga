@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.mongodb.alignment;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class AlignmentIndexNotExistsException extends Exception {

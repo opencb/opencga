@@ -17,24 +17,18 @@
 package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.ParameterException;
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -54,6 +48,7 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
         this.logFile = indexVariantsCommandOptions.logFile;
         this.indexVariantsCommandOptions = indexVariantsCommandOptions;
     }
+
     @Override
     public void execute() throws Exception {
         logger.debug("Executing index-variants command line");
@@ -82,7 +77,9 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
              * Getting URIs and checking Paths
              */
         URI variantsUri = UriUtils.createUri(indexVariantsCommandOptions.input);
-        FileUtils.checkFile(Paths.get(variantsUri));
+        if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
+            FileUtils.checkFile(Paths.get(variantsUri));
+        }
 
         URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
                 ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
@@ -95,11 +92,14 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.outdir)
                 // Get parent folder from input file
                 : variantsUri.resolve(".");
-        FileUtils.checkDirectory(Paths.get(outdirUri), true);
+        if (outdirUri.getScheme().startsWith("file") || outdirUri.getScheme().isEmpty()) {
+            FileUtils.checkDirectory(Paths.get(outdirUri), true);
+        }
         logger.debug("All files and directories exist");
 
 //            VariantSource source = new VariantSource(fileName, indexVariantsCommandOptions.fileId,
-//                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType, indexVariantsCommandOptions.aggregated);
+//                    indexVariantsCommandOptions.studyId, indexVariantsCommandOptions.study, indexVariantsCommandOptions.studyType,
+// indexVariantsCommandOptions.aggregated);
 
         /** Add CLi options to the variant options **/
         ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
@@ -133,7 +133,8 @@ public class IndexVariantsCommandExecutor extends CommandExecutor {
                 aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
                 variantOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
-                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions.aggregationMappingFile);
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions
+                        .aggregationMappingFile);
             }
         }
 

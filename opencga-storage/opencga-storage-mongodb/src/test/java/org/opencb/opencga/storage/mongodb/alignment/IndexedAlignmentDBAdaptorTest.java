@@ -26,11 +26,13 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -44,7 +46,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 
-public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
+public class IndexedAlignmentDBAdaptorTest extends GenericTest {
 
 
     private IndexedAlignmentDBAdaptor dbAdaptor;
@@ -53,7 +55,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
     private Path bamFile;
 
     @Before
-    public void before() throws IOException, FileFormatException {
+    public void before() throws IOException, FileFormatException, StorageManagerException {
         StorageConfiguration storageConfiguration = StorageConfiguration
                 .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         manager = new MongoDBAlignmentStorageManager(storageConfiguration);
@@ -65,10 +67,12 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         Files.createDirectories(rootDir);
         String bamFileName = "HG00096.chrom20.small.bam";
         bamFile = rootDir.resolve(bamFileName);
-        Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption.REPLACE_EXISTING);
-        manager.createBai(bamFile, rootDir);
+        Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption
+                .REPLACE_EXISTING);
+        BamUtils.createBai(bamFile, rootDir);
 
-        ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment().getOptions();
+        ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment()
+                .getOptions();
         options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");
         options.put(AlignmentStorageManager.Options.DB_NAME.key(), "opencga-alignment-test");
         manager.preTransform(bamFile.toUri());
@@ -89,7 +93,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         //qo.put("view_as_pairs", true);
 
         qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile.toString());
-        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, bamFile.toString()+".bai");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, bamFile.toString() + ".bai");
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, false);
 
         //Region region = new Region("20", 20000000, 20000100);
@@ -97,16 +101,16 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
         QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(region), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, true);
         alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829000, 29829500)), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
         alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829500, 29830000)), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
     }
 
@@ -164,24 +168,24 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         JsonFactory factory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        JsonGenerator generator = factory.createGenerator(new FileOutputStream("/tmp/"+name+"."+qr.getId()+".json"));
+        JsonGenerator generator = factory.createGenerator(new FileOutputStream("/tmp/" + name + "." + qr.getId() + ".json"));
 
         generator.writeObject(qr.getResult());
 
     }
 
-    private void printQueryResult(QueryResult cr){
+    private void printQueryResult(QueryResult cr) {
         String s = cr.getResultType();
         System.out.println("cr.getDbTime() = " + cr.getDbTime());
         if (s.equals(MeanCoverage.class.getCanonicalName())) {
             List<MeanCoverage> meanCoverageList = cr.getResult();
-            for(MeanCoverage mc : meanCoverageList){
-                System.out.println(mc.getRegion().toString()+" : " + mc.getCoverage());
+            for (MeanCoverage mc : meanCoverageList) {
+                System.out.println(mc.getRegion().toString() + " : " + mc.getCoverage());
             }
         } else if (s.equals(RegionCoverage.class.getCanonicalName())) {
             List<RegionCoverage> regionCoverageList = cr.getResult();
-            for(RegionCoverage rc : regionCoverageList){
-                System.out.print(new Region(rc.getChromosome(), (int) rc.getStart(), (int) rc.getEnd()).toString()+ " (");
+            for (RegionCoverage rc : regionCoverageList) {
+                System.out.print(new Region(rc.getChromosome(), (int) rc.getStart(), (int) rc.getEnd()).toString() + " (");
                 for (int i = 0; i < rc.getAll().length; i++) {
                     System.out.print(rc.getAll()[i] + ",");
                 }

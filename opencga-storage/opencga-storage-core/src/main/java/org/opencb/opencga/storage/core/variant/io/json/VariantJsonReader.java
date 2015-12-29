@@ -19,6 +19,15 @@ package org.opencb.opencga.storage.core.variant.io.json;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.biodata.formats.variant.io.VariantReader;
+import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.xerial.snappy.SnappyInputStream;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,17 +38,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
-import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.xerial.snappy.SnappyInputStream;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class VariantJsonReader implements VariantReader {
@@ -61,7 +61,7 @@ public class VariantJsonReader implements VariantReader {
 
     private VariantSource source;
 
-//    public VariantJsonReader(String variantFilename, String globalFilename) {
+    //    public VariantJsonReader(String variantFilename, String globalFilename) {
     public VariantJsonReader(VariantSource source, String variantFilename, String globalFilename) {
         this.source = source;
         this.variantFilename = variantFilename;

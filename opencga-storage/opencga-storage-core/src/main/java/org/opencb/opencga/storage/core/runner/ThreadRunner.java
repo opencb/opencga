@@ -16,18 +16,24 @@
 
 package org.opencb.opencga.storage.core.runner;
 
-        import org.opencb.commons.io.DataReader;
-        import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.io.DataWriter;
 
-        import java.io.IOException;
-        import java.util.*;
-        import java.util.concurrent.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Created by jacobo on 5/02/15.
  */
 @Deprecated
 public class ThreadRunner {
+
     private ExecutorService executorService;
 
     private List<ReadNode> readNodes = new LinkedList<>();
@@ -45,7 +51,7 @@ public class ThreadRunner {
         this.batchSize = batchSize;
     }
 
-    public <I,O> TaskNode<I,O> newTaskNode(List<Task<I,O>> tasks) {
+    public <I, O> TaskNode<I, O> newTaskNode(List<Task<I, O>> tasks) {
         TaskNode<I, O> taskNode = new TaskNode<>(tasks, "task-node-" + taskNodes.size());
         taskNodes.add(taskNode);
         return taskNode;
@@ -67,8 +73,8 @@ public class ThreadRunner {
         return taskNode;
     }
 
-    public <I,O> TaskNode<I,O> newTaskNode(Task<I,O> task, int n) {
-        List<Task<I,O>> tasks = new ArrayList<>(n);
+    public <I, O> TaskNode<I, O> newTaskNode(Task<I, O> task, int n) {
+        List<Task<I, O>> tasks = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
             tasks.add(task);
         }
@@ -136,7 +142,8 @@ public class ThreadRunner {
                 allFinalized = true;
                 for (Node node : nodes) {
                     if (!node.isFinished()) {
-                        System.out.println("Node " + node.name + " is not finished pending:" + node.pendingJobs + " lastBatch:" + node.lastBatch);
+                        System.out.println("Node " + node.name + " is not finished pending:" + node.pendingJobs + " lastBatch:" + node
+                                .lastBatch);
                         allFinalized = false;
                         break;
                     } /*else {
@@ -162,13 +169,19 @@ public class ThreadRunner {
         executorService.shutdown();
     }
 
-    public static abstract class Task<I, O> {
-        public boolean pre() {return true;}
+    public abstract class Task<I, O> {
+        public boolean pre() {
+            return true;
+        }
+
         public abstract List<O> apply(List<I> batch) throws IOException;
-        public boolean post() {return true;}
+
+        public boolean post() {
+            return true;
+        }
     }
 
-    public class ReadNode<O> extends Node<Object, O, DataReader<O>> {
+    public final class ReadNode<O> extends Node<Object, O, DataReader<O>> {
         private ReadNode(List<DataReader<O>> tasks, String name) {
             super(tasks, name);
         }
@@ -194,6 +207,7 @@ public class ThreadRunner {
                 }
             } else {
 //                System.out.println(name + " - read end NULL taskQueue.size : " + taskQueue.size());
+                System.out.println("Empty block");
             }
             return reddenBatch;
         }
@@ -221,7 +235,7 @@ public class ThreadRunner {
         }
     }
 
-    public class TaskNode<I, O> extends Node<I,O,Task<I,O>> {
+    public final class TaskNode<I, O> extends Node<I, O, Task<I, O>> {
         private TaskNode(List<Task<I, O>> tasks, String name) {
             super(tasks, name);
         }
@@ -251,7 +265,7 @@ public class ThreadRunner {
         }
     }
 
-    public class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
+    public final class SimpleTaskNode<I> extends Node<I, I, org.opencb.commons.run.Task<I>> {
         private SimpleTaskNode(List<org.opencb.commons.run.Task<I>> tasks, String name) {
             super(tasks, name);
         }
@@ -281,7 +295,7 @@ public class ThreadRunner {
         }
     }
 
-    public class WriterNode<I> extends Node<I,Object, DataWriter<I>> {
+    public final class WriterNode<I> extends Node<I, Object, DataWriter<I>> {
         private WriterNode(List<DataWriter<I>> tasks, String name) {
             super(tasks, name);
         }
@@ -325,19 +339,19 @@ public class ThreadRunner {
             nodes = new LinkedList<>();
         }
 
-        /* package */ void init()  {
+        /* package */ void init() {
             pendingJobs = 0;
             lastBatch = false;
             lastBatchSent = false;
         }
 
-        protected abstract void pre ();
+        protected abstract void pre();
 
-        protected abstract void post ();
+        protected abstract void post();
 
         /*package*/ List<O> doJob(List<I> batch) {
             List<O> generatedBatch;
-            assert lastBatchSent == false;
+            assert !lastBatchSent;
 
             if (batch == POISON_PILL) {
                 lastBatch = true;
@@ -414,8 +428,9 @@ public class ThreadRunner {
         }
 
         /*package*/ void submit(final List<I> batch) {
-//            System.out.println("Submitting batch: pendingJobs = " + pendingJobs + " - " + "[" + (isAvailable()? " " : "*") + "]" + name + " - " + Thread.currentThread().getName());
-            pendingJobs ++;
+//            System.out.println("Submitting batch: pendingJobs = " + pendingJobs + " - " + "[" + (isAvailable()? " " : "*") + "]" + name
+// + " - " + Thread.currentThread().getName());
+            pendingJobs++;
             resubmit(batch);
         }
 

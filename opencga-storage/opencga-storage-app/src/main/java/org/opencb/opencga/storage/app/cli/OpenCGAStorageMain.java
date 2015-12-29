@@ -29,9 +29,9 @@ import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -52,8 +52,9 @@ import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.*;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -107,7 +108,7 @@ public class OpenCGAStorageMain {
             setLogLevel(logLevel);
             Config.setOpenCGAHome();
 
-            if(parser.getGeneralParameters().help || args.length == 0) {
+            if (parser.getGeneralParameters().help || args.length == 0) {
                 System.out.println(parser.usage());
                 return;
             }
@@ -247,7 +248,7 @@ public class OpenCGAStorageMain {
                 int subListSize = 20;
                 logger.info("options = " + options.toJson());
                 if (regions != null && !regions.isEmpty()) {
-                    for(int i = 0; i < (regions.size()+subListSize-1)/subListSize; i++) {
+                    for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
                         List<Region> subRegions = regions.subList(
                                 i * subListSize,
                                 Math.min((i + 1) * subListSize, regions.size()));
@@ -261,10 +262,10 @@ public class OpenCGAStorageMain {
                         }
                         System.out.println(sb);
                     }
-                } else if(gffReader != null) {
+                } else if (gffReader != null) {
                     List<Gff> gffList;
                     List<Region> subRegions;
-                    while((gffList = gffReader.read(subListSize)) != null) {
+                    while ((gffList = gffReader.read(subListSize)) != null) {
                         subRegions = new ArrayList<>(subListSize);
                         for (Gff gff : gffList) {
                             subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
@@ -445,7 +446,8 @@ public class OpenCGAStorageMain {
     }
 
     private static void indexAlignments(OptionsParser.CommandIndexAlignments c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException,
+            FileFormatException, StorageManagerException {
         AlignmentStorageManager alignmentStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         if (storageEngine == null || storageEngine.isEmpty()) {
@@ -520,7 +522,8 @@ public class OpenCGAStorageMain {
     }
 
     private static void indexVariants(OptionsParser.CommandIndexVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, FileFormatException, StorageManagerException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException,
+            FileFormatException, StorageManagerException {
         VariantStorageManager variantStorageManager;
         String storageEngine = parser.getGeneralParameters().storageEngine;
         variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(storageEngine);
@@ -555,17 +558,17 @@ public class OpenCGAStorageMain {
             params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, c.studyConfigurationFile);
         }
 
-        if(c.annotate) {
+        if (c.annotate) {
             //Get annotator config
             Properties annotatorProperties = Config.getStorageProperties();
-            if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
+            if (c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
                 annotatorProperties.load(new FileInputStream(c.annotatorConfig));
             }
 //            params.put(VariantAnnotationManager.ANNOTATOR_PROPERTIES, annotatorProperties);
 
             //Get annotation source
             VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
-            if(annotatorSource == null) {
+            if (annotatorSource == null) {
                 annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
                         annotatorProperties.getProperty(
                                 OPENCGA_STORAGE_ANNOTATOR,
@@ -575,7 +578,7 @@ public class OpenCGAStorageMain {
             }
             params.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotatorSource);
         }
-        
+
         if (c.aggregationMappingFile != null) {
             Properties aggregationMappingProperties = new Properties();
             try {
@@ -652,11 +655,13 @@ public class OpenCGAStorageMain {
     }
 
     private static void annotateVariants(OptionsParser.CommandAnnotateVariants c)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException, VariantAnnotatorException, StorageManagerException {
+            throws ClassNotFoundException, IllegalAccessException, InstantiationException, URISyntaxException, IOException,
+            VariantAnnotatorException, StorageManagerException {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters()
+                .storageEngine);
 //        if(c.credentials != null && !c.credentials.isEmpty()) {
 //            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
 //        }
@@ -667,13 +672,13 @@ public class OpenCGAStorageMain {
          * Create Annotator
          */
         Properties annotatorProperties = Config.getStorageProperties();
-        if(c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
+        if (c.annotatorConfig != null && !c.annotatorConfig.isEmpty()) {
             annotatorProperties.load(new FileInputStream(c.annotatorConfig));
         }
 
 
         VariantAnnotationManager.AnnotationSource annotatorSource = c.annotator;
-        if(annotatorSource == null) {
+        if (annotatorSource == null) {
             annotatorSource = VariantAnnotationManager.AnnotationSource.valueOf(
                     annotatorProperties.getProperty(
                             OPENCGA_STORAGE_ANNOTATOR,
@@ -682,7 +687,8 @@ public class OpenCGAStorageMain {
             );
         }
         logger.info("Annotating with {}", annotatorSource);
-        VariantAnnotator annotator = null; //VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c.species, c.assembly);
+        VariantAnnotator annotator = null; //VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties, c
+        // .species, c.assembly);
         VariantAnnotationManager variantAnnotationManager =
                 new VariantAnnotationManager(annotator, dbAdaptor);
 
@@ -705,7 +711,7 @@ public class OpenCGAStorageMain {
         if (!c.overwriteAnnotations) {
             query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
-        URI outputUri = new URI(null , c.outdir, null);
+        URI outputUri = new URI(null, c.outdir, null);
         if (outputUri.getScheme() == null || outputUri.getScheme().isEmpty()) {
             outputUri = new URI("file", c.outdir, null);
         }
@@ -724,7 +730,8 @@ public class OpenCGAStorageMain {
         if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation ");
-            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, query, new QueryOptions());
+            annotationFile = variantAnnotationManager.createAnnotation(outDir, c.fileName.isEmpty() ? c.dbName : c.fileName, query, new
+                    QueryOptions());
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 
@@ -742,7 +749,8 @@ public class OpenCGAStorageMain {
     }
 
     private static void statsVariants(OptionsParser.CommandStatsVariants c)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException, StorageManagerException {
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, URISyntaxException, IOException,
+            StorageManagerException {
 
 //        Path studyConfigurationPath = Paths.get(c.studyConfigurationFile);
 //        StudyConfiguration studyConfiguration = StudyConfiguration.read(studyConfigurationPath);
@@ -775,7 +783,8 @@ public class OpenCGAStorageMain {
         /**
          * Create DBAdaptor
          */
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters().storageEngine);
+        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(parser.getGeneralParameters()
+                .storageEngine);
 //        if(c.credentials != null && !c.credentials.isEmpty()) {
 //            variantStorageManager.addConfigUri(new URI(null, c.credentials, null));
 //        }
@@ -804,12 +813,14 @@ public class OpenCGAStorageMain {
 
         try {
 
-            Map<String, Integer> cohortNameIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer.parseInt(e.getValue())));
+            Map<String, Integer> cohortNameIds = c.cohortIds.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> Integer
+                    .parseInt(e.getValue())));
 
             if (doCreate) {
                 filename += "." + TimeUtils.getTime();
                 outputUri = outputUri.resolve(filename);
-                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortNameIds, studyConfiguration, queryOptions);
+                outputUri = variantStatisticsManager.createStats(dbAdaptor, outputUri, cohorts, cohortNameIds, studyConfiguration,
+                        queryOptions);
             }
 
             if (doLoad) {
@@ -850,13 +861,13 @@ public class OpenCGAStorageMain {
     }
 
     private static void checkNull(Integer value, String name) {
-        if(value == null || value.equals(0)) {
+        if (value == null || value.equals(0)) {
             missingValue(name);
         }
     }
 
     private static void checkNull(String value, String name) {
-        if(value == null || value.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             missingValue(name);
         }
     }
@@ -879,7 +890,7 @@ public class OpenCGAStorageMain {
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     }
 
-    private static void assertDirectoryExists(URI outdir){
+    private static void assertDirectoryExists(URI outdir) {
         if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
             logger.error("given output directory {} does not exist, please create it first.", outdir);
             System.exit(1);

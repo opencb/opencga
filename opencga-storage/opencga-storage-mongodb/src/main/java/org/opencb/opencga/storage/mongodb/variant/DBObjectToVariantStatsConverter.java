@@ -18,14 +18,9 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryOptions;
@@ -34,6 +29,11 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
@@ -51,17 +51,17 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
-    public final static String COHORT_ID = "cid";
-    public final static String STUDY_ID = "sid";
-//    public final static String FILE_ID = "fid";
+    public static final String COHORT_ID = "cid";
+    public static final String STUDY_ID = "sid";
+//    public static final String FILE_ID = "fid";
 
-    public final static String MAF_FIELD = "maf";
-    public final static String MGF_FIELD = "mgf";
-    public final static String MAFALLELE_FIELD = "mafAl";
-    public final static String MGFGENOTYPE_FIELD = "mgfGt";
-    public final static String MISSALLELE_FIELD = "missAl";
-    public final static String MISSGENOTYPE_FIELD = "missGt";
-    public final static String NUMGT_FIELD = "numGt";
+    public static final String MAF_FIELD = "maf";
+    public static final String MGF_FIELD = "mgf";
+    public static final String MAFALLELE_FIELD = "mafAl";
+    public static final String MGFGENOTYPE_FIELD = "mgfGt";
+    public static final String MISSALLELE_FIELD = "missAl";
+    public static final String MISSGENOTYPE_FIELD = "missGt";
+    public static final String NUMGT_FIELD = "numGt";
 
     protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantStatsConverter.class);
 
@@ -116,10 +116,11 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     /**
-     * As in mongo, a variant is {studies:[],stats:[]} but the data model is {studies:[stats:[]]} this method doesn't 
+     * As in mongo, a variant is {studies:[],stats:[]} but the data model is {studies:[stats:[]]} this method doesn't
      * return anything. Instead, the sourceEntries within the variant is filled.
+     *
      * @param cohortsStats List from mongo containing VariantStats.
-     * @param variant contains allele info to fill the VariantStats, and it sourceEntries will be filled.
+     * @param variant      contains allele info to fill the VariantStats, and it sourceEntries will be filled.
      */
     public void convertCohortsToDataModelType(DBObject cohortsStats, Variant variant) {
         if (cohortsStats instanceof List) {
@@ -151,7 +152,8 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     /**
-     * converts all the cohortstats within the sourceEntries
+     * converts all the cohortstats within the sourceEntries.
+     *
      * @param sourceEntries for instance, you can pass in variant.getSourceEntries()
      * @return list of VariantStats (as DBObjects)
      */
@@ -168,8 +170,9 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
 
     /**
      * converts just some cohorts stats in one VariantSourceEntry.
+     *
      * @param cohortStats for instance, you can pass in sourceEntry.getStats()
-     * @param studyId of the source entry
+     * @param studyId     of the source entry
      * @return list of VariantStats (as DBObjects)
      */
     public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId) {
@@ -180,7 +183,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
             DBObject variantStatsDBObject = convertToStorageType(variantStats);
             Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
             if (cohortId != null) {
-                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, (int)cohortId);
+                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, (int) cohortId);
                 variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
                 cohortsStatsList.add(variantStatsDBObject);
             }

@@ -98,9 +98,9 @@ public class CatalogStudyConfigurationFactoryTest {
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
-            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
+            protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
+            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
                 StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
@@ -127,9 +127,9 @@ public class CatalogStudyConfigurationFactoryTest {
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
-            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
+            protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
+            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
                 StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));

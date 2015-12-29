@@ -16,19 +16,13 @@
 
 package org.opencb.opencga.storage.app.cli;
 
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
 /**
  * Created by imedina on 22/05/15.
@@ -54,7 +48,8 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
 
         // We need to find out the Storage Engine Id to be used
         // If not storage engine is passed then the default is taken from storage-configuration.yml file
-        String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine.isEmpty())
+        String storageEngine = (indexAlignmentsCommandOptions.storageEngine != null && !indexAlignmentsCommandOptions.storageEngine
+                .isEmpty())
                 ? indexAlignmentsCommandOptions.storageEngine
                 : configuration.getDefaultStorageEngineId();
         logger.debug("Storage Engine set to '{}'", storageEngine);
@@ -73,13 +68,13 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
              * Getting URIs and checking Paths
              */
         URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input);
-        FileUtils.checkFile(Paths.get(inputUri));
+//        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
         URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())
                 ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir)
                 // Get parent folder from input file
                 : inputUri.resolve(".");
-        FileUtils.checkDirectory(Paths.get(outdirUri));
+//        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
         logger.debug("All files and directories exist");
 
             /*
@@ -89,10 +84,10 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
         if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
             alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
         }
-        if(indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
+        if (indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
             alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
         }
-        if(indexAlignmentsCommandOptions.params != null) {
+        if (indexAlignmentsCommandOptions.params != null) {
             alignmentOptions.putAll(indexAlignmentsCommandOptions.params);
         }
 
@@ -109,7 +104,8 @@ public class IndexAlignmentsCommandExecutor extends CommandExecutor {
         boolean extract, transform, load;
         URI nextFileUri = inputUri;
 
-        if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load, do both
+        if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load,
+            // do both
             extract = true;
             transform = true;
             load = true;

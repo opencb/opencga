@@ -36,7 +36,6 @@ public abstract class BenchmarkRunner {
     protected Logger logger;
 
     public BenchmarkRunner() {
-
     }
 
 
@@ -47,6 +46,5 @@ public abstract class BenchmarkRunner {
     public abstract BenchmarkStats query() throws ExecutionException, InterruptedException;
 
     public abstract BenchmarkStats query(int numRepetitions, Set<String> queries) throws ExecutionException, InterruptedException;
-
 
 }
