@@ -32,6 +32,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
+import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -51,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
@@ -119,6 +122,10 @@ public class VariantCommandExecutor extends CommandExecutor {
             case "stats":
                 init(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 stats();
+                break;
+            case "benchmark":
+                init(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
+                benchmark();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -720,4 +727,56 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
+            IllegalAccessException, ClassNotFoundException {
+        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions
+                = variantCommandOptions.benchmarkCommandOptions;
+
+// Overwrite default options from configuration.yaml with CLI parameters
+        if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
+            configuration.getBenchmark().setStorageEngine(benchmarkCommandOptions.commonOptions.storageEngine);
+        } else {
+            configuration.getBenchmark().setStorageEngine(configuration.getDefaultStorageEngineId());
+            logger.debug("Storage Engine for benchmarking set to '{}'", configuration.getDefaultStorageEngineId());
+        }
+
+        if (benchmarkCommandOptions.repetition > 0) {
+            configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+        }
+
+        if (benchmarkCommandOptions.database != null && !benchmarkCommandOptions.database.isEmpty()) {
+            configuration.getBenchmark().setDatabaseName(benchmarkCommandOptions.database);
+        }
+
+        if (benchmarkCommandOptions.table != null && !benchmarkCommandOptions.table.isEmpty()) {
+            configuration.getBenchmark().setTable(benchmarkCommandOptions.table);
+        }
+
+        if (benchmarkCommandOptions.queries != null) {
+            configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+        }
+
+        DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
+        if (benchmarkCommandOptions.host != null && !benchmarkCommandOptions.host.isEmpty()) {
+            databaseCredentials.setHosts(Arrays.asList(benchmarkCommandOptions.host.split(",")));
+        }
+
+        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
+
+        // validate
+        checkParams();
+
+
+//        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
+        BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
+        benchmarkManager.variantBenchmark();
+    }
+
+    private void checkParams() {
+        if (configuration.getBenchmark().getDatabaseName() == null || configuration.getBenchmark().getDatabaseName().isEmpty()) {
+            System.out.println("...");
+            throw new ParameterException("");
+        }
+
+    }
 }

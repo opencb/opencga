@@ -69,6 +69,7 @@ public class CliOptionsParser {
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
+        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
 
     }
 
@@ -146,7 +147,7 @@ public class CliOptionsParser {
         public boolean help;
 
         @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel;
+        public String logLevel = "info";
 
         @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
         public String logFile;
@@ -202,12 +203,14 @@ public class CliOptionsParser {
         QueryVariantsCommandOptions queryVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
+        BenchmarkCommandOptions benchmarkCommandOptions;
 
         public VariantCommandOptions() {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
             this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
+            this.benchmarkCommandOptions = new BenchmarkCommandOptions();
         }
     }
 
@@ -221,6 +224,9 @@ public class CliOptionsParser {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;
+
+//        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+//        public String fileId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         boolean transform = false;
@@ -592,6 +598,33 @@ public class CliOptionsParser {
 
     }
 
+
+    @Parameters(commandNames = {"benchmark"}, commandDescription = "Benchmark load and fetch variants with different databases")
+    public class BenchmarkCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
+        @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
+        public int repetition = 3;
+
+        @Parameter(names = {"--load"}, description = "File name with absolute path", required = false, arity = 1)
+        public String load;
+
+        @Parameter(names = {"--queries"}, description = "Queries to fetch the data from tables", required = false, arity = 1)
+        public String queries;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        public String database;
+
+        @Parameter(names = {"-t", "--table"}, description = "Benchmark variants", required = false, arity = 1)
+        public String table;
+
+        @Parameter(names = {"--host"}, description = "DataBase name", required = false, arity = 1)
+        public String host;
+
+    }
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")
     public class StatsVariantsCommandOptions {

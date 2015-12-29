@@ -111,6 +111,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         codec = codec.equals("gzip") ? "deflate" : codec;
 
         boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key(), Options.INCLUDE_COVERAGE.<Boolean>defaultValue());
+        boolean adjustQuality = options.getBoolean(Options.ADJUST_QUALITY.key(), Options.ADJUST_QUALITY.<Boolean>defaultValue());
 //        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key(), Options.TRANSFORM_REGION_SIZE.<Integer>defaultValue());
 
         URI alignmentAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".avro");
@@ -131,7 +132,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 //            if (exitValue != 0) {
 //                throw new Exception("Transform cli error: Exit value = " + exitValue);
 //            }
-            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, false, conf);
+            Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, adjustQuality, conf);
         } catch (Exception e) {
             throw new StorageManagerException("Error while transforming file", e);
         }

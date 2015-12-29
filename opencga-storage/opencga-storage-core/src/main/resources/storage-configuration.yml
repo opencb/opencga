@@ -26,6 +26,20 @@ server:
   port: 61976
   authorizedHosts: ["localhost"]
 
+benchmark:
+  storageEngine: "mongodb"
+  numRepetitions: 3
+  load: false
+  queries: ["count", "distinct"]
+  databaseName: "opencga"
+  table: "variants"
+  database:   ## 'local' connection to CellBase MongoDB
+      hosts:
+      - "localhost:27017"
+      user: ""
+      password: ""
+      options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine
 storageEngines:
@@ -85,7 +99,7 @@ storageEngines:
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
-    options: 
+    options:
       #Generic options
       database.name: "opencga"
       annotator: cellbase_rest
