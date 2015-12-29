@@ -55,7 +55,8 @@ public class BenchmarkStats {
             for (Integer integer : integers) {
                 total += integer.doubleValue();
             }
-            return total / integers.size();
+            double roundOff = Math.round((total / integers.size()) * 1000d) / 1000d;
+            return roundOff; //total / integers.size();
         }
         return 0.0f;
     }
@@ -67,11 +68,13 @@ public class BenchmarkStats {
         for (int a : integers) {
             temp += Math.pow((mean - a), 2);
         }
-        return temp / integers.size();
+        double roundOff = Math.round((temp / integers.size()) * 1000d) / 1000d;
+        return roundOff; //temp / integers.size();
     }
 
     double standardDeviation(String counter) {
-        return Math.sqrt(variance(counter));
+        double roundOff = Math.round(Math.sqrt(variance(counter)) * 1000d) / 1000d;
+        return roundOff; //Math.sqrt(variance(counter));
     }
 
     public void printSummary() {

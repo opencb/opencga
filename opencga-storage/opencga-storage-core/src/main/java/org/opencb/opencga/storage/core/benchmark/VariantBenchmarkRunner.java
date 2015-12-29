@@ -89,39 +89,57 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                     queryParams = queryType[1];
                 }
 
-//                System.out.println("queryType = " + queryType[0]);
-//                System.out.println("queryParams = " + queryParams);
+                Query query = new Query();
+                QueryOptions queryOptions = new QueryOptions();
+
                 switch (queryType[0]) {
                     case "count":
                         executeThreads(queryType[0], () -> variantDBAdaptor.count(new Query()));
 //                        executionTime = count();
                         break;
-//                    case "distinct":
-//                        executionTime = distinct();
-//                        break;
-//                    case "queryById":
-//                        executionTime = queryById();
-//                        break;
-//                    case "queryByRegion":
-//                        executionTime = queryByRegion();
-//                        break;
-//                    case "queryByChromosome":
-//                        executionTime = queryByChromosome();
-//                        break;
-//                    case "queryByGene":
-//                        executionTime = queryByGene();
-//                        break;
-//                    case "queryByType":
-//                        executionTime = queryByType();
-//                        break;
-//                    case "queryByReference":
-//                        executionTime = queryByReference();
-//                        break;
-//                    case "queryByAlternate":
-//                        executionTime = queryByAlternate();
-//                        break;
-//                    case "queryByStudies":
-//                        executionTime = queryByStudies();
+                    case "distinct":
+                        executeThreads(queryType[0], () -> variantDBAdaptor.distinct(new Query(), ""));
+                        //executionTime = distinct();
+                        break;
+                    case "queryById":
+                        query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryById();
+                        break;
+                    case "queryByRegion":
+                        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByRegion();
+                        break;
+                    case "queryByChromosome":
+                        query.put(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByChromosome();
+                        break;
+                    case "queryByGene":
+                        query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByGene();
+                        break;
+                    case "queryByType":
+                        query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByType();
+                        break;
+                    case "queryByReference":
+                        query.put(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByReference();
+                        break;
+                    case "queryByAlternate":
+                        query.put(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+                        //executionTime = queryByAlternate();
+                        break;
+                    case "queryByStudies":
+                        query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryParams);
+                        executeThreads(queryType[0], () -> variantDBAdaptor.get(query, queryOptions));
+//                        //executionTime = queryByStudies();
 //                        break;
                     default:
                         break;
@@ -256,7 +274,5 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //        System.out.println(variantQueryResultByChr.getDbTime());
 //        return variantQueryResultByChr.getDbTime();
 //    }
-
-
 
 }

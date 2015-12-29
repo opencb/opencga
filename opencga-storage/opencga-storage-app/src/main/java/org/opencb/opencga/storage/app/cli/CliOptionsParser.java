@@ -530,6 +530,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--host"}, description = "DataBase name", required = false, arity = 1)
         public String host;
 
+        @Parameter(names = {"--concurrency"}, description = "Number of threads to run in parallel", required = false, arity = 1)
+        public int concurrency = 1;
+
     }
 
 

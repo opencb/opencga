@@ -33,6 +33,7 @@ benchmark:
   queries: ["count", "distinct"]
   databaseName: "opencga"
   table: "variants"
+  concurrency: 1
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

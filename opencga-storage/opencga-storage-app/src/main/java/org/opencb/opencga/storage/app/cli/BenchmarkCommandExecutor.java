@@ -74,7 +74,17 @@ public class BenchmarkCommandExecutor extends CommandExecutor {
     private void checkParams() {
         if (configuration.getBenchmark().getDatabaseName() == null || configuration.getBenchmark().getDatabaseName().isEmpty()) {
             System.out.println("...");
-            throw new ParameterException("");
+            throw new ParameterException("Database name is null or empty. Please provide database name.");
+        }
+
+        if (configuration.getBenchmark().getTable() == null || configuration.getBenchmark().getTable().isEmpty()) {
+            System.out.println("...");
+            throw new ParameterException("Table name is null or empty. Please provide table name.");
+        }
+
+        if (configuration.getBenchmark().getDatabase().getHosts() == null || configuration.getBenchmark().getDatabase().getHosts().isEmpty()) {
+            System.out.println("...");
+            throw new ParameterException("Database name is null or empty. Please provide Database name.");
         }
 
     }
