@@ -39,7 +39,7 @@ public class StorageConfiguration {
     private String studyMetadataManager;
 
     private CellBaseConfiguration cellbase;
-    private QueryServerConfiguration server;
+    private ServerConfiguration server;
 
     private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
@@ -55,7 +55,7 @@ public class StorageConfiguration {
         this.storageEngines = storageEngines;
 
         this.cellbase = new CellBaseConfiguration();
-        this.server = new QueryServerConfiguration();
+        this.server = new ServerConfiguration();
     }
 
     /*
@@ -209,11 +209,11 @@ public class StorageConfiguration {
         this.cellbase = cellbase;
     }
 
-    public QueryServerConfiguration getServer() {
+    public ServerConfiguration getServer() {
         return server;
     }
 
-    public void setServer(QueryServerConfiguration server) {
+    public void setServer(ServerConfiguration server) {
         this.server = server;
     }
 
