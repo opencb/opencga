@@ -67,6 +67,7 @@ public class CliOptionsParser {
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
+        variantSubCommands.addCommand("query-grpc", variantCommandOptions.queryGrpCVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
@@ -201,6 +202,7 @@ public class CliOptionsParser {
 
         IndexVariantsCommandOptions indexVariantsCommandOptions;
         QueryVariantsCommandOptions queryVariantsCommandOptions;
+        QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
         BenchmarkCommandOptions benchmarkCommandOptions;
@@ -208,6 +210,7 @@ public class CliOptionsParser {
         public VariantCommandOptions() {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
             this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
+            this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
             this.benchmarkCommandOptions = new BenchmarkCommandOptions();
@@ -539,8 +542,16 @@ public class CliOptionsParser {
 
     }
 
+    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed variants")
+    public class QueryGrpCVariantsCommandOptions extends QueryVariantsCommandOptions {
 
-    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
+//        @ParametersDelegate
+//        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+
+    }
+
+        @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
     public class AnnotateVariantsCommandOptions {
 
         @ParametersDelegate

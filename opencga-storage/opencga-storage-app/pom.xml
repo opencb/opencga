@@ -109,6 +109,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.storage.server.grpc.GenericGrpcServer</mainClass>
+                            <name>opencga-storage-grpc.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
                 </configuration>
             </plugin>
