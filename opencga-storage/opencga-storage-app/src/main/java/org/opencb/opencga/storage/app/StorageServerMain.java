@@ -19,66 +19,62 @@ package org.opencb.opencga.storage.app;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.AlignmentCommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
-import org.opencb.opencga.storage.app.cli.client.VariantCommandExecutor;
+import org.opencb.opencga.storage.app.cli.server.GrpcCommandExecutor;
+import org.opencb.opencga.storage.app.cli.server.RestCommandExecutor;
+import org.opencb.opencga.storage.app.cli.server.ServerCliOptionsParser;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class StorageMain {
+public class StorageServerMain {
 
     public static void main(String[] args) {
         System.exit(privateMain(args));
     }
 
     public static int privateMain(String[] args) {
-        CliOptionsParser cliOptionsParser = new CliOptionsParser();
+        ServerCliOptionsParser serverCliOptionsParser = new ServerCliOptionsParser();
 
         try {
-            cliOptionsParser.parse(args);
+            serverCliOptionsParser.parse(args);
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
-            cliOptionsParser.printUsage();
+            serverCliOptionsParser.printUsage();
             return 1;
         }
 
-        String parsedCommand = cliOptionsParser.getCommand();
+        String parsedCommand = serverCliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
-            if (cliOptionsParser.getGeneralOptions().version) {
+            if (serverCliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
                 System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-//                System.out.println(GitRepositoryState.get());
                 return 0;
-            } else if (cliOptionsParser.getGeneralOptions().help) {
-                cliOptionsParser.printUsage();
+            } else if (serverCliOptionsParser.getGeneralOptions().help) {
+                serverCliOptionsParser.printUsage();
                 return 0;
             } else {
-                cliOptionsParser.printUsage();
+                serverCliOptionsParser.printUsage();
                 return 1;
             }
         } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
+            if (serverCliOptionsParser.isHelp()) {
+                serverCliOptionsParser.printUsage();
                 return 0;
             } else {
-                String parsedSubCommand = cliOptionsParser.getSubCommand();
+                String parsedSubCommand = serverCliOptionsParser.getSubCommand();
                 if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
-                    cliOptionsParser.printUsage();
+                    serverCliOptionsParser.printUsage();
                 } else {
                     switch (parsedCommand) {
-//                        case "feature":
-//                            commandExecutor = new IndexAlignmentsCommandExecutor(cliOptionsParser.getIndexAlignmentsCommandOptions());
-//                            break;
-                        case "alignment":
-                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
+                        case "rest":
+                            commandExecutor = new RestCommandExecutor(serverCliOptionsParser.getRestCommandOptions());
                             break;
-                        case "variant":
-                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
+                        case "grpc":
+                            commandExecutor = new GrpcCommandExecutor(serverCliOptionsParser.getGrpcCommandOptions());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
@@ -101,11 +97,10 @@ public class StorageMain {
                             return 1;
                         }
                     } else {
-                        cliOptionsParser.printUsage();
+                        serverCliOptionsParser.printUsage();
                         return 1;
                     }
                 }
-
             }
         }
         return 0;

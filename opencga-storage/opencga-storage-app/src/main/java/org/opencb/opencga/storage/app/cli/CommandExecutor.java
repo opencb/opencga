@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client;
+package org.opencb.opencga.storage.app.cli;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;

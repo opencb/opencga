@@ -110,8 +110,8 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.server.grpc.GenericGrpcServer</mainClass>
-                            <name>opencga-storage-grpc.sh</name>
+                            <mainClass>org.opencb.opencga.storage.app.StorageServerMain</mainClass>
+                            <name>opencga-storage-server2.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>

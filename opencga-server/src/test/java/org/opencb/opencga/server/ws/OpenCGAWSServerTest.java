@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.storage.app.StorageServerMain;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import javax.ws.rs.client.Entity;
@@ -188,7 +189,7 @@ public class OpenCGAWSServerTest {
     private Job runStorageJob(String sessionId, Job storageJob) throws AnalysisExecutionException, IOException, CatalogException {
         String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
         storageJob.setCommandLine("Executing Storage CLI " + storageJob.getCommandLine());
-        org.opencb.opencga.storage.app.StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
+        StorageServerMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
         storageJob.setCommandLine("echo 'Executing fake job CLI' " + storageJob.getCommandLine());
         AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(storageJob.getId(), null, sessionId).first();

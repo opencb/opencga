@@ -44,9 +44,17 @@ public class GenericGrpcServer {
 
     protected static Logger logger; // = Logger.getLogger(GeneServer.class.getName());
 
+    public GenericGrpcServer() {
+        this.port = storageConfiguration.getServer().getGrpc();
+    }
+
+    public GenericGrpcServer(int port) {
+        this.port = port;
+    }
+
     static {
-        logger = LoggerFactory.getLogger("org.opencb.cellbase.server.ws.GenericRestWSServer");
-        logger.info("Static block, creating MongoDBAdapatorFactory");
+        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.grpc.GenericGrpcServer");
+        logger.info("Static block, creating StorageManagerFactory");
         try {
             if (System.getenv("OPENCGA_HOME") != null) {
                 logger.info("Loading configuration from '{}'", System.getenv("OPENCGA_HOME") + "/conf/storage-configuration.yml");
@@ -69,7 +77,7 @@ public class GenericGrpcServer {
         }
     }
 
-    private void start() throws Exception {
+    public void start() throws Exception {
         server = ServerBuilder.forPort(port)
 //                .addService(GeneServiceGrpc.bindService(new GeneGrpcServer()))
                 .addService(org.opencb.opencga.storage.server.grpc.VariantServiceGrpc.bindService(new VariantGrpcServer()))
@@ -86,13 +94,13 @@ public class GenericGrpcServer {
         });
     }
 
-    private void stop() {
+    public void stop() {
         if (server != null) {
             server.shutdown();
         }
     }
 
-    private void blockUntilShutdown() throws InterruptedException {
+    public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();
         }
@@ -120,10 +128,10 @@ public class GenericGrpcServer {
     }
 
 
-    public static void main(String[] args) throws Exception {
-        final GenericGrpcServer server = new GenericGrpcServer();
-        server.start();
-        server.blockUntilShutdown();
-    }
+//    public static void main(String[] args) throws Exception {
+//        final GenericGrpcServer server = new GenericGrpcServer();
+//        server.start();
+//        server.blockUntilShutdown();
+//    }
 
 }

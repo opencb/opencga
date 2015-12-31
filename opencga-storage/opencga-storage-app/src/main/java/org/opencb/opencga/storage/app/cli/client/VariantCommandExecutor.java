@@ -31,6 +31,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -330,36 +331,65 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryGrpcCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
+        // We prepare and build the needed objects: query, queryOptions and outputStream to print results
         Query query = VariantQueryCommandUtils.parseQuery(queryGrpcCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryGrpcCommandOptions);
         OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryGrpcCommandOptions);
         PrintStream printStream = new PrintStream(outputStream);
 
+        // Query object implements a Map<String, Object> while gRPC request object is a Map<String, String>,
+        // we need to convert all parsed query fields into String, Lists are taken care of to avoid square brackets
         Map<String, String> queryString = new HashMap<>();
-        query.keySet().stream().map(s -> queryString.put(s, String.valueOf(query.get(s))));
+        query.keySet().stream().forEach(s ->  {
+            if (query.get(s) instanceof ArrayList || query.get(s) instanceof LinkedList) {
+                String replace = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key())
+                        .replace(" ", "").replace("[", "").replace("]", "");
+                queryString.put(s, replace);
+            } else {
+                queryString.put(s, String.valueOf(query.get(s)));
+            }
+        });
+        logger.debug("Query object: {}", queryString);
 
         Map<String, String> queryOptionsString = new HashMap<>();
-        options.keySet().stream().map(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
+        options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
+        logger.debug("QueryOption object: {}", queryOptionsString);
 
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9091)
-                .usePlaintext(true)
-                .build();
-
+        // We create the OpenCGA gRPC request object with the query and queryOptions
         GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
                 .putAllQuery(queryString)
                 .putAllOptions(queryOptionsString)
                 .build();
 
-        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
 
-        Iterator<VariantProto.Variant> geneIterator = geneServiceBlockingStub.get(request);
-        while (geneIterator.hasNext()) {
-            VariantProto.Variant next = geneIterator.next();
+        // Connecting to the server host and port
+        String grpcServerHost = "localhost";
+        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
+            grpcServerHost = queryGrpcCommandOptions.host;
+        }
+        int grpcServerPort = configuration.getServer().getGrpc();
+        if (queryGrpcCommandOptions.port > 0) {
+            grpcServerPort = queryGrpcCommandOptions.port;
+        }
+        logger.debug("Connecting to gRPC server at '{}:{}'", grpcServerHost, grpcServerPort);
+
+        // We create the gRPC channel to the specified server host and port
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
+                .usePlaintext(true)
+                .build();
+
+
+        // We use a blocking stub to execute the query to gRPC
+        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
+        Iterator<VariantProto.Variant> variantIterator = geneServiceBlockingStub.get(request);
+        while (variantIterator.hasNext()) {
+            VariantProto.Variant next = variantIterator.next();
             printStream.println(next.toString());
         }
 
-        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
+        // Close open resources
         printStream.close();
+        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
     }
 
     private void annotation() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException {
@@ -574,8 +604,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
             IllegalAccessException, ClassNotFoundException {
-        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions
-                = variantCommandOptions.benchmarkCommandOptions;
+        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
 
 // Overwrite default options from configuration.yaml with CLI parameters
         if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
@@ -610,7 +639,6 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         // validate
         checkParams();
-
 
 //        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
         BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);

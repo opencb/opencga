@@ -80,7 +80,10 @@ public class VariantQueryCommandUtils {
 
         // If the studies to be returned is empty then we return the studies being queried
         if (queryVariantsOptions.returnStudy != null && !queryVariantsOptions.returnStudy.isEmpty()) {
-            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsOptions.returnStudy.split(",")));
+//            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsOptions.returnStudy.split(",")));
+            List<String> list = new ArrayList<>();
+            Collections.addAll(list, queryVariantsOptions.returnStudy.split(","));
+            query.put(RETURNED_STUDIES.key(), list);
         } else {
             if (!studies.isEmpty()) {
                 query.put(RETURNED_STUDIES.key(), studies);
@@ -206,9 +209,10 @@ public class VariantQueryCommandUtils {
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
             queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
-        } else {
-            queryOptions.put("exclude", "_id");
         }
+//        else {
+//            queryOptions.put("exclude", "_id");
+//        }
 
         if (queryVariantsOptions.skip > 0) {
             queryOptions.add("skip", queryVariantsOptions.skip);

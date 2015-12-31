@@ -79,7 +79,15 @@ public class VariantGrpcServer extends GenericGrpcServer implements VariantServi
     }
 
     private Variant convert(org.opencb.biodata.models.variant.Variant var) {
-        Variant build = Variant.newBuilder().setChromosome(var.getChromosome()).setStart(var.getStart()).build();
+        Variant build = Variant.newBuilder()
+                .setChromosome(var.getChromosome())
+                .setStart(var.getStart())
+                .setEnd(var.getEnd())
+                .setLength(var.getLength())
+                .setReference(var.getReference())
+                .setAlternate(var.getAlternate())
+                .addAllIds(var.getIds())
+                .build();
 
         return build;
     }
