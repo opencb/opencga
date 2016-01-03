@@ -147,7 +147,7 @@ public class ServerCliOptionsParser {
         @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
         public String configFile;
 
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
+        @Parameter(names = {"--storage-engine"}, arity = 1, description = "Default storage engine for the server, if not set then is read from storage-configuration.yml")
         public String storageEngine;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
@@ -200,13 +200,18 @@ public class ServerCliOptionsParser {
         public CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
 
         @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
-        int port = 0;
+        int port;
 
     }
 
     @Parameters(commandNames = {"stop"}, commandDescription = "Search over indexed variants")
     public class RestStopCommandOptions {
 
+        @ParametersDelegate
+        public CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
+
+        @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
+        int port;
     }
 
     @Parameters(commandNames = {"status"}, commandDescription = "Search over indexed variants")
@@ -222,13 +227,19 @@ public class ServerCliOptionsParser {
         @ParametersDelegate
         public CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
 
-        @Parameter(names = {"-P", "--port"}, description = "Port", required = false, arity = 1)
-        int port = 0;
+        @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
+        int port;
 
     }
 
     @Parameters(commandNames = {"stop"}, commandDescription = "Search over indexed variants")
     public class GrpcStopCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
+
+        @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
+        int port;
 
     }
 

@@ -5,8 +5,13 @@ package org.opencb.opencga.storage.server.grpc;
 option java_outer_classname = "GenericServiceModel";
 
 message Request {
-    map<string, string> query = 3;
-    map<string, string> options = 4;
+    string storageEngine = 1;
+    string database = 2;
+    string user = 3;
+    string password = 4;
+    string ip = 5;
+    map<string, string> query = 6;
+    map<string, string> options = 7;
 }
 
 message LongResponse {
@@ -25,3 +30,6 @@ message GroupResponse {
     map<string, string> values = 1;
 }
 
+message MapResponse {
+    map<string, string> values = 1;
+}

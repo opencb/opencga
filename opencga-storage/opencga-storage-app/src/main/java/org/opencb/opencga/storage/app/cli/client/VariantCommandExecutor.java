@@ -355,8 +355,21 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
         logger.debug("QueryOption object: {}", queryOptionsString);
 
-        // We create the OpenCGA gRPC request object with the query and queryOptions
+        // Setting the storageEngine and database to execute the query, this are passed to the gRPC in the request object
+        String storageEngine = configuration.getDefaultStorageEngineId();
+        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.commonOptions.storageEngine)) {
+            storageEngine = queryGrpcCommandOptions.commonOptions.storageEngine;
+        }
+
+        String database = configuration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
+        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.dbName)) {
+            database = queryGrpcCommandOptions.dbName;
+        }
+
+        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
         GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+                .setStorageEngine(storageEngine)
+                .setDatabase(database)
                 .putAllQuery(queryString)
                 .putAllOptions(queryOptionsString)
                 .build();
@@ -367,11 +380,12 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
             grpcServerHost = queryGrpcCommandOptions.host;
         }
+
         int grpcServerPort = configuration.getServer().getGrpc();
         if (queryGrpcCommandOptions.port > 0) {
             grpcServerPort = queryGrpcCommandOptions.port;
         }
-        logger.debug("Connecting to gRPC server at '{}:{}'", grpcServerHost, grpcServerPort);
+        logger.debug("Connecting to gRPC server at '{}:{}' to database '{}:{}'", grpcServerHost, grpcServerPort, storageEngine, database);
 
         // We create the gRPC channel to the specified server host and port
         ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)

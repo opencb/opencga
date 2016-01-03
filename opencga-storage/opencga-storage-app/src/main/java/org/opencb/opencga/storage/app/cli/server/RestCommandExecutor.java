@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.app.cli.server;
 
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
+import org.opencb.opencga.storage.server.rest.RestStorageServer;
 
 /**
  * Created by imedina on 30/12/15.
@@ -53,8 +54,17 @@ public class RestCommandExecutor extends CommandExecutor {
         }
     }
 
-    public void start() {
+    public void start() throws Exception {
+        int port = configuration.getServer().getGrpc();
+        if (restCommandOptions.restStartCommandOptions.port > 0) {
+            port = restCommandOptions.restStartCommandOptions.port;
+        }
 
+        // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
+        RestStorageServer server = new RestStorageServer(port);
+//        GrpcStorageServer server = new GrpcStorageServer(port, configuration.getDefaultStorageEngineId());
+        server.start();
+//        server.blockUntilShutdown();
     }
 
     public void stop() {
