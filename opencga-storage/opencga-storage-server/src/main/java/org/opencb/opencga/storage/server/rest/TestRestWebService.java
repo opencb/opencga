@@ -32,10 +32,10 @@ import java.io.IOException;
  */
 
 @Path("/test")
-public class TestWSServer extends StorageWSServer {
+public class TestRestWebService extends GenericRestWebService {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                        @Context ServletContext context) throws IOException {
+    public TestRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                              @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
         System.out.println("Build TestServlet");
     }

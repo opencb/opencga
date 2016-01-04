@@ -48,7 +48,7 @@ import java.util.List;
  * Created by jacobo on 23/10/14.
  */
 //@Path("/")
-public class StorageWSServer {
+public class GenericRestWebService {
 
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
@@ -90,7 +90,7 @@ public class StorageWSServer {
 //    @Context
 //    private ServletContext context;
 
-    public StorageWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
+    public GenericRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
             httpServletRequest, @Context ServletContext context) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;

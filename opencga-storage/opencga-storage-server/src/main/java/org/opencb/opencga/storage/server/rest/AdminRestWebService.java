@@ -33,12 +33,12 @@ import java.io.IOException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Path("/admin")
-public class AdminWSServer extends StorageWSServer {
+public class AdminRestWebService extends GenericRestWebService {
 
     private static RestStorageServer server;
 
-    public AdminWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                         @Context ServletContext context) throws IOException {
+    public AdminRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                               @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
         System.out.println("Build AdminWSServer");
     }
@@ -67,7 +67,7 @@ public class AdminWSServer extends StorageWSServer {
     }
 
     public static void setServer(RestStorageServer server) {
-        AdminWSServer.server = server;
+        AdminRestWebService.server = server;
     }
 
 }

@@ -41,13 +41,13 @@ import java.util.List;
  * @author Jacobo Coll <jacobo167@gmail.com>.
  */
 @Path("/variants")
-public class VariantsWSServer extends StorageWSServer {
+public class VariantRestWebService extends GenericRestWebService {
 
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                            @Context ServletContext context) throws IOException {
+    public VariantRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                 @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
     }
 

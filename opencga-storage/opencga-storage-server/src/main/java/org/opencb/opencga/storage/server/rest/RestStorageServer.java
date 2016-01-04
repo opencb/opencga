@@ -98,7 +98,7 @@ public class RestStorageServer extends AbstractStorageServer {
         }).start();
 
         // AdminWSServer server needs a reference to this class to cll to .stop()
-        AdminWSServer.setServer(this);
+        AdminRestWebService.setServer(this);
 
         // Blocking the main thread
 //        server.join();
