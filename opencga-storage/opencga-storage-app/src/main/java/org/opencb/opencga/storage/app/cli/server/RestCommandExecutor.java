@@ -20,6 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
+
 /**
  * Created by imedina on 30/12/15.
  */
@@ -69,11 +74,25 @@ public class RestCommandExecutor extends CommandExecutor {
 
         RestStorageServer server = new RestStorageServer(port, storageEngine);
         server.start();
+        server.blockUntilShutdown();
         logger.info("Shutting down OpenCGA Storage REST server");
     }
 
     public void stop() {
+        int port = configuration.getServer().getRest();
+        if (restCommandOptions.restStopCommandOptions.port > 0) {
+            port = restCommandOptions.restStopCommandOptions.port;
+        }
 
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target("http://localhost:" + port)
+                .path("opencga")
+                .path("webservices")
+                .path("rest")
+                .path("admin")
+                .path("stop");
+        Response response = target.request().get();
+        logger.info(response.toString());
     }
 
     public void status() {

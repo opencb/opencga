@@ -101,13 +101,21 @@ public class RestStorageServer extends AbstractStorageServer {
         AdminWSServer.setServer(this);
 
         // Blocking the main thread
-        server.join();
+//        server.join();
     }
 
     @Override
     public void stop() throws Exception {
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;
+    }
+
+    @Override
+    public void blockUntilShutdown() throws InterruptedException {
+        if (server != null) {
+            // Blocking the main thread
+            server.join();
+        }
     }
 
     private void stopJettyServer() throws Exception {

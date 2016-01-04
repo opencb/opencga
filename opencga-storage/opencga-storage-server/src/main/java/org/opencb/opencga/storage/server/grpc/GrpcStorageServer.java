@@ -36,7 +36,7 @@ public class GrpcStorageServer extends AbstractStorageServer {
     public GrpcStorageServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
-        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.grpc.StorageGrpcServer");
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     public GrpcStorageServer(StorageConfiguration storageConfiguration) {
@@ -72,6 +72,7 @@ public class GrpcStorageServer extends AbstractStorageServer {
         }
     }
 
+    @Override
     public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();

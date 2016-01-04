@@ -77,6 +77,8 @@ public abstract class AbstractStorageServer {
 
     public abstract void stop() throws Exception;
 
+    public abstract void blockUntilShutdown() throws Exception;
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StorageServer{");
