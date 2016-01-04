@@ -20,11 +20,15 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
 import org.opencb.opencga.storage.server.grpc.GrpcStorageServer;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -65,21 +69,44 @@ public class GrpcCommandExecutor extends CommandExecutor {
     }
 
     public void start() throws Exception {
-        int port = configuration.getServer().getGrpc();
-        if (grpcCommandOptions.grpcStartCommandOptions.port > 0) {
-            port = grpcCommandOptions.grpcStartCommandOptions.port;
-        }
+//        int port = configuration.getServer().getGrpc();
+//        if (grpcCommandOptions.grpcStartCommandOptions.port > 0) {
+//            port = grpcCommandOptions.grpcStartCommandOptions.port;
+//        }
+//
+//        String storageEngine = configuration.getDefaultStorageEngineId();
+//        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine)) {
+//            storageEngine = grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine;
+//        }
 
-        String storageEngine = configuration.getDefaultStorageEngineId();
-        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine)) {
-            storageEngine = grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine;
-        }
 
         // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
-        GrpcStorageServer server = new GrpcStorageServer(port, storageEngine);
+        StorageConfiguration storageConfiguration = configuration;
+        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.commonOptions.configFile)) {
+            Path path = Paths.get(grpcCommandOptions.grpcStartCommandOptions.commonOptions.configFile);
+            if (Files.exists(path)) {
+                storageConfiguration = StorageConfiguration.load(Files.newInputStream(path));
+            }
+        }
+
+        // Setting CLI params in the StorageConfiguration
+        if (grpcCommandOptions.grpcStartCommandOptions.port > 0) {
+            storageConfiguration.getServer().setGrpc(grpcCommandOptions.grpcStartCommandOptions.port);
+        }
+
+        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine)) {
+            storageConfiguration.setDefaultStorageEngineId(grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine);
+        }
+
+        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.authManager)) {
+            storageConfiguration.getServer().setAuthManager(grpcCommandOptions.grpcStartCommandOptions.authManager);
+        }
+
+        // Server crated and started
+        GrpcStorageServer server = new GrpcStorageServer(storageConfiguration);
         server.start();
         server.blockUntilShutdown();
-        logger.info("Shutting down Jetty REST server");
+        logger.info("Shutting down gRPC server");
     }
 
     public void stop() throws InterruptedException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {

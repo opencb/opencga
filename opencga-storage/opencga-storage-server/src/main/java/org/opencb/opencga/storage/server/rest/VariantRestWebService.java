@@ -46,8 +46,8 @@ public class VariantRestWebService extends GenericRestWebService {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                 @Context ServletContext context) throws IOException {
+    public VariantRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                                 @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
     }
 
@@ -71,29 +71,28 @@ public class VariantRestWebService extends GenericRestWebService {
 
     public static class VariantFetcher {
 
-        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions
-                queryOptions)
+        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions options)
                 throws StorageManagerException, ClassNotFoundException, IllegalAccessException, InstantiationException {
             VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
             Query query = new Query();
             for (VariantQueryParams acceptedValue : VariantQueryParams.values()) {
-                if (queryOptions.get(acceptedValue.key()) != null) {
-                    query.put(acceptedValue.key(), queryOptions.get(acceptedValue.key()));
+                if (options.get(acceptedValue.key()) != null) {
+                    query.put(acceptedValue.key(), options.get(acceptedValue.key()));
                 }
             }
-            queryOptions.add("query", query);
+            options.add("query", query);
 //            for (String acceptedValue : Arrays.asList("merge", "exclude", "include", "skip", "limit")) {
 //                addQueryParam(queryOptions, acceptedValue);
 //            }
 
-            if (queryOptions.getInt("limit", Integer.MAX_VALUE) > LIMIT_MAX) {
-                queryOptions.put("limit", Math.max(queryOptions.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));
+            if (options.getInt("limit", Integer.MAX_VALUE) > LIMIT_MAX) {
+                options.put("limit", Math.max(options.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));
             }
 
             // Parse the provided regions. The total size of all regions together
             // can't excede 1 million positions
-            List<Region> regions = Region.parseRegions(queryOptions.getString(VariantQueryParams.REGION.key()));
+            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParams.REGION.key()));
             regions = regions == null ? Collections.emptyList() : regions;
             int regionsSize = regions.stream().reduce(0, (size, r) -> size += r.getEnd() - r.getStart(), (a, b) -> a + b);
 
@@ -103,12 +102,12 @@ public class VariantRestWebService extends GenericRestWebService {
                     throw new IllegalArgumentException("Sorry, histogram functionality only works with a single region");
                 } else {
                     if (interval > 0) {
-                        queryOptions.put("interval", interval);
+                        options.put("interval", interval);
                     }
                     queryResult = dbAdaptor.getFrequency(query, regions.get(0), interval);
                 }
             } else {
-                queryResult = dbAdaptor.get(query, queryOptions);
+                queryResult = dbAdaptor.get(query, options);
             }
             //            else if (regionsSize <= 1000000) {
             //                if (regions.size() == 0) {

@@ -202,6 +202,9 @@ public class ServerCliOptionsParser {
         @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
         int port;
 
+        @Parameter(names = {"--auth-manager"}, description = "Port", required = false, arity = 1)
+        String authManager;
+
     }
 
     @Parameters(commandNames = {"stop"}, commandDescription = "Search over indexed variants")
@@ -229,6 +232,9 @@ public class ServerCliOptionsParser {
 
         @Parameter(names = {"--port"}, description = "Port", required = false, arity = 1)
         int port;
+
+        @Parameter(names = {"--auth-manager"}, description = "Port", required = false, arity = 1)
+        String authManager;
 
     }
 

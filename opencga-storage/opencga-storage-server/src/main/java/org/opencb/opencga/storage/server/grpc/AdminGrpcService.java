@@ -30,7 +30,6 @@ public class AdminGrpcService extends GenericGrpcService implements AdminService
 
     public AdminGrpcService(StorageConfiguration storageConfiguration, GrpcStorageServer grpcServer) {
         super(storageConfiguration);
-
         this.grpcServer = grpcServer;
     }
 

@@ -36,6 +36,6 @@ public class DefaultAuthManager implements AuthManager {
 
     @Override
     public void checkPermission(Query query, String sessionId) throws NotAuthorizedUserException {
-
+        System.out.println("holaaaaaaaaaaaa");
     }
 }

@@ -41,8 +41,8 @@ import java.util.Arrays;
 @Path("/files")
 public class FileRestWebService extends GenericRestWebService {
 
-    public FileRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                              @Context ServletContext context) throws IOException {
+    public FileRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                              @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
         params = uriInfo.getQueryParameters();
     }

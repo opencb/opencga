@@ -51,10 +51,12 @@ public class GrpcStorageServer extends AbstractStorageServer {
         server = ServerBuilder.forPort(port)
 //                .addService(GeneServiceGrpc.bindService(new GeneGrpcServer()))
                 .addService(AdminServiceGrpc.bindService(new AdminGrpcService(storageConfiguration, this)))
-                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(storageConfiguration, defaultStorageEngine)))
+                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(storageConfiguration)))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);
+
+        // A hook is added in case the JVM is shutting down
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {

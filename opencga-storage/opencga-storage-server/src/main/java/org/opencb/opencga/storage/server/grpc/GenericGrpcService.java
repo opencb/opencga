@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.server.grpc;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -42,32 +43,45 @@ public class GenericGrpcService {
     protected static StorageManagerFactory storageManagerFactory;
 
     protected AuthManager authManager;
-    protected static Set<String> authorizedHosts;
+    protected Set<String> authorizedHosts;
 
-    protected static Logger logger;
-
+    private Logger privLogger;
+    protected Logger logger;
 
     public GenericGrpcService(StorageConfiguration storageConfiguration) {
         this(storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
     }
 
     public GenericGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+
+        privLogger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.grpc.GenericGrpcService");
+        logger = LoggerFactory.getLogger(this.getClass());
+
         this.storageConfiguration = storageConfiguration;
         this.defaultStorageEngine = defaultStorageEngine;
 
-        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.grpc.GenericGrpcServer");
-
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {
-            logger.debug("Creating the StorageManagerFactory object");
+            privLogger.debug("Creating the StorageManagerFactory object");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         }
 
         if (authorizedHosts == null) {
-            logger.debug("Creating the authorizedHost HashSet");
+            privLogger.debug("Creating the authorizedHost HashSet");
             authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
         }
-        authManager = new DefaultAuthManager();
+
+        try {
+            if (StringUtils.isNotEmpty(storageConfiguration.getServer().getAuthManager())) {
+                privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), storageConfiguration.getServer().getAuthManager());
+                authManager = (AuthManager) Class.forName(storageConfiguration.getServer().getAuthManager()).newInstance();
+            } else {
+                privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
+                authManager = new DefaultAuthManager();
+            }
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {

@@ -39,11 +39,11 @@ import static org.opencb.opencga.storage.server.grpc.VariantServiceGrpc.VariantS
  */
 public class VariantGrpcService extends GenericGrpcService implements VariantService {
 
-
     public VariantGrpcService(StorageConfiguration storageConfiguration) {
         super(storageConfiguration);
     }
 
+    @Deprecated
     public VariantGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
         super(storageConfiguration, defaultStorageEngine);
     }
@@ -124,12 +124,11 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         return build;
     }
 
-    private VariantDBAdaptor getVariantDBAdaptor(Request request) throws IllegalAccessException, InstantiationException,
-            ClassNotFoundException, StorageManagerException {
+    private VariantDBAdaptor getVariantDBAdaptor(Request request)
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
         String storageEngine = defaultStorageEngine;
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
-            System.out.println("aaaaaaaaaaa: " + request.getStorageEngine());
             storageEngine = request.getStorageEngine();
         }
 
@@ -142,7 +141,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         long start = System.currentTimeMillis();
         VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
-        logger.info("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
+        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 
         return variantDBAdaptor;
     }

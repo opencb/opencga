@@ -26,6 +26,7 @@ public class ServerConfiguration {
 
     private int rest;
     private int grpc;
+    private String authManager;
     private String storageEngine;
     private List<String> authorizedHosts;
     private Map<String, String> options;
@@ -67,6 +68,14 @@ public class ServerConfiguration {
 
     public void setGrpc(int grpc) {
         this.grpc = grpc;
+    }
+
+    public String getAuthManager() {
+        return authManager;
+    }
+
+    public void setAuthManager(String authManager) {
+        this.authManager = authManager;
     }
 
     public String getStorageEngine() {

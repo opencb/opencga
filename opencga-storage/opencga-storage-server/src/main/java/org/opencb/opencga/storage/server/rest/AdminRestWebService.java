@@ -37,8 +37,8 @@ public class AdminRestWebService extends GenericRestWebService {
 
     private static RestStorageServer server;
 
-    public AdminRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                               @Context ServletContext context) throws IOException {
+    public AdminRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @
+            Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
         System.out.println("Build AdminWSServer");
     }

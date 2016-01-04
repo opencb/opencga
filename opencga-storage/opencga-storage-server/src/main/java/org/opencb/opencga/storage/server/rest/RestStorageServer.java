@@ -61,10 +61,11 @@ public class RestStorageServer extends AbstractStorageServer {
 
         logger.info("Server in port : {}", port);
         server = new Server(port);
-        sh.setInitParameter("sessionManager", "org.opencb.opnecga.catalog.XXX");
+
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
 
+        GenericRestWebService.setStorageConfiguration(storageConfiguration);
         server.start();
         logger.info("REST server started, listening on {}", port);
 
@@ -99,9 +100,6 @@ public class RestStorageServer extends AbstractStorageServer {
 
         // AdminWSServer server needs a reference to this class to cll to .stop()
         AdminRestWebService.setServer(this);
-
-        // Blocking the main thread
-//        server.join();
     }
 
     @Override

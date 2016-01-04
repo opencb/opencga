@@ -18,12 +18,16 @@ package org.opencb.opencga.storage.app.cli.server;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 30/12/15.
@@ -61,18 +65,29 @@ public class RestCommandExecutor extends CommandExecutor {
     }
 
     public void start() throws Exception {
-        int port = configuration.getServer().getRest();
+        StorageConfiguration storageConfiguration = configuration;
+        if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.configFile)) {
+            Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.configFile);
+            if (Files.exists(path)) {
+                storageConfiguration = StorageConfiguration.load(Files.newInputStream(path));
+            }
+        }
+
+        // Setting CLI params in the StorageConfiguration
         if (restCommandOptions.restStartCommandOptions.port > 0) {
-            port = restCommandOptions.restStartCommandOptions.port;
+            storageConfiguration.getServer().setRest(restCommandOptions.restStartCommandOptions.port);
         }
 
-        // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
-        String storageEngine = configuration.getDefaultStorageEngineId();
         if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.storageEngine)) {
-            storageEngine = restCommandOptions.restStartCommandOptions.commonOptions.storageEngine;
+            storageConfiguration.setDefaultStorageEngineId(restCommandOptions.restStartCommandOptions.commonOptions.storageEngine);
         }
 
-        RestStorageServer server = new RestStorageServer(port, storageEngine);
+        if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.authManager)) {
+            storageConfiguration.getServer().setAuthManager(restCommandOptions.restStartCommandOptions.authManager);
+        }
+
+        // Server crated and started
+        RestStorageServer server = new RestStorageServer(storageConfiguration);
         server.start();
         server.blockUntilShutdown();
         logger.info("Shutting down OpenCGA Storage REST server");
