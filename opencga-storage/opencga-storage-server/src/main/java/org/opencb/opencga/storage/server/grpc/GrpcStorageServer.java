@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.server.grpc;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.common.AbstractStorageServer;
 import org.slf4j.LoggerFactory;
 
@@ -32,14 +33,17 @@ public class GrpcStorageServer extends AbstractStorageServer {
         this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public GrpcStorageServer(int port) {
-        this(port, storageConfiguration.getDefaultStorageEngineId());
-    }
-
     public GrpcStorageServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
         logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.grpc.StorageGrpcServer");
+    }
+
+    public GrpcStorageServer(StorageConfiguration storageConfiguration) {
+        super(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
+        GrpcStorageServer.storageConfiguration = storageConfiguration;
+
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override

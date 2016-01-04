@@ -31,6 +31,10 @@ import java.io.IOException;
 public abstract class AbstractStorageServer {
 
     protected int port;
+
+    /**
+     * This is the default StorageEngine to use when it is not provided by the client.
+     */
     protected String defaultStorageEngine;
     protected static StorageConfiguration storageConfiguration;
 
@@ -58,10 +62,6 @@ public abstract class AbstractStorageServer {
 
     public AbstractStorageServer() {
         this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
-    }
-
-    public AbstractStorageServer(int port) {
-        this(port, storageConfiguration.getDefaultStorageEngineId());
     }
 
     public AbstractStorageServer(int port, String defaultStorageEngine) {

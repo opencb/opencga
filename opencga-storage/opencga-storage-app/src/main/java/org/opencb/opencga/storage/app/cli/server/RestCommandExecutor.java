@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.app.cli.server;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
 
@@ -55,13 +56,18 @@ public class RestCommandExecutor extends CommandExecutor {
     }
 
     public void start() throws Exception {
-        int port = configuration.getServer().getGrpc();
+        int port = configuration.getServer().getRest();
         if (restCommandOptions.restStartCommandOptions.port > 0) {
             port = restCommandOptions.restStartCommandOptions.port;
         }
 
         // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
-        RestStorageServer server = new RestStorageServer(port);
+        String storageEngine = configuration.getDefaultStorageEngineId();
+        if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.storageEngine)) {
+            storageEngine = restCommandOptions.restStartCommandOptions.commonOptions.storageEngine;
+        }
+
+        RestStorageServer server = new RestStorageServer(port, storageEngine);
         server.start();
         logger.info("Shutting down OpenCGA Storage REST server");
     }

@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.app.cli.server;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
@@ -69,8 +70,13 @@ public class GrpcCommandExecutor extends CommandExecutor {
             port = grpcCommandOptions.grpcStartCommandOptions.port;
         }
 
+        String storageEngine = configuration.getDefaultStorageEngineId();
+        if (StringUtils.isNotEmpty(grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine)) {
+            storageEngine = grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine;
+        }
+
         // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
-        GrpcStorageServer server = new GrpcStorageServer(port, configuration.getDefaultStorageEngineId());
+        GrpcStorageServer server = new GrpcStorageServer(port, storageEngine);
         server.start();
         server.blockUntilShutdown();
         logger.info("Shutting down Jetty REST server");

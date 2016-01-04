@@ -21,6 +21,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.common.AbstractStorageServer;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +34,25 @@ public class RestStorageServer extends AbstractStorageServer {
 
     private boolean exit;
 
-    public RestStorageServer(int port) {
-        logger = LoggerFactory.getLogger(this.getClass());
-        this.port = port;
+    public RestStorageServer() {
+        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
+    }
 
+    public RestStorageServer(int port, String defaultStorageEngine) {
+        super(port, defaultStorageEngine);
+
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    public RestStorageServer(StorageConfiguration storageConfiguration) {
+        super(storageConfiguration.getServer().getRest(), storageConfiguration.getDefaultStorageEngineId());
+        RestStorageServer.storageConfiguration = storageConfiguration;
+
+        logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    @Override
+    public void start() throws Exception {
         ResourceConfig resourceConfig = new ResourceConfig();
         resourceConfig.packages(true, "org.opencb.opencga.storage.server.rest");
 
@@ -49,10 +65,6 @@ public class RestStorageServer extends AbstractStorageServer {
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
 
-    }
-
-    @Override
-    public void start() throws Exception {
         server.start();
         logger.info("REST server started, listening on {}", port);
 
