@@ -73,6 +73,7 @@ public class GrpcCommandExecutor extends CommandExecutor {
         GrpcStorageServer server = new GrpcStorageServer(port, configuration.getDefaultStorageEngineId());
         server.start();
         server.blockUntilShutdown();
+        logger.info("Shutting down Jetty REST server");
     }
 
     public void stop() throws InterruptedException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {

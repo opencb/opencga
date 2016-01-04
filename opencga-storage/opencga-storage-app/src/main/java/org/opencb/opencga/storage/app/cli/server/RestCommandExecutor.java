@@ -62,9 +62,8 @@ public class RestCommandExecutor extends CommandExecutor {
 
         // If not --storage-engine is not set then the server will use the default from the storage-configuration.yml
         RestStorageServer server = new RestStorageServer(port);
-//        GrpcStorageServer server = new GrpcStorageServer(port, configuration.getDefaultStorageEngineId());
         server.start();
-//        server.blockUntilShutdown();
+        logger.info("Shutting down OpenCGA Storage REST server");
     }
 
     public void stop() {

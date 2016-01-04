@@ -33,8 +33,9 @@ import java.io.IOException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Path("/admin")
-@Deprecated
 public class AdminWSServer extends StorageWSServer {
+
+    private static RestStorageServer server;
 
     public AdminWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                          @Context ServletContext context) throws IOException {
@@ -47,8 +48,26 @@ public class AdminWSServer extends StorageWSServer {
     @Path("/stop")
     @Produces("text/plain")
     public Response stop() {
+        try {
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 //        OpenCGAStorageService.getInstance().stop();
+//        try {
+//            RestStorageServer.stop();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
         return createOkResponse("bye!");
+    }
+
+    public static RestStorageServer getServer() {
+        return server;
+    }
+
+    public static void setServer(RestStorageServer server) {
+        AdminWSServer.server = server;
     }
 
 }
