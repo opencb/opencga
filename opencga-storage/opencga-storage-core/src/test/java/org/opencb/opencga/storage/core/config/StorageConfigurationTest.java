@@ -22,6 +22,7 @@ import org.opencb.datastore.core.ObjectMap;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Created by imedina on 01/05/15.
@@ -55,12 +56,13 @@ public class StorageConfigurationTest {
 
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
                 (Arrays.asList("localhost"), "user", "password"));
-        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
+        ServerConfiguration serverConfiguration =
+                new ServerConfiguration(9090, 9091, "mongodb", Arrays.asList("localhost"), Collections.emptyMap());
 
         storageConfiguration.setDefaultStorageEngineId("mongodb");
 
         storageConfiguration.setCellbase(cellBaseConfiguration);
-        storageConfiguration.setServer(queryServerConfiguration);
+        storageConfiguration.setServer(serverConfiguration);
 
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);

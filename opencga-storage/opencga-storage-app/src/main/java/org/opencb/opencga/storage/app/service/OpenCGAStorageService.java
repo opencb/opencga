@@ -69,12 +69,13 @@ public final class OpenCGAStorageService implements Runnable {
         int port = Integer.parseInt(properties.getProperty(OpenCGAStorageService.PORT, "8083"));
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(true, "org.opencb.opencga.storage.app.service.rest");
+        resourceConfig.packages(true, "org.opencb.opencga.storage.server.rest");
         ServletContainer sc = new ServletContainer(resourceConfig);
-        ServletHolder sh = new ServletHolder(sc);
+        ServletHolder sh = new ServletHolder("opencga", sc);
 
         logger.info("Server in port : {}", port);
         server = new Server(port);
+        sh.setInitParameter("sessionManager", "org.opencb.opnecga.catalog.XXX");
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
 

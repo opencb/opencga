@@ -26,6 +26,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 23/10/14.
  */
+@Deprecated
 public class OptionParser {
 
     private final JCommander jcommander;

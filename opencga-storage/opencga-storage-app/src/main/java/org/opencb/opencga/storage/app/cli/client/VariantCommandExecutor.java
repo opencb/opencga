@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.app.cli.client;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
@@ -29,6 +31,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -45,19 +48,22 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
+import org.opencb.opencga.storage.server.grpc.VariantProto;
+import org.opencb.opencga.storage.server.grpc.VariantServiceGrpc;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 
 /**
  * Created by imedina on 02/03/15.
@@ -114,6 +120,10 @@ public class VariantCommandExecutor extends CommandExecutor {
             case "query":
                 init(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
                 query();
+                break;
+            case "query-grpc":
+                init(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
+                queryGrpc();
                 break;
             case "annotation":
                 init(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
@@ -252,223 +262,28 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void query() throws Exception {
         CliOptionsParser.QueryVariantsCommandOptions queryVariantsCommandOptions = variantCommandOptions.queryVariantsCommandOptions;
+
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.commonOptions.params);
-//        VariantStorageManager variantStorageManager = new StorageManagerFactory(configuration).getVariantStorageManager
-// (queryVariantsCommandOptions.backend);
 
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
-        Query query = new Query();
-        QueryOptions options = new QueryOptions(new HashMap<>(queryVariantsCommandOptions.commonOptions.params));
-
-
-        /**
-         * Parse Variant parameters
-         */
-        if (queryVariantsCommandOptions.region != null && !queryVariantsCommandOptions.region.isEmpty()) {
-            query.put(REGION.key(), queryVariantsCommandOptions.region);
-        } else if (queryVariantsCommandOptions.regionFile != null && !queryVariantsCommandOptions.regionFile.isEmpty()) {
-            Path gffPath = Paths.get(queryVariantsCommandOptions.regionFile);
-            FileUtils.checkFile(gffPath);
-            String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
-                String[] array = line.split("\t");
-                return new String(array[0].replace("chr", "") + ":" + array[3] + "-" + array[4]);
-            }).collect(Collectors.joining(","));
-            query.put(REGION.key(), regionsFromFile);
-        }
-
-        addParam(query, ID, queryVariantsCommandOptions.id);
-        addParam(query, GENE, queryVariantsCommandOptions.gene);
-        addParam(query, TYPE, queryVariantsCommandOptions.type);
-
-
-        List<String> studies = new LinkedList<>();
-        if (queryVariantsCommandOptions.study != null && !queryVariantsCommandOptions.study.isEmpty()) {
-            query.put(STUDIES.key(), queryVariantsCommandOptions.study);
-            for (String study : queryVariantsCommandOptions.study.split(",|;")) {
-                if (!study.startsWith("!")) {
-                    studies.add(study);
-                }
-            }
-        }
-
-        // If the studies to be returned is empty then we return the studies being queried
-        if (queryVariantsCommandOptions.returnStudy != null && !queryVariantsCommandOptions.returnStudy.isEmpty()) {
-            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.returnStudy.split(",")));
-        } else {
-            if (!studies.isEmpty()) {
-                query.put(RETURNED_STUDIES.key(), studies);
-            }
-        }
-
-        addParam(query, FILES, queryVariantsCommandOptions.file);
-        addParam(query, GENOTYPE, queryVariantsCommandOptions.sampleGenotype);
-        addParam(query, RETURNED_SAMPLES, queryVariantsCommandOptions.returnSample);
-        addParam(query, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
-
-        /**
-         * Annotation parameters
-         */
-        addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsCommandOptions.consequenceType);
-        addParam(query, ANNOT_BIOTYPE, queryVariantsCommandOptions.biotype);
-        addParam(query, ALTERNATE_FREQUENCY, queryVariantsCommandOptions.populationFreqs);
-        addParam(query, CONSERVATION, queryVariantsCommandOptions.conservation);
-
-        if (queryVariantsCommandOptions.proteinSubstitution != null && !queryVariantsCommandOptions.proteinSubstitution.isEmpty()) {
-            String[] fields = queryVariantsCommandOptions.proteinSubstitution.split(",");
-            for (String field : fields) {
-                String[] arr = field
-                        .replaceAll("==", " ")
-                        .replaceAll(">=", " ")
-                        .replaceAll("<=", " ")
-                        .replaceAll("=", " ")
-                        .replaceAll("<", " ")
-                        .replaceAll(">", " ")
-                        .split(" ");
-
-                if (arr != null && arr.length > 1) {
-                    switch (arr[0]) {
-                        case "sift":
-                            query.put(SIFT.key(), field.replaceAll("sift", ""));
-                            break;
-                        case "polyphen":
-                            query.put(POLYPHEN.key(), field.replaceAll("polyphen", ""));
-                            break;
-                        default:
-                            query.put(PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
-                            break;
-                    }
-                }
-            }
-        }
-
-
-        /*
-         * Stats parameters
-         */
-        if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
-            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(STATS_MAF.key(),
-                    STATS_MGF.key(),
-                    MISSING_ALLELES.key(),
-                    MISSING_GENOTYPES.key()));
-
-            for (String stat : queryVariantsCommandOptions.stats.split(",")) {
-                int index = stat.indexOf("<");
-                index = index >= 0 ? index : stat.indexOf("!");
-                index = index >= 0 ? index : stat.indexOf("~");
-                index = index >= 0 ? index : stat.indexOf("<");
-                index = index >= 0 ? index : stat.indexOf(">");
-                index = index >= 0 ? index : stat.indexOf("=");
-                if (index < 0) {
-                    throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
-                }
-                String name = stat.substring(0, index);
-                String cond = stat.substring(index);
-
-                if (acceptedStatKeys.contains(name)) {
-                    query.put(name, cond);
-                } else {
-                    throw new UnsupportedOperationException("Unknown stat filter name: " + name);
-                }
-                logger.info("Parsed stat filter: {} {}", name, cond);
-            }
-        }
-
-        addParam(query, STATS_MAF, queryVariantsCommandOptions.maf);
-        addParam(query, STATS_MGF, queryVariantsCommandOptions.mgf);
-        addParam(query, MISSING_ALLELES, queryVariantsCommandOptions.missingAlleleCount);
-        addParam(query, MISSING_GENOTYPES, queryVariantsCommandOptions.missingGenotypeCount);
-
-
-        /*
-         * Output parameters
-         */
-        String outputFormat = "vcf";
-        boolean gzip = true;
-        if (queryVariantsCommandOptions.outputFormat != null && !queryVariantsCommandOptions.outputFormat.isEmpty()) {
-            switch (queryVariantsCommandOptions.outputFormat) {
-                case "vcf":
-                    gzip = false;
-                case "vcf.gz":
-                    outputFormat = "vcf";
-                    break;
-                case "json":
-                    gzip = false;
-                case "json.gz":
-                    outputFormat = "json";
-                    break;
-                default:
-                    logger.error("Format '{}' not supported", queryVariantsCommandOptions.outputFormat);
-                    throw new ParameterException("Format '" + queryVariantsCommandOptions.outputFormat + "' not supported");
-            }
-        }
-
-        boolean returnVariants = !queryVariantsCommandOptions.count
-                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
-                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
-
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
-            int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
-            if (returnedStudiesSize == 0 && studies.size() == 1) {
-                query.put(RETURNED_STUDIES.key(), studies.get(0));
-            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one
-                    // study
-                    || returnedStudiesSize > 1) {     // Or is required more than one returned study
-                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
-                        + "study. " + "Available studies: [ " + String.join(", ", studyNames) + " ]");
-            } else {
-                if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
-                    query.put(RETURNED_STUDIES.key(), studyNames.get(0));
-                }
-            }
-        }
-
-        // output format has priority over output name
-        OutputStream outputStream;
-        if (queryVariantsCommandOptions.output == null || queryVariantsCommandOptions.output.isEmpty()) {
-            outputStream = System.out;
-        } else {
-            if (gzip && !queryVariantsCommandOptions.output.endsWith(".gz")) {
-                queryVariantsCommandOptions.output += ".gz";
-            }
-            logger.debug("writing to %s", queryVariantsCommandOptions.output);
-            outputStream = new FileOutputStream(queryVariantsCommandOptions.output);
-        }
-        if (gzip) {
-            outputStream = new GZIPOutputStream(outputStream);
-        }
-
-        logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
-
-        /*
-         * Setting QueryOptions parameters
-         */
-        if (queryVariantsCommandOptions.include != null) {
-            options.add("include", queryVariantsCommandOptions.include);
-        }
-
-        if (queryVariantsCommandOptions.exclude != null) {
-            options.add("exclude", queryVariantsCommandOptions.exclude);
-        }
-
-        if (queryVariantsCommandOptions.skip > 0) {
-            options.add("skip", queryVariantsCommandOptions.skip);
-        }
-
-        if (queryVariantsCommandOptions.limit > 0) {
-            options.add("limit", queryVariantsCommandOptions.limit);
-        }
-
-        if (queryVariantsCommandOptions.count) {
-            options.add("count", queryVariantsCommandOptions.count);
-        }
-
+        Query query = VariantQueryCommandUtils.parseQuery(queryVariantsCommandOptions, studyNames);
+        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryVariantsCommandOptions);
+        OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryVariantsCommandOptions);
 
         if (queryVariantsCommandOptions.count) {
             QueryResult<Long> result = variantDBAdaptor.count(query);
             System.out.println("Num. results\t" + result.getResult().get(0));
             return;
+        }
+
+
+        String outputFormat = "vcf";
+        if (StringUtils.isNotEmpty(queryVariantsCommandOptions.outputFormat)) {
+            if (queryVariantsCommandOptions.outputFormat.equals("json") || queryVariantsCommandOptions.outputFormat.equals("json.gz")) {
+                outputFormat = "json";
+            }
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
@@ -510,6 +325,72 @@ public class VariantCommandExecutor extends CommandExecutor {
         outputStream.close();
     }
 
+    private void queryGrpc() throws Exception {
+        CliOptionsParser.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
+
+        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryGrpcCommandOptions.dbName);
+        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+
+        // We prepare and build the needed objects: query, queryOptions and outputStream to print results
+        Query query = VariantQueryCommandUtils.parseQuery(queryGrpcCommandOptions, studyNames);
+        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryGrpcCommandOptions);
+        OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryGrpcCommandOptions);
+        PrintStream printStream = new PrintStream(outputStream);
+
+        // Query object implements a Map<String, Object> while gRPC request object is a Map<String, String>,
+        // we need to convert all parsed query fields into String, Lists are taken care of to avoid square brackets
+        Map<String, String> queryString = new HashMap<>();
+        query.keySet().stream().forEach(s ->  {
+            if (query.get(s) instanceof ArrayList || query.get(s) instanceof LinkedList) {
+                String replace = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key())
+                        .replace(" ", "").replace("[", "").replace("]", "");
+                queryString.put(s, replace);
+            } else {
+                queryString.put(s, String.valueOf(query.get(s)));
+            }
+        });
+        logger.debug("Query object: {}", queryString);
+
+        Map<String, String> queryOptionsString = new HashMap<>();
+        options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
+        logger.debug("QueryOption object: {}", queryOptionsString);
+
+        // We create the OpenCGA gRPC request object with the query and queryOptions
+        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+                .putAllQuery(queryString)
+                .putAllOptions(queryOptionsString)
+                .build();
+
+
+        // Connecting to the server host and port
+        String grpcServerHost = "localhost";
+        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
+            grpcServerHost = queryGrpcCommandOptions.host;
+        }
+        int grpcServerPort = configuration.getServer().getGrpc();
+        if (queryGrpcCommandOptions.port > 0) {
+            grpcServerPort = queryGrpcCommandOptions.port;
+        }
+        logger.debug("Connecting to gRPC server at '{}:{}'", grpcServerHost, grpcServerPort);
+
+        // We create the gRPC channel to the specified server host and port
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
+                .usePlaintext(true)
+                .build();
+
+
+        // We use a blocking stub to execute the query to gRPC
+        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
+        Iterator<VariantProto.Variant> variantIterator = geneServiceBlockingStub.get(request);
+        while (variantIterator.hasNext()) {
+            VariantProto.Variant next = variantIterator.next();
+            printStream.println(next.toString());
+        }
+
+        // Close open resources
+        printStream.close();
+        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
+    }
 
     private void annotation() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException {
         CliOptionsParser.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
@@ -693,12 +574,6 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 
 
-    private void addParam(ObjectMap objectMap, VariantDBAdaptor.VariantQueryParams key, String value) {
-        if (value != null && !value.isEmpty()) {
-            objectMap.put(key.key(), value);
-        }
-    }
-
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,
                              CliOptionsParser.QueryVariantsCommandOptions queryVariantsCommandOptions) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -729,8 +604,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
             IllegalAccessException, ClassNotFoundException {
-        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions
-                = variantCommandOptions.benchmarkCommandOptions;
+        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
 
 // Overwrite default options from configuration.yaml with CLI parameters
         if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
@@ -766,7 +640,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         // validate
         checkParams();
 
-
 //        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
         BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
         benchmarkManager.variantBenchmark();
@@ -779,4 +652,5 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
     }
+
 }

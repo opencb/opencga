@@ -1132,8 +1132,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     )
             );
         }
-        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter
-                .STUDIES_FIELD)) {
+        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
+                && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
             List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
 //            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
             if (!studiesIds.isEmpty()) {

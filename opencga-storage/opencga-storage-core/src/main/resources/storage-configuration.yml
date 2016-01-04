@@ -23,8 +23,11 @@ cellbase:
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
 ## is launched in the specified port. Only authorized hosts are allowed to query data.
 server:
-  port: 61976
+  rest: 9090
+  grpc: 9091
+  storageEngine: "mongodb"
   authorizedHosts: ["localhost"]
+  options: {}
 
 benchmark:
   storageEngine: "mongodb"

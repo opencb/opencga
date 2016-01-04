@@ -67,6 +67,7 @@ public class CliOptionsParser {
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
+        variantSubCommands.addCommand("query-grpc", variantCommandOptions.queryGrpCVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
@@ -201,6 +202,7 @@ public class CliOptionsParser {
 
         IndexVariantsCommandOptions indexVariantsCommandOptions;
         QueryVariantsCommandOptions queryVariantsCommandOptions;
+        QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
         BenchmarkCommandOptions benchmarkCommandOptions;
@@ -208,6 +210,7 @@ public class CliOptionsParser {
         public VariantCommandOptions() {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
             this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
+            this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
             this.benchmarkCommandOptions = new BenchmarkCommandOptions();
@@ -489,8 +492,7 @@ public class CliOptionsParser {
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
 
-        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0" +
-                ".4", required = false)
+        @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4", required = false)
         public String maf;
 
         @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: " +
@@ -525,20 +527,27 @@ public class CliOptionsParser {
         @Parameter(names = {"--return-study"}, description = "A comma separated list of studies to be returned", required = false)
         public String returnStudy;
 
-        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned",
-                required = false)
+        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned", required = false)
         public String returnSample;
 
-        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./" +
-                ".]", required = false)
+        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false)
         public String unknownGenotype = "./.";
 
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false,
-                arity = 1)
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
         public String outputFormat = "vcf";
 
     }
 
+    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed variants")
+    public class QueryGrpCVariantsCommandOptions extends QueryVariantsCommandOptions {
+
+        @Parameter(names = {"--host"}, description = "gRPC host to connect")
+        public String host = "localhost";
+
+        @Parameter(names = {"--port"}, description = "gRPC port to connect")
+        public int port;
+
+    }
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
     public class AnnotateVariantsCommandOptions {

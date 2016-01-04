@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package org.opencb.opencga.storage.server.grpc;
+
+option java_outer_classname = "GenericServiceModel";
+
+message Request {
+    map<string, string> query = 3;
+    map<string, string> options = 4;
+}
+
+message LongResponse {
+    int64 value = 1;
+}
+
+message StringResponse {
+    string value = 1;
+}
+
+message StringArrayResponse {
+    repeated string values = 1;
+}
+
+message GroupResponse {
+    map<string, string> values = 1;
+}
+
