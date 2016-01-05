@@ -28,27 +28,34 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 /**
- * Created on 03/09/15.
- *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * Created by jacobo on 23/10/14.
  */
-@Path("/admin")
-@Deprecated
-public class AdminWSServer extends StorageWSServer {
 
-    public AdminWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                         @Context ServletContext context) throws IOException {
+@Path("/test")
+public class TestRestWebService extends GenericRestWebService {
+
+    public TestRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                              @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
-        System.out.println("Build AdminWSServer");
+        System.out.println("Build TestServlet");
     }
 
 
     @GET
-    @Path("/stop")
+    @Path("/echo/{message}")
     @Produces("text/plain")
-    public Response stop() {
-//        OpenCGAStorageService.getInstance().stop();
-        return createOkResponse("bye!");
+//    @ApiOperation(defaultValue = "Just to test the api")
+    public Response echoGet(/*@ApiParam(defaultValue = "message", required = true)*/ @PathParam("message") String message) {
+        System.out.println("Test message: " + message);
+        return buildResponse(Response.ok(message));
     }
 
+    @GET
+    @Path("/hello")
+    @Produces("text/plain")
+//    @ApiOperation(defaultValue = "Just to test the api")
+    public Response helloWorld() {
+        System.out.println("Hello World ");
+        return createOkResponse("Hello world");
+    }
 }

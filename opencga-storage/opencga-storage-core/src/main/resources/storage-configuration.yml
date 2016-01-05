@@ -25,8 +25,9 @@ cellbase:
 server:
   rest: 9090
   grpc: 9091
+  authManager: "org.opencb.opencga.storage.server.common.DefaultAuthManager"       ## Path to the AuthManager implementation class
   storageEngine: "mongodb"
-  authorizedHosts: ["localhost"]
+  authorizedHosts: ["0.0.0.0"]
   options: {}
 
 benchmark:

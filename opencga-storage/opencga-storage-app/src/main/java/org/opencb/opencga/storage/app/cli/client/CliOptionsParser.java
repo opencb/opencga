@@ -443,8 +443,7 @@ public class CliOptionsParser {
         public String sampleGenotype;
 
         @Deprecated
-        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false,
-                arity = 1)
+        @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", required = false, arity = 1)
         public String file;
 
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
@@ -456,8 +455,7 @@ public class CliOptionsParser {
 //        public boolean includeAnnotations;
 
         @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
-                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required =
-                false, arity = 1)
+                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
         public String annotations;
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",

@@ -70,6 +70,7 @@ public final class OpenCGAStorageService implements Runnable {
 
         ResourceConfig resourceConfig = new ResourceConfig();
         resourceConfig.packages(true, "org.opencb.opencga.storage.server.rest");
+
         ServletContainer sc = new ServletContainer(resourceConfig);
         ServletHolder sh = new ServletHolder("opencga", sc);
 

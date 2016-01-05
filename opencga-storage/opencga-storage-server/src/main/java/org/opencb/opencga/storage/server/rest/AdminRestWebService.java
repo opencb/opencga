@@ -28,34 +28,46 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 /**
- * Created by jacobo on 23/10/14.
+ * Created on 03/09/15.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Path("/admin")
+public class AdminRestWebService extends GenericRestWebService {
 
-@Path("/test")
-public class TestWSServer extends StorageWSServer {
+    private static RestStorageServer server;
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                        @Context ServletContext context) throws IOException {
+    public AdminRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo, @
+            Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
-        System.out.println("Build TestServlet");
+        System.out.println("Build AdminWSServer");
     }
 
 
     @GET
-    @Path("/echo/{message}")
+    @Path("/stop")
     @Produces("text/plain")
-//    @ApiOperation(defaultValue = "Just to test the api")
-    public Response echoGet(/*@ApiParam(defaultValue = "message", required = true)*/ @PathParam("message") String message) {
-        System.out.println("Test message: " + message);
-        return buildResponse(Response.ok(message));
+    public Response stop() {
+        try {
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+//        OpenCGAStorageService.getInstance().stop();
+//        try {
+//            RestStorageServer.stop();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        return createOkResponse("bye!");
     }
 
-    @GET
-    @Path("/hello")
-    @Produces("text/plain")
-//    @ApiOperation(defaultValue = "Just to test the api")
-    public Response helloWorld() {
-        System.out.println("Hello World ");
-        return createOkResponse("Hello world");
+    public static RestStorageServer getServer() {
+        return server;
     }
+
+    public static void setServer(RestStorageServer server) {
+        AdminRestWebService.server = server;
+    }
+
 }

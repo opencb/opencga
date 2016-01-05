@@ -39,10 +39,10 @@ import java.util.Arrays;
  * Created by jacobo on 14/11/14.
  */
 @Path("/files")
-public class FilesWSServer extends StorageWSServer {
+public class FileRestWebService extends GenericRestWebService {
 
-    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                         @Context ServletContext context) throws IOException {
+    public FileRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                              @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         super(version, uriInfo, httpServletRequest, context);
         params = uriInfo.getQueryParameters();
     }
@@ -81,7 +81,7 @@ public class FilesWSServer extends StorageWSServer {
             switch (bioformat) {
                 case "vcf":
                     queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
-                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
+                    return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":
                     AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
