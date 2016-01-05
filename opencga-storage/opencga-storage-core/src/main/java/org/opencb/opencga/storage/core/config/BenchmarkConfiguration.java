@@ -26,10 +26,13 @@ public class BenchmarkConfiguration {
     private String storageEngine;
     private int numRepetitions;
     private boolean load;
-    private List<String> queries;
+    private List<String> variantTests;
 
+    @Deprecated
     private String databaseName;
+    @Deprecated
     private String table;
+    @Deprecated
     private DatabaseCredentials database;
     private int concurrency;
 
@@ -39,7 +42,7 @@ public class BenchmarkConfiguration {
         sb.append("storageEngine='").append(storageEngine).append('\'');
         sb.append(", numRepetitions=").append(numRepetitions);
         sb.append(", load=").append(load);
-        sb.append(", queries=").append(queries);
+        sb.append(", variantTests=").append(variantTests);
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
         sb.append(", database=").append(database);
@@ -72,12 +75,12 @@ public class BenchmarkConfiguration {
         this.load = load;
     }
 
-    public List<String> getQueries() {
-        return queries;
+    public List<String> getVariantTests() {
+        return variantTests;
     }
 
-    public void setQueries(List<String> queries) {
-        this.queries = queries;
+    public void setVariantTests(List<String> variantTests) {
+        this.variantTests = variantTests;
     }
 
     public String getDatabaseName() {

@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -88,19 +90,22 @@ public class BenchmarkStats {
     private static final String ANSI_CYAN = "\u001B[36m";
 
     public void printSummary(String dbName, String tableName, int nuOfRepetition, int numOfThreads) {
-        System.out.println(ANSI_YELLOW + "Following are the test stats");
-        System.out.print(ANSI_GREEN + "Database name: " + ANSI_CYAN + dbName + ", ");
-        System.out.print(ANSI_GREEN + "Table name: " + ANSI_CYAN + tableName + ", ");
-        System.out.print(ANSI_GREEN + "Number of repetition: " + ANSI_CYAN + nuOfRepetition + ", ");
-        System.out.print(ANSI_GREEN + "Number of parallel threads: " + ANSI_CYAN + numOfThreads);
+        System.out.println(ANSI_YELLOW + "#Following are the test stats");
+        System.out.print(ANSI_YELLOW + "#Benchmark options:\t");
+        System.out.print(ANSI_GREEN + "Database: " + ANSI_CYAN + dbName + ", ");
+        System.out.print(ANSI_GREEN + "Table: " + ANSI_CYAN + tableName + ", ");
+        System.out.print(ANSI_GREEN + "Number of repetitions: " + ANSI_CYAN + nuOfRepetition + ", ");
+        System.out.print(ANSI_GREEN + "Number of threads: " + ANSI_CYAN + numOfThreads);
         System.out.println();
+
+        System.out.println(ANSI_YELLOW + "#Test\tCounter values\tAverage\tVariance\tStandard Deviation");
         for (String key : counters.keySet()) {
-            System.out.print(ANSI_GREEN + "Query: " + ANSI_CYAN + key);
-            System.out.println();
-            System.out.print(ANSI_GREEN + "Counter values: " + ANSI_CYAN + counters.get(key).toString() + ", ");
-            System.out.print(ANSI_GREEN + "Average: " + ANSI_CYAN + avg(key) + ", ");
-            System.out.print(ANSI_GREEN + "Variance: " + ANSI_CYAN + variance(key) + ", ");
-            System.out.print(ANSI_GREEN + "Standard Deviation: " + ANSI_CYAN + standardDeviation(key));
+            System.out.print(ANSI_GREEN + "Test: " + ANSI_CYAN + key + "\t");
+            System.out.print(ANSI_GREEN + "Counter values: " + ANSI_CYAN + StringUtils.join(counters.get(key), ",") + "\t");
+            System.out.print(ANSI_GREEN + "Average: " + ANSI_CYAN + avg(key) + "\t");
+            System.out.print(ANSI_GREEN + "Variance: " + ANSI_CYAN + variance(key) + "\t");
+//            System.out.print(ANSI_GREEN + "Standard Deviation: " + ANSI_CYAN + standardDeviation(key));
+            System.out.printf(ANSI_GREEN + "%25s" + ANSI_CYAN + "%s", "Standard Deviation: ", standardDeviation(key));
             System.out.println();
         }
     }

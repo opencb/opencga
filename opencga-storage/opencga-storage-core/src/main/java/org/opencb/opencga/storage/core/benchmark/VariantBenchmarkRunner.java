@@ -34,9 +34,10 @@ import java.util.concurrent.*;
  */
 public class VariantBenchmarkRunner extends BenchmarkRunner {
 
-    private String[] queryType;
     private String queryParams;
     private BenchmarkStats benchmarkStats;
+
+    private static final List<String> BENCHMARK_TESTS = Arrays.asList("count", "countChromosome1", "queryByRegion");
 
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException,
             InstantiationException, StorageManagerException {
@@ -71,41 +72,41 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     @Override
     public BenchmarkStats query() throws ExecutionException, InterruptedException {
-        return query(3, new HashSet<>(Arrays.asList("count", "queryByRegion")));
+        return query(3, new LinkedHashSet<>(BENCHMARK_TESTS));
     }
 
     @Override
     public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException, InterruptedException {
-//        int executionTime = 0;
-
         benchmarkStats = new BenchmarkStats();
+
+        // If "*" is the only tests to execute then we execute all the defined tests
+        if (benchmarkTests.size() == 1 && benchmarkTests.contains("*")) {
+            benchmarkTests = new LinkedHashSet<>(BENCHMARK_TESTS);
+        }
+
         for (int i = 0; i < numRepetitions; i++) {
             Iterator<String> iterator = benchmarkTests.iterator();
             while (iterator.hasNext()) {
                 String next = iterator.next();
 
-                queryType = next.split("-");
+                String[] queryType = next.split("-");
                 if (queryType.length >= 2) {
                     queryParams = queryType[1];
-                } else if (queryType.length == 1 && queryType[0].equals("distinct")) {
-//                    System.out.println("inside else .query :: ");
-                    queryParams = "gene";
                 }
 
                 Query query = new Query();
                 QueryOptions queryOptions = new QueryOptions();
-
                 switch (queryType[0]) {
                     case "count":
-                        executeThreads(queryType[0], () -> variantDBAdaptor.count(new Query()));
-                        System.out.println("VariantBenchmarkRunner.query" + variantDBAdaptor.count(new Query()).getResult());
-//                        executionTime = count();
+                        executeThreads(queryType[0], () -> variantDBAdaptor.count(query));
+                        break;
+                    case "countChromosome1":
+                        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1");
+                        executeThreads(queryType[0], () -> variantDBAdaptor.count(query));
                         break;
                     case "distinct":
-                        executeThreads(queryType[0], () -> variantDBAdaptor.distinct(new Query(), queryParams));
-//                        System.out.println("VariantBenchmarkRunner.query >>>>>> " + queryParams + "   "
-//                                + variantDBAdaptor.distinct(new Query(),
-//                                queryParams).getResult().size());
+//                        query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1");
+                        executeThreads(queryType[0], () -> variantDBAdaptor.distinct(query, "chromosome"));
                         break;
                     case "queryById":
                         query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryParams);
@@ -142,7 +143,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                     default:
                         break;
                 }
-//                benchmarkStats.addExecutionTime(next, executionTime);
             }
         }
 
@@ -154,7 +154,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     private <T> List<Future<T>> executeThreads(String test, Callable<T> task) throws ExecutionException, InterruptedException {
         int concurrency = storageConfiguration.getBenchmark().getConcurrency();
-//        System.out.println("concurrency :: " + concurrency);
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         List<Future<T>> futureList = new ArrayList<>(10);
         for (int i = 0; i < concurrency; i++) {
@@ -164,8 +163,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         int totalTime = 0;
         for (Future<T> queryResultFuture : futureList) {
             totalTime += ((QueryResult) queryResultFuture.get()).getDbTime();
-//            System.out.println("queryResultFuture.get().getDbTime() = " + queryResultFuture.get().getDbTime());
-//            System.out.println("queryResultFuture.get().getResult().size() = " + queryResultFuture.get().getResult().get(0));
         }
 
         benchmarkStats.addExecutionTime(test, totalTime);

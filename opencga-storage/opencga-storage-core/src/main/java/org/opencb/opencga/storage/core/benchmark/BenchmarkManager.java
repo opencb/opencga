@@ -38,7 +38,7 @@ public class BenchmarkManager {
 
         BenchmarkRunner benchmarkRunner = new VariantBenchmarkRunner(storageConfiguration);
         BenchmarkStats benchmarkStats = benchmarkRunner.query(storageConfiguration.getBenchmark().getNumRepetitions(),
-                new HashSet<>(storageConfiguration.getBenchmark().getQueries()));
+                new HashSet<>(storageConfiguration.getBenchmark().getVariantTests()));
 
         return benchmarkStats;
     }

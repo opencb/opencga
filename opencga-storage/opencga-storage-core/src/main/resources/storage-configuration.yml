@@ -34,10 +34,10 @@ benchmark:
   storageEngine: "mongodb"
   numRepetitions: 3
   load: false
-  queries: ["count", "distinct"]
+  variantTests: ["*"]    ## A list with tests names, eg. ["count", "distinct"]. If a single element ["*"] then all defined tests are executed.
+  concurrency: 1
   databaseName: "opencga"
   table: "variants"
-  concurrency: 1
   database:   ## 'local' connection to CellBase MongoDB
       hosts:
       - "localhost:27017"

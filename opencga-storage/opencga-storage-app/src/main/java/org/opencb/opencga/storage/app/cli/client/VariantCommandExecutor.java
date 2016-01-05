@@ -641,7 +641,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
         if (benchmarkCommandOptions.queries != null) {
-            configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+            configuration.getBenchmark().setVariantTests(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
         }
 
         DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
