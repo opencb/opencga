@@ -31,6 +31,7 @@ public class BenchmarkConfiguration {
     private String databaseName;
     private String table;
     private DatabaseCredentials database;
+    private int concurrency;
 
     @Override
     public String toString() {
@@ -42,6 +43,7 @@ public class BenchmarkConfiguration {
         sb.append(", databaseName='").append(databaseName).append('\'');
         sb.append(", table='").append(table).append('\'');
         sb.append(", database=").append(database);
+        sb.append(", concurrency=").append(concurrency);
         sb.append('}');
         return sb.toString();
     }
@@ -102,4 +104,11 @@ public class BenchmarkConfiguration {
         this.database = database;
     }
 
+    public int getConcurrency() {
+        return concurrency;
+    }
+
+    public void setConcurrency(int concurrency) {
+        this.concurrency = concurrency;
+    }
 }

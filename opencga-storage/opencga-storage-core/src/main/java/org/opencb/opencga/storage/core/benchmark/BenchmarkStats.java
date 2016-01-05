@@ -34,18 +34,18 @@ public class BenchmarkStats {
         std = new LinkedHashMap<>();
     }
 
-    public void addExecutionTime(String counter, int time) {
+    public void addExecutionTime(String counter, int executionTime) {
         if (!counters.containsKey(counter)) {
             counters.put(counter, new ArrayList<>());
         }
-        counters.get(counter).add(time);
+        counters.get(counter).add(executionTime);
     }
 
-    public void addStdDeviation(String counter, double time) {
+    public void addStdDeviation(String counter, double executionTime) {
         if (!std.containsKey(counter)) {
             std.put(counter, new ArrayList<>());
         }
-        std.get(counter).add(time);
+        std.get(counter).add(executionTime);
     }
 
     public double avg(String counter) {
@@ -55,8 +55,8 @@ public class BenchmarkStats {
             for (Integer integer : integers) {
                 total += integer.doubleValue();
             }
-            double roundOff = Math.round((total / integers.size()) * 1000d) / 1000d;
-            return roundOff; //total / integers.size();
+            double avgRoundOff = Math.round((total / integers.size()) * 1000d) / 1000d;
+            return avgRoundOff; //total / integers.size();
         }
         return 0.0f;
     }
@@ -68,23 +68,59 @@ public class BenchmarkStats {
         for (int a : integers) {
             temp += Math.pow((mean - a), 2);
         }
-        double roundOff = Math.round((temp / integers.size()) * 1000d) / 1000d;
-        return roundOff; //temp / integers.size();
+        double varianceRoundOff = Math.round((temp / integers.size()) * 1000d) / 1000d;
+        return varianceRoundOff; //temp / integers.size();
     }
 
     double standardDeviation(String counter) {
-        double roundOff = Math.round(Math.sqrt(variance(counter)) * 1000d) / 1000d;
-        return roundOff; //Math.sqrt(variance(counter));
+        double stdDevRoundOff = Math.round(Math.sqrt(variance(counter)) * 1000d) / 1000d;
+        return stdDevRoundOff; //Math.sqrt(variance(counter));
     }
 
-    public void printSummary() {
+//    private static final String ANSI_BLACK = "\u001B[30m";
+//    private static final String ANSI_WHITE = "\u001B[37m";
+//    private static final String ANSI_RESET = "\u001B[0m";
+//    private static final String ANSI_RED = "\u001B[31m";
+//    private static final String ANSI_BLUE = "\u001B[34m";
+//    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+
+    public void printSummary(String dbName, String tableName, int nuOfRepetition, int numOfThreads) {
+        System.out.println(ANSI_YELLOW + "Following are the test stats");
+        System.out.print(ANSI_GREEN + "Database name: " + ANSI_CYAN + dbName + ", ");
+        System.out.print(ANSI_GREEN + "Table name: " + ANSI_CYAN + tableName + ", ");
+        System.out.print(ANSI_GREEN + "Number of repetition: " + ANSI_CYAN + nuOfRepetition + ", ");
+        System.out.print(ANSI_GREEN + "Number of parallel threads: " + ANSI_CYAN + numOfThreads);
+        System.out.println();
         for (String key : counters.keySet()) {
-            System.out.print("Counter: " + key + ", ");
-            System.out.print("values: " + counters.get(key).toString() + ", ");
+            System.out.print(ANSI_GREEN + "Query: " + ANSI_CYAN + key);
+            System.out.println();
+            System.out.print(ANSI_GREEN + "Counter values: " + ANSI_CYAN + counters.get(key).toString() + ", ");
+            System.out.print(ANSI_GREEN + "Average: " + ANSI_CYAN + avg(key) + ", ");
+            System.out.print(ANSI_GREEN + "Variance: " + ANSI_CYAN + variance(key) + ", ");
+            System.out.print(ANSI_GREEN + "Standard Deviation: " + ANSI_CYAN + standardDeviation(key));
+            System.out.println();
+        }
+    }
+
+
+    /*public void printSummary(String dbName, String tableName, int nuOfRepetition, int numOfThreads) {
+        System.out.println("Following are the test stats");
+        System.out.print("Database name: " + dbName + ", ");
+        System.out.print("Table name: " + tableName + ", ");
+        System.out.print("Number of repetition: " + nuOfRepetition + ", ");
+        System.out.print("Number of parallel threads: " + numOfThreads);
+        System.out.println();
+        for (String key : counters.keySet()) {
+            System.out.print("Query: " + key);
+            System.out.println();
+            System.out.print("Counter values: " + counters.get(key).toString() + ", ");
             System.out.print("avg: " + avg(key) + ", ");
             System.out.print("variance: " + variance(key) + ", ");
             System.out.print("standard deviation: " + standardDeviation(key));
             System.out.println();
         }
-    }
+    }*/
 }
