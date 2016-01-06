@@ -11,6 +11,29 @@ import org.opencb.opencga.catalog.models.Individual;
  */
 public interface CatalogIndividualDBAdaptor {
 
+    /**
+     * Individual methods
+     * ***************************
+     */
+    boolean individualExists(int individualId);
+
+    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws
+            CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
+
+    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+
+    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
+
     enum IndividualFilterOption implements CatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         id(Type.NUMERICAL, ""),
@@ -29,24 +52,21 @@ public interface CatalogIndividualDBAdaptor {
 
         attributes("attributes", Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),
-        battributes("attributes", Type.BOOLEAN, ""),
-        ;
+        battributes("attributes", Type.BOOLEAN, ""),;
 
+        final private String _key;
+        final private String _description;
+        final private Type _type;
         IndividualFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
-
         IndividualFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;
             this._type = type;
         }
-
-        final private String _key;
-        final private String _description;
-        final private Type _type;
 
         @Override
         public String getDescription() {
@@ -63,29 +83,6 @@ public interface CatalogIndividualDBAdaptor {
             return _key;
         }
     }
-
-    /**
-     * Individual methods
-     * ***************************
-     */
-    boolean individualExists(int individualId);
-
-    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
-
-    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
-
-    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
-
-    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
-
-    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
-
 
 
 }

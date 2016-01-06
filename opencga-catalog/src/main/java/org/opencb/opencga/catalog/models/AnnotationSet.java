@@ -46,26 +46,39 @@ public class AnnotationSet {
 
     @Override
     public String toString() {
-        return "AnnotationSet{" +
-                "id='" + id + '\'' +
-                ", variableSetId=" + variableSetId +
-                ", annotations=" + annotations +
-                ", date='" + date + '\'' +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("AnnotationSet{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", variableSetId=").append(variableSetId);
+        sb.append(", annotations=").append(annotations);
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AnnotationSet)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof AnnotationSet)) {
+            return false;
+        }
 
         AnnotationSet that = (AnnotationSet) o;
 
-        if (variableSetId != that.variableSetId) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) return false;
-        if (date != null ? !date.equals(that.date) : that.date != null) return false;
+        if (variableSetId != that.variableSetId) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) {
+            return false;
+        }
+        if (date != null ? !date.equals(that.date) : that.date != null) {
+            return false;
+        }
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
     }

@@ -3,11 +3,11 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -25,7 +25,7 @@ public interface CatalogUserDBAdaptor {
     void checkUserExists(String userId) throws CatalogDBException;
 
     QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
-    throws CatalogDBException;
+            throws CatalogDBException;
 
     QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
 

@@ -33,10 +33,10 @@ public class CatalogAuthorizationException extends CatalogException {
     }
 
     public static CatalogAuthorizationException denny(String userId, String permission, String resource, int id, String name) {
-        return new CatalogAuthorizationException("Permission denied." +
-                (userId == null || userId.isEmpty()? "" : "User \"" + userId + "\"") +
-                " Can't " + permission + " " +
-                resource + "{ id: " + id + (name == null || name.isEmpty()? "" : ", name: \"" + name + "\"") + " }");
+        return new CatalogAuthorizationException("Permission denied."
+                + (userId == null || userId.isEmpty() ? "" : "User \"" + userId + "\"")
+                + " Can't " + permission + " "
+                + resource + "{ id: " + id + (name == null || name.isEmpty() ? "" : ", name: \"" + name + "\"") + " }");
     }
 
 }

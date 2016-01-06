@@ -48,14 +48,15 @@ public class VariableSet {
 
     @Override
     public String toString() {
-        return "VariableSet{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", unique=" + unique +
-                ", description='" + description + '\'' +
-                ", variables=" + variables +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("VariableSet{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", unique=").append(unique);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", variables=").append(variables);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {

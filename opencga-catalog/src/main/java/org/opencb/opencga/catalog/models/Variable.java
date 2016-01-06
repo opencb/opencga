@@ -29,7 +29,7 @@ public class Variable {
     private String category;
 
     /**
-     * Type accepted values: text, numeric
+     * Type accepted values: text, numeric.
      */
     private VariableType type;
     private Object defaultValue;
@@ -37,44 +37,18 @@ public class Variable {
     private boolean multiValue;
 
     /**
-     * Example for numeric range: -3:5
+     * Example for numeric range: -3:5.
      * Example for categorical values: T,F
      */
     private List<String> allowedValues;
     private int rank;
     private String dependsOn;
     private String description;
-
-    @Override
-    public String toString() {
-        return "Variable{" +
-                "id='" + id + '\'' +
-                ", category='" + category + '\'' +
-                ", type=" + type +
-                ", defaultValue=" + defaultValue +
-                ", required=" + required +
-                ", multiValue=" + multiValue +
-                ", allowedValues=" + allowedValues +
-                ", rank=" + rank +
-                ", dependsOn='" + dependsOn + '\'' +
-                ", description='" + description + '\'' +
-                ", variableSet=" + variableSet +
-                ", attributes=" + attributes +
-                '}';
-    }
-
-    /** Variables for validate internal fields. Only valid if type is OBJECT **/
+    /**
+     * Variables for validate internal fields. Only valid if type is OBJECT.
+     **/
     private Set<Variable> variableSet;
-
     private Map<String, Object> attributes;
-
-    public enum VariableType {
-        BOOLEAN,
-        CATEGORICAL,
-        NUMERIC,
-        TEXT,
-        OBJECT
-    }
 
     public Variable() {
     }
@@ -97,13 +71,38 @@ public class Variable {
     }
 
     @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Variable{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", category='").append(category).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", defaultValue=").append(defaultValue);
+        sb.append(", required=").append(required);
+        sb.append(", multiValue=").append(multiValue);
+        sb.append(", allowedValues=").append(allowedValues);
+        sb.append(", rank=").append(rank);
+        sb.append(", dependsOn='").append(dependsOn).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", variableSet=").append(variableSet);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Variable)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Variable)) {
+            return false;
+        }
 
         Variable variable = (Variable) o;
 
-        if (!id.equals(variable.id)) return false;
+        if (!id.equals(variable.id)) {
+            return false;
+        }
 
         return true;
     }
@@ -112,7 +111,6 @@ public class Variable {
     public int hashCode() {
         return id.hashCode();
     }
-
 
     public String getId() {
         return id;
@@ -208,5 +206,13 @@ public class Variable {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public enum VariableType {
+        BOOLEAN,
+        CATEGORICAL,
+        NUMERIC,
+        TEXT,
+        OBJECT
     }
 }

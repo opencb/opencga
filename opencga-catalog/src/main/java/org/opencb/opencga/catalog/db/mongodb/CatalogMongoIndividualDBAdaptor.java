@@ -29,11 +29,12 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements CatalogIndividualDBAdaptor {
 
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection metaCollection;
     private final MongoDBCollection individualCollection;
+    private CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection individualCollection) {
+    public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
+            individualCollection) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
@@ -53,7 +54,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         if (!dbAdaptorFactory.getCatalogStudyDBAdaptor().studyExists(studyId)) {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
-        if (!getAllIndividuals(new QueryOptions(IndividualFilterOption.name.toString(), individual.getName()).append(IndividualFilterOption.studyId.toString(), studyId)).getResult().isEmpty()) {
+        if (!getAllIndividuals(new QueryOptions(IndividualFilterOption.name.toString(), individual.getName()).append
+                (IndividualFilterOption.studyId.toString(), studyId)).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
         if (individual.getFatherId() > 0 && !individualExists(individual.getFatherId())) {
@@ -79,7 +81,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     public QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
+        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), filterOptions(options,
+                FILTER_ROUTE_INDIVIDUALS));
         Individual individual = parseObject(result, Individual.class);
         if (individual == null) {
             throw CatalogDBException.idNotFound("Individual", individualId);
@@ -192,11 +195,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         }
 
 
-        if(!individualParameters.isEmpty()) {
+        if (!individualParameters.isEmpty()) {
             QueryResult<WriteResult> update = individualCollection.update(
                     new BasicDBObject(_ID, individualId),
                     new BasicDBObject("$set", individualParameters), null);
-            if(update.getResult().isEmpty() || update.getResult().get(0).getN() == 0){
+            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("Individual", individualId);
             }
         }
@@ -252,7 +255,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
         long startTime = startQuery();
 
-        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
+        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets"))
+                .first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : individual.getAnnotationSets()) {
             if (as.getId().equals(annotationId)) {
@@ -294,7 +298,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     public void checkInUse(int individualId) throws CatalogDBException {
         int studyId = getStudyIdByIndividualId(individualId);
-        QueryResult<Individual> individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.fatherId.toString(), individualId).append(IndividualFilterOption.studyId.toString(), studyId));
+        QueryResult<Individual> individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.fatherId.toString(),
+                individualId).append(IndividualFilterOption.studyId.toString(), studyId));
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {
@@ -303,7 +308,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.motherId.toString(), individualId).append(IndividualFilterOption.studyId.toString(), studyId));
+        individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.motherId.toString(), individualId).append
+                (IndividualFilterOption.studyId.toString(), studyId));
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {
@@ -312,7 +318,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.individualId.toString(), individualId));
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor
+                .SampleFilterOption.individualId.toString(), individualId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"individualId\" of sample : [";
             for (Sample sample : samples.getResult()) {
@@ -326,7 +333,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     @Override
     public int getStudyIdByIndividualId(int individualId) throws CatalogDBException {
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), new BasicDBObject(_STUDY_ID, 1), null);
+        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), new BasicDBObject(_STUDY_ID, 1),
+                null);
 
         if (!result.getResult().isEmpty()) {
             return (int) result.getResult().get(0).get(_STUDY_ID);

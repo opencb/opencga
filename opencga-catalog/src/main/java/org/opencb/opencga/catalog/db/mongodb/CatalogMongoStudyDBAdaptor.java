@@ -33,14 +33,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     private final MongoDBCollection studyCollection;
     private final MongoDBCollection fileCollection;
 
-    public CatalogMongoStudyDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection studyCollection, MongoDBCollection fileCollection) {
+    public CatalogMongoStudyDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
+            studyCollection, MongoDBCollection fileCollection) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.studyCollection = studyCollection;
         this.fileCollection = fileCollection;
     }
-
 
 
     /**
@@ -56,7 +56,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
     @Override
     public void checkStudyId(int studyId) throws CatalogDBException {
-        if(!studyExists(studyId)) {
+        if (!studyExists(studyId)) {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
     }
@@ -74,7 +74,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     @Override
     public QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if(projectId < 0){
+        if (projectId < 0) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
 
@@ -110,19 +110,19 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 //        }
 
         // Insert nested fields
-        String errorMsg = updateResult.getErrorMsg() != null? updateResult.getErrorMsg() : "";
+        String errorMsg = updateResult.getErrorMsg() != null ? updateResult.getErrorMsg() : "";
 
         for (File file : files) {
             String fileErrorMsg = dbAdaptorFactory.getCatalogFileDBAdaptor().createFile(study.getId(), file, options).getErrorMsg();
-            if(fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
-                errorMsg +=  file.getName() + ":" + fileErrorMsg + ", ";
+            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
+                errorMsg += file.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
         for (Job job : jobs) {
 //            String jobErrorMsg = createAnalysis(study.getId(), analysis).getErrorMsg();
             String jobErrorMsg = dbAdaptorFactory.getCatalogJobDBAdaptor().createJob(study.getId(), job, options).getErrorMsg();
-            if(jobErrorMsg != null && !jobErrorMsg.isEmpty()){
+            if (jobErrorMsg != null && !jobErrorMsg.isEmpty()) {
                 errorMsg += job.getName() + ":" + jobErrorMsg + ", ";
             }
         }
@@ -136,7 +136,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     @Override
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if(!dbAdaptorFactory.getCatalogUserDBAdaptor().projectExists(projectId)) {
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
         return endQuery("getAllSudiesInProject", startTime, getAllStudies(options == null ?
@@ -242,16 +242,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
         filterEnumParams(parameters, studyParameters, acceptedEnums);
 
-        if(parameters.containsKey("uri")) {
+        if (parameters.containsKey("uri")) {
             URI uri = parameters.get("uri", URI.class);
             studyParameters.put("uri", uri.toString());
         }
 
-        if(!studyParameters.isEmpty()) {
+        if (!studyParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject(_ID, studyId);
             BasicDBObject updates = new BasicDBObject("$set", studyParameters);
             QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
-            if(updateResult.getResult().get(0).getN() == 0){
+            if (updateResult.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
@@ -295,7 +295,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         if (!result.getResult().isEmpty()) {
             DBObject study = result.getResult().get(0);
             Object id = study.get(_PROJECT_ID);
-            return id instanceof Number? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
+            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
@@ -308,7 +308,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     }
 
 
-    private long getDiskUsageByStudy(int studyId){
+    private long getDiskUsageByStudy(int studyId) {
         List<DBObject> operations = Arrays.<DBObject>asList(
                 new BasicDBObject(
                         "$match",
@@ -330,9 +330,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                 )
         );
         QueryResult<DBObject> aggregate = fileCollection.aggregate(operations, null);
-        if(aggregate.getNumResults() == 1){
+        if (aggregate.getNumResults() == 1) {
             Object diskUsage = aggregate.getResult().get(0).get("diskUsage");
-            if(diskUsage instanceof Integer){
+            if (diskUsage instanceof Integer) {
                 return ((Integer) diskUsage).longValue();
             } else if (diskUsage instanceof Long) {
                 return ((Long) diskUsage);
@@ -371,7 +371,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         return endQuery("getGroup", startTime, groups);
     }
 
-    boolean groupExists(int studyId, String groupId) throws CatalogDBException{
+    boolean groupExists(int studyId, String groupId) throws CatalogDBException {
         BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
         return studyCollection.count(query).first() == 1;
     }
@@ -413,7 +413,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             throw new CatalogDBException("Unable to remove member to group " + groupId);
         }
 
-        return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));    }
+        return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));
+    }
 
 
     /*
@@ -457,7 +458,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         );
         QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filteredOptions);
         List<Study> studies = parseStudies(queryResult);
-        if(studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
+        if (studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
             throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
         }
 
@@ -499,7 +500,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                 new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
-        List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0)).collect(Collectors.toList());
+        List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0))
+                .collect(Collectors.toList());
 
         return endQuery("", startTime, variableSets);
     }
@@ -512,7 +514,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         int studyId = getStudyIdByVariableSetId(variableSetId);
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
 
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
+        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+                BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
 
         if (update.first().getN() == 0) {
             throw CatalogDBException.idNotFound("VariableSet", variableSetId);
@@ -524,7 +527,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
 
     public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.variableSetId.toString(), variableSetId));
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor
+                .SampleFilterOption.variableSetId.toString(), variableSetId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
             for (Sample sample : samples.getResult()) {
@@ -533,7 +537,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSetId));
+        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividuals(new QueryOptions
+                (CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSetId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
             for (Individual individual : individuals.getResult()) {
@@ -598,7 +603,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
         List<String> include = options.getAsStringList("include");
         List<String> exclude = options.getAsStringList("exclude");
-        if((!include.isEmpty() && include.contains(FILTER_ROUTE_STUDIES + "diskUsage")) ||
+        if ((!include.isEmpty() && include.contains(FILTER_ROUTE_STUDIES + "diskUsage")) ||
                 (!exclude.isEmpty() && !exclude.contains(FILTER_ROUTE_STUDIES + "diskUsage"))) {
             study.setDiskUsage(getDiskUsageByStudy(studyId));
         }
@@ -610,7 +615,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllJobsInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeSamples")) {
-            study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)).getResult());
+            study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor
+                    .SampleFilterOption.studyId.toString(), studyId)).getResult());
         }
     }
 

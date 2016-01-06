@@ -29,34 +29,54 @@ import java.util.Map;
  */
 public class Job {
 
+    /* Attributes known keys */
+    public static final String TYPE = "type";
+    public static final String INDEXED_FILE_ID = "indexedFileId";
+    /* ResourceManagerAttributes known keys */
+    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+    /* Errors */
+    public static final Map<String, String> ERROR_DESCRIPTIONS;
+    public static final String ERRNO_NONE = null;
+    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
+    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
+    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
+
+    static {
+        ERROR_DESCRIPTIONS = new HashMap<>();
+        ERROR_DESCRIPTIONS.put(ERRNO_NONE, null);
+        ERROR_DESCRIPTIONS.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        ERROR_DESCRIPTIONS.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        ERROR_DESCRIPTIONS.put(ERRNO_ABORTED, "Job aborted");
+
+    }
+
     /**
-     * Catalog unique identifier
+     * Catalog unique identifier.
      */
     private int id;
     /**
-     * User given job name
+     * User given job name.
      */
     private String name;
     /**
-     * UserId of the user that created the job
+     * UserId of the user that created the job.
      */
     private String userId;
     /**
-     * Name of the tool to be executed
+     * Name of the tool to be executed.
      */
     private String toolName;
     /**
-     * Job creation date
+     * Job creation date.
      */
     private String date;
-
     private String description;
     /**
-     * Start time in milliseconds
+     * Start time in milliseconds.
      */
     private long startTime;
     /**
-     * End time in milliseconds
+     * End time in milliseconds.
      */
     private long endTime;
     private String outputError;
@@ -66,68 +86,22 @@ public class Job {
     private int visits;
     private Status status;
     private long diskUsage;
-
     private int outDirId;
     private URI tmpOutDirUri;
-
     private List<Integer> input;    // input files to this job
     private List<Integer> output;   // output files of this job
-
     private List<String> tags;
     private Map<String, Object> attributes;
-
     private Map<String, Object> resourceManagerAttributes;
-
     private String error;
     private String errorDescription;
-
-    public enum Status {
-       PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
-       ERROR,                 //Job with errors. See "error"
-       QUEUED,
-       RUNNING,
-       DONE,                  //Job finished, but output not ready. Daemon will process the output.
-//       PROCESSING_OUTPUT,     //Job finished, but output not ready. Daemon will process the output.
-       READY,                 //Job finished and ready
-    }
-
-    public enum Type {
-        ANALYSIS,
-        INDEX,
-        COHORT_STATS,
-    }
-
-    /* Attributes known keys */
-    public static final String TYPE = "type";
-    public static final String INDEXED_FILE_ID = "indexedFileId";
-
-    /* ResourceManagerAttributes known keys */
-    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-
-    /* Errors */
-    public static final Map<String, String> errorDescriptions;
-
-    public static final String ERRNO_NONE = null;
-    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
-    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
-    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
-
-    static {
-        errorDescriptions = new HashMap<>();
-        errorDescriptions.put(ERRNO_NONE, null);
-        errorDescriptions.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        errorDescriptions.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        errorDescriptions.put(ERRNO_ABORTED, "Job aborted");
-
-    }
-
     public Job() {
     }
 
-
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status.PREPARED, 0,
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status
+                        .PREPARED, 0,
                 outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
@@ -174,32 +148,33 @@ public class Job {
 
     @Override
     public String toString() {
-        return "Job{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", userId='" + userId + '\'' +
-                ", toolName='" + toolName + '\'' +
-                ", date='" + date + '\'' +
-                ", description='" + description + '\'' +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", outputError='" + outputError + '\'' +
-                ", commandLine='" + commandLine + '\'' +
-                ", visits=" + visits +
-                ", status=" + status +
-                ", diskUsage=" + diskUsage +
-                ", execution='" + execution + '\'' +
-                ", params=" + params +
-                ", outDirId=" + outDirId +
-                ", tmpOutDirUri=" + tmpOutDirUri +
-                ", input=" + input +
-                ", output=" + output +
-                ", tags=" + tags +
-                ", attributes=" + attributes +
-                ", resourceManagerAttributes=" + resourceManagerAttributes +
-                ", error='" + error + '\'' +
-                ", errorDescription='" + errorDescription + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Job{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append(", toolName='").append(toolName).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", startTime=").append(startTime);
+        sb.append(", endTime=").append(endTime);
+        sb.append(", outputError='").append(outputError).append('\'');
+        sb.append(", execution='").append(execution).append('\'');
+        sb.append(", params=").append(params);
+        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", visits=").append(visits);
+        sb.append(", status=").append(status);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", outDirId=").append(outDirId);
+        sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
+        sb.append(", input=").append(input);
+        sb.append(", output=").append(output);
+        sb.append(", tags=").append(tags);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
+        sb.append(", error='").append(error).append('\'');
+        sb.append(", errorDescription='").append(errorDescription).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {
@@ -372,7 +347,6 @@ public class Job {
         this.attributes = attributes;
     }
 
-
     public Map<String, Object> getResourceManagerAttributes() {
         return resourceManagerAttributes;
     }
@@ -395,5 +369,21 @@ public class Job {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public enum Status {
+        PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
+        ERROR,                 //Job with errors. See "error"
+        QUEUED,
+        RUNNING,
+        DONE,                  //Job finished, but output not ready. Daemon will process the output.
+        //       PROCESSING_OUTPUT,     //Job finished, but output not ready. Daemon will process the output.
+        READY,                 //Job finished and ready
+    }
+
+    public enum Type {
+        ANALYSIS,
+        INDEX,
+        COHORT_STATS,
     }
 }

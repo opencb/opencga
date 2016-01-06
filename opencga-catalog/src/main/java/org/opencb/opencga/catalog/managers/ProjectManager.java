@@ -6,18 +6,18 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
 import java.util.Properties;
@@ -25,7 +25,7 @@ import java.util.Properties;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class ProjectManager extends AbstractManager implements IProjectManager{
+public class ProjectManager extends AbstractManager implements IProjectManager {
 
     public ProjectManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                           AuditManager auditManager,
@@ -43,7 +43,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
     public int getProjectId(String projectId) throws CatalogException {
         try {
             return Integer.parseInt(projectId);
-        } catch (NumberFormatException ignore) {
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
 
         String[] split = projectId.split("@");
@@ -89,7 +90,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        return queryResult;    }
+        return queryResult;
+    }
 
     @Override
     public QueryResult<Project> create(QueryOptions params, String sessionId) throws CatalogException {

@@ -12,6 +12,26 @@ import java.util.*;
  */
 public interface AuthorizationManager {
 
+    String ADMINS_GROUP = "admins";
+    String DATA_MANAGERS_GROUP = "dataManagers";
+    String MEMBERS_GROUP = "members";
+
+    /**
+     * Get tree default groups.
+     * admins : Full permissions
+     * dataManagers: Full data permissions. No study permissions
+     * members: Just launch jobs permission.
+     *
+     * @param adminUsers Users to add to the admin group by default.
+     * @return List<Group>
+     */
+    static List<Group> getDefaultGroups(Collection<String> adminUsers) {
+        return Arrays.asList(
+                new Group(ADMINS_GROUP, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true, true)),
+                new Group(DATA_MANAGERS_GROUP, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, true, false)),
+                new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
+    }
+
     void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException;
 
     void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException;
@@ -23,12 +43,15 @@ public interface AuthorizationManager {
     void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException;
 
     /**
-     * Can read to an individual if:
-     *    a) User is SAMPLE_MANAGER, role:ADMIN or studyOwner
-     *    b) User can read some related sample
+     * Can read to an individual if.
+     * a) User is SAMPLE_MANAGER, role:ADMIN or studyOwner
+     * b) User can read some related sample
      * Any other permission require to be SAMPLE_MANAGER, role:ADMIN or studyOwner
      *
-     * @throws CatalogException
+     * @param individualId individualId
+     * @param userId userId
+     * @param permission Permission
+     * @throws CatalogException CatalogException
      */
     void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException;
 
@@ -54,7 +77,7 @@ public interface AuthorizationManager {
      *
      * @param userId   UserId
      * @param projects Projects list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     * @throws CatalogException CatalogException
      */
     void filterProjects(String userId, List<Project> projects) throws CatalogException;
 
@@ -62,30 +85,35 @@ public interface AuthorizationManager {
      * Removes from the list the studies that the user can not read.
      * From the remaining studies, filters the files.
      *
-     * @param userId     UserId
-     * @param studies    Studies list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     * @param userId  UserId
+     * @param studies Studies list
+     * @throws CatalogException CatalogException
      */
     void filterStudies(String userId, List<Study> studies) throws CatalogException;
 
     /**
      * Removes from the list the files that the user can not read.
      *
-     * @param userId   UserId
-     * @param studyId  StudyId
-     * @param files    Files list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     * @param userId  UserId
+     * @param studyId StudyId
+     * @param files   Files list
+     * @throws CatalogException CatalogException
      */
     void filterFiles(String userId, int studyId, List<File> files) throws CatalogException;
 
     /**
      * Removes from the list the samples that the user can not read.
      *
-     * @param userId   UserId
-     * @param samples  Samples list
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogException
+     * @param userId UserId
+     * @param studyId StudyId
+     * @param samples Samples
+     * @throws CatalogException CatalogException
      */
     void filterSamples(String userId, int studyId, List<Sample> samples) throws CatalogException;
+
+    /*--------------------------*/
+    // Group management methods
+    /*--------------------------*/
 
     void filterJobs(String userId, List<Job> jobs) throws CatalogException;
 
@@ -94,29 +122,6 @@ public interface AuthorizationManager {
     void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException;
 
     void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException;
-
-    /*--------------------------*/
-    // Group management methods
-    /*--------------------------*/
-
-    String ADMINS_GROUP = "admins";
-    String DATA_MANAGERS_GROUP = "dataManagers";
-    String MEMBERS_GROUP = "members";
-
-    /**
-     * Get tree default groups.
-     *  admins : Full permissions
-     *  dataManagers: Full data permissions. No study permissions
-     *  members: Just launch jobs permission.
-     *
-     * @param adminUsers Users to add to the admin group by default.
-     */
-    static List<Group> getDefaultGroups(Collection<String> adminUsers) {
-        return Arrays.asList(
-                new Group(ADMINS_GROUP, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true, true)),
-                new Group(DATA_MANAGERS_GROUP, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, true, false)),
-                new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
-    }
 
     Group getGroupBelonging(int studyId, String userId) throws CatalogException;
 

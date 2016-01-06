@@ -31,19 +31,9 @@ public class Index {
 
     private Map<String, Object> attributes;
 
-    /**
-     * States
-     *
-     * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
-     *      \                                              /
-     *       ------------------> INDEXING ----------------/
-     *
-     */
-    public enum Status {NONE, TRANSFORMING, TRANSFORMED, LOADING, INDEXING, READY}
-
-
     public Index() {
     }
+
 
     public Index(String userId, String date, Status status, int jobId, Map<String, Object> attributes) {
         this.userId = userId;
@@ -91,5 +81,16 @@ public class Index {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    /**
+     * States.
+     * <p>
+     * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
+     * \                                              /
+     * ------------------> INDEXING ----------------/
+     */
+    public enum Status {
+        NONE, TRANSFORMING, TRANSFORMED, LOADING, INDEXING, READY
     }
 }

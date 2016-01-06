@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -38,8 +37,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                              AuditManager auditManager,
-                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                        Properties catalogProperties) {
+                             CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                             Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
@@ -64,7 +63,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId, family, gender, null, null, null, Collections.emptyList(), null), options);
+        QueryResult<Individual> queryResult = individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId,
+                family, gender, null, null, null, Collections.emptyList(), null), options);
         auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -109,7 +109,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotate(int individualId, String annotationSetId, int variableSetId, Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
+    public QueryResult<AnnotationSet> annotate(int individualId, String annotationSetId, int variableSetId, Map<String, Object>
+            annotations, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetId, "annotationSetId");
@@ -136,7 +137,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 //        }
 
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, false);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", queryResult.first()), "annotate", null);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets", queryResult
+                .first()), "annotate", null);
         return queryResult;
     }
 
@@ -181,7 +183,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, true);
 
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
-                newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors.toSet()),
+                newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
+                        .toSet()),
                 annotationSet.getDate(), null);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
@@ -215,7 +218,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkIndividualPermission(individualId, userId, CatalogPermission.WRITE);
 
 
-        options.putAll(parameters);//FIXME: Use separated params and options, or merge
+        options.putAll(parameters); //FIXME: Use separated params and options, or merge
         QueryResult<Individual> queryResult = individualDBAdaptor.modifyIndividual(individualId, options);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, parameters, null, null);
         return queryResult;

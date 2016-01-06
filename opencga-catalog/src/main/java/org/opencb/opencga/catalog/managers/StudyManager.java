@@ -29,12 +29,11 @@ import java.util.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StudyManager extends AbstractManager implements IStudyManager{
+public class StudyManager extends AbstractManager implements IStudyManager {
 
     protected static Logger logger = LoggerFactory.getLogger(StudyManager.class);
 
-    public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                        AuditManager auditManager,
+    public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                         Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
@@ -54,7 +53,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     public Integer getStudyId(String studyId) throws CatalogException {
         try {
             return Integer.parseInt(studyId);
-        } catch (NumberFormatException ignore) {
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
 
         String[] split = studyId.split("@");
@@ -131,25 +131,20 @@ public class StudyManager extends AbstractManager implements IStudyManager{
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-
         //Copy generic permissions from the project.
-
         QueryResult<AclEntry> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
-        if (!aclQueryResult.getResult().isEmpty()) {
-            //study.getAcl().add(aclQueryResult.getResult().get(0));
-        } else {
+        if (aclQueryResult.getResult().isEmpty()) {
             throw new CatalogDBException("Project " + projectId + " must have generic ACL");
         }
-
 
         File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0);
         rootFile.setUri(uri);
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments, files, jobs, new LinkedList<Sample>(), new LinkedList<Dataset>(),
-                new LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, datastores, stats, attributes);
-
+                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments,
+                files, jobs, new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), null, datastores, stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -373,7 +368,8 @@ public class StudyManager extends AbstractManager implements IStudyManager{
     }
 
     @Override
-    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws
+            CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);

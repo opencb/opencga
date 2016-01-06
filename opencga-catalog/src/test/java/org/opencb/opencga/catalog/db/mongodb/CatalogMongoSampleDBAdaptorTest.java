@@ -29,12 +29,10 @@ import static org.junit.Assert.*;
  */
 public class CatalogMongoSampleDBAdaptorTest {
 
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
-    private CatalogSampleDBAdaptor catalogSampleDBAdaptor;
-
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
+    private CatalogDBAdaptorFactory dbAdaptorFactory;
+    private CatalogSampleDBAdaptor catalogSampleDBAdaptor;
     private User user1;
     private User user2;
     private User user3;
@@ -45,8 +43,13 @@ public class CatalogMongoSampleDBAdaptorTest {
     private AclEntry acl_s2_user1;
     private AclEntry acl_s2_user2;
 
+    @AfterClass
+    public static void afterClass() {
+        CatalogMongoDBAdaptorTest.afterClass();
+    }
+
     @Before
-    public void before () throws IOException, CatalogDBException {
+    public void before() throws IOException, CatalogDBException {
         CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
         dbAdaptorTest.before();
 
@@ -72,17 +75,12 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     }
 
-    @AfterClass
-    public static void afterClass() {
-        CatalogMongoDBAdaptorTest.afterClass();
-    }
-
-
     @Test
     public void testAnnotateSample() throws Exception {
         int sampleId = s1.getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
+                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
@@ -90,7 +88,8 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
-        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId,
+                Function.identity()));
         assertEquals(2, annotationSets.size());
         assertEquals(annot1, annotationSets.get(annot1.getId()));
         assertEquals(annot2, annotationSets.get(annot2.getId()));
@@ -134,7 +133,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     }
 
-        @Test
+    @Test
     public void getSampleAcl() throws Exception {
         AclEntry acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
         assertNotNull(acl);

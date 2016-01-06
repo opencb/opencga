@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -16,23 +15,22 @@ import java.util.Properties;
  */
 public abstract class AbstractManager {
 
-    final protected AuthenticationManager authenticationManager;
-    final protected AuthorizationManager authorizationManager;
-    final protected AuditManager auditManager;
-    final protected CatalogIOManagerFactory catalogIOManagerFactory;
-    final protected Properties catalogProperties;
-
-    final protected CatalogUserDBAdaptor userDBAdaptor;
-    final protected CatalogStudyDBAdaptor studyDBAdaptor;
-    final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogIndividualDBAdaptor individualDBAdaptor;
-    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
-    final protected CatalogJobDBAdaptor jobDBAdaptor;
-
     protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
+    protected final AuthenticationManager authenticationManager;
+    protected final AuthorizationManager authorizationManager;
+    protected final AuditManager auditManager;
+    protected final CatalogIOManagerFactory catalogIOManagerFactory;
+    protected final Properties catalogProperties;
+    protected final CatalogUserDBAdaptor userDBAdaptor;
+    protected final CatalogStudyDBAdaptor studyDBAdaptor;
+    protected final CatalogFileDBAdaptor fileDBAdaptor;
+    protected final CatalogIndividualDBAdaptor individualDBAdaptor;
+    protected final CatalogSampleDBAdaptor sampleDBAdaptor;
+    protected final CatalogJobDBAdaptor jobDBAdaptor;
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
+                                   ioManagerFactory,
                            Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
         this.authenticationManager = authenticationManager;

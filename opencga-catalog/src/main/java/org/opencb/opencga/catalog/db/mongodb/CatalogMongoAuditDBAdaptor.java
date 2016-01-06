@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObjects;
 
 
 /**
@@ -72,5 +71,6 @@ public class CatalogMongoAuditDBAdaptor extends CatalogDBAdaptor implements Cata
         }
         QueryResult<DBObject> result = auditCollection.find(new BasicDBObject("$and", mongoQueryList), queryOptions);
         List<AuditRecord> individuals = parseObjects(result, AuditRecord.class);
-        return endQuery("getAuditRecord", startTime, individuals);    }
+        return endQuery("getAuditRecord", startTime, individuals);
+    }
 }

@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.authentication;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.common.StringUtils;
@@ -24,6 +24,14 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     public CatalogAuthenticationManager(CatalogUserDBAdaptor userDBAdaptor, Properties properties) {
         this.userDBAdaptor = userDBAdaptor;
         catalogProperties = properties;
+    }
+
+    public static String cipherPassword(String password) throws CatalogException {
+        try {
+            return StringUtils.sha1(password);
+        } catch (NoSuchAlgorithmException e) {
+            throw new CatalogDBException("Could not encode password", e);
+        }
     }
 
     @Override
@@ -74,14 +82,6 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
         return qr;
-    }
-
-    public static String cipherPassword(String password) throws CatalogException {
-        try {
-            return StringUtils.sha1(password);
-        } catch (NoSuchAlgorithmException e) {
-            throw new CatalogDBException("Could not encode password", e);
-        }
     }
 
 }

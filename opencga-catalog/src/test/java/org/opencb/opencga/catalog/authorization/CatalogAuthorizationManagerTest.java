@@ -38,6 +38,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String memberUser = "member";
     private final String externalUser = "external";
     private final String password = "1234";
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
     private CatalogManager catalogManager;
     private String ownerSessionId;
     private String studyAdmin1SessionId;
@@ -46,9 +48,6 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private String externalSessionId;
     private int p1;
     private int s1;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
     private int data;                 //
     private int data_d1;              // Shared with member, Forbidden for @admins, Shared with studyAdmin1
     private int data_d1_d2;           // Forbidden for @admins
@@ -65,7 +64,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private int ind2;
 
     @Before
-    public void before () throws Exception {
+    public void before() throws Exception {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
         Properties properties = new Properties();
         properties.load(is);
@@ -88,22 +87,27 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         p1 = catalogManager.createProject(ownerUser, "p1", "p1", null, null, null, ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
-        data = catalogManager.searchFile(s1, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "data/"), ownerSessionId).first().getId();
+        data = catalogManager.searchFile(s1, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "data/"),
+                ownerSessionId).first().getId();
         data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), false, null, ownerSessionId).first().getId();
         data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
-        data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", "file content".getBytes(), "", false, ownerSessionId).first().getId();
+        data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
+                "content").getBytes(), "", false, ownerSessionId).first().getId();
 
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
 
         catalogManager.shareFile(data_d1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false),
+                ownerSessionId);
         catalogManager.shareFile(data_d1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false),
+                ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true),
+                ownerSessionId);
         catalogManager.shareFile(data_d1_d2_d3_d4_txt, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
@@ -112,7 +116,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         smp4 = catalogManager.createSample(s1, "smp4", null, null, null, null, ownerSessionId).first().getId();
         smp5 = catalogManager.createSample(s1, "smp5", null, null, null, null, ownerSessionId).first().getId();
         smp6 = catalogManager.createSample(s1, "smp6", null, null, null, null, ownerSessionId).first().getId();
-        catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first().getId();
+        catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first()
+                .getId();
         ind1 = catalogManager.createIndividual(s1, "ind1", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();
         ind2 = catalogManager.createIndividual(s1, "ind2", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();
         catalogManager.modifySample(smp1, new QueryOptions("individualId", ind1), ownerSessionId);
@@ -445,15 +450,18 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesOwner() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), ownerSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), ownerSessionId).getResult().stream()
+                .collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertTrue(sampleMap.containsKey(smp2));
         assertTrue(sampleMap.containsKey(smp3));
     }
+
     @Test
     public void readAllSamplesAdmin() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdmin1SessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdmin1SessionId).getResult().stream()
+                .collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));
@@ -462,7 +470,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesMember() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), memberSessionId).getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), memberSessionId).getResult().stream()
+                .collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));
@@ -536,7 +545,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
 
         assertEquals(expectedJobs.size(), allJobs.getNumResults());
-        allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job.getId())));
+        allJobs.getResult().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job
+                .getId())));
     }
 
     /////////// Aux methods

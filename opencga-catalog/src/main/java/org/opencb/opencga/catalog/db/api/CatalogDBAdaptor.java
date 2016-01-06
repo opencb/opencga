@@ -26,48 +26,13 @@ import java.util.List;
 
 public abstract class CatalogDBAdaptor {
 
+    protected final Logger logger;
+
     protected CatalogDBAdaptor(Logger logger) {
         this.logger = logger;
     }
 
-    public interface FilterOption {
-        enum Type {
-            /**
-             * Accepts a list of comma separated numerical conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=]
-             *
-             * Example:
-             *      getAllFiles( {diskUsage : "<200000" } )
-             *      getAllFiles( {jobId : "32,33,34" } )
-             */
-            NUMERICAL,
-            /**
-             * Accepts a list of comma separated text conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=, ~, =~, !=~],
-             * where [~,=~] implements a "LIKE" with regular expression and [!=~, !~] implements a "NOT LIKE"
-             * and [<, <=, >, >=] are lexicographical operations
-             *
-             * Example:
-             *      getAllFiles ( { bioformat : "VARIANT," } )
-             *      getAllSamples ( { name : "~SAMP_00[0-9]*"} )
-             */
-            TEXT,
-            /**
-             * Accepts a boolean condition
-             *
-             * Example:
-             *      getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
-             */
-            BOOLEAN
-        }
-        String getKey();
-        Type getType();
-        String getDescription();
-    }
-
-    protected final Logger logger;
-
-    protected long startQuery(){
+    protected long startQuery() {
         return System.currentTimeMillis();
     }
 
@@ -84,8 +49,9 @@ public abstract class CatalogDBAdaptor {
         long end = System.currentTimeMillis();
         result.setId(queryId);
         result.setDbTime((int) (end - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults());
-        if(result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()){
+        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result
+                .getNumResults(), result.getNumTotalResults());
+        if (result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()) {
             throw new CatalogDBException(result.getErrorMsg());
         }
         return result;
@@ -94,14 +60,15 @@ public abstract class CatalogDBAdaptor {
     protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result,
                                           String errorMessage, String warnMessage) throws CatalogDBException {
         long end = System.currentTimeMillis();
-        if(result == null){
+        if (result == null) {
             result = new LinkedList<>();
         }
         int numResults = result.size();
         QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
                 warnMessage, errorMessage, result);
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults());
-        if(errorMessage != null && !errorMessage.isEmpty()){
+        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(),
+                queryResult.getNumResults(), queryResult.getNumTotalResults());
+        if (errorMessage != null && !errorMessage.isEmpty()) {
             throw new CatalogDBException(queryResult.getErrorMsg());
         }
         return queryResult;
@@ -111,10 +78,48 @@ public abstract class CatalogDBAdaptor {
         if (param == null) {
             throw new CatalogDBException("Error: parameter '" + name + "' is null");
         }
-        if(param instanceof String) {
-            if(param.equals("") || param.equals("null")) {
+        if (param instanceof String) {
+            if (param.equals("") || param.equals("null")) {
                 throw new CatalogDBException("Error: parameter '" + name + "' is empty or it values 'null");
             }
+        }
+    }
+
+    public interface FilterOption {
+        String getKey();
+
+        Type getType();
+
+        String getDescription();
+
+        enum Type {
+            /**
+             * Accepts a list of comma separated numerical conditions, where the value must match in, at least, one of this.
+             * The accepted operators are: [<, <=, >, >=, =, , !=]
+             * <p>
+             * Example:
+             * getAllFiles( {diskUsage : "<200000" } )
+             * getAllFiles( {jobId : "32,33,34" } )
+             */
+            NUMERICAL,
+            /**
+             * Accepts a list of comma separated text conditions, where the value must match in, at least, one of this.
+             * The accepted operators are: [<, <=, >, >=, =, , !=, ~, =~, !=~],
+             * where [~,=~] implements a "LIKE" with regular expression and [!=~, !~] implements a "NOT LIKE"
+             * and [<, <=, >, >=] are lexicographical operations
+             * <p>
+             * Example:
+             * getAllFiles ( { bioformat : "VARIANT," } )
+             * getAllSamples ( { name : "~SAMP_00[0-9]*"} )
+             */
+            TEXT,
+            /**
+             * Accepts a boolean condition
+             * <p>
+             * Example:
+             * getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
+             */
+            BOOLEAN
         }
     }
 

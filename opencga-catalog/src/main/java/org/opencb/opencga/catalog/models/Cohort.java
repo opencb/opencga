@@ -22,8 +22,8 @@ import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *
- * Set of samples grouped according to criteria
+ *         <p>
+ *         Set of samples grouped according to criteria
  */
 public class Cohort {
 
@@ -38,20 +38,6 @@ public class Cohort {
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
-
-    public enum Status {NONE, CALCULATING, READY, INVALID}
-
-    //Represents the criteria of grouping samples in the cohort
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
 
     public Cohort() {
     }
@@ -76,17 +62,18 @@ public class Cohort {
 
     @Override
     public String toString() {
-        return "Cohort{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type=" + type +
-                ", creationDate='" + creationDate + '\'' +
-                ", status=" + status +
-                ", description='" + description + '\'' +
-                ", samples=" + samples +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Cohort{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", samples=").append(samples);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {
@@ -159,5 +146,19 @@ public class Cohort {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public enum Status {NONE, CALCULATING, READY, INVALID}
+
+    //Represents the criteria of grouping samples in the cohort
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 }

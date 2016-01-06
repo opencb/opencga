@@ -145,7 +145,7 @@ public class DaemonLoop implements Runnable {
                                     parameters.put("status", Job.Status.DONE);
                                     String error = Job.ERRNO_FINISH_ERROR;
                                     parameters.put("error", error);
-                                    parameters.put("errorDescription", Job.errorDescriptions.get(error));
+                                    parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
                                     catalogManager.modifyJob(job.getId(), parameters, sessionId);
                                     jobStatus = Job.Status.DONE;
                                     job.setError(error);
@@ -188,7 +188,7 @@ public class DaemonLoop implements Runnable {
                                 ObjectMap params = new ObjectMap("status", Job.Status.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
                                 params.put("error", error);
-                                params.put("errorDescription", Job.errorDescriptions.get(error));
+                                params.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
                                 catalogManager.modifyJob(job.getId(), params, sessionId);
                             }
                             break;

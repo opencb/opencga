@@ -8,15 +8,21 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 public interface ICatalog {
 
     String getSessionId();
+
     void setSessionId(String sessionId);
 
     String getUserId();
+
     void setUserId(String userId);
 
     IUserManager users();
+
     IProjectManager projects();
+
     IStudyManager studies();
+
     IFileManager files();
+
     IJobManager jobs();
 
     void close() throws CatalogException;

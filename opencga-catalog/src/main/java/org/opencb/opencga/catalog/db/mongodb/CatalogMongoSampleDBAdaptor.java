@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getDbObject;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObjects;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -89,7 +87,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
-        if(samples.isEmpty()) {
+        if (samples.isEmpty()) {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
 
@@ -188,8 +186,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
             }
         }
 
-        if(!sampleParams.isEmpty()) {
-            QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(_ID , sampleId),
+        if (!sampleParams.isEmpty()) {
+            QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(_ID, sampleId),
                     new BasicDBObject("$set", sampleParams), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("Sample", sampleId);
@@ -229,7 +227,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
-        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId, s -> s));
+        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId,
+                s -> s));
 
         return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
     }
@@ -268,7 +267,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         long startTime = startQuery();
 
         QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
-        DBObject query = new BasicDBObject(_ID, sampleId);;
+        DBObject query = new BasicDBObject(_ID, sampleId);
+        ;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
 
         QueryResult queryResult = sampleCollection.update(query, update, null);
@@ -348,7 +348,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        int newId = getNewAutoIncrementId(metaCollection);;
+        int newId = getNewAutoIncrementId(metaCollection);
+        ;
         cohort.setId(newId);
 
         DBObject cohortObject = getDbObject(cohort, "Cohort");
@@ -369,7 +370,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
                 .append("cohorts.name", cohortName)
                 .get());
 
-        if(count.getResult().get(0) > 0) {
+        if (count.getResult().get(0) > 0) {
             throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
         }
     }
@@ -383,7 +384,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
 
         List<Study> studies = parseStudies(queryResult);
-        if(studies == null || studies.get(0).getCohorts().isEmpty()) {
+        if (studies == null || studies.get(0).getCohorts().isEmpty()) {
             throw CatalogDBException.idNotFound("Cohort", cohortId);
         } else {
             return endQuery("getCohort", startTime, studies.get(0).getCohorts());
@@ -424,7 +425,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
                 new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
-        List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0)).collect(Collectors.toList());
+        List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0)).collect
+                (Collectors.toList());
 
         return endQuery("getAllCohorts", startTime, cohorts);
     }
@@ -457,12 +459,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap("status", Cohort.Status.class);
         filterEnumParams(parameters, cohortParams, acceptedEnumParams);
 
-        if(!cohortParams.isEmpty()) {
+        if (!cohortParams.isEmpty()) {
             HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();
             for (Map.Entry<String, Object> entry : cohortParams.entrySet()) {
                 studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
             }
-            QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject("cohorts.id" , cohortId),
+            QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject("cohorts.id", cohortId),
                     new BasicDBObject("$set", studyRelativeCohortParameters), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("Cohort", cohortId);
@@ -480,7 +482,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         int studyId = getStudyIdByCohortId(cohortId);
         QueryResult<Cohort> cohort = getCohort(cohortId);
 
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
+        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+                BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
 
         if (update.first().getN() == 0) {
             throw CatalogDBException.idNotFound("Cohhort", cohortId);
@@ -494,7 +497,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
     public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
         BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
         QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
-        if(queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
+        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
             throw CatalogDBException.idNotFound("Cohort", cohortId);
         } else {
             Object id = queryResult.getResult().get(0).get("id");
@@ -509,7 +512,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
      */
 
     @Override
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException {
+    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws
+            CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<Long> count = sampleCollection.count(

@@ -22,24 +22,23 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.*;
-import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-
+import org.opencb.opencga.catalog.managers.*;
+import org.opencb.opencga.catalog.managers.api.*;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +69,10 @@ public class CatalogManager implements AutoCloseable {
     public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
-
+    protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
     private CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
-
     private IUserManager userManager;
     private IProjectManager projectManager;
     private IStudyManager studyManager;
@@ -82,10 +80,7 @@ public class CatalogManager implements AutoCloseable {
     private IJobManager jobManager;
     private IIndividualManager individualManager;
     private ISampleManager sampleManager;
-
     private Properties properties;
-
-    protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
     private AuthenticationManager authenticationManager;
     private AuthorizationManager authorizationManager;
     private CatalogAuditManager auditManager;
@@ -122,16 +117,24 @@ public class CatalogManager implements AutoCloseable {
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
-        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), authorizationManager, properties);
+        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
+                .getCatalogUserDBAdaptor(), authorizationManager, properties);
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
-        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, catalogIOManagerFactory, properties);
+        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, properties);
     }
 
     public CatalogClient client() {
@@ -171,7 +174,8 @@ public class CatalogManager implements AutoCloseable {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
             }
         }
-        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration, properties.getProperty(CATALOG_DB_DATABASE, ""));
+        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
+                properties.getProperty(CATALOG_DB_DATABASE, ""));
     }
 
     @Override
@@ -179,8 +183,8 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.close();
     }
 
-    /**
-     * Getter path methods
+    /*
+     * Getter path methods.
      * ***************************
      */
 
@@ -224,7 +228,7 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getProjectId(studyId);
     }
 
-    /**
+    /*
      * Id methods
      * <user>@project:study:directories:filePath
      * ***************************
@@ -246,7 +250,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.getToolId(id);
     }
 
-    /**
+    /*
      * User methods
      * ***************************
      */
@@ -256,7 +260,8 @@ public class CatalogManager implements AutoCloseable {
         return createUser(id, name, email, password, organization, options, null);
     }
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options, String sessionId)
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options,
+                                        String sessionId)
             throws CatalogException {
         return userManager.create(id, name, email, password, organization, options, sessionId);
     }
@@ -323,7 +328,7 @@ public class CatalogManager implements AutoCloseable {
         userManager.delete(userId, null, sessionId);
     }
 
-    /**
+    /*
      * Project methods
      * ***************************
      */
@@ -346,12 +351,12 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult renameProject(int projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
-        return projectManager.update(projectId, new QueryOptions("alias", newProjectAlias), null, sessionId);//TODO: Add query options
+        return projectManager.update(projectId, new QueryOptions("alias", newProjectAlias), null, sessionId); //TODO: Add query options
     }
 
     /**
-     * Modify some params from the specified project:
-     * <p/>
+     * Modify some params from the specified project.
+     * <p>
      * name
      * description
      * organization
@@ -361,45 +366,45 @@ public class CatalogManager implements AutoCloseable {
      * @param projectId  Project identifier
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
-     * @return
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
+     * @return QueryResult
+     * @throws CatalogException CatalogException
      */
-    public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId)
-            throws CatalogException {
-        return projectManager.update(projectId, parameters, null, sessionId);//TODO: Add query options
+    public QueryResult modifyProject(int projectId, ObjectMap parameters, String sessionId) throws CatalogException {
+        return projectManager.update(projectId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    /**
+    /*
      * Study methods
      * ***************************
      */
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException {
-        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null, sessionId);
+        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null,
+                sessionId);
     }
 
     /**
-     * Creates a new Study in catalog
-     * @param projectId     Parent project id
-     * @param name          Study Name
-     * @param alias         Study Alias. Must be unique in the project's studies
-     * @param type          Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
-     * @param creatorId     Creator user id. If null, user by sessionId
-     * @param creationDate  Creation date. If null, now
-     * @param description   Study description. If null, empty string
-     * @param status        Unused
-     * @param cipher        Unused
-     * @param uriScheme     UriScheme to select the CatalogIOManager. Default: CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME
-     * @param uri           URI for the folder where to place the study. Scheme must match with the uriScheme. Folder must exist.
-     * @param datastores    DataStores information
-     * @param stats         Optional stats
-     * @param attributes    Optional attributes
-     * @param options       QueryOptions
-     * @param sessionId     User's sessionId
-     * @return              Generated study
-     * @throws CatalogException
-     * @throws IOException
+     * Creates a new Study in catalog.
+     *
+     * @param projectId    Parent project id
+     * @param name         Study Name
+     * @param alias        Study Alias. Must be unique in the project's studies
+     * @param type         Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
+     * @param creatorId    Creator user id. If null, user by sessionId
+     * @param creationDate Creation date. If null, now
+     * @param description  Study description. If null, empty string
+     * @param status       Unused
+     * @param cipher       Unused
+     * @param uriScheme    UriScheme to select the CatalogIOManager. Default: CatalogIOManagerFactory.DEFAULT_CATALOG_SCHEME
+     * @param uri          URI for the folder where to place the study. Scheme must match with the uriScheme. Folder must exist.
+     * @param datastores   DataStores information
+     * @param stats        Optional stats
+     * @param attributes   Optional attributes
+     * @param options      QueryOptions
+     * @param sessionId    User's sessionId
+     * @return Generated study
+     * @throws CatalogException CatalogException
      */
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
                                           String creatorId, String creationDate, String description, String status,
@@ -407,7 +412,8 @@ public class CatalogManager implements AutoCloseable {
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status, cipher, uriScheme,
+        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status,
+                cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
@@ -426,7 +432,8 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options, sessionId);
+        return studyManager.readAll(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options,
+                sessionId);
     }
 
     public QueryResult<Study> getAllStudies(QueryOptions options, String sessionId)
@@ -440,21 +447,21 @@ public class CatalogManager implements AutoCloseable {
     }
 
     /**
-     * Modify some params from the specified study:
-     * <p/>
+     * Modify some params from the specified study.
+     * <p>
      * name
      * description
      * organization
      * status
-     * <p/>
+     * <p>
      * attributes
      * stats
      *
      * @param studyId    Study identifier
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
-     * @return
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
+     * @return QueryResult
+     * @throws CatalogException CatalogException
      */
     public QueryResult modifyStudy(int studyId, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -469,7 +476,7 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.removeMember(studyId, groupId, userId, sessionId);
     }
 
-    /**
+    /*
      * File methods
      * ***************************
      */
@@ -483,7 +490,8 @@ public class CatalogManager implements AutoCloseable {
     }
 
     //create file with byte[]
-    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String description,
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
+            description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
@@ -492,7 +500,8 @@ public class CatalogManager implements AutoCloseable {
         return getFile(queryResult.first().getId(), sessionId);
     }
 
-    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String description,
+    public QueryResult<File> createFile(int studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
+            description,
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
@@ -525,7 +534,8 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, null, options, sessionId);
     }
 
-    public QueryResult<File> createFolder(int studyId, Path folderPath, File.Status status, boolean parents, String description, QueryOptions options, String sessionId)
+    public QueryResult<File> createFolder(int studyId, Path folderPath, File.Status status, boolean parents, String description,
+                                          QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
         return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, description, options, sessionId);
@@ -551,23 +561,23 @@ public class CatalogManager implements AutoCloseable {
     }
 
     /**
-     * Modify some params from the specified file:
-     * <p/>
+     * Modify some params from the specified file.
+     * <p>
      * name
      * type
      * format
      * bioformat
      * description
      * status
-     * <p/>
+     * <p>
      * attributes
      * stats
      *
      * @param fileId     File identifier
      * @param parameters Parameters to change.
      * @param sessionId  sessionId to check permissions
-     * @return
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
+     * @return QueryResult QueryResult
+     * @throws CatalogException CatalogException
      */
     public QueryResult modifyFile(int fileId, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -672,7 +682,7 @@ public class CatalogManager implements AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
-    /**
+    /*
      * **************************
      * Job methods
      * ***************************
@@ -682,8 +692,10 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.getStudyId(jobId);
     }
 
-    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
-                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
+    public QueryResult<Job> createJob(int studyId, String name, String toolName, String description, String executor, Map<String, String>
+            params, String commandLine,
+                                      URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String,
+            Object> attributes,
                                       Map<String, Object> resourceManagerAttributes, Job.Status status,
                                       long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -734,7 +746,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    /**
+    /*
      * Project methods
      * ***************************
      */
@@ -762,7 +774,7 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.delete(individualId, options, sessionId);
     }
 
-    /**
+    /*
      * Samples methods
      * ***************************
      */
@@ -804,32 +816,32 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String annotationSetId, int variableSetId,
-                                                            Map<String, Object> annotations,
-                                                            Map<String, Object> attributes,
-                                                            boolean checkAnnotationSet,
-                                                            String sessionId)
+                                                     Map<String, Object> annotations,
+                                                     Map<String, Object> attributes,
+                                                     boolean checkAnnotationSet,
+                                                     String sessionId)
             throws CatalogException {
         return sampleManager.annotate(sampleId, annotationSetId, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
     public QueryResult<AnnotationSet> updateSampleAnnotation(int sampleId, String annotationSetId,
-                                                                 Map<String, Object> annotations,
-                                                                 String sessionId)
+                                                             Map<String, Object> annotations,
+                                                             String sessionId)
             throws CatalogException {
         return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
     }
 
     public QueryResult<AnnotationSet> annotateIndividual(int individualId, String annotationSetId, int variableSetId,
-                                                            Map<String, Object> annotations,
-                                                            Map<String, Object> attributes,
-                                                            String sessionId)
+                                                         Map<String, Object> annotations,
+                                                         Map<String, Object> attributes,
+                                                         String sessionId)
             throws CatalogException {
         return individualManager.annotate(individualId, annotationSetId, variableSetId, annotations, attributes, sessionId);
     }
 
     public QueryResult<AnnotationSet> updateIndividualAnnotation(int individualId, String annotationSetId,
-                                                            Map<String, Object> annotations,
-                                                            String sessionId)
+                                                                 Map<String, Object> annotations,
+                                                                 String sessionId)
             throws CatalogException {
         return individualManager.updateAnnotation(individualId, annotationSetId, annotations, sessionId);
     }
@@ -848,7 +860,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.delete(sampleId, options, sessionId);
     }
 
-    /**
+    /*
      * VariableSet methods
      * ***************************
      */
@@ -882,7 +894,7 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
     }
 
-    /**
+    /*
      * Cohort methods
      * ***************************
      */
@@ -912,7 +924,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
-    /**
+    /*
      * Tools methods
      * ***************************
      */

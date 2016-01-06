@@ -14,7 +14,8 @@ public interface CatalogDBAdaptorFactory {
 
     /**
      * Initializes de Database with the initial structure.
-     * @throws CatalogDBException   if there was any problem, or it was already initialized.
+     *
+     * @throws CatalogDBException if there was any problem, or it was already initialized.
      */
     void initializeCatalogDB() throws CatalogDBException;
 

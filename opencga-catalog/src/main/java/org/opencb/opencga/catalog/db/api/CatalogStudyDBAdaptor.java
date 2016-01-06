@@ -13,45 +13,6 @@ import org.opencb.opencga.catalog.models.VariableSet;
  */
 public interface CatalogStudyDBAdaptor {
 
-    enum StudyFilterOptions implements CatalogDBAdaptor.FilterOption {
-        id(Type.NUMERICAL, ""),
-        projectId(Type.NUMERICAL, ""),
-        name(Type.TEXT, ""),
-        alias(Type.TEXT, ""),
-        type(Type.TEXT, ""),
-        groups(Type.TEXT, ""),
-        creatorId(Type.TEXT, ""),
-        creationDate(Type.TEXT, ""),
-        status(Type.TEXT, ""),
-        lastActivity(Type.TEXT, ""),
-        stats(Type.TEXT, ""),
-        attributes(Type.TEXT, ""),
-        nattributes("attributes", Type.NUMERICAL, ""),
-        battributes("attributes", Type.BOOLEAN, ""),
-        ;
-
-        StudyFilterOptions(String key, Type type, String description) {
-            this._key = key;
-            this._description = description;
-            this._type = type;
-        }
-
-        StudyFilterOptions(Type type, String description) {
-            this._key = name();
-            this._description = description;
-            this._type = type;
-        }
-
-        final private String _key;
-        final private String _description;
-        final private Type _type;
-
-        @Override public String getKey() {return _key;}
-        @Override public String getDescription() {return _description;}
-        @Override public Type getType() {return _type;}
-    }
-
-
     /**
      * Study methods
      * ***************************
@@ -71,9 +32,10 @@ public interface CatalogStudyDBAdaptor {
 
     QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
 
-//  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats) throws CatalogManagerException;
-
     void updateStudyLastActivity(int studyId) throws CatalogDBException;
+
+//  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
+// throws CatalogManagerException;
 
     QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
@@ -91,7 +53,6 @@ public interface CatalogStudyDBAdaptor {
 
     QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
 
-
     /**
      * VariableSet Methods
      * ***************************
@@ -106,4 +67,50 @@ public interface CatalogStudyDBAdaptor {
     QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
     int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
+
+    enum StudyFilterOptions implements CatalogDBAdaptor.FilterOption {
+        id(Type.NUMERICAL, ""),
+        projectId(Type.NUMERICAL, ""),
+        name(Type.TEXT, ""),
+        alias(Type.TEXT, ""),
+        type(Type.TEXT, ""),
+        groups(Type.TEXT, ""),
+        creatorId(Type.TEXT, ""),
+        creationDate(Type.TEXT, ""),
+        status(Type.TEXT, ""),
+        lastActivity(Type.TEXT, ""),
+        stats(Type.TEXT, ""),
+        attributes(Type.TEXT, ""),
+        nattributes("attributes", Type.NUMERICAL, ""),
+        battributes("attributes", Type.BOOLEAN, ""),;
+
+        final private String _key;
+        final private String _description;
+        final private Type _type;
+        StudyFilterOptions(String key, Type type, String description) {
+            this._key = key;
+            this._description = description;
+            this._type = type;
+        }
+        StudyFilterOptions(Type type, String description) {
+            this._key = name();
+            this._description = description;
+            this._type = type;
+        }
+
+        @Override
+        public String getKey() {
+            return _key;
+        }
+
+        @Override
+        public String getDescription() {
+            return _description;
+        }
+
+        @Override
+        public Type getType() {
+            return _type;
+        }
+    }
 }

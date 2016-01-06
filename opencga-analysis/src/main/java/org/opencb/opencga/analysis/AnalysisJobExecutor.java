@@ -395,7 +395,7 @@ public class AnalysisJobExecutor {
             parameters = new ObjectMap();
             parameters.put("status", Job.Status.ERROR);
             parameters.put("error", Job.ERRNO_FINISH_ERROR);
-            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
+            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_FINISH_ERROR));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
         }
 

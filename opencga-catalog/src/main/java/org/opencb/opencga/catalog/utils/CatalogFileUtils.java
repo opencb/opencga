@@ -18,13 +18,13 @@ package org.opencb.opencga.catalog.utils;
 
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,8 +48,8 @@ import java.util.stream.Stream;
  */
 public class CatalogFileUtils {
 
-    private final CatalogManager catalogManager;
     private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
+    private final CatalogManager catalogManager;
 
     public CatalogFileUtils(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -57,10 +60,9 @@ public class CatalogFileUtils {
             throws CatalogException {
         upload(sourceUri, file, sourceChecksum, sessionId, ignoreStatus, overwrite, deleteSource, calculateChecksum, Long.MAX_VALUE);
     }
+
     /**
      * Upload file to a created entry file in Catalog.
-     *
-     *
      *
      * @param sourceUri         File URI to be moved into Catalog workspace
      * @param file              File from Catalog
@@ -71,7 +73,7 @@ public class CatalogFileUtils {
      * @param deleteSource      After moving, delete file. If false, force copy.
      * @param calculateChecksum Calculate checksum
      * @param moveThreshold     File size threshold to move a file instead of copy.
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
+     * @throws CatalogException CatalogException
      */
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum, long moveThreshold)
@@ -88,9 +90,9 @@ public class CatalogFileUtils {
             throw new CatalogIOException("Can't upload file.", e);
         }
 
-        if (deleteSource) {
-            //TODO: Check if can delete source
-        }
+        // TODO: Check if can delete source
+//        if (deleteSource) {
+//        }
 
         //If the source is equals to the target, calculate checksum (if needed) and exit
         if (sourceUri.equals(targetUri)) {
@@ -163,15 +165,15 @@ public class CatalogFileUtils {
                     e.printStackTrace();
                     //You fail at failing!
                     throw new CatalogIOException(
-                            "Fail calculating target checksum : " + catalogIOException.getMessage() + "" +
-                            "Fail deleting target file : " + e.getMessage(), catalogIOException);
+                            "Fail calculating target checksum : " + catalogIOException.getMessage() + ""
+                                    + "Fail deleting target file : " + e.getMessage(), catalogIOException);
                 }
                 throw catalogIOException;
             }
         }
 
         //Check status
-        if(!calculateChecksum || targetChecksum.equals(sourceChecksum)) {
+        if (!calculateChecksum || targetChecksum.equals(sourceChecksum)) {
             if (calculateChecksum) {
                 logger.info("Checksum matches {}", sourceChecksum);
             } else {
@@ -180,7 +182,7 @@ public class CatalogFileUtils {
 
             updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap("status", File.Status.READY), sessionId);
 
-            if(deleteSource && !fileMoved) {
+            if (deleteSource && !fileMoved) {
                 logger.info("Deleting source file {} after moving", sourceUri);
                 try {
                     sourceIOManager.deleteFile(sourceUri);
@@ -246,10 +248,11 @@ public class CatalogFileUtils {
      * @param createFoundFiles  Create a simple catalog file entry for found files. Used only for link folders
      * @param relink            Change the existing link of a file.
      * @param sessionId         User's sessionId
-     * @return                  Modified file
-     * @throws CatalogException
+     * @return Modified file
+     * @throws CatalogException CatalogException
      */
-    public File link(File file, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
+    public File link(File file, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId)
+            throws CatalogException {
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -274,8 +277,8 @@ public class CatalogFileUtils {
      * @param createFoundFiles  Create a simple catalog file entry for found files.
      * @param relink            Change the existing link of a file.
      * @param sessionId         User's sessionId
-     * @return                  Created folder
-     * @throws CatalogException
+     * @return Created folder
+     * @throws CatalogException CatalogException
      */
     public File linkFolder(int studyId, String filePath, boolean parents, String description, boolean calculateChecksum,
                            URI externalUri, boolean createFoundFiles, boolean relink, String sessionId)
@@ -283,7 +286,8 @@ public class CatalogFileUtils {
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.Status.STAGE, parents, description, null, sessionId).first();
+        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.Status.STAGE, parents, description, null, sessionId)
+                .first();
 
         checkCanLinkFile(folder, relink);
 
@@ -329,7 +333,8 @@ public class CatalogFileUtils {
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
 
-    private File linkFolder(File folder, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String sessionId) throws CatalogException {
+    private File linkFolder(File folder, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String
+            sessionId) throws CatalogException {
         logger.debug("Linking a folder");
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
 
@@ -349,7 +354,8 @@ public class CatalogFileUtils {
             Path folderPath = Paths.get(folder.getPath());
             Map<URI, String> uriPathMap = uris
                     .filter(uri -> !ioManager.isDirectory(uri)) //Skip directories. Will be created automatically with "parents = true"
-                    .collect(Collectors.toMap(Function.identity(), uri -> folderPath.resolve(externalUri.relativize(uri).getPath()).toString()));
+                    .collect(Collectors.toMap(Function.identity(), uri -> folderPath.resolve(externalUri.relativize(uri).getPath())
+                            .toString()));
 
             //Search if there is any existing file in the folder with the path to use.
             QueryOptions pathsQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
@@ -360,7 +366,8 @@ public class CatalogFileUtils {
                     for (File f : existingFiles) {
                         logger.warn("File already existing: { id:{}, path:\"{}\"}", f.getId(), f.getPath());
                     }
-                    throw new CatalogException("Unable to link folder " + folder.getPath() + " to uri " + externalUri + ". Existing files on folder");
+                    throw new CatalogException("Unable to link folder " + folder.getPath() + " to uri " + externalUri + ". Existing files"
+                            + " on folder");
                 }
             }
             Map<String, File> pathFileMap = existingFiles.stream().collect(Collectors.toMap(File::getPath, f -> f));
@@ -443,16 +450,16 @@ public class CatalogFileUtils {
 
     /**
      * Check if the fileURI related to the provided file exists, and modifies the file status if necessary.
-     *
+     * <p>
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
      * For TRASHED files with a non existing file, set status to DELETED.
      *
-     * @param file                  File to check
-     * @param calculateChecksum     Calculate checksum for "found files"
-     * @param sessionId             User's sessionId
-     * @return                      If there is any change, returns the modified file. Else, return the same file.
-     * @throws CatalogException
+     * @param file              File to check
+     * @param calculateChecksum Calculate checksum for "found files"
+     * @param sessionId         User's sessionId
+     * @return If there is any change, returns the modified file. Else, return the same file.
+     * @throws CatalogException CatalogException
      */
     public File checkFile(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
         File modifiedFile = file;
@@ -485,6 +492,8 @@ public class CatalogFileUtils {
                     break;
                 }
             }
+            default:
+                break;
         }
         return modifiedFile;
     }
@@ -492,13 +501,14 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     *      diskUsage
-     *      modificationDate
-     *      attributes.checksum
+     * diskUsage
+     * modificationDate
+     * attributes.checksum
+     *
      * @param file              File to update
      * @param calculateChecksum Do calculate checksum
      * @param sessionId         users sessionId
-     * @throws CatalogException
+     * @throws CatalogException CatalogException
      */
     public void updateFileAttributes(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
         URI fileUri = catalogManager.getFileUri(file);
@@ -511,15 +521,17 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     *      diskUsage
-     *      modificationDate
-     *      attributes.checksum
+     * diskUsage
+     * modificationDate
+     * attributes.checksum
      *
-     * @param fileUri If null, calls to getFileUri()
-     *
-     * TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.
-     * @param calculateChecksum     Calculate checksum to check if have changed
-     * @throws CatalogException
+     * @param file file
+     * @param fileUri           If null, calls to getFileUri()
+     *                          <p>
+     *                          TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.
+     * @param calculateChecksum Calculate checksum to check if have changed
+     * @return ObjectMap ObjectMap
+     * @throws CatalogException CatalogException
      */
     public ObjectMap getModifiedFileAttributes(File file, URI fileUri, boolean calculateChecksum) throws CatalogException {
         if (fileUri == null) {
@@ -535,10 +547,11 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     *      diskUsage
-     *      modificationDate
-     *      attributes.checksum
-     * @throws CatalogException
+     * diskUsage
+     * modificationDate
+     * attributes.checksum
+     *
+     * @throws CatalogException CatalogException
      */
     private void updateFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters, String sessionId)
             throws CatalogException {
@@ -556,11 +569,11 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     *      diskUsage
-     *      modificationDate
-     *      attributes.checksum
+     * diskUsage
+     * modificationDate
+     * attributes.checksum
      *
-     * @throws CatalogException
+     * @throws CatalogException CatalogException
      */
     private ObjectMap getModifiedFileAttributes(File file, String checksum, URI fileUri, ObjectMap parameters) throws CatalogException {
         parameters = ParamUtils.defaultObject(parameters, ObjectMap::new);
@@ -600,9 +613,9 @@ public class CatalogFileUtils {
      */
     private void checkTarget(File file, URI targetUri, CatalogIOManager targetIOManager, boolean overwrite) throws CatalogIOException {
         if (!overwrite && targetIOManager.exists(targetUri)) {
-            throw new CatalogIOException("There is a file in the target!" +
-                    "file:{id:" + file.getId() + ", targetUri: '" + targetUri + "' } " +
-                    "Needs 'overwrite = true' for continue.");
+            throw new CatalogIOException("There is a file in the target!"
+                    + "file:{id:" + file.getId() + ", targetUri: '" + targetUri + "' } "
+                    + "Needs 'overwrite = true' for continue.");
         }
     }
 
@@ -614,18 +627,17 @@ public class CatalogFileUtils {
      */
     private void checkStatus(File file) throws CatalogIOException {
         if (file.getStatus() != File.Status.STAGE) {
-            throw new CatalogIOException("File status is already uploaded and ready! " +
-                    "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getStatus() + "' } " +
-                    "Needs 'ignoreStatus = true' for continue.");
+            throw new CatalogIOException("File status is already uploaded and ready! "
+                    + "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getStatus() + "' } "
+                    + "Needs 'ignoreStatus = true' for continue.");
         }
     }
 
     /**
-     *
-     * @param sourceIOManager   Source IOManager
-     * @param source            Source file
-     * @param targetIOManager   Target IOManager
-     * @param target            Target file
+     * @param sourceIOManager Source IOManager
+     * @param source          Source file
+     * @param targetIOManager Target IOManager
+     * @param target          Target file
      * @throws IOException
      * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
      */
@@ -634,7 +646,7 @@ public class CatalogFileUtils {
 
         logger.info("Copying file from {} to {}", source, target);
         //If it's the same IOManager, copy intra FS
-        if(sourceIOManager == targetIOManager) {
+        if (sourceIOManager == targetIOManager) {
             sourceIOManager.copyFile(source, target);
             return;
         }

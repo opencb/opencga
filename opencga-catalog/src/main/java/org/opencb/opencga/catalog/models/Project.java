@@ -18,7 +18,10 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -48,6 +51,7 @@ public class Project {
         this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
                 new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
     }
+
     public Project(String name, String alias, String creationDate, String description, String status,
                    String lastActivity, long diskUsage, String organization) {
         this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
@@ -74,20 +78,22 @@ public class Project {
 
     @Override
     public String toString() {
-        return "Project{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", alias='" + alias + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", organization='" + organization + '\'' +
-                ", status='" + status + '\'' +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", acl=" + acl +
-                ", studies=" + studies +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Project{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", acl=").append(acl);
+        sb.append(", studies=").append(studies);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {
@@ -102,16 +108,16 @@ public class Project {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getAlias() {
         return alias;
     }
 
     public void setAlias(String alias) {
         this.alias = alias;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getCreationDate() {

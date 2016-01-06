@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 
 import java.nio.file.Path;
@@ -19,9 +20,8 @@ public class ParamUtils {
     }
 
     public static void checkParameter(String param, String name) throws CatalogParameterException {
-        if (param == null || param.equals("") || param.equals("null")) {
-            throw new CatalogParameterException("Error in parameter: parameter '" + name + "' is null or empty: "
-                    + param + ".");
+        if (StringUtils.isEmpty(param) || param.equals("null")) {
+            throw new CatalogParameterException("Error in parameter: parameter '" + name + "' is null or empty: " + param + ".");
         }
     }
 
@@ -42,7 +42,7 @@ public class ParamUtils {
     }
 
     public static void checkRegion(String regionStr, String name) throws CatalogParameterException {
-        if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) {//chr:start-end
+        if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) { //chr:start-end
             throw new CatalogParameterException("region '" + name + "' is not valid");
         }
     }

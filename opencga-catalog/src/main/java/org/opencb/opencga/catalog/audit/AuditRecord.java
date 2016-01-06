@@ -3,36 +3,33 @@ package org.opencb.opencga.catalog.audit;
 import org.opencb.datastore.core.ObjectMap;
 
 /**
- * Created on 18/08/15
+ * Created on 18/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AuditRecord {
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, tool, variableSet}
+    public static final String CREATE = "create";
 //    public enum Status {running, done, fail}
-
+    public static final String UPDATE = "update";
+    public static final String DELETE = "delete";
+    public static final String INDEX = "index";
     private Object id;
     private Resource resource;
     private String action;
     private ObjectMap before;
     private ObjectMap after;
-    /**
+    /*
      * Time in milliseconds
      */
     private long timeStamp;
     private String userId;
     private String description;
     private ObjectMap attributes;
-
-    public static final String CREATE = "create";
-    public static final String UPDATE = "update";
-    public static final String DELETE = "delete";
-    public static final String INDEX = "index";
-
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, String action, ObjectMap before, ObjectMap after, long timeStamp, String userId, String description, ObjectMap attributes) {
+    public AuditRecord(Object id, Resource resource, String action, ObjectMap before, ObjectMap after, long timeStamp, String userId,
+                       String description, ObjectMap attributes) {
         this.id = id;
         this.resource = resource;
         this.action = action;
@@ -46,17 +43,17 @@ public class AuditRecord {
 
     @Override
     public String toString() {
-        return "AuditRecord{" +
-                "id=" + id +
-                ", resource=" + resource +
-                ", action=" + action +
-                ", before=" + (before == null? "null" : before) +
-                ", after=" + (after == null? "null" : after) +
-                ", timeStamp=" + timeStamp +
-                ", userId='" + userId + '\'' +
-                ", description='" + description + '\'' +
-                ", attributes=" + attributes +
-                '}';
+        return "AuditRecord{"
+                + "id=" + id
+                + ", resource=" + resource
+                + ", action=" + action
+                + ", before=" + (before == null ? "null" : before)
+                + ", after=" + (after == null ? "null" : after)
+                + ", timeStamp=" + timeStamp
+                + ", userId='" + userId + '\''
+                + ", description='" + description + '\''
+                + ", attributes=" + attributes
+                + '}';
     }
 
     public Object getId() {
@@ -139,4 +136,6 @@ public class AuditRecord {
         this.attributes = attributes;
         return this;
     }
+
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, tool, variableSet}
 }

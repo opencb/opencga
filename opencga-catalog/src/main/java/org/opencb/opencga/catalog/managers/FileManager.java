@@ -6,17 +6,21 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.catalog.managers.api.IFileManager;
+import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,27 +36,50 @@ import java.util.*;
  */
 public class FileManager extends AbstractManager implements IFileManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(FileManager.class);
+    private static final QueryOptions INCLUDE_STUDY_URI;
+    private static final QueryOptions INCLUDE_FILE_URI_PATH;
+    private static final Comparator<File> ROOT_FIRST_COMPARATOR;
+    private static final Comparator<File> ROOT_LAST_COMPARATOR;
 
-    private static final QueryOptions includeStudyUri = new QueryOptions("include", Collections.singletonList("projects.studies.uri"));
-    private static final QueryOptions includeFileUriPath = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
-    private static final Comparator<File> rootFirstComparator =
-            (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length()) - (f2.getPath() == null ? 0 : f2.getPath().length());
-    private static final Comparator<File> rootLastComparator =
-            (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length()) - (f1.getPath() == null ? 0 : f1.getPath().length());
+    protected static Logger logger;
 
+    static {
+        INCLUDE_STUDY_URI = new QueryOptions("include", Collections.singletonList("projects.studies.uri"));
+        INCLUDE_FILE_URI_PATH = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
+        ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
+                - (f2.getPath() == null ? 0 : f2.getPath().length());
+        ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
+                - (f1.getPath() == null ? 0 : f1.getPath().length());
 
-    public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       AuditManager auditManager,
+        logger = LoggerFactory.getLogger(FileManager.class);
+    }
+
+    public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
+    public static List<String> getParentPaths(String filePath) {
+        String path = "";
+        String[] split = filePath.split("/");
+        List<String> paths = new ArrayList<>(split.length + 1);
+        paths.add("");  //Add study root folder
+        //Add intermediate folders
+        //Do not add the last split, could be a file or a folder..
+        //Depending on this, it could end with '/' or not.
+        for (int i = 0; i < split.length - 1; i++) {
+            String f = split[i];
+            path = path + f + "/";
+            paths.add(path);
+        }
+        paths.add(filePath); //Add the file path
+        return paths;
+    }
+
     @Override
-    public URI getStudyUri(int studyId)
-            throws CatalogException {
-        return studyDBAdaptor.getStudy(studyId, includeStudyUri).first().getUri();
+    public URI getStudyUri(int studyId) throws CatalogException {
+        return studyDBAdaptor.getStudy(studyId, INCLUDE_STUDY_URI).first().getUri();
     }
 
     @Override
@@ -61,7 +88,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
-            return getFileUri(studyDBAdaptor.getStudy(getStudyId(file.getId()), includeStudyUri).first(), file);
+            return getFileUri(studyDBAdaptor.getStudy(getStudyId(file.getId()), INCLUDE_STUDY_URI).first(), file);
         }
     }
 
@@ -72,7 +99,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getUri() != null) {
             return file.getUri();
         } else {
-            QueryResult<File> parents = getParents(file, false, includeFileUriPath);
+            QueryResult<File> parents = getParents(file, false, INCLUDE_FILE_URI_PATH);
             for (File parent : parents.getResult()) {
                 if (parent.getUri() != null) {
                     String relativePath = file.getPath().replaceFirst(parent.getPath(), "");
@@ -80,9 +107,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             }
             URI studyUri = study.getUri() == null ? getStudyUri(study.getId()) : study.getUri();
-            return file.getPath().isEmpty() ?
-                    studyUri :
-                    catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, file.getPath());
+            return file.getPath().isEmpty()
+                    ? studyUri
+                    : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, file.getPath());
         }
     }
 
@@ -92,15 +119,16 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(studyUri, "studyUri");
         ParamUtils.checkObj(relativeFilePath, "relativeFilePath");
 
-        return relativeFilePath.isEmpty() ?
-                studyUri :
-                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
+        return relativeFilePath.isEmpty()
+                ? studyUri
+                : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
     public URI getFileUri(int studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
-        List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"), filePath, studyId).getResult();
+        List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"),
+                filePath, studyId).getResult();
 
         for (File parent : parents) {
             if (parent.getUri() != null) {
@@ -109,9 +137,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         URI studyUri = getStudyUri(studyId);
-        return filePath.isEmpty() ?
-                studyUri :
-                catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
+        return filePath.isEmpty()
+                ? studyUri
+                : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, filePath);
     }
 
     @Override
@@ -128,7 +156,8 @@ public class FileManager extends AbstractManager implements IFileManager {
     public Integer getFileId(String id) throws CatalogException {
         try {
             return Integer.parseInt(id);
-        } catch (NumberFormatException ignore) {
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
 
         String[] split = id.split("@", 2);
@@ -146,7 +175,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     /**
      * Returns if a file is externally located.
-     *
+     * <p>
      * A file externally located is the one with a URI or a parent folder with an external URI.
      *
      * @throws CatalogException
@@ -164,11 +193,13 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
-        return getParents(true, options, read(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first().getPath(), getStudyId(fileId));
+        return getParents(true, options, read(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first()
+                .getPath(), getStudyId(fileId));
     }
 
     /**
      * Return all parent folders from a file.
+     *
      * @param file
      * @param options
      * @return
@@ -179,22 +210,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         return getParents(rootFirst, options, filePath, getStudyId(file.getId()));
     }
 
-    public static List<String> getParentPaths(String filePath) {
-        String path = "";
-        String[] split = filePath.split("/");
-        List<String> paths = new ArrayList<>(split.length + 1);
-        paths.add("");  //Add study root folder
-        //Add intermediate folders
-        //Do not add the last split, could be a file or a folder..
-        //Depending on this, it could end with '/' or not.
-        for (int i = 0; i < split.length - 1; i++) {
-            String f = split[i];
-            paths.add(path = path + f + "/");
-        }
-        paths.add(filePath); //Add the file path
-        return paths;
-    }
-
     private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
         List<String> paths = getParentPaths(filePath);
 
@@ -203,7 +218,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<File> result = fileDBAdaptor.getAllFiles(
                 query,
                 options);
-        result.getResult().sort(rootFirst ? rootFirstComparator : rootLastComparator);
+        result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
     }
 
@@ -232,20 +247,18 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, String description, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> createFolder(int studyId, String path, File.Status status, boolean parents, String description,
+                                          QueryOptions options, String sessionId) throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
                 path, null, null, description, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 
     @Override
-    public QueryResult<File> create(
-            int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
-            String creationDate, String description, File.Status status, long diskUsage, int experimentId,
-            List<Integer> sampleIds, int jobId, Map<String, Object> stats, Map<String, Object> attributes,
-            boolean parents, QueryOptions options, String sessionId) throws CatalogException {
-
+    public QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
+                                    String creationDate, String description, File.Status status, long diskUsage, int experimentId,
+                                    List<Integer> sampleIds, int jobId, Map<String, Object> stats, Map<String, Object> attributes,
+                                    boolean parents, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -257,9 +270,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         ownerId = ParamUtils.defaultString(ownerId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
-        status = type == File.Type.FILE ?
-                ParamUtils.defaultObject(status, File.Status.STAGE) :   //By default, files are STAGED
-                ParamUtils.defaultObject(status, File.Status.READY) ;   //By default, folders are READY
+        status = (type == File.Type.FILE)
+                ? ParamUtils.defaultObject(status, File.Status.STAGE) //By default, files are STAGED
+                : ParamUtils.defaultObject(status, File.Status.READY);   //By default, folders are READY
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -322,7 +335,8 @@ public class FileManager extends AbstractManager implements IFileManager {
      *
      * @throws CatalogException
      */
-    private QueryResult<File> create(int studyId, File file, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+    private QueryResult<File> create(int studyId, File file, boolean parents, QueryOptions options, String sessionId) throws
+            CatalogException {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         /**
@@ -489,12 +503,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                         //Path and Name must be changed with "raname" and/or "move" methods.
                         case "path":
                         case "name":
-                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
-                                    "Use \"rename\" instead");
+                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. "
+                                    + "Use \"rename\" instead");
                         case "type":
                         default:
-                            throw new CatalogException("Parameter '" + s + "' can't be changed. " +
-                                    "Requires admin account");
+                            throw new CatalogException("Parameter '" + s + "' can't be changed. "
+                                    + "Requires admin account");
                     }
                 }
                 break;
@@ -563,6 +577,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, objectMap, null, null);
                 return queryResult; //TODO: Return the modified file
             }
+            default:
+                break;
         }
         return null;
     }
@@ -571,13 +587,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
 
         switch (file.getStatus()) {
-            case STAGE:
-            case MISSING:
-            default:
-                throw new CatalogException("File is not ready. {" +
-                        "id: " + file.getId() + ", " +
-                        "path:\"" + file.getPath() + "\"," +
-                        "status: '" + file.getStatus() + "'}");
             case TRASHED:
             case DELETED:
                 //Send warning message
@@ -588,6 +597,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                         null, Collections.emptyList());
             case READY:
                 break;
+            case STAGE:
+            case MISSING:
+            default:
+                throw new CatalogException("File is not ready. {"
+                        + "id: " + file.getId() + ", "
+                        + "path:\"" + file.getPath() + "\","
+                        + "status: '" + file.getStatus() + "'}");
         }
         return null;
     }
@@ -628,15 +644,19 @@ public class FileManager extends AbstractManager implements IFileManager {
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
                     catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name",
+                        newName), "rename", null);
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
                     catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name",
+                        newName), "rename", null);
                 return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
+            default:
+                break;
         }
 
         return null;

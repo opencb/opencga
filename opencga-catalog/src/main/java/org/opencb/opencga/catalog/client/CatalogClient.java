@@ -29,83 +29,115 @@ import java.util.Map;
  */
 public interface CatalogClient {
 
-    interface CatalogResourceClient <R>{
-        public QueryResult<R> create(QueryOptions options) throws CatalogException;
-        public QueryResult<R> read(QueryOptions options) throws CatalogException;
-        public QueryResult<R> readAll(QueryOptions options) throws CatalogException;
-        public QueryResult<R> update(QueryOptions options) throws CatalogException;
-        public QueryResult<R> delete() throws CatalogException;
+    String getSessionId();
+
+    void setSessionId(String sessionId);
+
+    String getUserId();
+
+    void setUserId(String userId);
+
+    CatalogUserClient users();
+
+    CatalogUserClient users(String userId);
+
+    CatalogProjectClient projects();
+
+    CatalogProjectClient projects(int projectId);
+
+    CatalogStudyClient studies();
+
+    CatalogStudyClient studies(int studyId);
+
+    CatalogFileClient files();
+
+    CatalogFileClient files(int fileId);
+
+    CatalogJobClient jobs();
+
+    CatalogJobClient jobs(int jobId);
+
+    void close() throws CatalogException;
+
+    interface CatalogResourceClient<R> {
+        QueryResult<R> create(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> read(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> readAll(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> update(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> delete() throws CatalogException;
     }
 
-    interface CatalogUserClient extends CatalogResourceClient <User>{
-        public String  getUserId(String sessionId);
+    interface CatalogUserClient extends CatalogResourceClient<User> {
+        String getUserId(String sessionId);
 
-        public QueryResult<User> update(QueryOptions options) throws CatalogException;
-        public QueryResult<User> read(QueryOptions options) throws CatalogException;
-        public QueryResult<User> create(String id, String name, String email, String password, String organization,
-                                        QueryOptions options) throws CatalogException;
-        public QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
+        QueryResult<User> update(QueryOptions options) throws CatalogException;
+
+        QueryResult<User> read(QueryOptions options) throws CatalogException;
+
+        QueryResult<User> create(String id, String name, String email, String password, String organization,
+                                 QueryOptions options) throws CatalogException;
+
+        QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
     }
 
-    interface CatalogProjectClient extends CatalogResourceClient <Project>{
-        public String  getUserId(int projectId) throws CatalogException;
-        public Integer getProjectId(String projectId) throws CatalogException;
+    interface CatalogProjectClient extends CatalogResourceClient<Project> {
+        String getUserId(int projectId) throws CatalogException;
 
-        public QueryResult<Project> create(String ownerId, String name, String alias, String description,
+        Integer getProjectId(String projectId) throws CatalogException;
+
+        QueryResult<Project> create(String ownerId, String name, String alias, String description,
                                            String organization, QueryOptions options) throws CatalogException;
     }
-    interface CatalogStudyClient extends CatalogResourceClient <Study>{
-        public String  getUserId(int studyId) throws CatalogException;
-        public Integer getProjectId(int studyId) throws CatalogException;
-        public Integer getStudyId(String studyId) throws CatalogException;
 
-        public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
-                                         String creatorId, String creationDate, String description, String status,
-                                         String cipher, String uriScheme, Map<String, Object> stats,
-                                         Map<String, Object> attributes) throws CatalogException;
-        public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
+    interface CatalogStudyClient extends CatalogResourceClient<Study> {
+        String getUserId(int studyId) throws CatalogException;
+
+        Integer getProjectId(int studyId) throws CatalogException;
+
+        Integer getStudyId(String studyId) throws CatalogException;
+
+        QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
+                                  String creatorId, String creationDate, String description, String status,
+                                  String cipher, String uriScheme, Map<String, Object> stats,
+                                  Map<String, Object> attributes) throws CatalogException;
+
+        QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
     }
-    interface CatalogFileClient extends CatalogResourceClient <File>{
-        public String  getUserId(int fileId) throws CatalogException;
-        public Integer getProjectId(int fileId) throws CatalogException;
-        public Integer getStudyId(int fileId) throws CatalogException;
-        public Integer getFileId(String fileId) throws CatalogException;
-        public QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
+
+    interface CatalogFileClient extends CatalogResourceClient<File> {
+        String getUserId(int fileId) throws CatalogException;
+
+        Integer getProjectId(int fileId) throws CatalogException;
+
+        Integer getStudyId(int fileId) throws CatalogException;
+
+        Integer getFileId(String fileId) throws CatalogException;
+
+        QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                         String ownerId, String creationDate, String description, File.Status status,
                                         long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents) throws CatalogException;
     }
-    interface CatalogJobClient extends CatalogResourceClient <Job>{
-        public Integer getStudyId(int jobId);
 
-        public QueryResult<Job> visit(int jobId);
-    }
-    interface CatalogSampleClient extends CatalogResourceClient <Project>{
-        public Integer getProjectId(String projectId);
+    interface CatalogJobClient extends CatalogResourceClient<Job> {
+        Integer getStudyId(int jobId);
 
-        public QueryResult<Annotation> annotate(int sampleId);
-    }
-    interface CatalogExperimentClient extends CatalogResourceClient <Project>{
-        public Integer getProjectId(String projectId);
+        QueryResult<Job> visit(int jobId);
     }
 
-    String getSessionId();
-    void setSessionId(String sessionId);
+    interface CatalogSampleClient extends CatalogResourceClient<Project> {
+        Integer getProjectId(String projectId);
 
-    String getUserId();
-    void setUserId(String userId);
+        QueryResult<Annotation> annotate(int sampleId);
+    }
 
-    CatalogUserClient users();
-    CatalogUserClient users(String userId);
-    CatalogProjectClient projects();
-    CatalogProjectClient projects(int projectId);
-    CatalogStudyClient studies();
-    CatalogStudyClient studies(int studyId);
-    CatalogFileClient files();
-    CatalogFileClient files(int fileId);
-    CatalogJobClient jobs();
-    CatalogJobClient jobs(int jobId);
-    void close() throws CatalogException;
+    interface CatalogExperimentClient extends CatalogResourceClient<Project> {
+        Integer getProjectId(String projectId);
+    }
 
 }

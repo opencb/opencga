@@ -47,12 +47,13 @@ public class Metadata {
 
     @Override
     public String toString() {
-        return "Metadata{" +
-                "version='" + version + '\'' +
-                ", date='" + date + '\'' +
-                ", open='" + open + '\'' +
-                ", idCounter=" + idCounter +
-                '}';
+        final StringBuilder sb = new StringBuilder("Metadata{");
+        sb.append("version='").append(version).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", open='").append(open).append('\'');
+        sb.append(", idCounter=").append(idCounter);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getVersion() {

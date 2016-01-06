@@ -48,14 +48,15 @@ public class Dataset {
 
     @Override
     public String toString() {
-        return "Dataset{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", files=" + files +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Dataset{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", files=").append(files);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {

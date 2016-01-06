@@ -6,18 +6,18 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +31,12 @@ import java.util.regex.Pattern;
  */
 public class UserManager extends AbstractManager implements IUserManager {
 
-    protected final String creationUserPolicy;
-//    private final SessionManager sessionManager;
-
-    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-
     protected static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-
-    protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
+//    private final SessionManager sessionManager;
+    protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
+    protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
+    protected final String creationUserPolicy;
 
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        AuditManager auditManager,
@@ -50,7 +47,11 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
-
+    static void checkEmail(String email) throws CatalogException {
+        if (email == null || !EMAILPATTERN.matcher(email).matches()) {
+            throw new CatalogException("email not valid");
+        }
+    }
 
     @Override
     public String getUserId(String sessionId) {
@@ -78,7 +79,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 params.getString("email"),
                 params.getString("password"),
                 params.getString("organization"),
-                params,sessionId
+                params, sessionId
         );
     }
 
@@ -170,12 +171,12 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     /**
-     * Modify some params from the user profile:
-     *  name
-     *  email
-     *  organization
-     *  attributes
-     *  configs
+     * Modify some params from the user profile.
+     * name
+     * email
+     * organization
+     * attributes
+     * configs
      *
      * @throws CatalogException
      */
@@ -270,12 +271,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         switch (authorizationManager.getUserRole(userId)) {
+            case ANONYMOUS:
+                return logoutAnonymous(sessionId);
             default:
 //                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
 //                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
                 return userDBAdaptor.logout(userId, sessionId);
-            case ANONYMOUS:
-                return logoutAnonymous(sessionId);
         }
     }
 
@@ -292,17 +293,10 @@ public class UserManager extends AbstractManager implements IUserManager {
         return userDBAdaptor.logoutAnonymous(sessionId);
     }
 
-
     private void checkSessionId(String userId, String sessionId) throws CatalogException {
         String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!userIdBySessionId.equals(userId)) {
             throw new CatalogException("Invalid sessionId for user: " + userId);
-        }
-    }
-
-    static void checkEmail(String email) throws CatalogException {
-        if (email == null || !emailPattern.matcher(email).matches()) {
-            throw new CatalogException("email not valid");
         }
     }
 

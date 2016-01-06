@@ -58,19 +58,6 @@ public class Study {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        AGGREGATE,
-        TIME_SERIES,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
-
     public Study() {
     }
 
@@ -113,32 +100,33 @@ public class Study {
 
     @Override
     public String toString() {
-        return "Study{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", alias='" + alias + '\'' +
-                ", type=" + type +
-                ", creatorId='" + creatorId + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", status='" + status + '\'' +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", cipher='" + cipher + '\'' +
-                ", groups=" + groups +
-                ", experiments=" + experiments +
-                ", files=" + files +
-                ", jobs=" + jobs +
-                ", individuals=" + individuals +
-                ", samples=" + samples +
-                ", datasets=" + datasets +
-                ", cohorts=" + cohorts +
-                ", variableSets=" + variableSets +
-                ", uri=" + uri +
-                ", dataStores=" + dataStores +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Study{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creatorId='").append(creatorId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", groups=").append(groups);
+        sb.append(", experiments=").append(experiments);
+        sb.append(", files=").append(files);
+        sb.append(", jobs=").append(jobs);
+        sb.append(", individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", datasets=").append(datasets);
+        sb.append(", cohorts=").append(cohorts);
+        sb.append(", variableSets=").append(variableSets);
+        sb.append(", uri=").append(uri);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {
@@ -332,5 +320,18 @@ public class Study {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 }

@@ -879,7 +879,7 @@ public class OpenCGAMain {
                         if (c.error) {
                             parameters.put("status", Job.Status.ERROR);
                             parameters.put("error", Job.ERRNO_ABORTED);
-                            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_ABORTED));
+                            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_ABORTED));
                         } else {
                             parameters.put("status", Job.Status.READY);
                         }

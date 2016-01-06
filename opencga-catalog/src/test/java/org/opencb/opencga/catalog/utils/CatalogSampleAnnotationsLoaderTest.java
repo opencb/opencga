@@ -37,8 +37,9 @@ import java.util.*;
 
 public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
+    private static final List<String> populations = Arrays.asList("ACB", "ASW", "BEB", "CDX", "CEU", "CHB", "CHS", "CLM", "ESN", "FIN",
+            "GBR", "GIH", "GWD", "IBS", "ITU", "JPT", "KHV", "LWK", "MSL", "MXL", "PEL", "PJL", "PUR", "STU", "TSI", "YRI");
     private static CatalogSampleAnnotationsLoader loader;
-    private static final List<String> populations = Arrays.asList("ACB", "ASW", "BEB", "CDX", "CEU", "CHB", "CHS", "CLM", "ESN", "FIN", "GBR", "GIH", "GWD", "IBS", "ITU", "JPT", "KHV", "LWK", "MSL", "MXL", "PEL", "PJL", "PUR", "STU", "TSI", "YRI");
     private static Pedigree pedigree;
     private static String sessionId;
     private static File pedFile;
@@ -64,7 +65,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Project project = catalogManager.createProject(userId, "default", "def", "", "ACME", null, sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
-        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1, sessionId).getResult().get(0);
+        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1,
+                sessionId).getResult().get(0);
         new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFile(pedFile.getId(), sessionId).getResult().get(0);
     }
@@ -87,10 +89,14 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "", null, null));
+        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null,
+                "", null, null));
+        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null,
+                "", null, null));
+        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0,
+                null, "", null, null));
+        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "",
+                null, null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
 
@@ -129,7 +135,6 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     }
 
 
-
     private void validate(Pedigree pedigree, VariableSet variableSet) throws CatalogException {
         for (Map.Entry<String, Individual> entry : pedigree.getIndividuals().entrySet()) {
             Map<String, Object> annotation = loader.getAnnotation(entry.getValue(), null, variableSet, pedigree.getFields());
@@ -137,7 +142,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", null), null);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+                    null), null);
         }
     }
 }

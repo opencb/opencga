@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;

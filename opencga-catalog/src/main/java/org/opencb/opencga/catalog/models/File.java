@@ -19,157 +19,61 @@ package org.opencb.opencga.catalog.models;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class File {
 
+    /* Attributes known values */
+    public static final String DELETE_DATE = "deleteDate";      //Long
     private int id;
-
     /**
      * File name.
      */
     private String name;
-
     /**
-     * Formats: file, folder, index
+     * Formats: file, folder, index.
      */
     private Type type;
-
     /**
      * Formats: txt, executable, image, ...
      */
     private Format format;
-
     /**
      * BAM, VCF, ...
      */
     private Bioformat bioformat;
-
     /**
      * Optional external file location. If null, file is inside its study.
      */
     private URI uri;
-
     private String path;
     private String ownerId;
     private String creationDate;
     private String modificationDate;
     private String description;
-
     private Status status;
     private long diskUsage;
-
     //private int studyId;
     private int experimentId;
     private List<Integer> sampleIds;
-
     /**
      * This field values -1 when file has been uploaded.
      */
     private int jobId;
     private List<AclEntry> acl;
-
     private Index index;
-
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    /* Status */
-    public enum Status {
-        STAGE,
-        READY,
-        MISSING,
-        TRASHED,
-        DELETED
-    }
-
-    public enum Type {
-        FOLDER,
-        FILE
-    }
-
-    /**
-     * General format of the file, such as text, or binary, etc.
-     */
-    public enum Format {
-
-        VCF,
-        BCF,
-        GVCF,
-        TBI,
-
-        SAM,
-        BAM,
-        BAI,
-        CRAM,
-        FASTQ,
-        PED,
-
-        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
-
-        IMAGE,
-        PLAIN,
-        BINARY,
-        EXECUTABLE,
-        @Deprecated GZIP,
-        UNKNOWN,
-    }
-
-    public enum Compression {
-        GZIP,
-        BGZIP,
-        ZIP,
-        SNAPPY,
-        NONE,
-    }
-
-    /**
-     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
-     */
-    public enum Bioformat {
-        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
-        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
-        DATAMATRIX_EXPRESSION,
-//        DATAMATRIX_SNP,
-//        IDLIST_GENE,
-//        IDLIST_TRANSCRIPT,
-//        IDLIST_PROTEIN,
-//        IDLIST_SNP,
-//        IDLIST_FUNCTIONALTERMS,
-//        IDLIST_RANKED,
-        IDLIST,
-        IDLIST_RANKED,
-        ANNOTATION_GENEVSANNOTATION,
-
-        OTHER_NEWICK,
-        OTHER_BLAST,
-        OTHER_INTERACTION,
-        OTHER_GENOTYPE,
-        OTHER_PLINK,
-        OTHER_VCF,
-        OTHER_PED,
-
-        @Deprecated VCF4,
-
-        VARIANT,
-        ALIGNMENT,
-        SEQUENCE,
-        PEDIGREE,
-        NONE
-        }
-
-    /* Attributes known values */
-    public static final String DELETE_DATE = "deleteDate";      //Long
-
-    /**
-     * To think:
+    /*
+     * To think
      * ACL, url,  responsible,  extended source ??
      */
 
@@ -219,28 +123,30 @@ public class File {
 
     @Override
     public String toString() {
-        return "File {" + "\n\t" +
-                "id:" + id + "\n\t" +
-                ", name:'" + name + '\'' + "\n\t" +
-                ", type:'" + type + '\'' + "\n\t" +
-                ", format:'" + format + '\'' + "\n\t" +
-                ", bioformat:'" + bioformat + '\'' + "\n\t" +
-//                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
-                ", path:'" + path + '\'' + "\n\t" +
-                ", ownerId:'" + ownerId + '\'' + "\n\t" +
-                ", creationDate:'" + creationDate + '\'' + "\n\t" +
-                ", modificationDate:'" + modificationDate + '\'' + "\n\t" +
-                ", description:'" + description + '\'' + "\n\t" +
-                ", status:'" + status + '\'' + "\n\t" +
-                ", diskUsage:" + diskUsage + "\n\t" +
-                ", experimentId:" + experimentId + "\n\t" +
-                ", sampleIds:" + sampleIds + "\n\t" +
-                ", jobId:" + jobId + "\n\t" +
-                ", acl:" + acl + "\n\t" +
-                ", stats:" + stats + "\n\t" +
-                ", attributes:" + attributes + "\n\t" +
-//                ", indices:" + indices + "\n" +
-                '}';
+        final StringBuilder sb = new StringBuilder("File{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", format=").append(format);
+        sb.append(", bioformat=").append(bioformat);
+        sb.append(", uri=").append(uri);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", ownerId='").append(ownerId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", experimentId=").append(experimentId);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", acl=").append(acl);
+        sb.append(", index=").append(index);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {
@@ -401,5 +307,92 @@ public class File {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    /* Status */
+    public enum Status {
+        STAGE,
+        READY,
+        MISSING,
+        TRASHED,
+        DELETED
+    }
+
+    public enum Type {
+        FOLDER,
+        FILE
+    }
+
+    /**
+     * General format of the file, such as text, or binary, etc.
+     */
+    public enum Format {
+
+        VCF,
+        BCF,
+        GVCF,
+        TBI,
+
+        SAM,
+        BAM,
+        BAI,
+        CRAM,
+        FASTQ,
+        PED,
+
+        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
+
+        IMAGE,
+        PLAIN,
+        BINARY,
+        EXECUTABLE,
+        @Deprecated GZIP,
+        UNKNOWN,
+    }
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
+    }
+
+    /**
+     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
+     */
+    public enum Bioformat {
+        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
+        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
+        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
+        DATAMATRIX_EXPRESSION,
+        //        DATAMATRIX_SNP,
+//        IDLIST_GENE,
+//        IDLIST_TRANSCRIPT,
+//        IDLIST_PROTEIN,
+//        IDLIST_SNP,
+//        IDLIST_FUNCTIONALTERMS,
+//        IDLIST_RANKED,
+        IDLIST,
+        IDLIST_RANKED,
+        ANNOTATION_GENEVSANNOTATION,
+
+        OTHER_NEWICK,
+        OTHER_BLAST,
+        OTHER_INTERACTION,
+        OTHER_GENOTYPE,
+        OTHER_PLINK,
+        OTHER_VCF,
+        OTHER_PED,
+
+        @Deprecated VCF4,
+
+        VARIANT,
+        ALIGNMENT,
+        SEQUENCE,
+        PEDIGREE,
+        NONE
     }
 }

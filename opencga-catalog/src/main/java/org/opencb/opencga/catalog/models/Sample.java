@@ -38,7 +38,8 @@ public class Sample {
     }
 
     public Sample(int id, String name, String source, int individualId, String description) {
-        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new
+                HashMap<String, Object>());
     }
 
     public Sample(int id, String name, String source, int individualId, String description,
@@ -55,16 +56,17 @@ public class Sample {
 
     @Override
     public String toString() {
-        return "Sample{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", source='" + source + '\'' +
-                ", individualId=" + individualId +
-                ", description='" + description + '\'' +
-                ", acl=" + acl +
-                ", annotationSets=" + annotationSets +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Sample{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", source='").append(source).append('\'');
+        sb.append(", individualId=").append(individualId);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getId() {

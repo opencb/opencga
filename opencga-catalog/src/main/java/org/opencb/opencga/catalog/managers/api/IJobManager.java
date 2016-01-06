@@ -12,16 +12,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
-* @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
-*/
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
 public interface IJobManager extends ResourceManager<Integer, Job> {
     Integer getStudyId(int jobId) throws CatalogException;
 
     QueryResult<ObjectMap> visit(int jobId, String sessionId) throws CatalogException;
 
-    QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String> params, String commandLine,
-                            URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
-                            Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime, long endTime, QueryOptions options,
+    QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String> params,
+                            String commandLine,
+                            URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object>
+                                    attributes,
+                            Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime, long endTime, QueryOptions
+                                    options,
                             String sessionId)
             throws CatalogException;
 
@@ -29,7 +32,7 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
             throws CatalogException;
 
     URI createJobOutDir(int studyId, String dirName, String sessionId)
-            throws CatalogException ;
+            throws CatalogException;
 
     int getToolId(String toolId) throws CatalogException;
 

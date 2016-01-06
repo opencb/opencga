@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.catalog.models;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 11/09/14.
@@ -24,7 +27,7 @@ import java.util.*;
 public class User {
 
     /**
-     * id is a unique string in the database
+     * id is a unique string in the database.
      */
     private String id;
     private String name;
@@ -52,18 +55,6 @@ public class User {
 
     private Map<String, Object> configs;
     private Map<String, Object> attributes;
-
-    /**
-     * Things to think about:
-     private List<Credential> credentials = new ArrayList<Credential>();
-        private List<Bucket> buckets = new ArrayList<Bucket>();
-     */
-
-    public enum Role {
-        ADMIN,  //= "admin";
-        USER,  //= "user";
-        ANONYMOUS  //= "anonymous";
-    }
 
     public User() {
     }
@@ -96,23 +87,24 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", organization='" + organization + '\'' +
-                ", role='" + role + '\'' +
-                ", status='" + status + '\'' +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", diskQuota=" + diskQuota +
-                ", projects=" + projects +
-                ", tools=" + tools +
-                ", sessions=" + sessions +
-                ", configs=" + configs +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("User{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", email='").append(email).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
+        sb.append(", role=").append(role);
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", diskQuota=").append(diskQuota);
+        sb.append(", projects=").append(projects);
+        sb.append(", tools=").append(tools);
+        sb.append(", sessions=").append(sessions);
+        sb.append(", configs=").append(configs);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -233,6 +225,18 @@ public class User {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    /*
+     * Things to think about:
+     * private List<Credential> credentials = new ArrayList<Credential>();
+     * private List<Bucket> buckets = new ArrayList<Bucket>();
+     */
+
+    public enum Role {
+        ADMIN,  //= "admin";
+        USER,  //= "user";
+        ANONYMOUS  //= "anonymous";
     }
 
 }

@@ -18,10 +18,10 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,14 +72,14 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
     }
 
-    /**********************
+    /*
      * FS Utils
-     * ********************
+     *
      */
 
     @Override
     protected void checkUriExists(URI uri) throws CatalogIOException {
-        if(uri == null || !Files.exists(Paths.get(uri))) {
+        if (uri == null || !Files.exists(Paths.get(uri))) {
             throw new CatalogIOException("Path '" + String.valueOf(uri) + "' is null or it does not exist");
         }
     }
@@ -102,18 +102,18 @@ public class PosixCatalogIOManager extends CatalogIOManager {
             if (!Files.exists(path) || !Files.isDirectory(path)) {
                 throw new CatalogIOException("Path '" + uri.toString() + "' is null, it does not exist or it's not a directory");
             }
-            if(writable && !Files.isWritable(path)) {
+            if (writable && !Files.isWritable(path)) {
                 throw new CatalogIOException("Path '" + uri.toString() + "' is not writable");
             }
         }
     }
 
     private void checkDirectoryPath(Path path, boolean writable) throws CatalogIOException {
-        if(path == null || !Files.exists(path) || !Files.isDirectory(path)) {
+        if (path == null || !Files.exists(path) || !Files.isDirectory(path)) {
             throw new CatalogIOException("Path '" + String.valueOf(path) + "' is null, it does not exist or it's not a directory");
         }
 
-        if(writable && !Files.isWritable(path)) {
+        if (writable && !Files.isWritable(path)) {
             throw new CatalogIOException("Path '" + path.toString() + "' is not writable");
         }
     }
@@ -183,7 +183,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     @Override
     public void copyFile(URI source, URI target) throws IOException, CatalogIOException {
         checkUriExists(source);
-        if("file".equals(source.getScheme()) && "file".equals(target.getScheme())) {
+        if ("file".equals(source.getScheme()) && "file".equals(target.getScheme())) {
             Files.copy(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
         } else {
             throw new CatalogIOException("Expected posix file system URIs.");
@@ -216,7 +216,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }*/
 
 
-//    public Path getFileUri(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws CatalogIOManagerException {
+//    public Path getFileUri(String userId, String projectId, String studyId, String relativeFilePath, boolean check) throws
+// CatalogIOManagerException {
 //        checkParam(relativeFilePath);
 //
 //        Path path = getStudyPath(userId, projectId, studyId).resolve(relativeFilePath);
@@ -235,7 +236,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
         return uri;
     }*/
-
     public URI getTmpUri() {
         return tmp;
     }
@@ -308,6 +308,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //        return anonymousUserPath;
     }
 */
+
     /*****************************
      * Project methods ***********
      * ***************************
@@ -436,11 +437,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //    }
 
 
-    /**
+    /*
      * *****************
-     * <p/>
+     * <p>
      * OBJECT METHODS
-     * <p/>
+     * <p>
      * ******************
      */
 
@@ -511,7 +512,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //            throw new IOManagementException("getJobResultFromBucket(): the file '" + resultFile + "' not exists");
 //        }
 //    }
-
     @Override
     public DataInputStream getFileObject(URI fileUri, int start, int limit)
             throws CatalogIOException {
@@ -578,7 +578,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 //TODO: Handle error in checksum
                 System.out.println("checksum = " + checksum);
                 br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine() );
+                throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -628,9 +628,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         try {
             return Files.walk(Paths.get(directory.getPath()))
                     .map(Path::toUri)
-                    .filter(uri -> !uri.equals(directory))
+                    .filter(uri -> !uri.equals(directory));
 //                    .filter(uri -> !uri.getPath().endsWith("/"))
-            ;
         } catch (IOException e) {
             throw new CatalogIOException("Unable to list files", e);
         }
@@ -723,7 +722,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 */
     /*
-    public DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase, boolean multi) throws CatalogIOManagerException,
+    public DataInputStream getGrepFileFromJob(Path jobPath, String filename, String pattern, boolean ignoreCase, boolean multi) throws
+    CatalogIOManagerException,
             IOException {
 
         Path filePath = jobPath.resolve(filename);
