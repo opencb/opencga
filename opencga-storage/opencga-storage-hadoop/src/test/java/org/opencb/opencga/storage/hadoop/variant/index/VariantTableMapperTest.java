@@ -176,25 +176,6 @@ public class VariantTableMapperTest {
         assertEquals(Arrays.asList(1), createGenotypeIndex.get("0/1"));
     }
 
-    @Test
-    public void testExtractGts() {
-        Variant var = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP, VariantType.SNV).findFirst().get();
-        List<Genotype> extractGts = tm.extractGts(var);
-        assertEquals(1, extractGts.size());
-        assertEquals("0/1", extractGts.get(0).toString());
-    }
-
-    @Test
-    public void testHasVariant() {
-        Variant var = tm.filterForVariant(this.variantCollection.stream(), VariantType.SNP, VariantType.SNV).findFirst().get();
-        List<Genotype> extractGts = tm.extractGts(var);
-        assertTrue(tm.hasVariant(extractGts));
-        assertFalse(tm.hasVariant(Arrays.asList(new Genotype("./.", "A", "T"))));
-        assertFalse(tm.hasVariant(Arrays.asList(new Genotype("./1", "A", "T"))));
-        assertFalse(tm.hasVariant(Arrays.asList( // ignore multi-allelic
-                new Genotype("1/2", "A", Arrays.asList("T", "G")))));
-    }
-
 //    @Test
     public void testResolveConflict(){
         // TODO refine test
@@ -206,10 +187,10 @@ public class VariantTableMapperTest {
         Variant v1copy = new Variant(VariantAvro.newBuilder(v1.getImpl()).build());
         v1.setEnd(v1.getEnd()+1);
         Variant v2 = copyAsReference(v1copy);
-        assertTrue(tm.resolveConflicts(Arrays.asList(v1,v2)).size() == 1);
+        assertTrue(ArchiveResultToVariantConverter.resolveConflicts(Arrays.asList(v1,v2)).size() == 1);
         v2 = new Variant(VariantAvro.newBuilder(v1copy.getImpl()).build());
         v2.setEnd(v2.getEnd()+3);
-        assertTrue(tm.resolveConflicts(Arrays.asList(v1,v2)).size() == 2);
+        assertTrue(ArchiveResultToVariantConverter.resolveConflicts(Arrays.asList(v1,v2)).size() == 2);
         
 //        resolveConflicts
     }
