@@ -790,12 +790,30 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
         createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
         createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
         createOrQuery(query, QueryParams.EMAIL.key(), "email", andBsonList);
         createOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
         createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
         createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+
+        createOrQuery(query, QueryParams.PROJECT_ID.key(), "project.id", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_NAME.key(), "project.name", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_ALIAS.key(), "project.alias", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_ORGANIZATION.key(), "project.organization", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_STATUS.key(), "project.status", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+
+        createOrQuery(query, QueryParams.TOOL_ID.key(), "tool.id", andBsonList);
+        createOrQuery(query, QueryParams.TOOL_NAME.key(), "tool.name", andBsonList);
+        createOrQuery(query, QueryParams.TOOL_ALIAS.key(), "tool.alias", andBsonList);
+
+        createOrQuery(query, QueryParams.SESSION_ID.key(), "session.id", andBsonList);
+        createOrQuery(query, QueryParams.SESSION_IP.key(), "session.ip", andBsonList);
+        createOrQuery(query, QueryParams.SESSION_LOGIN.key(), "session.login", andBsonList);
+        createOrQuery(query, QueryParams.SESSION_LOGOUT.key(), "session.logout", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

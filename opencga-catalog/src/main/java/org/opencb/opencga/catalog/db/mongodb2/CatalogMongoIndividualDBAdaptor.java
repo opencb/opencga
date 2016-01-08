@@ -24,13 +24,12 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.AbstractCatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api2.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
@@ -39,6 +38,7 @@ import org.opencb.opencga.catalog.models.Variable;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,7 +48,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogDBAdaptor implements CatalogIndividualDBAdaptor {
+public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
     private final MongoDBCollection metaCollection;
     private final MongoDBCollection individualCollection;
@@ -366,4 +366,101 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogDBAdaptor im
             throw CatalogDBException.idNotFound("Individual", individualId);
         }
     }
+
+    @Override
+    public QueryResult<Long> count(Query query) {
+        Bson bson = parseQuery(query);
+        return individualCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult distinct(Query query, String field) {
+        Bson bson = parseQuery(query);
+        return individualCollection.distinct(field, bson);
+    }
+
+    @Override
+    public QueryResult stats(Query query) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Individual> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = individualCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
+        return null;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return individualCollection.find(bson, options);
+    }
+
+    @Override
+    public QueryResult<Individual> update(Query query, ObjectMap parameters) { return null; }
+
+    @Override
+    public QueryResult<Integer> delete(Query query) {
+        return null;
+    }
+
+    @Override
+    public Iterator<Individual> iterator(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public Iterator nativeIterator(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return individualCollection.nativeQuery().find(bson, options).iterator();
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(individualCollection, bsonQuery, field, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(individualCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, QueryParams.FATHER_ID.key(), "fatherId", andBsonList);
+        createOrQuery(query, QueryParams.MOTHER_ID.key(), "motherId", andBsonList);
+        createOrQuery(query, QueryParams.FAMILY.key(), "family", andBsonList);
+        createOrQuery(query, QueryParams.GENDER.key(), "gender", andBsonList);
+        createOrQuery(query, QueryParams.RACE.key(), "race", andBsonList);
+        createOrQuery(query, QueryParams.POPULATION_NAME.key(), "populationName", andBsonList);
+        createOrQuery(query, QueryParams.POPULATION_SUBPOPULATION.key(), "populationSubpopulation", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
+    }
+
 }

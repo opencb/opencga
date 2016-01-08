@@ -379,12 +379,14 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
     @Override
     public QueryResult<Long> count(Query query) {
-        return null;
+        Bson bson = parseQuery(query);
+        return userCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) {
-        return null;
+        Bson bson = parseQuery(query);
+        return userCollection.distinct(field, bson);
     }
 
     @Override
@@ -394,18 +396,22 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = userCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
         return null;
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        return userCollection.find(bson, options);
     }
 
     @Override
-    public QueryResult<Project> update(Query query, ObjectMap parameters) {
-        return null;
-    }
+    public QueryResult<Project> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
     public QueryResult<Integer> delete(Query query) {
@@ -419,7 +425,8 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
     @Override
     public Iterator nativeIterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        return userCollection.nativeQuery().find(bson, options).iterator();
     }
 
     @Override
@@ -429,12 +436,14 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(userCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(userCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
@@ -445,12 +454,28 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
-        createOrQuery(query, CatalogProjectDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, CatalogProjectDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, CatalogProjectDBAdaptor.QueryParams.ALIAS.key(), "alias", andBsonList);
-        createOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
-        createOrQuery(query, CatalogProjectDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
-        createOrQuery(query, CatalogProjectDBAdaptor.QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries.
+        // FIXME: Pedro. Check how the projects are inserted in the user collection.
+
+        createOrQuery(query, QueryParams.ID.key(), "project.id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "project.name", andBsonList);
+        createOrQuery(query, QueryParams.ALIAS.key(), "project.alias", andBsonList);
+        createOrQuery(query, QueryParams.ORGANIZATION.key(), "project.organization", andBsonList);
+        createOrQuery(query, QueryParams.STATUS.key(), "project.status", andBsonList);
+        createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+
+        createOrQuery(query, QueryParams.STUDY_ID.key(), "project.study.id", andBsonList);
+        createOrQuery(query, QueryParams.STUDY_NAME.key(), "project.study.name", andBsonList);
+        createOrQuery(query, QueryParams.STUDY_ALIAS.key(), "project.study.name", andBsonList);
+        createOrQuery(query, QueryParams.STUDY_CREATOR_ID.key(), "project.study.creatorId", andBsonList);
+        createOrQuery(query, QueryParams.STUDY_STATUS.key(), "project.study.status", andBsonList);
+        createOrQuery(query, QueryParams.STUDY_LAST_ACTIVITY.key(), "project.study.lastActivity", andBsonList);
+
+        createOrQuery(query, QueryParams.ACL_USER_ID.key(), "project.acl.userId", andBsonList);
+        createOrQuery(query, QueryParams.ACL_READ.key(), "project.acl.read", andBsonList);
+        createOrQuery(query, QueryParams.ACL_WRITE.key(), "project.acl.write", andBsonList);
+        createOrQuery(query, QueryParams.ACL_EXECUTE.key(), "project.acl.execute", andBsonList);
+        createOrQuery(query, QueryParams.ACL_DELETE.key(), "project.acl.delete", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

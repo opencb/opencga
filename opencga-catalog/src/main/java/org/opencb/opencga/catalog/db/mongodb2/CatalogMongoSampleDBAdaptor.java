@@ -23,18 +23,23 @@ import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,7 +49,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class CatalogMongoSampleDBAdaptor extends AbstractCatalogDBAdaptor implements CatalogSampleDBAdaptor {
+public class CatalogMongoSampleDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
 
 
     private final CatalogDBAdaptorFactory dbAdaptorFactory;
@@ -601,4 +606,141 @@ public class CatalogMongoSampleDBAdaptor extends AbstractCatalogDBAdaptor implem
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
+    @Override
+    public QueryResult<Long> count(Query query) {
+        Bson bson = parseQuery(query);
+        return sampleCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult distinct(Query query, String field) {
+        Bson bson = parseQuery(query);
+        return sampleCollection.distinct(field, bson);
+    }
+
+    @Override
+    public QueryResult stats(Query query) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Sample> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = sampleCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
+        return null;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return sampleCollection.find(bson, options);
+    }
+
+    @Override
+    public QueryResult<Sample> update(Query query, ObjectMap parameters) { return null; }
+
+    @Override
+    public QueryResult<Integer> delete(Query query) {
+        return null;
+    }
+
+    @Override
+    public Iterator<Sample> iterator(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public Iterator nativeIterator(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return sampleCollection.nativeQuery().find(bson, options).iterator();
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(sampleCollection, bsonQuery, field, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(sampleCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), "alias", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.GROUP_ID.key(), "group.id", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_ID.key(), "experiment.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_NAME.key(), "experiment.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_TYPE.key(), "experiment.type", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_PLATFORM.key(), "experiment.platform", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_MANUFACTURER.key(), "experiment.manufacturer", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_DATE.key(), "experiment.date", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_LAB.key(), "experiment.lab", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_CENTER.key(), "experiment.center", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_RESPONSIBLE.key(), "experiment.responsible", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_ID.key(), "file.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_NAME.key(), "file.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_TYPE.key(), "file.type", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_FORMAT.key(), "file.format", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_BIOFORMAT.key(), "file.bioformat", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_ID.key(), "job.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_NAME.key(), "job.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_USER_ID.key(), "job.userId", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_TOOL_NAME.key(), "job.toolName", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_DATE.key(), "job.date", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_STATUS.key(), "job.status", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.JOB_DISK_USAGE.key(), "job.diskUsage", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "individual.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_NAME.key(), "individual.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_FATHER_ID.key(), "individual.fatherId", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_MOTHER_ID.key(), "individual.motherId", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_FAMILY.key(), "individual.family", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_RACE.key(), "individual.race", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.SAMPLE_ID.key(), "sample.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.SAMPLE_NAME.key(), "sample.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.SAMPLE_SOURCE.key(), "sample.source", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.SAMPLE_INDIVIDUAL_ID.key(), "sample.individualId", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.DATASET_ID.key(), "dataset.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.DATASET_NAME.key(), "dataset.name", andBsonList);
+
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.COHORT_ID.key(), "cohort.id", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.COHORT_NAME.key(), "cohort.name", andBsonList);
+        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.COHORT_TYPE.key(), "cohort.type", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
+    }
 }

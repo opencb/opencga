@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.api2;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -25,10 +26,56 @@ import org.opencb.opencga.catalog.models.*;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogSampleDBAdaptor {
+public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
+
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        SOURCE("source", TEXT_ARRAY, ""),
+        INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
+
+        // TOCHECK: Pedro. Check parameter user_others_id.
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN , ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
+        // TOCHECK: Pedro. Add annotation and attributes support?
+
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
+
 
     /**
      * Samples methods

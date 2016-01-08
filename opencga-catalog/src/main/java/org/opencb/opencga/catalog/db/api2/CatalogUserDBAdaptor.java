@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
@@ -35,7 +36,25 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         EMAIL("email", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, "");
+        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+
+        PROJECT_ID("project.id", INTEGER_ARRAY, ""),
+        PROJECT_NAME("project.name", TEXT_ARRAY, ""),
+        PROJECT_ALIAS("project.alias", TEXT_ARRAY, ""),
+        PROJECT_ORGANIZATION("project.organization", TEXT_ARRAY, ""),
+        PROJECT_STATUS("project.status", TEXT_ARRAY, ""),
+        PROJECT_LAST_ACTIVITY("project.lastActivity", TEXT_ARRAY, ""),
+
+        TOOL_ID("tool.id", INTEGER_ARRAY, ""),
+        TOOL_NAME("tool.name", TEXT_ARRAY, ""),
+        TOOL_ALIAS("tool.alias", TEXT_ARRAY, ""),
+
+        // TOCHECK: Pedro. Check whether login, logout makes sense.
+        SESSION_ID("session.id", INTEGER_ARRAY, ""),
+        SESSION_IP("session.ip", TEXT_ARRAY, ""),
+        SESSION_LOGIN("session.login", TEXT_ARRAY, ""),
+        SESSION_LOGOUT("session.logout", INTEGER_ARRAY, "");
+
 
         private final String key;
         private Type type;

@@ -22,6 +22,8 @@ import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.VariableSet;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.DECIMAL;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
@@ -30,16 +32,57 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     enum QueryParams implements QueryParam {
-        ID("id", TEXT_ARRAY, ""),
+        ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATOR_ID("creatorId", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
 
-        FILE_ID("file.id", TEXT_ARRAY, ""),
+        GROUP_ID("group.id", INTEGER_ARRAY, ""),
 
-        ;
+        EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
+        EXPERIMENT_NAME("experiment.name", TEXT_ARRAY, ""),
+        EXPERIMENT_TYPE("experiment.type", TEXT_ARRAY, ""),
+        EXPERIMENT_PLATFORM("experiment.platform", TEXT_ARRAY, ""),
+        EXPERIMENT_MANUFACTURER("experiment.manufacturer", TEXT_ARRAY, ""),
+        EXPERIMENT_DATE("experiment.date", TEXT_ARRAY, ""),
+        EXPERIMENT_LAB("experiment.lab", TEXT_ARRAY, ""),
+        EXPERIMENT_CENTER("experiment.center", TEXT_ARRAY, ""),
+        EXPERIMENT_RESPONSIBLE("experiment.responsible", TEXT_ARRAY, ""),
+
+        FILE_ID("file.id", INTEGER_ARRAY, ""),
+        FILE_NAME("file.name", TEXT_ARRAY, ""),
+        FILE_TYPE("file.type", TEXT_ARRAY, ""),
+        FILE_FORMAT("file.format", TEXT_ARRAY, ""),
+        FILE_BIOFORMAT("file.bioformat", TEXT_ARRAY, ""),
+
+        JOB_ID("job.id", INTEGER_ARRAY, ""),
+        JOB_NAME("job.name", TEXT_ARRAY, ""),
+        JOB_USER_ID("job.userId", TEXT_ARRAY, ""),
+        JOB_TOOL_NAME("job.toolName", TEXT_ARRAY, ""),
+        JOB_DATE("job.date", TEXT_ARRAY, ""),
+        JOB_STATUS("job.status", TEXT_ARRAY, ""),
+        JOB_DISK_USAGE("job.diskUsage", DECIMAL, ""),
+
+        INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
+        INDIVIDUAL_NAME("individual.name", TEXT_ARRAY, ""),
+        INDIVIDUAL_FATHER_ID("individual.fatherId", INTEGER_ARRAY, ""),
+        INDIVIDUAL_MOTHER_ID("individual.motherId", INTEGER_ARRAY, ""),
+        INDIVIDUAL_FAMILY("individual.family", TEXT_ARRAY, ""),
+        INDIVIDUAL_RACE("individual.race", TEXT_ARRAY, ""),
+
+        SAMPLE_ID("sample.id", INTEGER_ARRAY, ""),
+        SAMPLE_NAME("sample.name", TEXT_ARRAY, ""),
+        SAMPLE_SOURCE("sample.source", TEXT_ARRAY, ""),
+        SAMPLE_INDIVIDUAL_ID("sample.individualId", INTEGER_ARRAY, ""),
+
+        DATASET_ID("dataset.id", INTEGER_ARRAY, ""),
+        DATASET_NAME("dataset.name", TEXT_ARRAY, ""),
+
+        COHORT_ID("cohort.id", INTEGER_ARRAY, ""),
+        COHORT_NAME("cohort.name", TEXT_ARRAY, ""),
+        COHORT_TYPE("cohort.type", TEXT_ARRAY, "");
 
         private final String key;
         private Type type;

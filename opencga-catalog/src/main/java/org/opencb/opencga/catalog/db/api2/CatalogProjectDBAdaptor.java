@@ -22,6 +22,8 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 
 /**
  * Created by imedina on 08/01/16.
@@ -29,12 +31,26 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     enum QueryParams implements QueryParam {
-        ID("id", TEXT_ARRAY, ""),
+        ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, "");
+        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+
+        STUDY_ID("study.id", INTEGER_ARRAY, ""),
+        STUDY_NAME("study.name", TEXT_ARRAY, ""),
+        STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
+        STUDY_CREATOR_ID("study.creatorId", TEXT_ARRAY, ""),
+        STUDY_STATUS("study.status", TEXT_ARRAY, ""),
+        STUDY_LAST_ACTIVITY("study.lastActivity", TEXT_ARRAY, ""),
+
+        // TOCHECK: Pedro. Check parameter user_others_id.
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN , ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
 
         private final String key;
         private Type type;

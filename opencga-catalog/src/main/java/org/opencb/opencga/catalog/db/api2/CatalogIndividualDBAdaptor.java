@@ -17,15 +17,60 @@
 package org.opencb.opencga.catalog.db.api2;
 
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Study;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.DECIMAL;
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor {
+public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
+
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        FATHER_ID("fatherId", INTEGER_ARRAY, ""),
+        MOTHER_ID("motherId", INTEGER_ARRAY, ""),
+        FAMILY("family", TEXT_ARRAY, ""),
+        GENDER("gender", TEXT_ARRAY, ""),
+        RACE("race", TEXT_ARRAY, ""),
+        POPULATION_NAME("populationName", TEXT_ARRAY, ""),
+        POPULATION_SUBPOPULATION("populationSubpopulation", TEXT_ARRAY, "");
+
+        // TOCHECK: Pedro. Should we be considering annotations?
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
 
     /**
      * Individual methods

@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.print.Doc;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
@@ -643,12 +644,14 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
     @Override
     public QueryResult<Long> count(Query query) {
-        return null;
+        Bson bson = parseQuery(query);
+        return studyCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) {
-        return null;
+        Bson bson = parseQuery(query);
+        return studyCollection.distinct(field, bson);
     }
 
     @Override
@@ -658,6 +661,11 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = studyCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
         return null;
     }
 
@@ -668,9 +676,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     }
 
     @Override
-    public QueryResult<Study> update(Query query, ObjectMap parameters) {
-        return null;
-    }
+    public QueryResult<Study> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
     public QueryResult<Integer> delete(Query query) {
@@ -713,6 +719,8 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
         createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
         createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
         createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), "alias", andBsonList);
@@ -720,7 +728,50 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
         createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
 
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.FILE_ID.key(), "file.id", andBsonList);
+        createOrQuery(query, QueryParams.GROUP_ID.key(), "group.id", andBsonList);
+
+        createOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experiment.id", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_NAME.key(), "experiment.name", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_TYPE.key(), "experiment.type", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_PLATFORM.key(), "experiment.platform", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_MANUFACTURER.key(), "experiment.manufacturer", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_DATE.key(), "experiment.date", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_LAB.key(), "experiment.lab", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_CENTER.key(), "experiment.center", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_RESPONSIBLE.key(), "experiment.responsible", andBsonList);
+
+        createOrQuery(query, QueryParams.FILE_ID.key(), "file.id", andBsonList);
+        createOrQuery(query, QueryParams.FILE_NAME.key(), "file.name", andBsonList);
+        createOrQuery(query, QueryParams.FILE_TYPE.key(), "file.type", andBsonList);
+        createOrQuery(query, QueryParams.FILE_FORMAT.key(), "file.format", andBsonList);
+        createOrQuery(query, QueryParams.FILE_BIOFORMAT.key(), "file.bioformat", andBsonList);
+
+        createOrQuery(query, QueryParams.JOB_ID.key(), "job.id", andBsonList);
+        createOrQuery(query, QueryParams.JOB_NAME.key(), "job.name", andBsonList);
+        createOrQuery(query, QueryParams.JOB_USER_ID.key(), "job.userId", andBsonList);
+        createOrQuery(query, QueryParams.JOB_TOOL_NAME.key(), "job.toolName", andBsonList);
+        createOrQuery(query, QueryParams.JOB_DATE.key(), "job.date", andBsonList);
+        createOrQuery(query, QueryParams.JOB_STATUS.key(), "job.status", andBsonList);
+        createOrQuery(query, QueryParams.JOB_DISK_USAGE.key(), "job.diskUsage", andBsonList);
+
+        createOrQuery(query, QueryParams.INDIVIDUAL_ID.key(), "individual.id", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_NAME.key(), "individual.name", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_FATHER_ID.key(), "individual.fatherId", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_MOTHER_ID.key(), "individual.motherId", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_FAMILY.key(), "individual.family", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_RACE.key(), "individual.race", andBsonList);
+
+        createOrQuery(query, QueryParams.SAMPLE_ID.key(), "sample.id", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_NAME.key(), "sample.name", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_SOURCE.key(), "sample.source", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_INDIVIDUAL_ID.key(), "sample.individualId", andBsonList);
+
+        createOrQuery(query, QueryParams.DATASET_ID.key(), "dataset.id", andBsonList);
+        createOrQuery(query, QueryParams.DATASET_NAME.key(), "dataset.name", andBsonList);
+
+        createOrQuery(query, QueryParams.COHORT_ID.key(), "cohort.id", andBsonList);
+        createOrQuery(query, QueryParams.COHORT_NAME.key(), "cohort.name", andBsonList);
+        createOrQuery(query, QueryParams.COHORT_TYPE.key(), "cohort.type", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
