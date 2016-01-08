@@ -212,11 +212,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogDBAdaptor implements Catal
         DBObject anonymous = getDbObject(user, "User");
         anonymous.put(_ID, user.getId());
 
-        try {
             userCollection.insert(anonymous, null);
-        } catch (MongoException.DuplicateKey e) {
-            throw new CatalogDBException("Anonymous user {id:\"" + user.getId() + "\"} already exists");
-        }
+//        try {
+//        } catch (MongoException.DuplicateKey e) {
+//            throw new CatalogDBException("Anonymous user {id:\"" + user.getId() + "\"} already exists");
+//        }
 
         ObjectMap resultObjectMap = new ObjectMap();
         resultObjectMap.put("sessionId", session.getId());

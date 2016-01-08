@@ -1,0 +1,96 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.catalog.db.api2;
+
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.models.Project;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+
+/**
+ * Created by imedina on 08/01/16.
+ */
+public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
+
+    enum QueryParams implements QueryParam {
+        ID("id", TEXT_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        ALIAS("alias", TEXT_ARRAY, ""),
+        ORGANIZATION("organization", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
+        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, "");
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
+
+    default boolean projectExists(int projectId) {
+        return count(new Query("project.id", projectId)).first() == 0;
+    }
+
+    default void checkProjectId(int projectId) throws CatalogDBException {
+        if (!projectExists(projectId)) {
+            throw CatalogDBException.idNotFound("Project", projectId);
+        }
+    }
+
+    QueryResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
+
+
+    QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException;
+
+    QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
+
+    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+
+    int getProjectId(String userId, String projectAlias) throws CatalogDBException;
+
+    String getProjectOwnerId(int projectId) throws CatalogDBException;
+
+    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+
+    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
+
+}
