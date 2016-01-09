@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api2;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -72,11 +73,20 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         }
     }
 
-    /**
-     * Individual methods
-     * ***************************
-     */
-    boolean individualExists(int individualId);
+
+    default boolean individualExists(int sampleId) {
+        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+    }
+
+    default void checkIndividualId(int individualId) throws CatalogDBException {
+        if (individualId < 0) {
+            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
+        }
+
+        if (!individualExists(individualId)) {
+            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
+        }
+    }
 
     QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 

@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api2;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -88,10 +85,21 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         }
     }
 
-    /**
-     * File methods
-     * ***************************
-     */
+
+    default boolean fileExists(int fileId) {
+        return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
+    }
+
+    default void checkFileId(int fileId) throws CatalogDBException {
+        if (fileId < 0) {
+            throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
+        }
+
+        if (!fileExists(fileId)) {
+            throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
+        }
+    }
+
 
     int getFileId(int studyId, String path) throws CatalogDBException;
 

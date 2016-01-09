@@ -16,15 +16,12 @@
 
 package org.opencb.opencga.catalog.db.api2;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * Created by imedina on 08/01/16.
@@ -80,19 +77,16 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
     }
 
     default boolean projectExists(int projectId) {
-        return count(new Query("project.id", projectId)).first() == 0;
+        return count(new Query("project.id", projectId)).first() > 0;
     }
 
     default void checkProjectId(int projectId) throws CatalogDBException {
-        if (StringUtils.isEmpty(userId)) {
-            throw new CatalogDBException("Project id not valid: " + userId);
+        if (projectId < 0) {
+            throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
 
         if (!projectExists(projectId)) {
-            throw new CatalogDBException("Project id does not exist: " + userId);
-        }
-        if (!projectExists(projectId)) {
-            throw CatalogDBException.idNotFound("Project", projectId);
+            throw CatalogDBException.newInstance("Project id '{}' does not exist", projectId);
         }
     }
 

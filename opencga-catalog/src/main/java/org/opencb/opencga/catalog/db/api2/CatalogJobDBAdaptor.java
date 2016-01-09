@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api2;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
@@ -72,7 +69,19 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
      * ***************************
      */
 
-    boolean jobExists(int jobId);
+    default boolean jobExists(int jobId) {
+        return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
+    }
+
+    default void checkJobId(int jobId) throws CatalogDBException {
+        if (jobId < 0) {
+            throw CatalogDBException.newInstance("Job id '{}' is not valid: ", jobId);
+        }
+
+        if (!jobExists(jobId)) {
+            throw CatalogDBException.newInstance("Job id '{}' does not exist", jobId);
+        }
+    }
 
     QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 

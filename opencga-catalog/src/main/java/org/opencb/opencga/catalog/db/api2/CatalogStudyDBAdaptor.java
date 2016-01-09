@@ -114,13 +114,23 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * Study methods
      * ***************************
      */
-    QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
+
 
     default boolean studyExists(int studyId) {
-        return count(new Query(QueryParams.ID.key(), studyId)).first() == 0;
+        return count(new Query(QueryParams.ID.key(), studyId)).first() > 0;
     }
 
-    void checkStudyId(int studyId) throws CatalogDBException;
+    default void checkStudyId(int studyId) throws CatalogDBException {
+        if (studyId < 0) {
+            throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
+        }
+
+        if (!studyExists(studyId)) {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        }
+    }
+
+    QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
 

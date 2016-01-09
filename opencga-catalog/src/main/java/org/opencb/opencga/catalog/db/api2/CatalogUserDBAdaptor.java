@@ -94,11 +94,11 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     default void checkUserExists(String userId) throws CatalogDBException {
         if (StringUtils.isEmpty(userId)) {
-            throw new CatalogDBException("UserId not valid: " + userId);
+            throw CatalogDBException.newInstance("User id '{}' is not valid: ", userId);
         }
 
         if (!userExists(userId)) {
-            throw new CatalogDBException("UserId does not exist: " + userId);
+            throw CatalogDBException.newInstance("User id '{}' does not exist", userId);
         }
     }
 
