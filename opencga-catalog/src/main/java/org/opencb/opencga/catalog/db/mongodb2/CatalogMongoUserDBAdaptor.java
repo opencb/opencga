@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.filters.Filter;
 import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -162,7 +163,9 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
         checkParameter(password, "password");
         long startTime = startQuery();
 
-        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
+//        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
+        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
+        QueryResult<Long> count = userCollection.count(and);
         if (count.getResult().get(0) == 0) {
             throw new CatalogDBException("Bad user or password");
         } else {

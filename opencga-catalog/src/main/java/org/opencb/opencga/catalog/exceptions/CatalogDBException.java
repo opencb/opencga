@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.exceptions;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Created by imedina on 11/09/14.
  */
@@ -25,12 +27,19 @@ public class CatalogDBException extends CatalogException {
         super(msg);
     }
 
+    public CatalogDBException(Throwable cause) {
+        super(cause);
+    }
+
     public CatalogDBException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public CatalogDBException(Throwable cause) {
-        super(cause);
+    public static CatalogDBException newInstance(String message, Object... arguments) {
+        for (Object argument : arguments) {
+            message = StringUtils.replace(message, "{}", argument.toString(), 1);
+        }
+        return new CatalogDBException(message);
     }
 
     public static CatalogDBException idNotFound(String name, String id) {

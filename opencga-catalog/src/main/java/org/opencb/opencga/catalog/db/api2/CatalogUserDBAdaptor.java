@@ -88,7 +88,6 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
      */
     boolean checkUserCredentials(String userId, String sessionId);
 
-    @Deprecated
     default boolean userExists(String userId) {
         return count(new Query(QueryParams.ID.key(), userId)).getResult().get(0) > 0;
     }
@@ -98,7 +97,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
             throw new CatalogDBException("UserId not valid: " + userId);
         }
 
-        if (count(new Query("id", userId)).getResult().get(0) == 0) {
+        if (!userExists(userId)) {
             throw new CatalogDBException("UserId does not exist: " + userId);
         }
     }

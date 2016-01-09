@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api2;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
@@ -83,6 +84,13 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
     }
 
     default void checkProjectId(int projectId) throws CatalogDBException {
+        if (StringUtils.isEmpty(userId)) {
+            throw new CatalogDBException("Project id not valid: " + userId);
+        }
+
+        if (!projectExists(projectId)) {
+            throw new CatalogDBException("Project id does not exist: " + userId);
+        }
         if (!projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
