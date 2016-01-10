@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.api2;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.VariableSet;
 
@@ -147,7 +148,19 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
-    QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException;
+    default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
+        if (sampleQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        }
+        return sampleQueryResult;
+    }
 
     int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
 

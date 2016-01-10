@@ -111,7 +111,19 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 
-    QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException;
+    default QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), sampleId);
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+        if (sampleQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", sampleId);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Sample id '{}' does not exist", sampleId);
+        }
+        return sampleQueryResult;
+    }
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 

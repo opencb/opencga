@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -81,7 +82,7 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     QueryResult<T> update(Query query, ObjectMap parameters);
 
-    QueryResult<Integer> delete(Query query);
+    QueryResult<Long> delete(Query query) throws CatalogDBException;
 
 
 

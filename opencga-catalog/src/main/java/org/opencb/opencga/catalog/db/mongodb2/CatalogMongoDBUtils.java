@@ -207,19 +207,20 @@ class CatalogMongoDBUtils {
         return dbObject;
     }
 
-//    static Document getDbObject(Object object, String objectName) throws CatalogDBException {
-//        Document dbObject;
-//        String jsonString = null;
-//        try {
-//            jsonString = jsonObjectWriter.writeValueAsString(object);
-//            dbObject = (Document) JSON.parse(jsonString);
-//            dbObject = replaceDotsInKeys(dbObject);
-//        } catch (Exception e) {
-//            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null ? "" : (" -> " + jsonString)
-//            ), e);
-//        }
-//        return dbObject;
-//    }
+    static Document getDbDocument(Object object, String objectName) throws CatalogDBException {
+        Document document;
+        String jsonString = null;
+        try {
+            jsonString = jsonObjectWriter.writeValueAsString(object);
+            document = (Document) JSON.parse(jsonString);
+            document = replaceDotsInKeys(document);
+        } catch (Exception e) {
+            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null
+                    ? ""
+                    : (" -> " + jsonString)), e);
+        }
+        return document;
+    }
 //    static final String TO_REPLACE_DOTS = "\uff0e";
 
     /**

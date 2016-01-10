@@ -113,7 +113,9 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult<Integer> deleteUser(String userId) throws CatalogDBException;
+    default QueryResult<Long> deleteUser(String userId) throws CatalogDBException {
+        return delete(new Query(QueryParams.ID.key(), userId));
+    }
 
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;

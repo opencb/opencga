@@ -21,6 +21,10 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,7 +34,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
@@ -144,23 +149,23 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     /**
      * At the moment it does not clean external references to itself.
      */
-    @Override
-    public QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException {
-        long startTime = startQuery();
-        DBObject query = new BasicDBObject("projects.id", projectId);
-        DBObject pull = new BasicDBObject("$pull",
-                new BasicDBObject("projects",
-                        new BasicDBObject("id", projectId)));
-
-        QueryResult<WriteResult> update = userCollection.update(query, pull, null);
-        List<Integer> deletes = new LinkedList<>();
-        if (update.getResult().get(0).getN() == 0) {
-            throw CatalogDBException.idNotFound("Project", projectId);
-        } else {
-            deletes.add(update.getResult().get(0).getN());
-            return endQuery("delete project", startTime, deletes);
-        }
-    }
+//    @Override
+//    public QueryResult<Integer> deleteProject(int projectId) throws CatalogDBException {
+//        long startTime = startQuery();
+//        DBObject query = new BasicDBObject("projects.id", projectId);
+//        DBObject pull = new BasicDBObject("$pull",
+//                new BasicDBObject("projects",
+//                        new BasicDBObject("id", projectId)));
+//
+//        QueryResult<WriteResult> update = userCollection.update(query, pull, null);
+//        List<Integer> deletes = new LinkedList<>();
+//        if (update.getResult().get(0).getN() == 0) {
+//            throw CatalogDBException.idNotFound("Project", projectId);
+//        } else {
+//            deletes.add(update.getResult().get(0).getN());
+//            return endQuery("delete project", startTime, deletes);
+//        }
+//    }
 
     @Override
     public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
@@ -414,8 +419,26 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     public QueryResult<Project> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
-    public QueryResult<Integer> delete(Query query) {
-        return null;
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson bson = parseQuery(query);
+        Bson pull = Updates.pull("projects", new Document("id", query.get(CatalogUserDBAdaptor.QueryParams.PROJECT_ID.key())));
+
+//        DBObject query = new BasicDBObject("projects.id", projectId);
+//        DBObject pull = new BasicDBObject("$pull",
+//                new BasicDBObject("projects",
+//                        new BasicDBObject("id", projectId)));
+
+        QueryResult<UpdateResult> update = userCollection.update(bson, pull, null);
+        List<Long> deletes = new LinkedList<>();
+        if (update.getResult().get(0).getModifiedCount() == 0) {
+//            throw CatalogDBException.idNotFound("Project", projectId);
+            throw CatalogDBException.newInstance("Project id '{}' not found", query.get(CatalogUserDBAdaptor.QueryParams.PROJECT_ID.key()));
+        } else {
+            deletes.add(update.getResult().get(0).getModifiedCount());
+            return endQuery("delete project", startTime, deletes);
+        }
     }
 
     @Override

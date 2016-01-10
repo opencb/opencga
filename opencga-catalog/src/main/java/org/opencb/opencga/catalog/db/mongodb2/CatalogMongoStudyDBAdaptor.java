@@ -21,6 +21,7 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -28,13 +29,15 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.*;
+import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api2.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.print.Doc;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
@@ -283,21 +286,21 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     /**
      * At the moment it does not clean external references to itself.
      */
-    @Override
-    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
-        long startTime = startQuery();
-        DBObject query = new BasicDBObject(_ID, studyId);
-        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
-
-        List<Integer> deletes = new LinkedList<>();
-
-        if (remove.getResult().get(0).getN() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        } else {
-            deletes.add(remove.getResult().get(0).getN());
-            return endQuery("delete study", startTime, deletes);
-        }
-    }
+//    @Override
+//    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
+//        long startTime = startQuery();
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
+//
+//        List<Integer> deletes = new LinkedList<>();
+//
+//        if (remove.getResult().get(0).getN() == 0) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        } else {
+//            deletes.add(remove.getResult().get(0).getN());
+//            return endQuery("delete study", startTime, deletes);
+//        }
+//    }
 
     @Override
     public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
@@ -676,11 +679,29 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     }
 
     @Override
-    public QueryResult<Study> update(Query query, ObjectMap parameters) { return null; }
-
-    @Override
-    public QueryResult<Integer> delete(Query query) {
+    public QueryResult<Study> update(Query query, ObjectMap parameters) {
         return null;
+    }
+
+    /**
+     * At the moment it does not clean external references to itself.
+     */
+    @Override
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+//        DBObject query = new BasicDBObject(_ID, studyId);
+        Bson bson = parseQuery(query);
+        QueryResult<DeleteResult> remove = studyCollection.remove(bson, null);
+
+//        List<Integer> deletes = new LinkedList<>();
+
+        if (remove.getResult().get(0).getDeletedCount() == 0) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.newInstance("Study id '{}' not found", query.get(QueryParams.ID.key()));
+        } else {
+//            deletes.add(remove.getResult().get(0).getDeletedCount());
+            return endQuery("delete study", startTime, Collections.singletonList(remove.first().getDeletedCount()));
+        }
     }
 
     @Override
@@ -721,12 +742,12 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), "alias", andBsonList);
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
-        createOrQuery(query, CatalogStudyDBAdaptor.QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, QueryParams.ALIAS.key(), "alias", andBsonList);
+        createOrQuery(query, QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
+        createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
+        createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
 
         createOrQuery(query, QueryParams.GROUP_ID.key(), "group.id", andBsonList);
 

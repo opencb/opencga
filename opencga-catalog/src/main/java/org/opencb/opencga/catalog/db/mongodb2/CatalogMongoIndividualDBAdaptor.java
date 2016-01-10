@@ -404,7 +404,7 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdapt
     public QueryResult<Individual> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
-    public QueryResult<Integer> delete(Query query) {
+    public QueryResult<Long> delete(Query query) {
         return null;
     }
 

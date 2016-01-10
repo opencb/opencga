@@ -129,7 +129,7 @@ public class CatalogMongoJobDBAdaptor extends AbstractCatalogMongoDBAdaptor impl
     }
 
     @Override
-    public QueryResult<Integer> delete(Query query) {
+    public QueryResult<Long> delete(Query query) {
         return null;
     }
 

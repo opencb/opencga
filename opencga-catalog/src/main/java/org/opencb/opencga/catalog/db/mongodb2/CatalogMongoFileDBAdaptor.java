@@ -146,7 +146,7 @@ public class CatalogMongoFileDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
     }
 
     @Override
-    public QueryResult<Integer> delete(Query query) {
+    public QueryResult<Long> delete(Query query) {
         return null;
     }
 

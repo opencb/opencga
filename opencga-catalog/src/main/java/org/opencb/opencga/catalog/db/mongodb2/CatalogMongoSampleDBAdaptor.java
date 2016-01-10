@@ -30,10 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.AbstractCatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.LoggerFactory;
@@ -301,21 +298,36 @@ public class CatalogMongoSampleDBAdaptor extends AbstractCatalogMongoDBAdaptor i
 
     }
 
+//    @Override
+//    public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+//        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), sampleId);
+//        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+//        if (sampleQueryResult.getResult().size() == 1) {
+//            QueryResult<Long> delete = delete(query);
+//            if (delete.getResult().size() == 0) {
+//                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", sampleId);
+//            }
+//        } else {
+//            throw CatalogDBException.newInstance("Sample id '{}' does not exist", sampleId);
+//        }
+//        return sampleQueryResult;
+//    }
 
-    @Override
-    public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
-        long startTime = startQuery();
 
-        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
-
-        checkInUse(sampleId);
-        DeleteResult id = sampleCollection.remove(new BasicDBObject(_ID, sampleId), null).getResult().get(0);
-        if (id.getDeletedCount() == 0) {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
-        } else {
-            return endQuery("delete sample", startTime, sampleQueryResult);
-        }
-    }
+//    @Override
+//    public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
+//
+//        checkInUse(sampleId);
+//        DeleteResult id = sampleCollection.remove(new BasicDBObject(_ID, sampleId), null).getResult().get(0);
+//        if (id.getDeletedCount() == 0) {
+//            throw CatalogDBException.idNotFound("Sample", sampleId);
+//        } else {
+//            return endQuery("delete sample", startTime, sampleQueryResult);
+//        }
+//    }
 
     public void checkInUse(int sampleId) throws CatalogDBException {
         int studyId = getStudyIdBySampleId(sampleId);
@@ -643,8 +655,19 @@ public class CatalogMongoSampleDBAdaptor extends AbstractCatalogMongoDBAdaptor i
     public QueryResult<Sample> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
-    public QueryResult<Integer> delete(Query query) {
-        return null;
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+
+//        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
+//        checkInUse(sampleId);
+        Bson bson = parseQuery(query);
+        DeleteResult deleteResult = sampleCollection.remove(bson, null).getResult().get(0);
+        if (deleteResult.getDeletedCount() == 0) {
+            throw CatalogDBException.newInstance("Sample id '{}' not found", query.get(CatalogSampleDBAdaptor.QueryParams.ID.key()));
+//            throw CatalogDBException.idNotFound("Sample", query.get(CatalogUserDBAdaptor.QueryParams.ID.key()));
+        } else {
+            return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
+        }
     }
 
     @Override

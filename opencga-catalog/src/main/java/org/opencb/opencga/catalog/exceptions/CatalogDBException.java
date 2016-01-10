@@ -37,7 +37,7 @@ public class CatalogDBException extends CatalogException {
 
     public static CatalogDBException newInstance(String message, Object... arguments) {
         for (Object argument : arguments) {
-            message = StringUtils.replace(message, "{}", argument.toString(), 1);
+            message = StringUtils.replace(message, "{}", String.valueOf(argument), 1);
         }
         return new CatalogDBException(message);
     }
