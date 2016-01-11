@@ -17,9 +17,9 @@
 package org.opencb.opencga.catalog.db.api2;
 
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.VariableSet;
 

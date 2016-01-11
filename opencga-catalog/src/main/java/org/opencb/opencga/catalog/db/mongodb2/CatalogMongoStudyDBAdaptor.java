@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
@@ -31,7 +32,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api2.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
@@ -375,6 +377,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                                         )).get()
                 )
         );
+
+//        Bson match = Aggregates.match(Filters.eq(_STUDY_ID, studyId));
+//        Aggregates.group()
+
         QueryResult<DBObject> aggregate = fileCollection.aggregate(operations, null);
         if (aggregate.getNumResults() == 1) {
             Object diskUsage = aggregate.getResult().get(0).get("diskUsage");

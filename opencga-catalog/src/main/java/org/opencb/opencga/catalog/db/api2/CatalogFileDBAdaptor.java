@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.api2;
 
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -55,8 +56,9 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         ACL_READ("acl.read", BOOLEAN , ""),
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, "");
+        ACL_DELETE("acl.delete", BOOLEAN, ""),
 
+        STUDY_ID("study.id", TEXT_ARRAY, "");
         // TOCHECK: Pedro. Add annotation support?
 
         private final String key;

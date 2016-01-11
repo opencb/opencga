@@ -32,6 +32,8 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -45,7 +47,6 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.getMong
  * Created by jacobo on 12/09/14.
  */
 public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor implements CatalogDBAdaptorFactory {
-//CatalogFileDBAdaptor, CatalogJobDBAdaptor
 
     static final String METADATA_OBJECT_ID = "METADATA";
     //Keys to foreign objects.

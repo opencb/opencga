@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.AbstractCatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;

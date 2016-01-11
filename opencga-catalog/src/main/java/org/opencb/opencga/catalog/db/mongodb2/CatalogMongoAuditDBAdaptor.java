@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api2.CatalogAuditDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.AbstractCatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.LoggerFactory;
 

@@ -21,6 +21,7 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -30,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -40,7 +42,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 
 /**
@@ -56,7 +57,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     public CatalogMongoSampleDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection,
                                        MongoDBCollection sampleCollection, MongoDBCollection studyCollection) {
-        super(LoggerFactory.getLogger(CatalogSampleDBAdaptor.class));
+//        super(LoggerFactory.getLogger(CatalogSampleDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.sampleCollection = sampleCollection;
@@ -67,13 +68,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      * Samples methods
      * ***************************
      */
-
-    @Override
-    public boolean sampleExists(int sampleId) {
-        DBObject query = new BasicDBObject(_ID, sampleId);
-        QueryResult<Long> count = sampleCollection.count(query);
-        return count.getResult().get(0) != 0;
-    }
 
     @Override
     public QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException {
@@ -103,16 +97,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-        DBObject query = new BasicDBObject(_ID, sampleId);
 
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
-        List<Sample> samples = parseSamples(queryResult);
+//        DBObject query = new BasicDBObject(_ID, sampleId);
+        Query query1 = new Query(QueryParams.ID.key(), sampleId);
+        QueryResult<Sample> sampleQueryResult = get(query1, options);
 
-        if (samples.isEmpty()) {
+//        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
+//        List<Sample> samples = parseSamples(queryResult);
+
+        if (sampleQueryResult.getResult().size() == 0) {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
 
-        return endQuery("getSample", startTime, samples);
+        return endQuery("getSample", startTime, sampleQueryResult);
     }
 
     @Override
@@ -224,11 +221,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         int studyId = getStudyIdBySampleId(sampleId);
         checkAclUserId(dbAdaptorFactory, userId, studyId);
 
-        DBObject query = new BasicDBObject(_ID, sampleId);
-        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
+//        DBObject query = new BasicDBObject(_ID, sampleId);
+        Bson eq = Filters.eq(_ID, sampleId);
 
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);
+//        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
+        Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
+
+        QueryResult<Document> queryResult = sampleCollection.find(eq, projection, null);
         Sample sample = parseObject(queryResult, Sample.class);
+
         if (queryResult.getNumResults() == 0 || sample == null) {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
