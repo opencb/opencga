@@ -42,7 +42,7 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         FORMAT("format", TEXT_ARRAY, ""),
         BIOFORMAT("bioformat", TEXT_ARRAY, ""),
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
-        OWNER_ID("OwnerId", TEXT_ARRAY, ""),
+        OWNER_ID("ownerId", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),

@@ -1,9 +1,13 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.*;
+import com.mongodb.client.model.Filters;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -501,7 +505,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
 
-
     @Override
     public QueryResult<Long> count(Query query) {
         return null;
@@ -565,5 +568,40 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
 
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, QueryParams.TYPE.key(), "type", andBsonList);
+        createOrQuery(query, QueryParams.FORMAT.key(), "format", andBsonList);
+        createOrQuery(query, QueryParams.BIOFORMAT.key(), "bioformat", andBsonList);
+        createOrQuery(query, QueryParams.DELETE_DATE.key(), "deleteDate", andBsonList);
+        createOrQuery(query, QueryParams.OWNER_ID.key(), "ownerId", andBsonList);
+        createOrQuery(query, QueryParams.CREATION_DATE.key(), "creationDate", andBsonList);
+        createOrQuery(query, QueryParams.MODIFICATION_DATE.key(), "modificationDate", andBsonList);
+        createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
+        createOrQuery(query, QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experimentId", andBsonList);
+        createOrQuery(query, QueryParams.JOB_ID.key(), "jobId", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_ID.key(), "sampleId", andBsonList);
+
+        createOrQuery(query, QueryParams.ACL_USER_ID.key(), "acl.userId", andBsonList);
+        createOrQuery(query, QueryParams.ACL_READ.key(), "acl.read", andBsonList);
+        createOrQuery(query, QueryParams.ACL_WRITE.key(), "acl.write", andBsonList);
+        createOrQuery(query, QueryParams.ACL_EXECUTE.key(), "acl.execute", andBsonList);
+        createOrQuery(query, QueryParams.ACL_DELETE.key(), "acl.delete", andBsonList);
+
+        createOrQuery(query, QueryParams.STUDY_ID.key(), "study.id", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
     }
 }

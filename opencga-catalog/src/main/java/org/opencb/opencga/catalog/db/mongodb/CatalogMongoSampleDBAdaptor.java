@@ -349,7 +349,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int newId = getNewAutoIncrementId(metaCollection);
-        ;
+
         cohort.setId(newId);
 
         DBObject cohortObject = getDbObject(cohort, "Cohort");

@@ -4,12 +4,15 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import com.mongodb.client.model.Filters;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api2.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
@@ -363,5 +366,25 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
 
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.USER_ID.key(), "userId", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), "toolName", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DATE.key(), "date", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
+        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
     }
 }

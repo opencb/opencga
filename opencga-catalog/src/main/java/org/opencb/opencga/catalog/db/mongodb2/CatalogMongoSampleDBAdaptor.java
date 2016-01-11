@@ -20,11 +20,13 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.bson.Document;
+import org.bson.*;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -100,7 +102,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
 //        DBObject query = new BasicDBObject(_ID, sampleId);
         Query query1 = new Query(QueryParams.ID.key(), sampleId);
-        QueryResult<Sample> sampleQueryResult = get(query1, options);
+        QueryResult<Sample> sampleQueryResult = get(query1, filteredOptions);
 
 //        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
 //        List<Sample> samples = parseSamples(queryResult);
@@ -241,16 +243,21 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
 
         long startTime = startQuery();
-        DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
+        /*DBObject match = new BasicDBObject("$match", new BasicDBObject(_ID, sampleId));
         DBObject unwind = new BasicDBObject("$unwind", "$acl");
         DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
+*/
+        Bson match = Aggregates.match(Filters.eq("_ID", sampleId));
+        Bson unwind = Aggregates.unwind("acl");
+        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
+        Bson project = Projections.include("id", "acl");
 
-        QueryResult<DBObject> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
-        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0)).collect(Collectors.toMap(AclEntry::getUserId,
-                s -> s));
+        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0))
+                .collect(Collectors.toMap(AclEntry::getUserId, s -> s));
 
         return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
     }
@@ -260,10 +267,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         String userId = acl.getUserId();
-        DBObject query;
+        /*DBObject query;
         DBObject newAclObject = getDbObject(acl, "ACL");
         DBObject update;
+*/
+        Bson query;
+        Document newAclObject = getMongoDBDocument(acl, "ACL");
+        Bson update;
 
+        /*
         List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
             query = new BasicDBObject(_ID, sampleId);
@@ -274,9 +286,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     .append("acl.userId", userId).get();
             update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
+        */
+        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
+        if (aclList.isEmpty()) { // there is no acl for that user in that file. Push
+            query = new BsonDocument(_ID, new BsonInt32(sampleId));
+            update = Updates.push("acl", newAclObject);
+        } else {
+            query = new BsonDocument(_ID, new BsonInt32(sampleId)).append("acl.userId", new BsonString(userId));
+            update = Updates.set("acl.$", newAclObject);
+        }
 
-        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
-        if (queryResult.first().getN() != 1) {
+        QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
+        if (queryResult.first().getModifiedCount() != 1) {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
 
@@ -287,13 +308,21 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
 
         long startTime = startQuery();
-
+/*
         QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
         DBObject query = new BasicDBObject(_ID, sampleId);
         ;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
 
         QueryResult queryResult = sampleCollection.update(query, update, null);
+*/
+        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
+
+        if (!sampleAcl.getResult().isEmpty()) {
+            Bson query = new BsonDocument(_ID, new BsonInt32(sampleId));
+            Bson update = Updates.pull("acl", new BsonDocument("userId", new BsonString(userId)));
+            sampleCollection.update(query, update, null);
+        }
 
         return endQuery("unsetSampleAcl", startTime, sampleAcl);
 
@@ -360,9 +389,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
 
     public int getStudyIdBySampleId(int sampleId) throws CatalogDBException {
-        DBObject query = new BasicDBObject(_ID, sampleId);
+        /*DBObject query = new BasicDBObject(_ID, sampleId);
         BasicDBObject projection = new BasicDBObject(_STUDY_ID, true);
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);
+        QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);*/
+        Bson query = new BsonDocument(_ID, new BsonInt32(sampleId));
+        Bson projection = Projections.include(_STUDY_ID);
+        QueryResult<Document> queryResult = sampleCollection.find(query, projection, null);
+
         if (!queryResult.getResult().isEmpty()) {
             Object studyId = queryResult.getResult().get(0).get(_STUDY_ID);
             return studyId instanceof Number ? ((Number) studyId).intValue() : (int) Double.parseDouble(studyId.toString());
@@ -386,7 +419,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int newId = getNewAutoIncrementId(metaCollection);
-        ;
+
         cohort.setId(newId);
 
         DBObject cohortObject = getDbObject(cohort, "Cohort");
@@ -554,8 +587,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             CatalogDBException {
         long startTime = startQuery();
 
+        /*QueryResult<Long> count = sampleCollection.count(
+                new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, sampleId));*/
         QueryResult<Long> count = sampleCollection.count(
-                new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, sampleId));
+                new BsonDocument("annotationSets.id", new BsonString(annotationSet.getId()))
+                        .append(_ID, new BsonInt32(sampleId));
         if (overwrite) {
             if (count.getResult().get(0) == 0) {
                 throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
@@ -566,25 +602,37 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        DBObject object = getDbObject(annotationSet, "AnnotationSet");
+        /*DBObject object = getDbObject(annotationSet, "AnnotationSet");
 
-        DBObject query = new BasicDBObject(_ID, sampleId);
+        DBObject query = new BasicDBObject(_ID, sampleId);*/
+        Document object = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        Bson query = new Document(_ID, sampleId);
         if (overwrite) {
-            query.put("annotationSets.id", annotationSet.getId());
+            ((Document) query).put("annotationSets.id", annotationSet.getId());
         } else {
-            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+            ((Document) query).put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
         }
 
+        /*
         DBObject update;
         if (overwrite) {
             update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
         } else {
             update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
         }
+*/
 
-        QueryResult<WriteResult> queryResult = sampleCollection.update(query, update, null);
+        Bson update;
+        if (overwrite) {
+            update = Updates.set("annotationSets.$", object);
+        } else {
+            update = Updates.push("annotationSets", object);
+        }
 
-        if (queryResult.first().getN() != 1) {
+        QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
             throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
         }
 
@@ -609,10 +657,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
+        /*
         DBObject query = new BasicDBObject(_ID, sampleId);
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-        QueryResult<WriteResult> resultQueryResult = sampleCollection.update(query, update, null);
-        if (resultQueryResult.first().getN() < 1) {
+        */
+        Bson query = new BsonDocument(_ID, new BsonInt32(sampleId));
+        Bson update = Updates.pull("annotationSets", new BsonDocument("id", new BsonString(annotationId)));
+        QueryResult<UpdateResult> resultQueryResult = sampleCollection.update(query, update, null);
+        if (resultQueryResult.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
@@ -639,9 +691,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        List<Document> queryResult = sampleCollection.find(bson, options).getResult();
+        QueryResult<Document> queryResult = sampleCollection.find(bson, options);
 
-        // FIXME: Pedro. Parse and set clazz to study class.
+        // FIXME: Pedro. Parse and set clazz to sample class.
 
         return null;
     }

@@ -20,9 +20,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -43,9 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.getDbObject;
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.parseObject;
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.parseUser;
+import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 
 /**
  * Created by imedina on 08/01/16.
@@ -124,6 +127,7 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     public QueryResult<Project> getProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
+        /*
         DBObject query = new BasicDBObject("projects.id", projectId);
         DBObject projection = new BasicDBObject(
                 "projects",
@@ -134,9 +138,17 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         );
         QueryResult<DBObject> result = userCollection.find(query, projection, options);
         User user = parseUser(result);
+        */
+        Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
+        Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
+        QueryResult<Document> result = userCollection.find(query, projection, options);
+
+        User user = parseUser(result);
+
         if (user == null || user.getProjects().isEmpty()) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
+        // Fixme: Check the code below
         List<Project> projects = user.getProjects();
         joinFields(projects.get(0), options);
 
@@ -168,10 +180,14 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject query = new BasicDBObject("id", userId);
+/*        DBObject query = new BasicDBObject("id", userId);
         DBObject projection = new BasicDBObject("projects", true);
         projection.put("_id", false);
         QueryResult<DBObject> result = userCollection.find(query, projection, options);
+*/
+        Bson query = new BsonDocument(CatalogMongoDBAdaptor._ID, new BsonString(userId));
+        Bson projection = Projections.fields(Projections.include("projects"), Projections.excludeId());
+        QueryResult<Document> result = userCollection.find(query, projection, options);
 
         User user = parseUser(result);
         List<Project> projects = user.getProjects();
@@ -214,6 +230,7 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         //String oldAlias = project.getAlias();
         project.setAlias(newProjectAlias);
 
+        /*
         DBObject query = BasicDBObjectBuilder
                 .start("projects.id", projectId)
                 .append("projects.alias", new BasicDBObject("$ne", newProjectAlias))    // check that any other project in the user has
@@ -221,9 +238,13 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
                 .get();
         DBObject update = new BasicDBObject("$set",
                 new BasicDBObject("projects.$.alias", newProjectAlias));
+*/
+        Bson query = Filters.and(Filters.eq("projects.id", projectId),
+                Filters.ne("projects.alias", newProjectAlias));
+        Bson update = Updates.set("projects.$.alias", newProjectAlias);
 
-        QueryResult<WriteResult> result = userCollection.update(query, update, null);
-        if (result.getResult().get(0).getN() == 0) {    //Check if the the study has been inserted
+        QueryResult<UpdateResult> result = userCollection.update(query, update, null);
+        if (result.getResult().get(0).getModifiedCount() == 0) {    //Check if the the study has been inserted
             throw new CatalogDBException("Project {alias:\"" + newProjectAlias + "\"} already exists");
         }
         return endQuery("rename project alias", startTime, result);
@@ -236,12 +257,13 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         if (!projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
-        BasicDBObject projectParameters = new BasicDBObject();
+        //BasicDBObject projectParameters = new BasicDBObject();
+        Bson projectParameters = new Document();
 
         String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
-                projectParameters.put("projects.$." + s, parameters.getString(s));
+                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
             }
         }
         String[] acceptedIntParams = {"diskQuota", "diskUsage"};
@@ -249,18 +271,31 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
                 if (anInt != Integer.MIN_VALUE) {
-                    projectParameters.put(s, anInt);
+                    ((Document) projectParameters).put(s, anInt);
                 }
             }
         }
         Map<String, Object> attributes = parameters.getMap("attributes");
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
+                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
             }
 //            projectParameters.put("projects.$.attributes", attributes);
         }
 
+        if (!((Document) projectParameters).isEmpty()) {
+            Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
+            // Fixme: Updates
+                    /*
+            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+            */
+            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
+            if (updateResult.getResult().get(0).getN() == 0) {
+                throw CatalogDBException.idNotFound("Project", projectId);
+            }
+        }
+        /*
         if (!projectParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject("projects.id", projectId);
             BasicDBObject updates = new BasicDBObject("$set", projectParameters);
@@ -269,11 +304,19 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
                 throw CatalogDBException.idNotFound("Project", projectId);
             }
         }
+        */
         return endQuery("Modify project", startTime, getProject(projectId, null));
     }
 
     @Override
     public int getProjectId(String userId, String projectAlias) throws CatalogDBException {
+        QueryResult<Document> queryResult = userCollection.find(
+                new BsonDocument("projects.alias", new BsonString(projectAlias))
+                        .append("id", new BsonString(userId)),
+                Projections.fields(Projections.include("projects.id"),
+                        Projections.elemMatch("projects", Filters.eq("alias", projectAlias))),
+                null);
+/*
         QueryResult<DBObject> queryResult = userCollection.find(
                 BasicDBObjectBuilder
                         .start("projects.alias", projectAlias)
@@ -281,7 +324,7 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
                 BasicDBObjectBuilder.start("projects.id", true)
                         .append("projects", new BasicDBObject("$elemMatch", new BasicDBObject("alias", projectAlias))).get(),
                 null
-        );
+        );*/
         User user = parseUser(queryResult);
         if (user == null || user.getProjects().isEmpty()) {
             return -1;
@@ -328,6 +371,7 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     @Override
     public QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException {
         long startTime = startQuery();
+        /*
         DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
         DBObject project = new BasicDBObject("$project", BasicDBObjectBuilder
                 .start("_id", false)
@@ -338,13 +382,22 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         DBObject unwind2 = new BasicDBObject("$unwind", "$projects.acl");
         DBObject match3 = new BasicDBObject("$match", new BasicDBObject("projects.acl.userId", userId));
 
-        List<DBObject> operations = new LinkedList<>();
+*/
+        Bson match1 = Aggregates.match(Filters.eq("projects.id", projectId));
+        Bson project = Projections.fields(Projections.excludeId(), Projections.include("projects.acl", "projects.id"));
+        Bson unwind1 = Aggregates.unwind("$projects");
+        Bson match2 = Aggregates.match(Filters.eq("projects.id", projectId));
+        Bson unwind2 = Aggregates.unwind("$projects.acl");
+        Bson match3 = Aggregates.match(Filters.eq("projects.acl.userId", userId));
+
+        List<Bson> operations = new LinkedList<>();
         operations.add(match1);
         operations.add(project);
         operations.add(unwind1);
         operations.add(match2);
         operations.add(unwind2);
         operations.add(match3);
+
         QueryResult aggregate = userCollection.aggregate(operations, null);
 
         List<AclEntry> acls = new LinkedList<>();
@@ -360,19 +413,28 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
     public QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
-        if (!userExists(userId)) {
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().userExists(userId)) {
             throw new CatalogDBException("Can not set ACL to non-existent user: " + userId);
         }
 
-        DBObject newAclObject = getDbObject(newAcl, "ACL");
+        Document newAclObject = getMongoDBDocument(newAcl, "ACL");
+        //DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         List<AclEntry> projectAcls = getProjectAcl(projectId, userId).getResult();
+        Bson query = new BsonDocument("projects.ids", new BsonInt32(projectId));
+        Bson push = Updates.push("projects.$.acl", newAclObject);
+        if (!projectAcls.isEmpty()) { // ensure that there is no acl for that user in that project. pull
+            Bson pull = Updates.pull("projects.$.acl", Filters.eq("userId", userId));
+            userCollection.update(query, pull, null);
+        }
+        /*
         DBObject query = new BasicDBObject("projects.id", projectId);
         BasicDBObject push = new BasicDBObject("$push", new BasicDBObject("projects.$.acl", newAclObject));
         if (!projectAcls.isEmpty()) {  // ensure that there is no acl for that user in that project. pull
             DBObject pull = new BasicDBObject("$pull", new BasicDBObject("projects.$.acl", new BasicDBObject("userId", userId)));
             userCollection.update(query, pull, null);
         }
+        */
         //Put study
         QueryResult pushResult = userCollection.update(query, push, null);
         return endQuery("Set project acl", startTime, pushResult);

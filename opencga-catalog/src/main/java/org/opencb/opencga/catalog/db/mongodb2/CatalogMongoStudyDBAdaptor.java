@@ -169,6 +169,27 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     @Override
+    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
+//        long startTime = startQuery();
+//        //TODO: Parse QueryOptions include/exclude
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
+////        QueryResult queryResult = endQuery("get study", startTime, result);
+//
+//        List<Study> studies = parseStudies(result);
+//        if (studies.isEmpty()) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        }
+//
+//        joinFields(studyId, studies.get(0), options);
+//
+//        //queryResult.setResult(studies);
+//        return endQuery("Get Study", startTime, studies);
+
+        return get(new Query(QueryParams.ID.key(), studyId), options);
+    }
+
+    @Override
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
@@ -221,27 +242,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         return endQuery("getAllStudies", startTime, studies);
-    }
-
-    @Override
-    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
-//        long startTime = startQuery();
-//        //TODO: Parse QueryOptions include/exclude
-//        DBObject query = new BasicDBObject(_ID, studyId);
-//        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
-////        QueryResult queryResult = endQuery("get study", startTime, result);
-//
-//        List<Study> studies = parseStudies(result);
-//        if (studies.isEmpty()) {
-//            throw CatalogDBException.idNotFound("Study", studyId);
-//        }
-//
-//        joinFields(studyId, studies.get(0), options);
-//
-//        //queryResult.setResult(studies);
-//        return endQuery("Get Study", startTime, studies);
-
-        return get(new Query(QueryParams.ID.key(), studyId), options);
     }
 
     @Override
