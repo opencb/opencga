@@ -27,7 +27,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.*;
@@ -75,13 +74,13 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     @Override
-    public BenchmarkStats query() throws ExecutionException, InterruptedException, IOException {
+    public BenchmarkStats query() throws ExecutionException, InterruptedException {
         return query(3, new LinkedHashSet<>(BENCHMARK_TESTS));
     }
 
     @Override
     public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException,
-            InterruptedException, IOException {
+            InterruptedException {
         benchmarkStats = new BenchmarkStats();
 
         // If "*" is the only tests to execute then we execute all the defined tests
@@ -103,7 +102,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //            gnome-terminal -e "bash -c \"cd /home; exec bash\""
 //            new String[]{"bash","-c","ls /home/XXX"}
 //            Process p = Runtime.getRuntime().exec("/bin/bash -c gnome-terminal \"cd /home; exec bash\"");
-            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "gnome-terminal ls /home/pawan/random.txt"});
+//            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "gnome-terminal ls /home/pawan/random.txt"});
 
 //            if (storageConfiguration.getBenchmark().getExecute() != null) {
 //                System.out.println(">>>>>>>>>>>>>>>>>>>>>" + variantDBAdaptor.get(query, queryOptions));

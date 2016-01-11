@@ -617,7 +617,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
-            IllegalAccessException, ClassNotFoundException {
+            IllegalAccessException, ClassNotFoundException, IOException {
         CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
 
 // Overwrite default options from configuration.yaml with CLI parameters
