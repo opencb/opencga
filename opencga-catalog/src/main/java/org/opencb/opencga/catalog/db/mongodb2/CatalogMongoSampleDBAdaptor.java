@@ -46,7 +46,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class CatalogMongoSampleDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
+public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
 
 
     private final CatalogDBAdaptorFactory dbAdaptorFactory;

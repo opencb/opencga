@@ -56,7 +56,7 @@ public class CatalogMongoAuditDBAdaptor extends AbstractCatalogDBAdaptor impleme
         long startQuery = startQuery();
 
 //        DBObject auditRecordDbObject = CatalogMongoDBUtils.getDbObject(auditRecord, "AuditRecord");
-        Document auditRecordDbObject = CatalogMongoDBUtils.getDbObject(auditRecord, "AuditRecord");
+        Document auditRecordDbObject = CatalogMongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord");
         WriteResult writeResult = auditCollection.insert(auditRecordDbObject, new QueryOptions()).first();
 
         return endQuery("insertAuditRecord", startQuery, Collections.singletonList(auditRecord));

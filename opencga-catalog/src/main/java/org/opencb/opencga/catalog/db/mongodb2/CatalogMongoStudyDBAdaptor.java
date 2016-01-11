@@ -21,7 +21,9 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -36,14 +38,12 @@ import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 
 /**
@@ -51,7 +51,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
+public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
 
     private final CatalogDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection metaCollection;
@@ -60,7 +60,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
     public CatalogMongoStudyDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
             studyCollection, MongoDBCollection fileCollection) {
-        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
+//        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.studyCollection = studyCollection;
@@ -73,27 +73,35 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
      * ***************************
      */
 
-    @Override
-    public boolean studyExists(int studyId) {
-        QueryResult<Long> count = studyCollection.count(new BasicDBObject(_ID, studyId));
-        return count.getResult().get(0) != 0;
-    }
+//    @Override
+//    public boolean studyExists(int studyId) {
+//        QueryResult<Long> count = studyCollection.count(new BasicDBObject(_ID, studyId));
+//        return count.getResult().get(0) != 0;
+//    }
+//
+//    @Override
+//    public void checkStudyId(int studyId) throws CatalogDBException {
+//        if (!studyExists(studyId)) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        }
+//    }
 
-    @Override
-    public void checkStudyId(int studyId) throws CatalogDBException {
-        if (!studyExists(studyId)) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
-    }
-
-    private boolean studyAliasExists(int projectId, String studyAlias) {
+    private boolean studyAliasExists(int projectId, String studyAlias) throws CatalogDBException {
         // Check if study.alias already exists.
-        DBObject countQuery = BasicDBObjectBuilder
-                .start(_PROJECT_ID, projectId)
-                .append("alias", studyAlias).get();
+//        DBObject countQuery = BasicDBObjectBuilder
+//                .start(_PROJECT_ID, projectId)
+//                .append("alias", studyAlias).get();
+//
+//        QueryResult<Long> queryResult = studyCollection.count(countQuery);
+//        return queryResult.getResult().get(0) != 0;
 
-        QueryResult<Long> queryResult = studyCollection.count(countQuery);
-        return queryResult.getResult().get(0) != 0;
+        if (projectId < 0) {
+            throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
+        }
+
+        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        QueryResult<Long> count = count(query);
+        return count.first() != 0;
     }
 
     @Override
@@ -161,7 +169,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     @Override
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().projectExists(projectId)) {
+        if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
         return endQuery("getAllSudiesInProject", startTime, getAllStudies(options == null ?
@@ -205,7 +213,6 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         }
 
         QueryResult<DBObject> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
-
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
             joinFields(study.getId(), study, queryOptions);
@@ -216,22 +223,23 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
     @Override
     public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        //TODO: Parse QueryOptions include/exclude
-        DBObject query = new BasicDBObject(_ID, studyId);
-        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
-//        QueryResult queryResult = endQuery("get study", startTime, result);
+//        long startTime = startQuery();
+//        //TODO: Parse QueryOptions include/exclude
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
+////        QueryResult queryResult = endQuery("get study", startTime, result);
+//
+//        List<Study> studies = parseStudies(result);
+//        if (studies.isEmpty()) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        }
+//
+//        joinFields(studyId, studies.get(0), options);
+//
+//        //queryResult.setResult(studies);
+//        return endQuery("Get Study", startTime, studies);
 
-        List<Study> studies = parseStudies(result);
-        if (studies.isEmpty()) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
-
-        joinFields(studyId, studies.get(0), options);
-
-        //queryResult.setResult(studies);
-        return endQuery("Get Study", startTime, studies);
-
+        return get(new Query(QueryParams.ID.key(), studyId), options);
     }
 
     @Override
@@ -253,7 +261,8 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         long startTime = startQuery();
 
         checkStudyId(studyId);
-        BasicDBObject studyParameters = new BasicDBObject();
+//        BasicDBObject studyParameters = new BasicDBObject();
+        Document studyParameters = new Document();
 
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
         filterStringParams(parameters, studyParameters, acceptedParams);
@@ -273,10 +282,13 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         }
 
         if (!studyParameters.isEmpty()) {
-            BasicDBObject query = new BasicDBObject(_ID, studyId);
+//            BasicDBObject query = new BasicDBObject(_ID, studyId);
+            Bson eq = Filters.eq(_ID, studyId);
             BasicDBObject updates = new BasicDBObject("$set", studyParameters);
-            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getN() == 0) {
+
+//            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
+            QueryResult<UpdateResult> updateResult = studyCollection.update(eq, updates, null);
+            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
@@ -304,21 +316,30 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
 
     @Override
     public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
-        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
-        BasicDBObject projection = new BasicDBObject("id", "true");
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
-        List<Study> studies = parseStudies(queryResult);
+//        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
+//        BasicDBObject projection = new BasicDBObject("id", "true");
+//        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
+//        List<Study> studies = parseStudies(queryResult);
+
+        Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        QueryOptions queryOptions = new QueryOptions("include", "id");
+        QueryResult<Study> studyQueryResult = get(query1, queryOptions);
+        List<Study> studies = studyQueryResult.getResult();
         return studies == null || studies.isEmpty() ? -1 : studies.get(0).getId();
     }
 
     @Override
     public int getProjectIdByStudyId(int studyId) throws CatalogDBException {
-        DBObject query = new BasicDBObject(_ID, studyId);
-        DBObject projection = new BasicDBObject(_PROJECT_ID, "true");
-        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        DBObject projection = new BasicDBObject(_PROJECT_ID, "true");
+//        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
+
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryOptions queryOptions = new QueryOptions("include", QueryParams.PROJECT_ID.key());
+        QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
-            DBObject study = result.getResult().get(0);
+            Document study = (Document) result.getResult().get(0);
             Object id = study.get(_PROJECT_ID);
             return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
@@ -329,7 +350,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     @Override
     public String getStudyOwnerId(int studyId) throws CatalogDBException {
         int projectId = getProjectIdByStudyId(studyId);
-        return dbAdaptorFactory.getCatalogUserDBAdaptor().getProjectOwnerId(projectId);
+        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(projectId);
     }
 
 
@@ -472,16 +493,20 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
     public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
+//        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+//        DBObject projection = new BasicDBObject(
+//                "variableSets",
+//                new BasicDBObject(
+//                        "$elemMatch",
+//                        new BasicDBObject("id", variableSetId)
+//                )
+//        );
+
+        Bson query = Filters.eq("variableSets.id", variableSetId);
+        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-        DBObject projection = new BasicDBObject(
-                "variableSets",
-                new BasicDBObject(
-                        "$elemMatch",
-                        new BasicDBObject("id", variableSetId)
-                )
-        );
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filteredOptions);
+
+        QueryResult<Document> queryResult = studyCollection.find(query, projection, filteredOptions);
         List<Study> studies = parseStudies(queryResult);
         if (studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
             throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
@@ -645,6 +670,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         }
     }
 
+
     @Override
     public QueryResult<Long> count(Query query) {
         Bson bson = parseQuery(query);
@@ -748,6 +774,7 @@ public class CatalogMongoStudyDBAdaptor extends AbstractCatalogMongoDBAdaptor im
         createOrQuery(query, QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
         createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
         createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_ID.key(), "_projectId", andBsonList);
 
         createOrQuery(query, QueryParams.GROUP_ID.key(), "group.id", andBsonList);
 

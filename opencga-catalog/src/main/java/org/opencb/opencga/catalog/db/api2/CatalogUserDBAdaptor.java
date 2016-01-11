@@ -34,6 +34,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         ID("id", TEXT_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         EMAIL("email", TEXT_ARRAY, ""),
+        PASSWORD("password", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),

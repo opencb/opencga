@@ -19,8 +19,11 @@ package org.opencb.opencga.catalog.db.mongodb2;
 import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -80,16 +83,13 @@ class CatalogMongoDBUtils {
 //                BasicDBObject.class
 //        );
 
-        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
-                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
-                new BasicDBObject(field, true),  //Fields
-                null,
-                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
-                new QueryOptions("returnNew", true),
-                BasicDBObject.class
-        );
+        Bson query = Filters.eq("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID);
+        Document projection = new Document(field, true);
+        Bson inc = Updates.inc(field, 1);
+        QueryOptions queryOptions = new QueryOptions("returnNew", true);
+        QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
-        return result.getResult().get(0).getInt(field);
+        return result.getResult().get(0).getInteger(field);
     }
 
 
@@ -126,40 +126,40 @@ class CatalogMongoDBUtils {
         }
     }
 
-    static User parseUser(QueryResult<DBObject> result) throws CatalogDBException {
+    static User parseUser(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);
     }
 
-    static List<Study> parseStudies(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Study> parseStudies(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Study.class);
     }
 
-    static File parseFile(QueryResult<DBObject> result) throws CatalogDBException {
+    static File parseFile(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, File.class);
     }
 
-    static List<File> parseFiles(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<File> parseFiles(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, File.class);
     }
 
-    static Job parseJob(QueryResult<DBObject> result) throws CatalogDBException {
+    static Job parseJob(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, Job.class);
     }
 
-    static List<Job> parseJobs(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Job> parseJobs(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Job.class);
     }
 
-    static List<Sample> parseSamples(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Sample> parseSamples(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Sample.class);
     }
 
-    static <T> List<T> parseObjects(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+    static <T> List<T> parseObjects(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
         LinkedList<T> objects = new LinkedList<>();
         ObjectReader objectReader = getObjectReader(tClass);
         try {
-            for (DBObject object : result.getResult()) {
-                objects.add(objectReader.<T>readValue(restoreDotsInKeys(object).toString()));
+            for (Document document : result.getResult()) {
+                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -167,7 +167,7 @@ class CatalogMongoDBUtils {
         return objects;
     }
 
-    static <T> T parseObject(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+    static <T> T parseObject(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
         if (result.getResult().isEmpty()) {
             return null;
         }
@@ -193,6 +193,7 @@ class CatalogMongoDBUtils {
         return jsonReaderMap.get(tClass);
     }
 
+    @Deprecated
     static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
         DBObject dbObject;
         String jsonString = null;
@@ -207,7 +208,7 @@ class CatalogMongoDBUtils {
         return dbObject;
     }
 
-    static Document getDbDocument(Object object, String objectName) throws CatalogDBException {
+    static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {
         Document document;
         String jsonString = null;
         try {
@@ -240,19 +241,19 @@ class CatalogMongoDBUtils {
     }
 
     static <T> T replaceInKeys(T object, String target, String replacement) {
-        if (object instanceof DBObject) {
-            DBObject dbObject = (DBObject) object;
+        if (object instanceof Document) {
+            Document document = (Document) object;
             List<String> keys = new ArrayList<>();
-            for (String s : dbObject.keySet()) {
+            for (String s : document.keySet()) {
                 if (s.contains(target)) {
                     keys.add(s);
                 }
-                replaceInKeys(dbObject.get(s), target, replacement);
+                replaceInKeys(document.get(s), target, replacement);
             }
             for (String key : keys) {
-                Object value = dbObject.removeField(key);
+                Object value = document.remove(key);
                 key = key.replace(target, replacement);
-                dbObject.put(key, value);
+                document.put(key, value);
             }
         } else if (object instanceof List) {
             for (Object o : ((List) object)) {

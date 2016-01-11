@@ -18,7 +18,10 @@ package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.*;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,26 +36,24 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBAdaptor._ID;
 import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
+public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
 
-    private final MongoDBCollection userCollection;
-    private final MongoDBCollection metaCollection;
+    //    private final MongoDBCollection userCollection;
+//    private final MongoDBCollection metaCollection;
     private final CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoUserDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            userCollection) {
-        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
+    public CatalogMongoUserDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection,
+                                     MongoDBCollection userCollection) {
+//        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.userCollection = userCollection;
@@ -107,7 +108,7 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
         user.setProjects(Collections.<Project>emptyList());
         user.setLastActivity(TimeUtils.getTimeMillis());
 //        DBObject userDBObject = getDbObject(user, "User " + user.getId());
-        Document userDBObject = getDbDocument(user, "User " + user.getId());
+        Document userDBObject = getMongoDBDocument(user, "User " + user.getId());
         userDBObject.put(_ID, user.getId());
 
         QueryResult insert;
@@ -237,7 +238,7 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
         User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, "");
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
-        Document anonymous = getDbDocument(user, "User");
+        Document anonymous = getMongoDBDocument(user, "User");
         anonymous.put(_ID, user.getId());
 
         userCollection.insert(anonymous, null);
@@ -286,12 +287,19 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
     public QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject("id", userId);
-        query.put("password", oldPassword);
-        BasicDBObject fields = new BasicDBObject("password", newPassword);
-        BasicDBObject action = new BasicDBObject("$set", fields);
-        QueryResult<WriteResult> update = userCollection.update(query, action, null);
-        if (update.getResult().get(0).getN() == 0) {  //0 query matches.
+//        BasicDBObject query = new BasicDBObject("id", userId);
+//        query.put("password", oldPassword);
+        Query query = new Query(QueryParams.ID.key(), userId);
+        query.append(QueryParams.PASSWORD.key(), oldPassword);
+        Bson bson = parseQuery(query);
+
+//        BasicDBObject fields = new BasicDBObject("password", newPassword);
+//        BasicDBObject action = new BasicDBObject("$set", fields);
+        Bson set = Updates.set("password", new Document("password", newPassword));
+
+//        QueryResult<WriteResult> update = userCollection.update(bson, set, null);
+        QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
+        if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or password");
         }
         return endQuery("Change Password", startTime, update);
@@ -320,9 +328,7 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
-            QueryResult<WriteResult> update = userCollection.update(
-                    new BasicDBObject(_ID, userId),
-                    new BasicDBObject("$set", userParameters), null);
+            QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(_ID, userId), new BasicDBObject("$set", userParameters), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("User", userId);
             }
@@ -335,12 +341,19 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
     public QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject("id", userId);
-        query.put("email", email);
-        BasicDBObject fields = new BasicDBObject("password", newCryptPass);
-        BasicDBObject action = new BasicDBObject("$set", fields);
-        QueryResult<WriteResult> update = userCollection.update(query, action, null);
-        if (update.getResult().get(0).getN() == 0) {  //0 query matches.
+//        BasicDBObject query = new BasicDBObject("id", userId);
+//        query.put("email", email);
+        Query query = new Query(QueryParams.ID.key(), userId);
+        query.append(QueryParams.EMAIL.key(), email);
+        Bson bson = parseQuery(query);
+
+//        BasicDBObject fields = new BasicDBObject("password", newCryptPass);
+//        BasicDBObject action = new BasicDBObject("$set", fields);
+        Bson set = Updates.set("password", new Document("password", newCryptPass));
+
+//        QueryResult<WriteResult> update = userCollection.update(query, action, null);
+        QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
+        if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or email");
         }
         return endQuery("Reset Password", startTime, update);
@@ -350,13 +363,21 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
     public QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject("id", userId);
-        query.put("sessions.id", sessionId);
-        BasicDBObject projection = new BasicDBObject("sessions",
-                new BasicDBObject("$elemMatch",
-                        new BasicDBObject("id", sessionId)));
-        QueryResult<DBObject> result = userCollection.find(query, projection, null);
-        User user = parseUser(result);
+//        BasicDBObject query = new BasicDBObject("id", userId);
+//        query.put("sessions.id", sessionId);
+        Query query1 = new Query(QueryParams.ID.key(), userId)
+                .append(QueryParams.SESSION_ID.key(), sessionId);
+        Bson bson = parseQuery(query1);
+
+
+//        BasicDBObject projection = new BasicDBObject("sessions",
+//                new BasicDBObject("$elemMatch",
+//                        new BasicDBObject("id", sessionId)));
+        Bson projection = Projections.elemMatch("sessions", Filters.eq("id", sessionId));
+
+//        QueryResult<DBObject> result = userCollection.find(query, projection, null);
+        QueryResult<Document> documentQueryResult = userCollection.find(bson, projection, null);
+        User user = parseUser(documentQueryResult);
 
         return endQuery("getSession", startTime, user.getSessions());
     }
@@ -499,6 +520,7 @@ public class CatalogMongoUserDBAdaptor extends AbstractCatalogMongoDBAdaptor imp
         createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
         createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
         createOrQuery(query, QueryParams.EMAIL.key(), "email", andBsonList);
+        createOrQuery(query, QueryParams.PASSWORD.key(), "password", andBsonList);
         createOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
         createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
         createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);

@@ -111,7 +111,10 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
 
     QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException;
+    @Deprecated
+    default QueryResult<File> getAllFiles(Query query, QueryOptions options) throws CatalogDBException {
+        return get(query, options);
+    }
 
     QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 

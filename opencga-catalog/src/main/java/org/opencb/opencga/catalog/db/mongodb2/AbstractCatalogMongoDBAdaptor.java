@@ -36,6 +36,7 @@ import java.util.List;
 /**
  * Created by imedina on 08/01/16.
  */
+@Deprecated
 public class AbstractCatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 
     protected AbstractCatalogMongoDBAdaptor(Logger logger) {

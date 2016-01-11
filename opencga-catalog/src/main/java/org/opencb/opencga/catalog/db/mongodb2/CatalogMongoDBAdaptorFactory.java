@@ -1,8 +1,8 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.DuplicateKeyException;
+import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -12,18 +12,19 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.api2.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Metadata;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.getDbObject;
+import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.getMongoDBDocument;
 
 /**
  * Created by pfurio on 08/01/16.
  */
-public class CatalogMongoDBAdaptorFactory extends AbstractCatalogMongoDBAdaptor implements CatalogDBAdaptorFactory {
+public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     static final String METADATA_OBJECT_ID = "METADATA";
     //Keys to foreign objects.
@@ -64,14 +65,17 @@ public class CatalogMongoDBAdaptorFactory extends AbstractCatalogMongoDBAdaptor 
     private CatalogMongoSampleDBAdaptor sampleDBAdaptor;
     private CatalogAuditDBAdaptor auditDBAdaptor;
 
-    public CatalogMongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList,
-                                        MongoDBConfiguration configuration, String database) {
-        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
+    private Logger logger;
+
+    public CatalogMongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
+                                        String database) {
+//        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
         this.configuration = configuration;
         this.database = database;
 
-        connect();
+        logger = LoggerFactory.getLogger(this.getClass());
+//        connect();
     }
 
     @Override
@@ -88,7 +92,8 @@ public class CatalogMongoDBAdaptorFactory extends AbstractCatalogMongoDBAdaptor 
             }
 
             try {
-                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
+//                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
+                Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
                 metaCollection.insert(metadataObject, null);
 

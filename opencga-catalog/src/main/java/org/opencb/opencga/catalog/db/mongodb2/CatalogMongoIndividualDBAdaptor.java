@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -48,7 +49,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
+public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
     private final MongoDBCollection metaCollection;
     private final MongoDBCollection individualCollection;
@@ -56,7 +57,7 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdapt
 
     public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
             individualCollection) {
-        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
+//        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaCollection;
         this.individualCollection = individualCollection;
@@ -90,7 +91,7 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdapt
 
         individual.setId(individualId);
 
-        DBObject individualDbObject = getDbObject(individual, "Individual");
+        Document individualDbObject = getMongoDBDocument(individual, "Individual");
         individualDbObject.put(_ID, individualId);
         individualDbObject.put(_STUDY_ID, studyId);
         QueryResult<WriteResult> insert = individualCollection.insert(individualDbObject, null);
@@ -279,8 +280,8 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdapt
 
         long startTime = startQuery();
 
-        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets"))
-                .first();
+        Individual individual =
+                getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : individual.getAnnotationSets()) {
             if (as.getId().equals(annotationId)) {
@@ -293,10 +294,17 @@ public class CatalogMongoIndividualDBAdaptor extends AbstractCatalogMongoDBAdapt
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
-        DBObject query = new BasicDBObject(_ID, individualId);
-        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
-        if (resultQueryResult.first().getN() < 1) {
+//        DBObject query = new BasicDBObject(_ID, individualId);
+//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
+//        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
+//        if (resultQueryResult.first().getN() < 1) {
+//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+//        }
+
+        Bson eq = Filters.eq(_ID, individualId);
+        Bson pull = Updates.pull("annotationSets", new Document("id", annotationId));
+        QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
+        if (update.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 

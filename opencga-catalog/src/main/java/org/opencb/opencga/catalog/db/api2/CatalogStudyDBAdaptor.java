@@ -39,6 +39,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         CREATOR_ID("creatorId", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        PROJECT_ID("_projectId", TEXT_ARRAY, ""),
 
         GROUP_ID("group.id", INTEGER_ARRAY, ""),
 
