@@ -653,6 +653,10 @@ public class VariantCommandExecutor extends CommandExecutor {
             configuration.getBenchmark().setConcurrency(benchmarkCommandOptions.concurrency);
         }
 
+        if (benchmarkCommandOptions.execute != null) {
+            configuration.getBenchmark().setExecute(benchmarkCommandOptions.execute);
+        }
+
         logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
 
         // validate

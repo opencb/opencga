@@ -26,8 +26,12 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.*;
+
 
 /**
  * Created by imedina on 16/06/15.
@@ -71,12 +75,13 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     @Override
-    public BenchmarkStats query() throws ExecutionException, InterruptedException {
+    public BenchmarkStats query() throws ExecutionException, InterruptedException, IOException {
         return query(3, new LinkedHashSet<>(BENCHMARK_TESTS));
     }
 
     @Override
-    public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException, InterruptedException {
+    public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException,
+            InterruptedException, IOException {
         benchmarkStats = new BenchmarkStats();
 
         // If "*" is the only tests to execute then we execute all the defined tests
@@ -85,6 +90,27 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         }
 
         for (int i = 0; i < numRepetitions; i++) {
+            QueryOptions queryOptions = new QueryOptions();
+            Query query = new Query();
+
+//            String command = "gnome-terminal -e \"bash -c\" \"cd /home; exec bash\"";
+//            String domainName = "google.com";
+//            String command = "ping -c 3 " + domainName;
+//            String output = executeCommand(command);
+//            System.out.println(output);
+
+
+//            gnome-terminal -e "bash -c \"cd /home; exec bash\""
+//            new String[]{"bash","-c","ls /home/XXX"}
+//            Process p = Runtime.getRuntime().exec("/bin/bash -c gnome-terminal \"cd /home; exec bash\"");
+            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "gnome-terminal ls /home/pawan/random.txt"});
+
+//            if (storageConfiguration.getBenchmark().getExecute() != null) {
+//                System.out.println(">>>>>>>>>>>>>>>>>>>>>" + variantDBAdaptor.get(query, queryOptions));
+//                executeThreads(storageConfiguration.getBenchmark().getExecute(), () ->
+//                        variantDBAdaptor.get(query, queryOptions));
+//            }
+
             Iterator<String> iterator = benchmarkTests.iterator();
             while (iterator.hasNext()) {
                 String next = iterator.next();
@@ -94,8 +120,8 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                     queryParams = queryType[1];
                 }
 
-                Query query = new Query();
-                QueryOptions queryOptions = new QueryOptions();
+//                Query query = new Query();
+//                QueryOptions queryOptions = new QueryOptions();
                 switch (queryType[0]) {
                     case "count":
                         executeThreads(queryType[0], () -> variantDBAdaptor.count(query));
@@ -169,6 +195,38 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
         benchmarkStats.addStdDeviation(test, totalTime);
 
         return futureList;
+    }
+
+//    private void terminalLauncher() throws IOException {
+//        String command= "/usr/bin/xterm";
+//        Runtime rt = Runtime.getRuntime();
+//        Process pr = rt.exec(command);
+//        pr.isAlive();
+//    }
+
+
+    private String executeCommand(String command) {
+
+        StringBuffer output = new StringBuffer();
+
+        Process p;
+        try {
+            p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                output.append(line + "\n");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return output.toString();
+
     }
 }
 

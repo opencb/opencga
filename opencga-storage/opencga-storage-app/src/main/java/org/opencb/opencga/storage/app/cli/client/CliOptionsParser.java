@@ -634,6 +634,9 @@ public class CliOptionsParser {
         @Parameter(names = {"--concurrency"}, description = "Number of threads to run in parallel", required = false, arity = 1)
         public int concurrency = 1;
 
+        @Parameter(names = {"-e", "--execute"}, description = "Query string e.g. db.variants.find()", required = false, arity = 1)
+        public String execute;
+
     }
 
     @Parameters(commandNames = {"stats-variants"}, commandDescription = "Create and load stats into a database.")

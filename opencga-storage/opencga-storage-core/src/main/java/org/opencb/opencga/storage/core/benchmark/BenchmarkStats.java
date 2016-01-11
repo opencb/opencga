@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * Created by imedina on 16/06/15.
  */
@@ -79,17 +80,18 @@ public class BenchmarkStats {
         return stdDevRoundOff; //Math.sqrt(variance(counter));
     }
 
-//    private static final String ANSI_BLACK = "\u001B[30m";
+    //    private static final String ANSI_BLACK = "\u001B[30m";
 //    private static final String ANSI_WHITE = "\u001B[37m";
 //    private static final String ANSI_RESET = "\u001B[0m";
 //    private static final String ANSI_RED = "\u001B[31m";
 //    private static final String ANSI_BLUE = "\u001B[34m";
-//    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
     private static final String ANSI_CYAN = "\u001B[36m";
 
     public void printSummary(String dbName, String tableName, int nuOfRepetition, int numOfThreads) {
+        String divider = "----------------------------------------------------------------------";
         System.out.println(ANSI_YELLOW + "#Following are the test stats");
         System.out.print(ANSI_YELLOW + "#Benchmark options:\t");
         System.out.print(ANSI_GREEN + "Database: " + ANSI_CYAN + dbName + ", ");
@@ -99,18 +101,17 @@ public class BenchmarkStats {
         System.out.println();
 
         System.out.println(ANSI_YELLOW + "#Test\tCounter values\tAverage\tVariance\tStandard Deviation");
+        System.out.println(ANSI_PURPLE + divider);
         for (String key : counters.keySet()) {
-            System.out.print(ANSI_GREEN + "Test: " + ANSI_CYAN + key + "\t");
-            System.out.print(ANSI_GREEN + "Counter values: " + ANSI_CYAN + StringUtils.join(counters.get(key), ",") + "\t");
-            System.out.print(ANSI_GREEN + "Average: " + ANSI_CYAN + avg(key) + "\t");
-            System.out.print(ANSI_GREEN + "Variance: " + ANSI_CYAN + variance(key) + "\t");
-//            System.out.print(ANSI_GREEN + "Standard Deviation: " + ANSI_CYAN + standardDeviation(key));
-            System.out.printf(ANSI_GREEN + "%25s" + ANSI_CYAN + "%s", "Standard Deviation: ", standardDeviation(key));
+            System.out.print(ANSI_CYAN + key + "\t");
+            System.out.print(ANSI_CYAN + StringUtils.join(counters.get(key), ",") + "\t");
+            System.out.print(ANSI_CYAN + avg(key) + "\t");
+            System.out.print(ANSI_CYAN + variance(key) + "\t");
+            System.out.print(ANSI_CYAN + standardDeviation(key));
             System.out.println();
+            System.out.println(ANSI_PURPLE + divider);
         }
     }
-
-
     /*public void printSummary(String dbName, String tableName, int nuOfRepetition, int numOfThreads) {
         System.out.println("Following are the test stats");
         System.out.print("Database name: " + dbName + ", ");

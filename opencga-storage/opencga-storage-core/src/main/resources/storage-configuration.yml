@@ -36,6 +36,7 @@ benchmark:
   load: false
   variantTests: ["*"]    ## A list with tests names, eg. ["count", "distinct"]. If a single element ["*"] then all defined tests are executed.
   concurrency: 1
+  execute: "*"           ## Query string
   databaseName: "opencga"
   table: "variants"
   database:   ## 'local' connection to CellBase MongoDB

@@ -35,6 +35,7 @@ public class BenchmarkConfiguration {
     @Deprecated
     private DatabaseCredentials database;
     private int concurrency;
+    private String execute;
 
     @Override
     public String toString() {
@@ -47,6 +48,7 @@ public class BenchmarkConfiguration {
         sb.append(", table='").append(table).append('\'');
         sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
+        sb.append(", execute=").append(execute);
         sb.append('}');
         return sb.toString();
     }
@@ -113,5 +115,13 @@ public class BenchmarkConfiguration {
 
     public void setConcurrency(int concurrency) {
         this.concurrency = concurrency;
+    }
+
+    public String getExecute() {
+        return execute;
+    }
+
+    public void setExecute(String execute) {
+        this.execute = execute;
     }
 }
