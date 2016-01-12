@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+from pyCGA.CLIMethods import Methods
+from pyCGA.OptionParsers import option_parser
+
+__author__ = 'antonior'
+
+if __name__ == '__main__':
+    parser = option_parser()
+
+    # This execute all the methods
+    args = parser.parser.parse_args()
+    method = getattr(Methods, "_".join([args.tool, args.method]))
+
+    if callable(method):
+        method(args)
+    else:
+        print("_".join([args.tool, args.method]) + " method is not implemented")

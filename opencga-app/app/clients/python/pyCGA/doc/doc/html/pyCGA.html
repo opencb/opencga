@@ -1,0 +1,829 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>PyCGA &mdash; pyCGA 0.1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="pyCGAVariantFetcher" href="pyVariantFetcher.html"/>
+        <link rel="prev" title="How To Use API from python" href="queries_from_python.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="documentation.html" class="icon icon-home"> pyCGA
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#ids-in-opencga">Ids in OpenCGA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#pycgaidconverter">pyCGAIdConverter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#common-use-examples">Common use examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">PyCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pycgalogin">PyCGALogin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#file-tools">File Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#use-case-example">Use case example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sample-tools">Sample Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#individuals-tools">Individuals Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#variable-sets-tools">Variable Sets Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="documentation.html">pyCGA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="documentation.html">Docs</a> &raquo;</li>
+      
+    <li>PyCGA</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="pycga">
+<h1>PyCGA<a class="headerlink" href="#pycga" title="Permalink to this headline">¶</a></h1>
+<p>If you are using PyCGA you have to know the first you need is authenticate yourself in the system, so you will be recognize
+by the application and you will be granted to perform the queries you are allowed to. Once you are finished to work with
+the application you should log out. Both actions can be done using a simple command line application: PyCGALogin.</p>
+<div class="section" id="pycgalogin">
+<h2>PyCGALogin<a class="headerlink" href="#pycgalogin" title="Permalink to this headline">¶</a></h2>
+<p>This tool provide the interface to log in and logout to the system</p>
+<pre class="literal-block">
+usage: pyCGALogin [-h] {login,logout} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>login</strong></dt>
+<dd><p class="first">Use this command to log in the system and get a Session Id</p>
+<pre class="literal-block">
+usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --user
+                        User --pwd Password
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--host</span></kbd></td>
+<td>Optional</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--instance=opencga</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Optional</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--user</span></kbd></td>
+<td>Required. User name</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pwd</span></kbd></td>
+<td>Required. User password</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>logout</strong></dt>
+<dd><p class="first">Use this command to log out, using your current Session Id</p>
+<pre class="literal-block">
+usage: pyCGALogin logout [-h] --user User
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--user</span></kbd></td>
+<td>Required. User name</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>If you have already your session Id, you can start to query the Catalog. The aim of pyCGA is provide very simple command
+lines to perform complex actions in Catalog. In this guide you are going to find how to call these programs from the linux
+terminal and several example to use cases. PyCGA application it is compounded of 12 tools distributed in 5 sections:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#users-docs"><span>User Tools</span></a></li>
+<li><a class="reference internal" href="#files-docs"><span>File Tools</span></a></li>
+<li><a class="reference internal" href="#samples-docs"><span>Sample Tools</span></a></li>
+<li><a class="reference internal" href="#individuals-docs"><span>Individuals Tools</span></a></li>
+<li><a class="reference internal" href="#variablesets-docs"><span>Variable Sets Tools</span></a></li>
+</ul>
+</div>
+<div class="section" id="user-tools">
+<span id="users-docs"></span><h2>User Tools<a class="headerlink" href="#user-tools" title="Permalink to this headline">¶</a></h2>
+<pre class="literal-block">
+usage: pyCGA users [-h] {create,delete,acl} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>create</strong></dt>
+<dd><p class="first">Use this command to create a new user, only administrators are allowed to perform this action</p>
+<pre class="literal-block">
+usage: pyCGA users create [-h] --user user --name name --email email --pwd
+                          password --org organization
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--user</span></kbd></td>
+<td>Required. User name</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--name</span></kbd></td>
+<td>Required. User full name</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--email</span></kbd></td>
+<td>Required. Uses email</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pwd</span></kbd></td>
+<td>Required. password</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--org</span></kbd></td>
+<td>Required. Organization</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>delete</strong></dt>
+<dd><p class="first">Use this command to delete a existing user, only administrators are allowed to perform this action</p>
+<pre class="literal-block">
+usage: pyCGA users delete [-h] --userId UserId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--userId</span></kbd></td>
+<td>Required. User name</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>acl</strong></dt>
+<dd><p class="first">Use this command to check the permission of an existing user</p>
+<pre class="literal-block">
+usage: pyCGA users acl [-h] --userId UserId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--userId</span></kbd></td>
+<td>Required. User name</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="file-tools">
+<span id="files-docs"></span><h2>File Tools<a class="headerlink" href="#file-tools" title="Permalink to this headline">¶</a></h2>
+<p>methods for files</p>
+<pre class="literal-block">
+usage: pyCGA files [-h]
+                   {index,info,query_stats,search_by_sample,link_file} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>index</strong></dt>
+<dd><p class="first">index a bam or vcf file</p>
+<pre class="literal-block">
+usage: pyCGA files index [-h] --fileId file id [--outdir output directory]
+                         [--annotate] --studyId StudyId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--fileId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--outdir</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotate=False</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Variants will be annotated</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>info</strong></dt>
+<dd><p class="first">reetrieve info on a file given its id</p>
+<pre class="literal-block">
+usage: pyCGA files info [-h] --fileId file id --subset file id --field file id
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--fileId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--subset</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--field</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>query_stats</strong></dt>
+<dd><p class="first">retrieve info on a file given its id</p>
+<pre class="literal-block">
+usage: pyCGA files query_stats [-h] --studyId study id --fileType file type
+                               ALIGNMENT o VARIANTS --query query e.g
+                               BAM_HEADER_MACHINE.MACHINE
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--fileType</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--query</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>search_by_sample</strong></dt>
+<dd><p class="first">retrieve the ids and the path of the files</p>
+<pre class="literal-block">
+usage: pyCGA files search_by_sample [-h] --studyId study id --fileType file
+                                    type ALIGNMENT or VARIANTS --sampleName
+                                    [Sample Name [Sample Name ...]]
+                                    [--path path]
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--fileType</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--sampleName</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--path=~^</span></kbd></td>
+<td>Optional. Path under the search will be done. i,e: ~^by_date/*</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>link_file</strong></dt>
+<dd><p class="first">link a single file</p>
+<pre class="literal-block">
+usage: pyCGA files link_file [-h] --studyId study id --uri full path to file
+                             [--sampleId catalog sample id for file] --path
+                             Path in catalog
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--uri</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--sampleId</span></kbd></td>
+<td>Not Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--path</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="section" id="use-case-example">
+<h3>Use case example<a class="headerlink" href="#use-case-example" title="Permalink to this headline">¶</a></h3>
+<dl class="docutils">
+<dt>Get the files</dt>
+<dd>pyCGAIdConverter [sid] &#8211;host [hostname] &#8211;studyID [studyID] &#8211;inputIDType SampleName &#8211;outputIDType IndividualName &#8211;Id [sampleName]</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="sample-tools">
+<span id="samples-docs"></span><h2>Sample Tools<a class="headerlink" href="#sample-tools" title="Permalink to this headline">¶</a></h2>
+<p>methods for samples</p>
+<pre class="literal-block">
+usage: pyCGA samples [-h] {search_by_name,search_by_annotation,annotate} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>search_by_name</strong></dt>
+<dd><p class="first">Undocumented</p>
+<pre class="literal-block">
+usage: pyCGA samples search_by_name [-h] --name URI --studyId StudyId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--name</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>search_by_annotation</strong></dt>
+<dd><p class="first">Undocumented</p>
+<pre class="literal-block">
+usage: pyCGA samples search_by_annotation [-h] --variableSetName
+                                          variableSetName --studyId StudyId
+                                          --queries [queries [queries ...]]
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--variableSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--queries</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>annotate</strong></dt>
+<dd><p class="first">Undocumented</p>
+<pre class="literal-block">
+usage: pyCGA samples annotate [-h] --variableSetName variableSetName
+                              --sampleName sampleName --annotationSetName
+                              annotationSetName --jsonFile jsonFile --studyId
+                              StudyId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--variableSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--sampleName</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotationSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--jsonFile</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="individuals-tools">
+<span id="individuals-docs"></span><h2>Individuals Tools<a class="headerlink" href="#individuals-tools" title="Permalink to this headline">¶</a></h2>
+<p>methods for individuals</p>
+<pre class="literal-block">
+usage: pyCGA individuals [-h]
+                         {create,search,search_by_annotation,annotate} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>create</strong></dt>
+<dd><p class="first">create an individual and assign samples to that individual</p>
+<pre class="literal-block">
+usage: pyCGA individuals create [-h] --name name --gender name
+                                [--family family] [--fatherId fatherid]
+                                [--motherId motherid] --studyId StudyId
+                                --wellIds wellids
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--name</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--gender</span></kbd></td>
+<td>required - MALE FEMALE or UNKNOWN</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--family=</span></kbd></td>
+<td>Not Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--fatherId=</span></kbd></td>
+<td>Not Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--motherId=</span></kbd></td>
+<td>Not Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--wellIds</span></kbd></td>
+<td>comma separated list of wellids</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>search</strong></dt>
+<dd><p class="first">search individuals given the individual name (participant id</p>
+<pre class="literal-block">
+usage: pyCGA individuals search [-h] --name name --studyId StudyId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--name</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>search_by_annotation</strong></dt>
+<dd><p class="first">Undocumented</p>
+<pre class="literal-block">
+usage: pyCGA individuals search_by_annotation [-h] --variableSetName
+                                              variableSetName --studyId
+                                              StudyId --queries
+                                              [queries [queries ...]]
+                                              --outfile outfile
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--variableSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--queries</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--outfile</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+<dt><strong>annotate</strong></dt>
+<dd><p class="first">Undocumented</p>
+<pre class="literal-block">
+usage: pyCGA individuals annotate [-h] --variableSetName variableSetName
+                                  --individualName individualName
+                                  --annotationSetName annotationSetName
+                                  --jsonFile jsonFile --studyId StudyId
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--variableSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--individualName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--annotationSetName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--jsonFile</span></kbd></td>
+<td>Required</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+<div class="section" id="variable-sets-tools">
+<span id="variablesets-docs"></span><h2>Variable Sets Tools<a class="headerlink" href="#variable-sets-tools" title="Permalink to this headline">¶</a></h2>
+<pre class="literal-block">
+usage: pyCGA variables [-h] {create} ...
+</pre>
+<dl class="docutils">
+<dt>Sub-commands:</dt>
+<dd><dl class="first last docutils">
+<dt><strong>create</strong></dt>
+<dd><p class="first">Create new annotation Set</p>
+<pre class="literal-block">
+usage: pyCGA variables create [-h] --name NameOfVariableSet --studyId studyID
+                              --json json [--format format]
+</pre>
+<dl class="last docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--name</span></kbd></td>
+<td>Required. Name of the new variable set</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--studyId</span></kbd></td>
+<td>Required. Study Id were the variable sets will be stored</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--json</span></kbd></td>
+<td>Required. Json file with the variableSet</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--format=OPENCGA</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Default: OPENCGA</p>
+<p class="last">Possible choices: AVRO, OPENCGA</p>
+</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pyVariantFetcher.html" class="btn btn-neutral float-right" title="pyCGAVariantFetcher" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="queries_from_python.html" class="btn btn-neutral" title="How To Use API from python" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

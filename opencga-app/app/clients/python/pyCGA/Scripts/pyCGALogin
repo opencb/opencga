@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+import json
+import os
+from pyCGA.CLIMethods import Methods
+from pyCGA.OptionParsers import get_options_login
+
+__author__ = 'antonior'
+
+if __name__ == '__main__':
+    parser = get_options_login()
+    args = parser.parse_args()
+    openCGA_dir = os.path.join(os.getenv("HOME"),".opencga")
+    if args.tool == "login":
+
+
+        sid = Methods.users_login(args)
+
+
+        token = {"user": args.user, "host": args.host, "sid": sid}
+        if not os.path.exists(openCGA_dir):
+            os.system("mkdir " + openCGA_dir)
+
+        fdw = open(os.path.join(openCGA_dir, "openCGA.json"), "w")
+        json.dump(token, fdw)
+        fdw.close()
+
+    if args.tool == "logout":
+        Methods.user_logout(args)
+        os.system("rm " + os.path.join(openCGA_dir, "openCGA.json"))
