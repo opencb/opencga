@@ -4,36 +4,39 @@ import com.mongodb.*;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.parseStudies;
 
 /**
  * Created by pfurio on 08/01/16.
  */
 public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements CatalogFileDBAdaptor {
 
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+    private final MongoDBCollection fileCollection;
 
-    public CatalogMongoFileDBAdaptor(Logger logger) {
-//        super(logger);
+    public CatalogMongoFileDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection fileCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoFileDBAdaptor.class));
+        this.dbAdaptorFactory = dbAdaptorFactory;
+        this.fileCollection = fileCollection;
     }
-
 
     private boolean filePathExists(int studyId, String path) {
         BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);

@@ -83,7 +83,7 @@ class CatalogMongoDBUtils {
 //                BasicDBObject.class
 //        );
 
-        Bson query = Filters.eq("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID);
+        Bson query = Filters.eq("_id", CatalogMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);

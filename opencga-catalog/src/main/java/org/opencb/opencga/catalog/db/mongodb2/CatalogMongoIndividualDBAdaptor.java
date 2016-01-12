@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Variable;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -50,15 +51,12 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
-    private final MongoDBCollection metaCollection;
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection individualCollection;
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            individualCollection) {
-//        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
+    public CatalogMongoIndividualDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection individualCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.individualCollection = individualCollection;
     }
 

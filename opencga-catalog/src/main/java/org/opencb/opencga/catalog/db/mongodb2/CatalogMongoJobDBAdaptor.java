@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -34,8 +36,13 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.parseOb
  */
 public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements CatalogJobDBAdaptor {
 
-    public CatalogMongoJobDBAdaptor(Logger logger) {
-        super();
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+    private final MongoDBCollection jobCollection;
+
+    public CatalogMongoJobDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection jobCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
+        this.dbAdaptorFactory = dbAdaptorFactory;
+        this.jobCollection = jobCollection;
     }
 
 
@@ -43,7 +50,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        dbFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int jobId = getNewId();
         job.setId(jobId);

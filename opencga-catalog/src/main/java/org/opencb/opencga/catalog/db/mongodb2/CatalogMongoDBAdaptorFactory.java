@@ -28,15 +28,6 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.getMong
 public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     static final String METADATA_OBJECT_ID = "METADATA";
-    //Keys to foreign objects.
-    static final String _ID = "_id";
-    static final String _PROJECT_ID = "_projectId";
-    static final String _STUDY_ID = "_studyId";
-    static final String FILTER_ROUTE_STUDIES = "projects.studies.";
-    static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
-    static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
-    static final String FILTER_ROUTE_FILES = "projects.studies.files.";
-    static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
     private static final String USER_COLLECTION = "user";
     private static final String STUDY_COLLECTION = "study";
     private static final String FILE_COLLECTION = "file";
@@ -64,19 +55,22 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoStudyDBAdaptor studyDBAdaptor;
     private CatalogMongoIndividualDBAdaptor individualDBAdaptor;
     private CatalogMongoSampleDBAdaptor sampleDBAdaptor;
+    private CatalogMongoFileDBAdaptor fileDBAdaptor;
+    private CatalogMongoJobDBAdaptor jobDBAdaptor;
+    private CatalogMongoProjectDBAdaptor projectDBAdaptor;
     private CatalogAuditDBAdaptor auditDBAdaptor;
 
     private Logger logger;
 
     public CatalogMongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
-                                        String database) {
+                                        String database) throws CatalogDBException {
 //        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
         this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
         this.configuration = configuration;
         this.database = database;
 
         logger = LoggerFactory.getLogger(this.getClass());
-//        connect();
+        connect();
     }
 
     @Override
@@ -124,7 +118,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     @Override
     public CatalogProjectDBAdaptor getCatalogProjectDbAdaptor() {
-        return null;
+        return projectDBAdaptor;
     }
 
     @Override
@@ -139,7 +133,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     @Override
     public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
-        return null;
+        return fileDBAdaptor;
     }
 
     @Override
@@ -154,7 +148,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     @Override
     public CatalogJobDBAdaptor getCatalogJobDBAdaptor() {
-        return null;
+        return jobDBAdaptor;
     }
 
     @Override
@@ -178,10 +172,21 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
         collections.put(AUDIT_COLLECTION, auditCollection = db.getCollection(AUDIT_COLLECTION));
 
+        /*
         userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);
         studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, metaCollection, studyCollection, fileCollection);
         individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, metaCollection, individualCollection);
         sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, metaCollection, sampleCollection, studyCollection);
+        auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
+        */
+
+        fileDBAdaptor = new CatalogMongoFileDBAdaptor(this, fileCollection);
+        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, individualCollection);
+        jobDBAdaptor = new CatalogMongoJobDBAdaptor(this, jobCollection);
+        projectDBAdaptor = new CatalogMongoProjectDBAdaptor(this, userCollection);
+        sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, sampleCollection);
+        studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, studyCollection);
+        userDBAdaptor = new CatalogMongoUserDBAdaptor(this, userCollection);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 
     }

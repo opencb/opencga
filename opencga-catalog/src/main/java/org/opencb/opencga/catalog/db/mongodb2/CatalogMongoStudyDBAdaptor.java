@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.*;
@@ -56,20 +57,14 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
 
-    private final CatalogDBAdaptorFactory dbAdaptorFactory;
-    private final MongoDBCollection metaCollection;
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection studyCollection;
-    private final MongoDBCollection fileCollection;
 
-    public CatalogMongoStudyDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            studyCollection, MongoDBCollection fileCollection) {
-//        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
+    public CatalogMongoStudyDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection studyCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.studyCollection = studyCollection;
-        this.fileCollection = fileCollection;
     }
-
 
     /**
      * Study methods

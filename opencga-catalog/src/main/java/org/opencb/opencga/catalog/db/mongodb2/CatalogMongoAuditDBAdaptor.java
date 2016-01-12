@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api2.CatalogAuditDBAdaptor;
-import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +40,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoAuditDBAdaptor extends AbstractCatalogDBAdaptor implements CatalogAuditDBAdaptor {
-
+public class CatalogMongoAuditDBAdaptor extends CatalogMongoDBAdaptor implements CatalogAuditDBAdaptor {
 
     private final MongoDBCollection auditCollection;
 

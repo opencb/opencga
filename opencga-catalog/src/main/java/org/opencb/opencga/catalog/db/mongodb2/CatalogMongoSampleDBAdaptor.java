@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Aggregates;
@@ -26,15 +25,18 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.bson.*;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api2.*;
+import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.LoggerFactory;
@@ -52,18 +54,13 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
 
 
-    private final CatalogDBAdaptorFactory dbAdaptorFactory;
-    private final MongoDBCollection metaCollection;
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection sampleCollection;
-    private MongoDBCollection studyCollection;
 
-    public CatalogMongoSampleDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection,
-                                       MongoDBCollection sampleCollection, MongoDBCollection studyCollection) {
-//        super(LoggerFactory.getLogger(CatalogSampleDBAdaptor.class));
+    public CatalogMongoSampleDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection sampleCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoSampleDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.sampleCollection = sampleCollection;
-        this.studyCollection = studyCollection;
     }
 
     /**
@@ -76,13 +73,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        /*
         QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("name", sample.getName()).append(_STUDY_ID, studyId));
+                */
+        Bson bson = Filters.and(Filters.eq("name", sample.getName()), Filters.eq(_STUDY_ID, studyId));
+        QueryResult<Long> count = sampleCollection.count(bson);
+//                new BsonDocument("name", new BsonString(sample.getName())).append(_STUDY_ID, new BsonInt32(studyId)));
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
         }
 
-        int sampleId = getNewAutoIncrementId(metaCollection);
+        int sampleId = getNewId();
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets
@@ -134,6 +136,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         List<DBObject> mongoQueryList = new LinkedList<>();
         List<DBObject> annotationSetFilter = new LinkedList<>();
+
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {

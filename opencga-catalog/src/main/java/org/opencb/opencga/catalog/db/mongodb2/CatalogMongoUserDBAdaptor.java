@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -47,15 +48,12 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
 
-    //    private final MongoDBCollection userCollection;
-//    private final MongoDBCollection metaCollection;
-    private final CatalogDBAdaptorFactory dbAdaptorFactory;
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+    private final MongoDBCollection userCollection;
 
-    public CatalogMongoUserDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection,
-                                     MongoDBCollection userCollection) {
-//        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
+    public CatalogMongoUserDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.userCollection = userCollection;
     }
 

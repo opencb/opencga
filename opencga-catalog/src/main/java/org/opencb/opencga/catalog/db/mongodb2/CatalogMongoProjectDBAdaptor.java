@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Aggregates;
@@ -35,7 +34,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -53,17 +51,14 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 /**
  * Created by imedina on 08/01/16.
  */
-public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor implements CatalogProjectDBAdaptor {
+public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implements CatalogProjectDBAdaptor {
 
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
-    private final MongoDBCollection metaCollection;
-    private final CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoProjectDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            userCollection) {
-        super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
+    public CatalogMongoProjectDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+        super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.userCollection = userCollection;
     }
 
