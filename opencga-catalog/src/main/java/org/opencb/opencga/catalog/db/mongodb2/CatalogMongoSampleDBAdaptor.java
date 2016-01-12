@@ -86,7 +86,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets
-        DBObject sampleObject = getDbObject(sample, "sample");
+        Document sampleObject = getMongoDBDocument(sample, "sample");
         sampleObject.put(_STUDY_ID, studyId);
         sampleObject.put(_ID, sampleId);
         sampleCollection.insert(sampleObject, null);
@@ -589,9 +589,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         /*QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, sampleId));*/
-        QueryResult<Long> count = sampleCollection.count(
-                new BsonDocument("annotationSets.id", new BsonString(annotationSet.getId()))
-                        .append(_ID, new BsonInt32(sampleId));
+        QueryResult<Long> count = sampleCollection.count(new BsonDocument("annotationSets.id", new BsonString(annotationSet.getId()))
+                        .append(_ID, new BsonInt32(sampleId)));
         if (overwrite) {
             if (count.getResult().get(0) == 0) {
                 throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());

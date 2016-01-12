@@ -328,8 +328,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
-            QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(_ID, userId), new BasicDBObject("$set", userParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(_ID, userId), new BasicDBObject("$set", userParameters), null);
+            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(_ID, userId), new Document("$set", userParameters), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("User", userId);
             }
         }
@@ -399,26 +400,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
 
-    //Join fields from other collections
-    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (user.getProjects() != null) {
-            for (Project project : user.getProjects()) {
-                joinFields(project, options);
-            }
-        }
-    }
-
-    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (options.getBoolean("includeStudies")) {
-            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudiesInProject(project.getId(), options).getResult());
-        }
-    }
 
     @Override
     public QueryResult<Long> count(Query query) {

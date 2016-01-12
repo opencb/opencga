@@ -85,10 +85,11 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
 
         // Check if project.alias already exists.
-        DBObject countQuery = BasicDBObjectBuilder
-                .start("id", userId)
-                .append("projects.alias", project.getAlias())
-                .get();
+//        DBObject countQuery = BasicDBObjectBuilder
+//                .start("id", userId)
+//                .append("projects.alias", project.getAlias())
+//                .get();
+        Bson countQuery = Filters.and(Filters.eq("id", userId), Filters.eq("projects.alias", project.getAlias()));
         QueryResult<Long> count = userCollection.count(countQuery);
         if (count.getResult().get(0) != 0) {
             throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
@@ -100,15 +101,19 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         //Generate json
         int projectId = CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         project.setId(projectId);
-        DBObject query = new BasicDBObject("id", userId);
-        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
-        DBObject projectDBObject = getDbObject(project, "Project");
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
+//        DBObject query = new BasicDBObject("id", userId);
+//        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
+        Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
+
+        Document projectDBObject = getMongoDBDocument(project, "Project");
+//        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
+        Bson update = Updates.push("projects", projectDBObject);
 
         //Update object
-        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
+//        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
 
-        if (queryResult.getResult().get(0).getN() == 0) { // Check if the project has been inserted
+        if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
             throw new CatalogDBException("Project {alias:\"" + project.getAlias() + "\"} already exists in this user");
         }
 
@@ -335,9 +340,14 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
 
     @Override
     public String getProjectOwnerId(int projectId) throws CatalogDBException {
-        DBObject query = new BasicDBObject("projects.id", projectId);
-        DBObject projection = new BasicDBObject("id", "true");
-        QueryResult<DBObject> result = userCollection.find(query, projection, null);
+//        DBObject query = new BasicDBObject("projects.id", projectId);
+        Bson query = Filters.eq("projects.id", projectId);
+
+//        DBObject projection = new BasicDBObject("id", "true");
+        Bson projection = Projections.include("id");
+
+//        QueryResult<DBObject> result = userCollection.find(query, projection, null);
+        QueryResult<Document> result = userCollection.find(query, projection, null);
 
         if (result.getResult().isEmpty()) {
             throw CatalogDBException.idNotFound("Project", projectId);
@@ -438,6 +448,27 @@ public class CatalogMongoProjectDBAdaptor extends AbstractCatalogMongoDBAdaptor 
         //Put study
         QueryResult pushResult = userCollection.update(query, push, null);
         return endQuery("Set project acl", startTime, pushResult);
+    }
+
+    //Join fields from other collections
+    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
+        if (options == null) {
+            return;
+        }
+        if (user.getProjects() != null) {
+            for (Project project : user.getProjects()) {
+                joinFields(project, options);
+            }
+        }
+    }
+
+    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
+        if (options == null) {
+            return;
+        }
+        if (options.getBoolean("includeStudies")) {
+            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudiesInProject(project.getId(), options).getResult());
+        }
     }
 
 

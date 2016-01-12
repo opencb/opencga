@@ -5,6 +5,8 @@ import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -74,7 +76,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
+//        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
+        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
         Job job = parseJob(queryResult);
         if (job != null) {
             return endQuery("Get job", startTime, Arrays.asList(job));
@@ -86,8 +89,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options,
-                FILTER_ROUTE_JOBS));
+//        QueryResult<DBObject> queryResult =
+// jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
+        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Get all jobs", startTime, jobs);
     }
@@ -101,17 +105,20 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject(_ID, jobId);
-        Job job = parseJob(jobCollection.<DBObject>find(query, new BasicDBObject("visits", true), null));
+//        BasicDBObject query = new BasicDBObject(_ID, jobId);
+        Bson query = Filters.eq(_ID, jobId);
+//        Job job = parseJob(jobCollection.<DBObject>find(query, new BasicDBObject("visits", true), null));
+        Job job = parseJob(jobCollection.<DBObject>find(query, Projections.include("visits"), null));
         int visits;
         if (job != null) {
             visits = job.getVisits() + 1;
-            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
+//            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
+            Bson set = Updates.set("visits", visits);
             jobCollection.update(query, set, null);
         } else {
             throw CatalogDBException.idNotFound("Job", jobId);
         }
-        return endQuery("Inc visits", startTime, Arrays.asList(new ObjectMap("visits", visits)));
+        return endQuery("Inc visits", startTime, Collections.singletonList(new ObjectMap("visits", visits)));
     }
 
     @Override

@@ -520,6 +520,7 @@ class CatalogMongoDBUtils {
     }
 
 
+    @Deprecated
     static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey,
                                              List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
@@ -529,6 +530,7 @@ class CatalogMongoDBUtils {
         return addCompQueryFilter(option.getType(), optionsList, queryKey, andQuery);
     }
 
+    @Deprecated
     static private List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey,
                                                      List<DBObject> andQuery) throws CatalogDBException {
 

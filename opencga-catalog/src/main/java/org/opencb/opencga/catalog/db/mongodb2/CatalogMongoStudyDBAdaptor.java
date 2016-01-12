@@ -23,6 +23,7 @@ import com.mongodb.WriteResult;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -130,7 +131,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         study.setJobs(Collections.<Job>emptyList());
 
         //Create DBObject
-        DBObject studyObject = getDbObject(study, "Study");
+        Document studyObject = getMongoDBDocument(study, "Study");
         studyObject.put(_ID, newId);
 
         //Set ProjectId
@@ -411,7 +412,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         BasicDBObject project = new BasicDBObject("groups", new BasicDBObject("$elemMatch", groupQuery));
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+// QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+        QueryResult<Document> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>(1);
         for (Study study : studies) {
@@ -436,12 +438,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
+//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
+        Bson addToSet = Updates.addToSet("groups.$.userIds", userId);
 
-        if (queryResult.first().getN() != 1) {
+//        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = studyCollection.update(and, addToSet, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to add member to group " + groupId);
         }
 
@@ -456,12 +462,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+        Bson pull = Updates.pull("groups.$.userIds", userId);
 
-        if (queryResult.first().getN() != 1) {
+        QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
+
+        if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove member to group " + groupId);
         }
 
@@ -486,11 +495,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         int variableSetId = getNewAutoIncrementId(metaCollection);
         variableSet.setId(variableSetId);
-        DBObject object = getDbObject(variableSet, "VariableSet");
-        DBObject query = new BasicDBObject(_ID, studyId);
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+        Document object = getMongoDBDocument(variableSet, "VariableSet");
+//        DBObject query = new BasicDBObject(_ID, studyId);
+        Bson query = Filters.eq(_ID, studyId);
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+        Bson update = Updates.push("variableSets", object);
+
+//        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
         return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
     }
@@ -608,9 +621,12 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+//        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+        Bson query = Filters.eq("variableSets.id", variableSetId);
+        Bson projection = Projections.include("id");
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
             Object id = queryResult.getResult().get(0).get("id");
