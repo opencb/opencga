@@ -1,0 +1,162 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import json
+from pyCGA import OptionParsers
+from pyCGA.CatalogWS import Studies
+
+__author__ = 'antonior'
+
+
+def fetch_variants(args):
+    filters = {}
+
+    if args.ids:
+        filters["ids"] = args.ids
+
+    if args.region:
+        filters["region"] = args.region
+
+    if args.chromosome:
+        filters["chromosome"] = args.chromosome
+
+    if args.gene:
+        filters["gene"] = args.gene
+
+    if args.type:
+        filters["type"] = args.type
+
+    if args.reference:
+        filters["reference"] = args.reference
+
+    if args.alternate:
+        filters["alternate"] = args.alternate
+
+    if args.files:
+        filters["files"] = args.files
+
+    if args.maf:
+        filters["maf"] = args.maf
+
+    if args.mgf:
+        filters["mgf"] = args.mgf
+
+    if args.missingAlleles:
+        filters["missingAlleles"] = args.missingAlleles
+
+    if args.missingGenotypes:
+        filters["missingGenotypes"] = args.missingGenotypes
+
+    if args.annotationExists:
+        filters["annotationExists"] = "true"
+
+    if args.annotationDoesNotExist:
+        filters["annotationDoesNotExist"] = "true"
+
+    if args.genotype:
+        filters["genotype"] = args.genotype
+
+    if args.xref:
+        filters["annot-xref"] = args.xref
+
+    if args.biotype:
+        filters["annot-biotype"] = args.biotype
+
+    if args.polyphen:
+        filters["polyphen"] = args.polyphen
+
+    if args.sift:
+        filters["sift"] = args.sift
+
+    if args.conservation:
+        filters["conservation"] = args.conservation
+
+    if args.consequence_type:
+        filters["annot-ct"] = args.consequence_type
+
+    if args.alternate_frequency:
+        filters["alternate_frequency"] = args.alternate_frequency
+
+    if args.reference_frequency:
+        filters["reference_frequency"] = args.reference_frequency
+
+    if args.sort:
+        filters["sort"] = "true"
+
+    if args.group_by:
+        filters["group_by"] = args.group_by
+
+    if args.exclude:
+        filters["exclude"] = args.exclude
+
+    if args.unknownGenotype:
+        filters["unknownGenotype"] = args.unknownGenotype
+
+    if args.batchSize > 5000:
+        batchSize = 5000
+
+    elif args.batchSize < 1000:
+        batchSize = 1000
+
+    else:
+        batchSize = args.batchSize
+
+    if args.returnedSamples:
+
+        filters["returnedSamples"] = args.returnedSamples
+
+    if args.returnedFiles:
+        filters["returnedFiles"] = args.returnedFiles
+
+    if args.skip:
+        start = args.skip
+    else:
+        start = 0
+
+    if args.limit:
+        limit = int(args.limit)
+    else:
+        limit = 1000000
+
+    if limit >= batchSize:
+        last_batch = batchSize
+        i = 0
+        steps = [r for r in range(start, limit+start, batchSize)]
+        sample = Studies()
+        while last_batch == batchSize and i < len(steps):
+
+            filters["skip"] = str(steps[i])
+            filters["limit"] = str(batchSize)
+            result = sample.variants(args.studyID, **filters)
+            filters.pop("skip")
+            filters.pop("limit")
+            i += 1
+            last_batch = len(result)
+            for variant in result:
+                yield variant
+
+    else:
+
+        if args.skip:
+            filters["skip"] = args.skip
+        filters["limit"] = str(args.limit)
+        sample = Studies()
+        result = sample.variants(args.studyID, **filters)
+        for variant in result:
+            yield variant
+
+
+def main():
+    # This execute all the methods
+    parser = OptionParsers.get_options_fetcher()
+    args = parser.parse_args()
+    fdw = open(args.outputFile, "w")
+    for v in fetch_variants(args):
+        fdw.write(json.dumps(v) + "\n")
+
+    fdw.close()
+
+
+
+if __name__ == '__main__':
+    main()
+
