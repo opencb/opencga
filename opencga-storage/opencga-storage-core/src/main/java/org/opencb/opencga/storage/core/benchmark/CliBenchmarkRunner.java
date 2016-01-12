@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.benchmark;
 
+import org.opencb.datastore.core.Query;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -48,6 +49,11 @@ public class CliBenchmarkRunner extends BenchmarkRunner {
     @Override
     public BenchmarkStats query() throws ExecutionException, InterruptedException {
         return query(3, new LinkedHashSet<>());
+    }
+
+    @Override
+    public BenchmarkStats query(int numRepetitions, Query query) throws ExecutionException, InterruptedException {
+        return null;
     }
 
     @Override

@@ -58,7 +58,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -265,7 +264,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.database);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsCommandOptions, studyNames);
@@ -328,7 +327,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void queryGrpc() throws Exception {
         CliOptionsParser.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryGrpcCommandOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryGrpcCommandOptions.database);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         // We prepare and build the needed objects: query, queryOptions and outputStream to print results
@@ -362,8 +361,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
         String database = configuration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
-        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.dbName)) {
-            database = queryGrpcCommandOptions.dbName;
+        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.database)) {
+            database = queryGrpcCommandOptions.database;
         }
 
         // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
@@ -616,55 +615,63 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
-            IllegalAccessException, ClassNotFoundException, IOException {
-        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
+    private void benchmark() throws Exception {
+        CliOptionsParser.BenchmarkVariantCommandOptions benchmarkVariantCommandOptions =
+                variantCommandOptions.benchmarkVariantCommandOptions;
 
 // Overwrite default options from configuration.yaml with CLI parameters
-        if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
-            configuration.getBenchmark().setStorageEngine(benchmarkCommandOptions.commonOptions.storageEngine);
+        if (benchmarkVariantCommandOptions.commonOptions.storageEngine != null
+                && !benchmarkVariantCommandOptions.commonOptions.storageEngine.isEmpty()) {
+            configuration.getBenchmark().setStorageEngine(benchmarkVariantCommandOptions.commonOptions.storageEngine);
         } else {
             configuration.getBenchmark().setStorageEngine(configuration.getDefaultStorageEngineId());
             logger.debug("Storage Engine for benchmarking set to '{}'", configuration.getDefaultStorageEngineId());
         }
 
-        if (benchmarkCommandOptions.repetition > 0) {
-            configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+        if (benchmarkVariantCommandOptions.repetition > 0) {
+            configuration.getBenchmark().setNumRepetitions(benchmarkVariantCommandOptions.repetition);
         }
 
-        if (benchmarkCommandOptions.database != null && !benchmarkCommandOptions.database.isEmpty()) {
-            configuration.getBenchmark().setDatabaseName(benchmarkCommandOptions.database);
+        if (benchmarkVariantCommandOptions.database != null && !benchmarkVariantCommandOptions.database.isEmpty()) {
+            configuration.getBenchmark().setDatabaseName(benchmarkVariantCommandOptions.database);
         }
 
-        if (benchmarkCommandOptions.table != null && !benchmarkCommandOptions.table.isEmpty()) {
-            configuration.getBenchmark().setTable(benchmarkCommandOptions.table);
+        if (benchmarkVariantCommandOptions.table != null && !benchmarkVariantCommandOptions.table.isEmpty()) {
+            configuration.getBenchmark().setTable(benchmarkVariantCommandOptions.table);
         }
 
-        if (benchmarkCommandOptions.queries != null) {
-            configuration.getBenchmark().setVariantTests(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+        if (benchmarkVariantCommandOptions.queries != null) {
+            configuration.getBenchmark().setVariantTests(Arrays.asList(benchmarkVariantCommandOptions.queries.split(",")));
         }
 
         DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
-        if (benchmarkCommandOptions.host != null && !benchmarkCommandOptions.host.isEmpty()) {
-            databaseCredentials.setHosts(Arrays.asList(benchmarkCommandOptions.host.split(",")));
+        if (benchmarkVariantCommandOptions.host != null && !benchmarkVariantCommandOptions.host.isEmpty()) {
+            databaseCredentials.setHosts(Arrays.asList(benchmarkVariantCommandOptions.host.split(",")));
         }
 
-        if (benchmarkCommandOptions.concurrency > 0) {
-            configuration.getBenchmark().setConcurrency(benchmarkCommandOptions.concurrency);
+        if (benchmarkVariantCommandOptions.numThreads > 0) {
+            configuration.getBenchmark().setConcurrency(benchmarkVariantCommandOptions.numThreads);
         }
 
-        if (benchmarkCommandOptions.execute != null) {
-            configuration.getBenchmark().setExecute(benchmarkCommandOptions.execute);
+        if (benchmarkVariantCommandOptions.execute != null) {
+            configuration.getBenchmark().setExecute(benchmarkVariantCommandOptions.execute);
         }
-
-        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
 
         // validate
         checkParams();
-
-//        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
+        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
         BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
-        benchmarkManager.variantBenchmark();
+        if (benchmarkVariantCommandOptions.customQuery) {
+            System.out.println("hiiiiiii!!!!!!!");
+            VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(benchmarkVariantCommandOptions.database);
+            List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+
+            // We prepare and build the needed objects: query, queryOptions and outputStream to print results
+            Query query = VariantQueryCommandUtils.parseQuery(benchmarkVariantCommandOptions, studyNames);
+            benchmarkManager.variantBenchmark(query);
+        } else {
+            benchmarkManager.variantBenchmark(null);
+        }
     }
 
     private void checkParams() {

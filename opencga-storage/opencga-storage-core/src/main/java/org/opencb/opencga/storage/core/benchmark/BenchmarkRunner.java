@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import org.opencb.datastore.core.Query;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
+
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -43,6 +45,8 @@ public abstract class BenchmarkRunner {
     public abstract BenchmarkStats insert();
 
     public abstract BenchmarkStats query() throws ExecutionException, InterruptedException;
+
+    public abstract BenchmarkStats query(int numRepetitions, Query query) throws ExecutionException, InterruptedException;
 
     public abstract BenchmarkStats query(int numRepetitions, Set<String> queries) throws ExecutionException,
             InterruptedException;

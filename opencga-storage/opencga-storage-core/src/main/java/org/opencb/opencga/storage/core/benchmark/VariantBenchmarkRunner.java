@@ -79,6 +79,21 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
     }
 
     @Override
+    public BenchmarkStats query(int numRepetitions, Query query) throws ExecutionException, InterruptedException {
+        benchmarkStats = new BenchmarkStats();
+
+        QueryOptions queryOptions = new QueryOptions();
+        for (int i = 0; i < numRepetitions; i++) {
+            executeThreads("custom", () -> variantDBAdaptor.get(query, queryOptions));
+        }
+
+        benchmarkStats.printSummary(storageConfiguration.getBenchmark().getDatabaseName(),
+                storageConfiguration.getBenchmark().getTable(), storageConfiguration.getBenchmark().getNumRepetitions(),
+                storageConfiguration.getBenchmark().getConcurrency());
+        return benchmarkStats;
+    }
+
+    @Override
     public BenchmarkStats query(int numRepetitions, Set<String> benchmarkTests) throws ExecutionException,
             InterruptedException {
         benchmarkStats = new BenchmarkStats();
@@ -103,12 +118,6 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 //            new String[]{"bash","-c","ls /home/XXX"}
 //            Process p = Runtime.getRuntime().exec("/bin/bash -c gnome-terminal \"cd /home; exec bash\"");
 //            Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", "gnome-terminal ls /home/pawan/random.txt"});
-
-//            if (storageConfiguration.getBenchmark().getExecute() != null) {
-//                System.out.println(">>>>>>>>>>>>>>>>>>>>>" + variantDBAdaptor.get(query, queryOptions));
-//                executeThreads(storageConfiguration.getBenchmark().getExecute(), () ->
-//                        variantDBAdaptor.get(query, queryOptions));
-//            }
 
             Iterator<String> iterator = benchmarkTests.iterator();
             while (iterator.hasNext()) {

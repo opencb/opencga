@@ -70,7 +70,7 @@ public class CliOptionsParser {
         variantSubCommands.addCommand("query-grpc", variantCommandOptions.queryGrpCVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
-        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
+        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkVariantCommandOptions);
 
     }
 
@@ -205,7 +205,7 @@ public class CliOptionsParser {
         QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
-        BenchmarkCommandOptions benchmarkCommandOptions;
+        BenchmarkVariantCommandOptions benchmarkVariantCommandOptions;
 
         public VariantCommandOptions() {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
@@ -213,7 +213,7 @@ public class CliOptionsParser {
             this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
-            this.benchmarkCommandOptions = new BenchmarkCommandOptions();
+            this.benchmarkVariantCommandOptions = new BenchmarkVariantCommandOptions();
         }
     }
 
@@ -350,7 +350,7 @@ public class CliOptionsParser {
         public String output;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        public String dbName;
+        public String database;
 
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
                 required = false)
@@ -578,7 +578,7 @@ public class CliOptionsParser {
                 false, arity = 1)
         public String credentials;
 
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database", required = false, arity = 1)
         public String fileName;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
@@ -607,10 +607,10 @@ public class CliOptionsParser {
 
 
     @Parameters(commandNames = {"benchmark"}, commandDescription = "Benchmark load and fetch variants with different databases")
-    public class BenchmarkCommandOptions {
+    public class BenchmarkVariantCommandOptions extends QueryVariantsCommandOptions {
 
-        @ParametersDelegate
-        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+//        @ParametersDelegate
+//        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
 
 
         @Parameter(names = {"--num-repetition"}, description = "Number of repetition", required = false, arity = 1)
@@ -622,20 +622,24 @@ public class CliOptionsParser {
         @Parameter(names = {"--queries"}, description = "Queries to fetch the data from tables", required = false, arity = 1)
         public String queries;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
-        public String database;
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+//        public String database;
 
-        @Parameter(names = {"-t", "--table"}, description = "Benchmark variants", required = false, arity = 1)
+        @Parameter(names = {"--table"}, description = "Benchmark variants", required = false, arity = 1)
         public String table;
 
         @Parameter(names = {"--host"}, description = "DataBase name", required = false, arity = 1)
         public String host;
 
-        @Parameter(names = {"--concurrency"}, description = "Number of threads to run in parallel", required = false, arity = 1)
-        public int concurrency = 1;
+        @Parameter(names = {"--num-threads"}, description = "Number of threads to run in parallel", required = false, arity = 1)
+        public int numThreads = 1;
 
-        @Parameter(names = {"-e", "--execute"}, description = "Query string e.g. db.variants.find()", required = false, arity = 1)
+        @Deprecated
+        @Parameter(names = {"--execute"}, description = "Query string e.g. db.variants.find()", required = false, arity = 1)
         public String execute;
+
+        @Parameter(names = {"--custom-query"}, description = "", required = false, arity = 0)
+        public boolean customQuery;
 
     }
 

@@ -177,7 +177,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
     private void query() throws StorageManagerException, FileFormatException {
         CliOptionsParser.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = commandOptions.queryAlignmentsCommandOptions;
-        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName);
+        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.database);
 
         /**
          * Parse Regions
