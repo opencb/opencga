@@ -2,6 +2,9 @@ package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.*;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -59,8 +62,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        getCatalogStudyDBAdaptor().checkStudyId(studyId);
-        String ownerId = getCatalogStudyDBAdaptor().getStudyOwnerId(studyId);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        String ownerId = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyOwnerId(studyId);
 
         if (filePathExists(studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File from study { id:" + studyId + "}", "path", file.getPath());
@@ -72,7 +75,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         if (file.getOwnerId() == null) {
             file.setOwnerId(ownerId);
         }
-        DBObject fileDBObject = getDbObject(file, "File");
+        Document fileDBObject = getMongoDBDocument(file, "File");
         fileDBObject.put(_STUDY_ID, studyId);
         fileDBObject.put(_ID, newFileId);
 
@@ -92,12 +95,13 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException {
         long startTime = startQuery();
 
-        WriteResult id = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
+//        WriteResult id = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
+        DeleteResult deleteResult = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
         List<Integer> deletes = new LinkedList<>();
-        if (id.getN() == 0) {
+        if (deleteResult.getDeletedCount() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         } else {
-            deletes.add(id.getN());
+            deletes.add((int) deleteResult.getDeletedCount());
             return endQuery("delete file", startTime, deletes);
         }
     }
@@ -115,8 +119,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options,
-                FILTER_ROUTE_FILES));
+//        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options,
+//                FILTER_ROUTE_FILES));
+        QueryResult queryResult = nativeGet(new Query(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
         List<File> files = parseFiles(queryResult);
 
         return endQuery("Get all files", startTime, files);
@@ -126,7 +131,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<DBObject> folderResult = fileCollection.find(new BasicDBObject(_ID, folderId), filterOptions(options,
+        QueryResult<Document> folderResult = fileCollection.find(Filters.eq(_ID, folderId), filterOptions(options,
                 FILTER_ROUTE_FILES));
 
         File folder = parseFile(folderResult);
@@ -135,9 +140,11 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
         Object studyId = folderResult.getResult().get(0).get(_STUDY_ID);
 
-        BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);
-        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "[^/]+/?$"));
-        QueryResult<DBObject> filesResult = fileCollection.find(query, null);
+//        BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);
+//        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "[^/]+/?$"));
+        Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.regex("path", "^" + folder.getPath() + "[^/]+/?$"));
+//        QueryResult<DBObject> filesResult = fileCollection.find(query, null);
+        QueryResult<Document> filesResult = fileCollection.find(query, null);
         List<File> files = parseFiles(filesResult);
 
         return endQuery("Get all files", startTime, files);
@@ -148,8 +155,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         QueryOptions filterOptions = filterOptions(options, FILTER_ROUTE_FILES);
 
-        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_ID, fileId), filterOptions);
-
+        QueryResult<Document> queryResult = fileCollection.find(Filters.eq(_ID, fileId), filterOptions);
         File file = parseFile(queryResult);
         if (file != null) {
             return endQuery("Get file", startTime, Arrays.asList(file));
@@ -180,7 +186,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         String[] acceptedIntParams = {"jobId"};
         filterIntParams(parameters, fileParameters, acceptedIntParams);
         if (parameters.containsKey("jobId")) {
-            if (!jobExists(parameters.getInt("jobId"))) {
+//            if (!jobExists(parameters.getInt("jobId"))) {
+            if (!dbFactory.getCatalogJobDBAdaptor().jobExists(parameters.getInt("jobId"))) {
                 throw CatalogDBException.idNotFound("Job", parameters.getInt("jobId"));
             }
         }
@@ -189,7 +196,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
         if (parameters.containsKey("sampleIds")) {
             for (Integer sampleId : parameters.getAsIntegerList("sampleIds")) {
-                if (!sampleDBAdaptor.sampleExists(sampleId)) {
+                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().sampleExists(sampleId)) {
                     throw CatalogDBException.idNotFound("Sample", sampleId);
                 }
             }
@@ -202,7 +209,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if (!fileParameters.isEmpty()) {
-            QueryResult<WriteResult> update = fileCollection.update(new BasicDBObject(_ID, fileId),
+            QueryResult<WriteResult> update = fileCollection.update(Filters.eq(_ID, fileId),
                     new BasicDBObject("$set", fileParameters), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("File", fileId);
@@ -253,9 +260,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
-        DBObject query = new BasicDBObject(_ID, fileId);
-        DBObject projection = new BasicDBObject(_STUDY_ID, "true");
-        QueryResult<DBObject> result = fileCollection.find(query, projection, null);
+//        DBObject query = new BasicDBObject(_ID, fileId);
+//        DBObject projection = new BasicDBObject(_STUDY_ID, "true");
+        QueryResult<Document> result = fileCollection.find(Filters.eq(_ID, fileId), Projections.include(_STUDY_ID), null);
 
         if (!result.getResult().isEmpty()) {
             return (int) result.getResult().get(0).get(_STUDY_ID);
@@ -288,7 +295,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 .append(_ID, false)
                 .get();
 
-        QueryResult queryResult = fileCollection.find(new BasicDBObject(_ID, fileId), projection, null);
+        QueryResult queryResult = fileCollection.find(Filters.eq(_ID, fileId), projection, null);
         if (queryResult.getNumResults() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
@@ -377,8 +384,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public int getStudyIdByDatasetId(int datasetId) throws CatalogDBException {
         BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
-        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", 1), null);
-        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", 1), null);
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
+                .nativeGet(new Query("datasets.id", datasetId), new QueryOptions("include", "id"));
+        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsKey("id")) {
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
             Object id = queryResult.getResult().get(0).get("id");
@@ -465,12 +474,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
-                .start(_ID, studyId)
-                .append("datasets.name", dataset.getName())
-                .get());
+//        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
+//                .start(_ID, studyId)
+//                .append("datasets.name", dataset.getName())
+//                .get());
+
+        Query query = new Query(_ID, studyId)
+                .append("datasets.name", dataset.getName());
+        QueryResult<Long> count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query);
 
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Dataset { name: \"" + dataset.getName() + "\" } already exists in this study.");
@@ -479,7 +492,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         int newId = getNewId();
         dataset.setId(newId);
 
-        DBObject datasetObject = getDbObject(dataset, "Dataset");
+        Document datasetObject = getMongoDBDocument(dataset, "Dataset");
         QueryResult<WriteResult> update = studyCollection.update(
                 new BasicDBObject(_ID, studyId),
                 new BasicDBObject("$push", new BasicDBObject("datasets", datasetObject)), null);

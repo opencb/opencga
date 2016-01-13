@@ -160,8 +160,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         if (!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject(_ID, jobId);
             BasicDBObject updates = new BasicDBObject("$set", jobParameters);
-//            System.out.println("query = " + query);
-//            System.out.println("updates = " + updates);
             QueryResult<WriteResult> update = jobCollection.update(query, updates, null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
                 throw CatalogDBException.idNotFound("Job", jobId);
@@ -172,9 +170,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public int getStudyIdByJobId(int jobId) throws CatalogDBException {
-        DBObject query = new BasicDBObject(_ID, jobId);
-        DBObject projection = new BasicDBObject(_STUDY_ID, true);
-        QueryResult<DBObject> queryResult = jobCollection.find(query, projection, null);
+//        DBObject query = new BasicDBObject(_ID, jobId);
+//        DBObject projection = new BasicDBObject(_STUDY_ID, true);
+        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(_ID, jobId), Projections.include(_STUDY_ID), null);
 
         if (queryResult.getNumResults() != 0) {
             Object id = queryResult.getResult().get(0).get(_STUDY_ID);
@@ -217,16 +215,19 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException {
         long startTime = startQuery();
 
-        if (!userDBAdaptor.userExists(userId)) {
+        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().userExists(userId)) {
             throw new CatalogDBException("User {id:" + userId + "} does not exist");
         }
 
-        // Check if tools.alias already exists.
-        DBObject countQuery = BasicDBObjectBuilder
-                .start(_ID, userId)
-                .append("tools.alias", tool.getAlias())
-                .get();
-        QueryResult<Long> count = userCollection.count(countQuery);
+//         Check if tools.alias already exists.
+//        DBObject countQuery = BasicDBObjectBuilder
+//                .start(_ID, userId)
+//                .append("tools.alias", tool.getAlias())
+//                .get();
+//        QueryResult<Long> count = userCollection.count(countQuery);
+
+        Query query = new Query(_ID, userId).append("tools.alias", tool.getAlias());
+        QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query);
         if (count.getResult().get(0) != 0) {
             throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
         }

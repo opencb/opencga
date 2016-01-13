@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api2.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
@@ -51,10 +50,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
 
-    public CatalogMongoUserDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+    public CatalogMongoUserDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
+
     }
 
     /**

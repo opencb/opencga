@@ -186,7 +186,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         projectDBAdaptor = new CatalogMongoProjectDBAdaptor(this, userCollection);
         sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, sampleCollection);
         studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, studyCollection);
-        userDBAdaptor = new CatalogMongoUserDBAdaptor(this, userCollection);
+        userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 
     }
