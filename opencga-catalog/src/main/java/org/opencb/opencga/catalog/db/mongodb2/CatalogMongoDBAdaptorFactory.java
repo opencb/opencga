@@ -122,7 +122,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogUserDBAdaptor getCatalogUserDBAdaptor() {
+    public CatalogMongoUserDBAdaptor getCatalogUserDBAdaptor() {
         return userDBAdaptor;
     }
 

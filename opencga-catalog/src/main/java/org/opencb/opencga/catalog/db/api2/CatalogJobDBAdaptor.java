@@ -35,7 +35,9 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
         DATE("date", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", DECIMAL, "");
+        DISK_USAGE("diskUsage", DECIMAL, ""),
+
+        STUDY_ID("studyId", INTEGER_ARRAY, "");
 
 
         private final String key;
@@ -85,10 +87,30 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Job> deleteJob(int jobId) throws CatalogDBException;
+    default QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), jobId);
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions());
+        if (jobQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", jobId);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Job id '{}' does not exist (or there are too many)", jobId);
+        }
+        return jobQueryResult;
+    }
 
-    QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException;
+    default QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), jobId);
+        QueryResult<Job> jobQueryResult = get(query, options);
+        if (jobQueryResult == null || jobQueryResult.getResult().size() == 0) {
+            throw CatalogDBException.idNotFound("Job", jobId);
+        }
+        return jobQueryResult;
+    }
 
+    @Deprecated
     QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException;

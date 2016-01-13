@@ -47,8 +47,8 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
+//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
 
     public CatalogMongoUserDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
@@ -527,4 +527,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
     }
 
+    public MongoDBCollection getUserCollection() {
+        return userCollection;
+    }
 }

@@ -7,6 +7,7 @@ import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -66,19 +67,19 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     /**
      * At the moment it does not clean external references to itself.
      */
-    @Override
-    public QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
-        long startTime = startQuery();
-        Job job = getJob(jobId, null).first();
-        WriteResult id = jobCollection.remove(new BasicDBObject(_ID, jobId), null).getResult().get(0);
-        List<Integer> deletes = new LinkedList<>();
-        if (id.getN() == 0) {
-            throw CatalogDBException.idNotFound("Job", jobId);
-        } else {
-            deletes.add(id.getN());
-            return endQuery("delete job", startTime, Collections.singletonList(job));
-        }
-    }
+//    @Override
+//    public QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
+//        long startTime = startQuery();
+//        Job job = getJob(jobId, null).first();
+//        WriteResult id = jobCollection.remove(new BasicDBObject(_ID, jobId), null).getResult().get(0);
+//        List<Integer> deletes = new LinkedList<>();
+//        if (id.getN() == 0) {
+//            throw CatalogDBException.idNotFound("Job", jobId);
+//        } else {
+//            deletes.add(id.getN());
+//            return endQuery("delete job", startTime, Collections.singletonList(job));
+//        }
+//    }
 
     @Override
     public QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
@@ -95,12 +96,20 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-//        QueryResult<DBObject> queryResult =
-// jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
-        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
-        List<Job> jobs = parseJobs(queryResult);
-        return endQuery("Get all jobs", startTime, jobs);
+//        long startTime = startQuery();
+////        QueryResult<DBObject> queryResult =
+//// jobCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
+//        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
+//        List<Job> jobs = parseJobs(queryResult);
+//        return endQuery("Get all jobs", startTime, jobs);
+
+
+        // Check the studyId first and throw an Exception is not found
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+
+        // Retrieve and return Jobs
+        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
+        return get(query, options);
     }
 
     @Override
@@ -182,11 +191,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
     }
 
+    @Deprecated
     @Override
     public QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject mongoQuery = new BasicDBObject();
+        Document mongoQuery = new Document();
 
         if (query.containsKey("ready")) {
             if (query.getBoolean("ready")) {
@@ -197,16 +207,17 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             query.remove("ready");
         }
 
-        if (query.containsKey("studyId")) {
-            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
-        }
-
-        if (query.containsKey("status")) {
-            addQueryStringListFilter("status", query, mongoQuery);
-        }
+//        if (query.containsKey("studyId")) {
+//            addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
+//        }
+//
+//        if (query.containsKey("status")) {
+//            addQueryStringListFilter("status", query, mongoQuery);
+//        }
 
 //        System.out.println("query = " + query);
-        QueryResult<DBObject> queryResult = jobCollection.find(mongoQuery, null);
+//        QueryResult<DBObject> queryResult = jobCollection.find(mongoQuery, null);
+        QueryResult<Document> queryResult = jobCollection.find(mongoQuery, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);
     }
@@ -226,26 +237,28 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //                .get();
 //        QueryResult<Long> count = userCollection.count(countQuery);
 
-        Query query = new Query(_ID, userId).append("tools.alias", tool.getAlias());
-        QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query);
+        Query query1 = new Query(_ID, userId).append("tools.alias", tool.getAlias());
+        QueryResult<Long> count = dbAdaptorFactory.getCatalogUserDBAdaptor().count(query1);
         if (count.getResult().get(0) != 0) {
             throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
         }
 
+        // Create and add the new tool
         tool.setId(getNewId());
 
-        DBObject toolObject = getDbObject(tool, "tool");
-        DBObject query = new BasicDBObject(_ID, userId);
-        query.put("tools.alias", new BasicDBObject("$ne", tool.getAlias()));
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("tools", toolObject));
+        Document toolObject = getMongoDBDocument(tool, "tool");
+        Document query = new Document(_ID, userId);
+        query.put("tools.alias", new Document("$ne", tool.getAlias()));
 
+//        DBObject update = new BasicDBObject("$push", new BasicDBObject("tools", toolObject));
+        Bson push = Updates.push("tools", toolObject);
         //Update object
-        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
+//        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().update(query, push, null);
 
-        if (queryResult.getResult().get(0).getN() == 0) { // Check if the project has been inserted
+        if (queryResult.getResult().get(0).getModifiedCount() == 0) { // Check if the project has been inserted
             throw new CatalogDBException("Tool {alias:\"" + tool.getAlias() + "\"} already exists in this user");
         }
-
 
         return endQuery("Create tool", startTime, getTool(tool.getId()).getResult());
     }
@@ -253,14 +266,18 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<Tool> getTool(int id) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject query = new BasicDBObject("tools.id", id);
-        DBObject projection = new BasicDBObject("tools",
-                new BasicDBObject("$elemMatch",
-                        new BasicDBObject("id", id)
-                )
-        );
-        QueryResult<DBObject> queryResult = userCollection.find(query, projection,
-                new QueryOptions("include", Collections.singletonList("tools")));
+//        DBObject query = new BasicDBObject("tools.id", id);
+//        DBObject projection = new BasicDBObject("tools",
+//                new BasicDBObject("$elemMatch",
+//                        new BasicDBObject("id", id)
+//                )
+//        );
+//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, new QueryOptions("include", Collections.singletonList("tools")));
+
+        Bson query = Filters.eq("tools.id", id);
+        Bson projection = Projections.fields(Projections.elemMatch("tools", Filters.eq("id", id)), Projections.include("tools"));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
+                .find(query, projection, new QueryOptions());
 
         if (queryResult.getNumResults() != 1) {
             throw new CatalogDBException("Tool {id:" + id + "} no exists");
@@ -272,16 +289,21 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public int getToolId(String userId, String toolAlias) throws CatalogDBException {
-        DBObject query = BasicDBObjectBuilder
-                .start(_ID, userId)
-                .append("tools.alias", toolAlias).get();
-        DBObject projection = new BasicDBObject("tools",
-                new BasicDBObject("$elemMatch",
-                        new BasicDBObject("alias", toolAlias)
-                )
-        );
+//        DBObject query = BasicDBObjectBuilder
+//                .start(_ID, userId)
+//                .append("tools.alias", toolAlias).get();
+//        DBObject projection = new BasicDBObject("tools",
+//                new BasicDBObject("$elemMatch",
+//                        new BasicDBObject("alias", toolAlias)
+//                )
+//        );
+//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, null);
 
-        QueryResult<DBObject> queryResult = userCollection.find(query, projection, null);
+        Bson query = Filters.and(Filters.eq(_ID, userId), Filters.eq("tools.alias", toolAlias));
+        Bson projection = Projections.elemMatch("tools", Filters.eq("alias", toolAlias));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().find(query,
+                projection, new QueryOptions());
+
         if (queryResult.getNumResults() != 1) {
             throw new CatalogDBException("Tool {alias:" + toolAlias + "} no exists");
         }
@@ -395,6 +417,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DATE.key(), "date", andBsonList);
         createOrQuery(query, CatalogJobDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
         createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+
+        createOrQuery(query, QueryParams.STUDY_ID.key(), _STUDY_ID, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
