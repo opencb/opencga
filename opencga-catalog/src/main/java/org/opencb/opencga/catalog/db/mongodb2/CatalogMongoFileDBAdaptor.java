@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.*;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -107,9 +110,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
-        DBObject query = BasicDBObjectBuilder.start(_STUDY_ID, studyId).append("path", path).get();
-        BasicDBObject projection = new BasicDBObject("id", true);
-        QueryResult<DBObject> queryResult = fileCollection.find(query, projection, null);
+//        DBObject query = BasicDBObjectBuilder.start(_STUDY_ID, studyId).append("path", path).get();
+//        BasicDBObject projection = new BasicDBObject("id", true);
+//        QueryResult<DBObject> queryResult = fileCollection.find(query, projection, null);
+//        File file = parseFile(queryResult);
+
+        Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.eq("path", path));
+        Bson projection = Projections.include("id");
+        QueryResult<Document> queryResult = fileCollection.find(query, projection, new QueryOptions());
         File file = parseFile(queryResult);
         return file != null ? file.getId() : -1;
     }
@@ -208,9 +216,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if (!fileParameters.isEmpty()) {
-            QueryResult<WriteResult> update = fileCollection.update(Filters.eq(_ID, fileId),
-                    new BasicDBObject("$set", fileParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+//            QueryResult<WriteResult> update = fileCollection.update(Filters.eq(_ID, fileId),
+//                    new BasicDBObject("$set", fileParameters), null);
+            QueryResult<UpdateResult> update = fileCollection.update(Filters.eq(_ID, fileId), new Document("$set", fileParameters), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("File", fileId);
             }
         }
@@ -287,13 +296,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
-        DBObject projection = BasicDBObjectBuilder
-                .start("acl",
-                        new BasicDBObject("$elemMatch",
-                                new BasicDBObject("userId", userId)))
-                .append(_ID, false)
-                .get();
+//        DBObject projection = BasicDBObjectBuilder
+//                .start("acl",
+//                        new BasicDBObject("$elemMatch",
+//                                new BasicDBObject("userId", userId)))
+//                .append(_ID, false)
+//                .get();
 
+        Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
         QueryResult queryResult = fileCollection.find(Filters.eq(_ID, fileId), projection, null);
         if (queryResult.getNumResults() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
@@ -307,16 +317,18 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             CatalogDBException {
 
         long startTime = startQuery();
-        DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
-                filePaths)));
-        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
+//        DBObject match = new BasicDBObject("$match", new BasicDBObject(_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
+//                filePaths)));
+//        DBObject unwind = new BasicDBObject("$unwind", "$acl");
+//        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
+//        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
+//        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
-        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-
-//        QueryResult<DBObject> result = fileCollection.find(new BasicDBObject("path", new BasicDBObject("$in", filePaths))
-//                .append(_STUDY_ID, studyId), new BasicDBObject("acl", true), null);
+        Bson match = Aggregates.match(Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.in("acl.userId", userIds)));
+        Bson unwind = Aggregates.unwind("acl");
+        Bson match2 = Aggregates.match(Filters.and(Filters.in("acl.userId", userIds)));
+        Bson project = Aggregates.project(Projections.include("id", "path", "acl"));
+        QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(result);
         Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
@@ -371,11 +383,13 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
 
         QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
-        DBObject query = new BasicDBObject(_ID, fileId);
-        ;
-        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+//        DBObject query = new BasicDBObject(_ID, fileId);
+//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+//        QueryResult queryResult = fileCollection.update(query, update, null);
 
-        QueryResult queryResult = fileCollection.update(query, update, null);
+        Bson query = Filters.eq(_ID, fileId);
+        Bson update = Updates.pull("acl", new Document("userId", userId));
+        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
 
         return endQuery("unsetFileAcl", startTime, fileAcl);
     }
@@ -492,11 +506,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         dataset.setId(newId);
 
         Document datasetObject = getMongoDBDocument(dataset, "Dataset");
-        QueryResult<WriteResult> update = studyCollection.update(
-                new BasicDBObject(_ID, studyId),
-                new BasicDBObject("$push", new BasicDBObject("datasets", datasetObject)), null);
+        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .update(Filters.eq(_ID, studyId), new BasicDBObject("$push", new BasicDBObject("datasets", datasetObject)), null);
 
-        if (update.getResult().get(0).getN() == 0) {
+        if (update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
 
@@ -507,9 +520,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
-        BasicDBObject projection = new BasicDBObject("datasets", new BasicDBObject("$elemMatch", new BasicDBObject("id", datasetId)));
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filterOptions(options, FILTER_ROUTE_STUDIES));
+//        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
+//        BasicDBObject projection = new BasicDBObject("datasets", new BasicDBObject("$elemMatch", new BasicDBObject("id", datasetId)));
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filterOptions(options, FILTER_ROUTE_STUDIES));
+
+        Bson query = Filters.eq("datasets.id", datasetId);
+        Bson projection = Projections.elemMatch("datasets", Filters.eq("id", datasetId));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .find(query, projection, filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<Study> studies = parseStudies(queryResult);
         if (studies == null || studies.get(0).getDatasets().isEmpty()) {

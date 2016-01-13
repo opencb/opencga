@@ -128,7 +128,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogStudyDBAdaptor getCatalogStudyDBAdaptor() {
+    public CatalogMongoStudyDBAdaptor getCatalogStudyDBAdaptor() {
         return studyDBAdaptor;
     }
 

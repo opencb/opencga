@@ -113,6 +113,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 
     default QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+        // TODO check that the sample is not in use!
+
         Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), sampleId);
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
         if (sampleQueryResult.getResult().size() == 1) {

@@ -362,33 +362,34 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //        }
 //    }
 
-    public void checkInUse(int sampleId) throws CatalogDBException {
-        int studyId = getStudyIdBySampleId(sampleId);
 
-        QueryOptions query = new QueryOptions(FileFilterOption.sampleIds.toString(), sampleId);
-        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path"));
-        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().getAllFiles(query, queryOptions);
-        if (fileQueryResult.getNumResults() != 0) {
-            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : " +
-                    fileQueryResult.getResult().stream()
-                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
-            throw new CatalogDBException(msg);
-        }
-
-
-        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
-                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
-        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
-        if (cohortQueryResult.getNumResults() != 0) {
-            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : " +
-                    cohortQueryResult.getResult().stream()
-                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
-                            .collect(Collectors.joining(", ", "[", "]"));
-            throw new CatalogDBException(msg);
-        }
-
-    }
+//    public void checkInUse(int sampleId) throws CatalogDBException {
+//        int studyId = getStudyIdBySampleId(sampleId);
+//
+//        QueryOptions query = new QueryOptions(FileFilterOption.sampleIds.toString(), sampleId);
+//        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path"));
+//        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().getAllFiles(query, queryOptions);
+//        if (fileQueryResult.getNumResults() != 0) {
+//            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : " +
+//                    fileQueryResult.getResult().stream()
+//                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
+//                            .collect(Collectors.joining(", ", "[", "]"));
+//            throw new CatalogDBException(msg);
+//        }
+//
+//
+//        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
+//                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
+//        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+//        if (cohortQueryResult.getNumResults() != 0) {
+//            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : " +
+//                    cohortQueryResult.getResult().stream()
+//                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
+//                            .collect(Collectors.joining(", ", "[", "]"));
+//            throw new CatalogDBException(msg);
+//        }
+//
+//    }
 
 
     public int getStudyIdBySampleId(int sampleId) throws CatalogDBException {
@@ -426,8 +427,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         cohort.setId(newId);
 
-        DBObject cohortObject = getDbObject(cohort, "Cohort");
-        QueryResult<UpdateResult> update = studyCollection.update(
+        Document cohortObject = getMongoDBDocument(cohort, "Cohort");
+        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection().update(
                 new BasicDBObject(_ID, studyId).append("cohorts.name", new BasicDBObject("$ne", cohort.getName())),
                 new BasicDBObject("$push", new BasicDBObject("cohorts", cohortObject)), null);
 
@@ -443,7 +444,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //                .start(_ID, studyId)
 //                .append("cohorts.name", cohortName)
 //                .get());
-        QueryResult<Long> count = studyCollection.count(Filters.and(Filters.eq(_ID, studyId), Filters.eq("cohorts.name", cohortName)));
+        QueryResult<Long> count = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .count(Filters.and(Filters.eq(_ID, studyId), Filters.eq("cohorts.name", cohortName)));
 
         if (count.getResult().get(0) > 0) {
             throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
@@ -454,9 +456,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
-        BasicDBObject projection = new BasicDBObject("cohorts", new BasicDBObject("$elemMatch", new BasicDBObject("id", cohortId)));
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
+//        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
+//        BasicDBObject projection = new BasicDBObject("cohorts", new BasicDBObject("$elemMatch", new BasicDBObject("id", cohortId)));
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
+
+        Bson query = Filters.eq("cohorts.id", cohortId);
+        Bson projection = Projections.elemMatch("cohorts", Filters.eq("id", cohortId));
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .find(query, projection, new QueryOptions());
 
         List<Study> studies = parseStudies(queryResult);
         if (studies == null || studies.get(0).getCohorts().isEmpty()) {
@@ -539,9 +546,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             for (Map.Entry<String, Object> entry : cohortParams.entrySet()) {
                 studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
             }
-            QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject("cohorts.id", cohortId),
-                    new BasicDBObject("$set", studyRelativeCohortParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+            QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                    .update(new BasicDBObject("cohorts.id", cohortId), new BasicDBObject("$set", studyRelativeCohortParameters), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Cohort", cohortId);
             }
         }
@@ -570,9 +577,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
-        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
-        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
-        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsField("id")) {
+//        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
+                .nativeGet(new Query("cohorts.id", cohortId), new QueryOptions("include", "id"));
+
+        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsKey("id")) {
             throw CatalogDBException.idNotFound("Cohort", cohortId);
         } else {
             Object id = queryResult.getResult().get(0).get("id");

@@ -54,7 +54,8 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
     }
 
     protected int getNewId() {
-        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
     protected void createOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {

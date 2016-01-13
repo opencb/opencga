@@ -846,4 +846,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             return new Document();
         }
     }
+
+    public MongoDBCollection getStudyCollection() {
+        return studyCollection;
+    }
 }
