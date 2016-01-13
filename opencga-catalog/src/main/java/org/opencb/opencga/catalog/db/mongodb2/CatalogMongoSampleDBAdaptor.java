@@ -180,7 +180,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
         logger.debug("GetAllSamples query: {}", query);
 
-        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
+//        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
+        sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
         QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
@@ -499,13 +500,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                 throw new CatalogDBException(e);
             }
         }
-//        System.out.println("match = " + new BasicDBObject(_ID, studyId).append("$and", mongoQueryList));
-        QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
-                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
-                new BasicDBObject("$project", new BasicDBObject("cohorts", 1)),
-                new BasicDBObject("$unwind", "$cohorts"),
-                new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
-        ), filterOptions(options, FILTER_ROUTE_STUDIES));
+
+        // TODO change to MongoDB 3.x
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .aggregate(Arrays.<Bson>asList(
+                        new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                        new BasicDBObject("$project", new BasicDBObject("cohorts", 1)),
+                        new BasicDBObject("$unwind", "$cohorts"),
+                        new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
+                ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0)).collect
                 (Collectors.toList());
@@ -564,15 +567,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         int studyId = getStudyIdByCohortId(cohortId);
         QueryResult<Cohort> cohort = getCohort(cohortId);
 
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
-                BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
-
-        if (update.first().getN() == 0) {
-            throw CatalogDBException.idNotFound("Cohhort", cohortId);
+//        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+//                BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
+        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
+                .update(Filters.eq(_ID, studyId), Updates.pull("cohorts", new Document("id", cohortId)), null);
+        if (update.first().getModifiedCount() == 0) {
+            throw CatalogDBException.idNotFound("Cohort", cohortId);
         }
 
         return endQuery("Delete Cohort", startTime, cohort);
-
     }
 
     @Override
