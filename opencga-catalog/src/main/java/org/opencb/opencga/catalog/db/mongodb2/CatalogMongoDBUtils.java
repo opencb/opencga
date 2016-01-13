@@ -69,10 +69,12 @@ class CatalogMongoDBUtils {
         jsonReaderMap = new HashMap<>();
     }
 
+    @Deprecated
     static int getNewAutoIncrementId(MongoDBCollection metaCollection) {
         return getNewAutoIncrementId("idCounter", metaCollection);
     }
 
+    @Deprecated
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 //        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
 //                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query

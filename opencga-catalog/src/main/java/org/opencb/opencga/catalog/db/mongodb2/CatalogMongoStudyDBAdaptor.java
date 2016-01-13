@@ -57,7 +57,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection studyCollection;
 
     public CatalogMongoStudyDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection studyCollection) {
@@ -115,7 +115,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         //Set new ID
-        int newId = getNewAutoIncrementId(metaCollection);
+//        int newId = getNewAutoIncrementId(metaCollection);
+        int newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         study.setId(newId);
 
         //Empty nested fields
@@ -488,7 +489,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
         }
 
-        int variableSetId = getNewAutoIncrementId(metaCollection);
+//        int variableSetId = getNewAutoIncrementId(metaCollection);
+        int variableSetId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         variableSet.setId(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
 //        DBObject query = new BasicDBObject(_ID, studyId);

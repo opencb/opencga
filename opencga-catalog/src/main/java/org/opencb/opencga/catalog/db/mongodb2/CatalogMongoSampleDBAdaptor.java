@@ -54,7 +54,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
 public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
 
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection sampleCollection;
 
     public CatalogMongoSampleDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection sampleCollection) {
@@ -421,7 +421,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        int newId = getNewAutoIncrementId(metaCollection);
+//        int newId = getNewAutoIncrementId(metaCollection);
+        int newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
 
         cohort.setId(newId);
 

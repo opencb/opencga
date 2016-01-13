@@ -47,7 +47,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
-    protected CatalogMongoDBAdaptorFactory dbFactory;
+    protected CatalogMongoDBAdaptorFactory dbAdaptorFactory;
 
     public CatalogMongoDBAdaptor(Logger logger) {
         super(logger);

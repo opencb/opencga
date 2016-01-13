@@ -53,7 +53,7 @@ import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implements CatalogProjectDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
 
     public CatalogMongoProjectDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
@@ -94,7 +94,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //        }
 
         //Generate json
-        int projectId = CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+//        int projectId = CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
+        int projectId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         project.setId(projectId);
 //        DBObject query = new BasicDBObject("id", userId);
 //        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));

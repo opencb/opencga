@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
@@ -16,12 +15,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api2.CatalogJobDBAdaptor;
-import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -51,7 +48,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        dbFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         int jobId = getNewId();
         job.setId(jobId);

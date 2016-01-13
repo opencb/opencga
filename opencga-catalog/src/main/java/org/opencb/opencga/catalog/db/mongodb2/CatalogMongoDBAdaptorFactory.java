@@ -59,6 +59,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoJobDBAdaptor jobDBAdaptor;
     private CatalogMongoProjectDBAdaptor projectDBAdaptor;
     private CatalogAuditDBAdaptor auditDBAdaptor;
+    private CatalogMongoMetaDBAdaptor metaDBAdaptor;
 
     private Logger logger;
 
@@ -117,23 +118,18 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogProjectDBAdaptor getCatalogProjectDbAdaptor() {
-        return projectDBAdaptor;
-    }
-
-    @Override
     public CatalogMongoUserDBAdaptor getCatalogUserDBAdaptor() {
         return userDBAdaptor;
     }
 
     @Override
-    public CatalogStudyDBAdaptor getCatalogStudyDBAdaptor() {
-        return studyDBAdaptor;
+    public CatalogProjectDBAdaptor getCatalogProjectDbAdaptor() {
+        return projectDBAdaptor;
     }
 
     @Override
-    public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
-        return fileDBAdaptor;
+    public CatalogStudyDBAdaptor getCatalogStudyDBAdaptor() {
+        return studyDBAdaptor;
     }
 
     @Override
@@ -147,8 +143,17 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
+    public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
+        return fileDBAdaptor;
+    }
+
+    @Override
     public CatalogJobDBAdaptor getCatalogJobDBAdaptor() {
         return jobDBAdaptor;
+    }
+
+    public CatalogMongoMetaDBAdaptor getCatalogMetaDBAdaptor() {
+        return metaDBAdaptor;
     }
 
     @Override

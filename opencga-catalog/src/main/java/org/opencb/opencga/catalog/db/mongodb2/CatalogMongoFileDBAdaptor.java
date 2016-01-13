@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.db.mongodb2;
 import com.mongodb.*;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -187,7 +186,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterIntParams(parameters, fileParameters, acceptedIntParams);
         if (parameters.containsKey("jobId")) {
 //            if (!jobExists(parameters.getInt("jobId"))) {
-            if (!dbFactory.getCatalogJobDBAdaptor().jobExists(parameters.getInt("jobId"))) {
+            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().jobExists(parameters.getInt("jobId"))) {
                 throw CatalogDBException.idNotFound("Job", parameters.getInt("jobId"));
             }
         }
