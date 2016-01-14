@@ -170,18 +170,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        DBObject query = new BasicDBObject();
-
+        Document query = new Document();
         if (!annotationSetFilter.isEmpty()) {
-            query.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
+            query.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));//            query
         }
         if (!mongoQueryList.isEmpty()) {
             query.put("$and", mongoQueryList);
         }
         logger.debug("GetAllSamples query: {}", query);
-
 //        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
-        sampleCollection.find(query, filteredOptions);
+
+
+        QueryResult<Document> queryResult = sampleCollection.find(query, filteredOptions);
         List<Sample> samples = parseSamples(queryResult);
 
         QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);

@@ -156,7 +156,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
         if (parameters.containsKey("output")) {
             for (Integer fileId : parameters.getAsIntegerList("output")) {
-                checkFileExists(fileId, "Output File");
+//                checkFileExists(fileId, "Output File");
+                dbAdaptorFactory.getCatalogFileDBAdaptor().checkFileId(fileId);
             }
         }
 
@@ -166,8 +167,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         if (!jobParameters.isEmpty()) {
             BasicDBObject query = new BasicDBObject(_ID, jobId);
             BasicDBObject updates = new BasicDBObject("$set", jobParameters);
-            QueryResult<WriteResult> update = jobCollection.update(query, updates, null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+//            QueryResult<WriteResult> update = jobCollection.update(query, updates, null);
+            QueryResult<UpdateResult> update = jobCollection.update(query, updates, null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Job", jobId);
             }
         }
@@ -317,7 +319,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         addQueryIntegerListFilter("id", queryOptions, "tools.id", query);
         addQueryIntegerListFilter("alias", queryOptions, "tools.alias", query);
 
-        QueryResult<DBObject> queryResult = userCollection.aggregate(
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().aggregate(
                 Arrays.asList(
                         new BasicDBObject("$project", new BasicDBObject("tools", 1)),
                         new BasicDBObject("$unwind", "$tools"),
