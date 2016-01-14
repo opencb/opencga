@@ -103,19 +103,16 @@ public class ArchiveResultToVariantConverter {
                 resolved.add(currVariant);
                 currVariant = var;
             } else { // partial or full overlap - keep max end and set to 0/0
-                currVariant.setEnd(Math.max(var.getEnd(), currVariant.getEnd())); // Set
-                                                                                  // max
-                                                                                  // end
-                                                                                  // position
-                changeVariantToHomRef(currVariant);
+                currVariant.setEnd(Math.max(var.getEnd(), currVariant.getEnd())); // Set max end position
+                changeVariantToNoCall(currVariant);
             }
         }
         resolved.add(currVariant);
         return resolved;
     }
 
-    public static void changeVariantToHomRef(Variant var) {
-        String genotype = VariantTableStudyRow.HOM_REF;
+    public static void changeVariantToNoCall(Variant var) {
+        String genotype = VariantTableStudyRow.NOCALL;
         var.setType(VariantType.NO_VARIATION);
         StudyEntry se = var.getStudies().get(0);
         int gtpos = se.getFormatPositions().get("GT");
