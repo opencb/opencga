@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.Query;
@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -40,14 +41,14 @@ import java.util.List;
  * @author Jacobo Coll <jacobo167@gmail.com>.
  */
 @Path("/variants")
-public class VariantsWSServer extends StorageWSServer {
+public class VariantRestWebService extends GenericRestWebService {
 
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
-            httpServletRequest) throws IOException {
-        super(version, uriInfo, httpServletRequest);
+    public VariantRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                                 @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
+        super(version, uriInfo, httpServletRequest, context);
     }
 
     @GET
@@ -70,29 +71,28 @@ public class VariantsWSServer extends StorageWSServer {
 
     public static class VariantFetcher {
 
-        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions
-                queryOptions)
+        public static QueryResult getVariants(String storageEngine, String dbName, boolean histogram, int interval, QueryOptions options)
                 throws StorageManagerException, ClassNotFoundException, IllegalAccessException, InstantiationException {
             VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 
             Query query = new Query();
             for (VariantQueryParams acceptedValue : VariantQueryParams.values()) {
-                if (queryOptions.get(acceptedValue.key()) != null) {
-                    query.put(acceptedValue.key(), queryOptions.get(acceptedValue.key()));
+                if (options.get(acceptedValue.key()) != null) {
+                    query.put(acceptedValue.key(), options.get(acceptedValue.key()));
                 }
             }
-            queryOptions.add("query", query);
+            options.add("query", query);
 //            for (String acceptedValue : Arrays.asList("merge", "exclude", "include", "skip", "limit")) {
 //                addQueryParam(queryOptions, acceptedValue);
 //            }
 
-            if (queryOptions.getInt("limit", Integer.MAX_VALUE) > LIMIT_MAX) {
-                queryOptions.put("limit", Math.max(queryOptions.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));
+            if (options.getInt("limit", Integer.MAX_VALUE) > LIMIT_MAX) {
+                options.put("limit", Math.max(options.getInt("limit", LIMIT_DEFAULT), LIMIT_MAX));
             }
 
             // Parse the provided regions. The total size of all regions together
             // can't excede 1 million positions
-            List<Region> regions = Region.parseRegions(queryOptions.getString(VariantQueryParams.REGION.key()));
+            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParams.REGION.key()));
             regions = regions == null ? Collections.emptyList() : regions;
             int regionsSize = regions.stream().reduce(0, (size, r) -> size += r.getEnd() - r.getStart(), (a, b) -> a + b);
 
@@ -102,12 +102,12 @@ public class VariantsWSServer extends StorageWSServer {
                     throw new IllegalArgumentException("Sorry, histogram functionality only works with a single region");
                 } else {
                     if (interval > 0) {
-                        queryOptions.put("interval", interval);
+                        options.put("interval", interval);
                     }
                     queryResult = dbAdaptor.getFrequency(query, regions.get(0), interval);
                 }
             } else {
-                queryResult = dbAdaptor.get(query, queryOptions);
+                queryResult = dbAdaptor.get(query, options);
             }
             //            else if (regionsSize <= 1000000) {
             //                if (regions.size() == 0) {

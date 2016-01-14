@@ -119,18 +119,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
         boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options
                 .INCLUDE_STATS.defaultValue());
-        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options
-                .INCLUDE_SRC.defaultValue());
-        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager
-                .Options.INCLUDE_GENOTYPES.defaultValue());
+//        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options
+//                .INCLUDE_SRC.defaultValue());
+//        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager
+//                .Options.INCLUDE_GENOTYPES.defaultValue());
 //        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager
 // .Options.COMPRESS_GENOTYPES.defaultValue());
 //        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
 
         DBObjectToVariantConverter variantConverter = new DBObjectToVariantConverter(null, includeStats ? new
                 DBObjectToVariantStatsConverter(studyConfigurationManager) : null);
-        DBObjectToStudyVariantEntryConverter sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc,
-                includeGenotypes ? new DBObjectToSamplesConverter(studyConfiguration) : null);
+//        DBObjectToStudyVariantEntryConverter sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc,
+//                includeGenotypes ? new DBObjectToSamplesConverter(studyConfiguration) : null);
+        DBObjectToStudyVariantEntryConverter sourceEntryConverter =
+                new DBObjectToStudyVariantEntryConverter(true, new DBObjectToSamplesConverter(studyConfiguration));
         return insert(variants, fileId, variantConverter, sourceEntryConverter, studyConfiguration, getLoadedSamples(fileId,
                 studyConfiguration));
     }
@@ -1130,8 +1132,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     )
             );
         }
-        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key()) && projection.containsField(DBObjectToVariantConverter
-                .STUDIES_FIELD)) {
+        if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
+                && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
             List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
 //            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
             if (!studiesIds.isEmpty()) {

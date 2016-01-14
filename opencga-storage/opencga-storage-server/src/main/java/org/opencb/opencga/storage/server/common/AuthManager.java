@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.benchmark;
+package org.opencb.opencga.storage.server.common;
 
-import org.slf4j.Logger;
+import org.opencb.datastore.core.Query;
+import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
 
 /**
- * Created by imedina on 16/06/15.
+ * Created by imedina on 02/01/16.
  */
-public abstract class PerformanceEvaluator {
+public interface AuthManager {
 
-    protected Logger logger;
+    String login(String user, String pasword);
 
-    public PerformanceEvaluator() {
+    String logout(String sessionId);
 
-    }
-
-
-    public abstract BenchmarkStats run();
-
+    void checkPermission(Query query, String sessionId) throws NotAuthorizedUserException;
 
 }

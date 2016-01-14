@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -31,11 +32,11 @@ import java.io.IOException;
  */
 
 @Path("/test")
-public class TestWSServer extends StorageWSServer {
+public class TestRestWebService extends GenericRestWebService {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException {
-        super(version, uriInfo, httpServletRequest);
+    public TestRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                              @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
+        super(version, uriInfo, httpServletRequest, context);
         System.out.println("Build TestServlet");
     }
 

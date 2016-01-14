@@ -150,7 +150,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
         ObjectMap transformParams = new ObjectMap(params);
         transformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        transformParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+//        transformParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
         transformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
         transformParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
 
@@ -161,7 +161,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
         ObjectMap loadParams = new ObjectMap(params);
         loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        loadParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
+//        loadParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
         loadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
         loadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
 

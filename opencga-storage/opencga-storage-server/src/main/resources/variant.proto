@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package org.opencb.opencga.storage.server.grpc;
+option java_outer_classname = "VariantProto";
+
+import "variantAnnotation.proto";
+
+/**
+ * Type of variation, which depends mostly on its length.
+ * <ul>
+ * <li>SNVs involve a single nucleotide, without changes in length</li>
+ * <li>MNVs involve multiple nucleotides, without changes in length</li>
+ * <li>Indels are insertions or deletions of less than SV_THRESHOLD (50) nucleotides</li>
+ * <li>Structural variations are large changes of more than SV_THRESHOLD nucleotides</li>
+ * <li>Copy-number variations alter the number of copies of a region</li>
+ * </ul>
+ */
+enum VariantType {
+    SNP            = 0;  // SO:0000694
+    SNV            = 1;  // SO:0001483
+    MNP            = 2;  // SO:0001013
+    MNV            = 3;  // SO:0002007
+    INDEL          = 4;  // SO:1000032
+    SV             = 5;  // SO:0001537
+    CNV            = 6;  // SO:0001019
+    NO_VARIATION   = 7;  // Defined in HTSJDK
+    SYMBOLIC       = 8;  // Defined in HTSJDK
+    MIXED          = 9;  // Defined in HTSJDK
+
+    INSERTION      = 10;  // SO:0000667
+    DELETION       = 11;  // SO:0000159
+    TRANSLOCATION  = 12;  // SO:0000199
+    INVERSION      = 13;  // SO:1000036
+}
+
+enum AllelesCode {
+    ALLELES_OK = 0;
+    ALLELES_MISSING = 1;
+    MULTIPLE_ALTERNATES = 2;
+    HAPLOID = 3;
+}
+
+message VariantHardyWeinbergStats {
+    float chi2 = 1;
+    float pValue = 2;
+    int32 n = 3;
+    int32 n_AA_11 = 4;
+    int32 n_Aa_10 = 5;
+    int32 n_aa_00 = 6;
+    float e_AA_11 = 7;
+    float e_Aa_10 = 8;
+    float e_aa_00 = 9;
+    float p = 10;
+    float q = 11;
+}
+
+message VariantStats {
+    string refAllele = 1;
+    string altAllele = 2;
+    int32 refAlleleCount = 3;
+    int32 altAlleleCount = 4;
+    map<string, int32> genotypesCount = 5;
+    map<string, float> genotypesFreq = 6;
+    int32 missingAlleles = 7;
+    int32 missingGenotypes = 8;
+    float refAlleleFreq = 9;
+    float altAlleleFreq = 10;
+    float maf = 11;
+    float mgf = 12;
+    string mafAllele = 13;
+    string mgfGenotype = 14;
+    bool  passedFilters = 15;
+    int32 mendelianErrors = 16;
+    float casesPercentDominant = 17;
+    float controlsPercentDominant = 18;
+    float casesPercentRecessive = 19;
+    float controlsPercentRecessive = 20;
+    float quality = 21;
+    int32 numSamples = 22;
+    VariantType variantType = 23;
+    VariantHardyWeinbergStats hw = 24;
+}
+
+message FileEntry {
+    string fileId = 1;
+    string call = 2;
+    map<string, string> attributes = 3;
+}
+
+message VariantSourceEntry {
+    message SamplesDataInfoEntry {
+        repeated string info = 1;
+    }
+    string studyId = 1;
+    repeated FileEntry files = 2;
+    repeated string secondaryAlternates = 3;
+    repeated string format = 4;
+    repeated SamplesDataInfoEntry samplesData = 5;
+    map<string, VariantStats> stats = 6;
+}
+
+message Genotype {
+    string reference = 1;
+    string alternate = 2;
+    repeated int32 allelesIdx = 3;
+    bool phased = 4;
+}
+
+message Variant {
+    /**
+     * Chromosome where the genomic variation occurred.
+     */
+    string chromosome = 1;
+
+    /**
+     * Normalized position where the genomic variation starts.
+     * <ul>
+     * <li>SNVs have the same start and end position</li>
+     * <li>Insertions start in the last present position: if the first nucleotide
+     * is inserted in position 6, the start is position 5</li>
+     * <li>Deletions start in the first previously present position: if the first
+     * deleted nucleotide is in position 6, the start is position 6</li>
+     * </ul>
+     */
+    int32 start = 2;
+
+    /**
+     * Normalized position where the genomic variation ends.
+     * <ul>
+     * <li>SNVs have the same start and end positions</li>
+     * <li>Insertions end in the first present position: if the last nucleotide
+     * is inserted in position 9, the end is position 10</li>
+     * <li>Deletions ends in the last previously present position: if the last
+     * deleted nucleotide is in position 9, the end is position 9</li>
+     * </ul>
+     */
+    int32 end = 3;
+
+    /**
+     * Reference allele.
+     */
+    string reference = 4;
+
+    /**
+     * Alternate allele.
+     */
+    string alternate = 5;
+
+    /**
+     * Reference strand for this variant
+     */
+    string strand = 6;
+
+    /**
+     * Set of identifiers used for this genomic variation.
+     */
+    repeated string ids = 7;
+
+    /**
+     * Length of the genomic variation, which depends on the variation type.
+     * <ul>
+     * <li>SNVs have a length of 1 nucleotide</li>
+     * <li>Indels have the length of the largest allele</li>
+     * </ul>
+     */
+    int32 length = 8;
+
+    /**
+     * Type of variation: single nucleotide, indel or structural variation.
+     */
+    VariantType type = 9;
+
+    /**
+     * Unique identifier following the HGVS nomenclature.
+     */
+    message HgvsEntry {
+        repeated string info = 1;
+    }
+    map<string, HgvsEntry> hgvss = 10;
+
+    /**
+     * Information specific to each study the variant was read from, such as
+     * samples or statistics.
+     */
+    repeated VariantSourceEntry studies = 11;
+
+    /**
+     * Annotations of the genomic variation.
+     */
+    VariantAnnotation annotation = 12;
+}
+
+message VariantFileMetadata {
+    string fileId = 1;
+    string studyId = 2;
+    string fileName = 3;
+    string studyName = 4;
+    repeated string samples = 5;
+    map<string, string> metadata = 6;
+}

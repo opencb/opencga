@@ -14,66 +14,45 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.datastore.core.*;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.opencb.opencga.storage.server.common.AuthManager;
+import org.opencb.opencga.storage.server.common.DefaultAuthManager;
+import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
+import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
- * Created by jacobo on 23/10/14.
+ * Created by imedina on 23/10/14.
  */
-//@Path("/")
-public class StorageWSServer {
+public class GenericRestWebService {
 
-    private static ObjectMapper jsonObjectMapper;
-    private static ObjectWriter jsonObjectWriter;
-
-    protected final String sessionIp;
-    protected final UriInfo uriInfo;
-    private final long startTime;
-    protected QueryOptions queryOptions;
-    protected MultivaluedMap<String, String> params;
-
-    static {
-        jsonObjectMapper = new ObjectMapper();
-
-        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
-        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
-        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
-        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-
-        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-        jsonObjectWriter = jsonObjectMapper.writer();
-    }
-
-    //Common query params
     @DefaultValue("json")
     @QueryParam("of")
     protected String outputFormat;
@@ -86,17 +65,85 @@ public class StorageWSServer {
     @QueryParam("version")
     protected String version;
 
-    public StorageWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest
-            httpServletRequest) throws IOException {
+    protected final String sessionIp;
+    protected final UriInfo uriInfo;
+    private final long startTime;
+    protected QueryOptions queryOptions;
+    protected MultivaluedMap<String, String> params;
+    protected static StorageConfiguration storageConfiguration;
+
+    protected static String defaultStorageEngine;
+    protected static StorageManagerFactory storageManagerFactory;
+
+    protected static AuthManager authManager;
+
+    protected static Set<String> authorizedHosts;
+
+    private static Logger privLogger;
+    protected Logger logger;
+    private static ObjectMapper jsonObjectMapper;
+    private static ObjectWriter jsonObjectWriter;
+
+    static {
+        jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        jsonObjectMapper.addMixIn(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
+        jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        jsonObjectWriter = jsonObjectMapper.writer();
+
+        privLogger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.rest.GenericRestWebService");
+    }
+
+    public GenericRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                                 @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
         this.startTime = System.currentTimeMillis();
         this.version = version;
         this.uriInfo = uriInfo;
         this.params = uriInfo.getQueryParameters();
-//        logger.debug(uriInfo.getRequestUri().toString());
         this.queryOptions = new QueryOptions(params, true);
         this.sessionIp = httpServletRequest.getRemoteAddr();
+
+        logger = LoggerFactory.getLogger(this.getClass());
+
+        defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+
+        // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
+        if (storageManagerFactory == null) {
+            privLogger.debug("Creating the StorageManagerFactory object");
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+        }
+
+        if (authorizedHosts == null) {
+            privLogger.debug("Creating the authorizedHost HashSet");
+            authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
+        }
+
+        if (authManager == null) {
+            try {
+                if (StringUtils.isNotEmpty(context.getInitParameter("authManager"))) {
+                    privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), context.getInitParameter("authManager"));
+                    authManager = (AuthManager) Class.forName(context.getInitParameter("authManager")).newInstance();
+                } else {
+                    privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
+                    authManager = new DefaultAuthManager();
+                }
+            } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
+    protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {
+        if (authorizedHosts.contains("0.0.0.0") || authorizedHosts.contains("*") || authorizedHosts.contains(ip)) {
+            authManager.checkPermission(query, "");
+        } else {
+            throw new NotAuthorizedHostException("No queries are allowed from " + ip);
+        }
+    }
 
     protected Response createJsonResponse(Object object) {
         try {
@@ -156,4 +203,9 @@ public class StorageWSServer {
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
                 .build();
     }
+
+    public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
+        GenericRestWebService.storageConfiguration = storageConfiguration;
+    }
+
 }

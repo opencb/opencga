@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.service.rest;
+package org.opencb.opencga.storage.server.rest;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.app.service.OpenCGAStorageService;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -39,11 +39,11 @@ import java.util.Arrays;
  * Created by jacobo on 14/11/14.
  */
 @Path("/files")
-public class FilesWSServer extends StorageWSServer {
+public class FileRestWebService extends GenericRestWebService {
 
-    public FilesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException {
-        super(version, uriInfo, httpServletRequest);
+    public FileRestWebService(@PathParam("version") String version, @Context UriInfo uriInfo,
+                              @Context HttpServletRequest httpServletRequest, @Context ServletContext context) throws IOException {
+        super(version, uriInfo, httpServletRequest, context);
         params = uriInfo.getQueryParameters();
     }
 
@@ -81,7 +81,7 @@ public class FilesWSServer extends StorageWSServer {
             switch (bioformat) {
                 case "vcf":
                     queryOptions.add(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
-                    return createOkResponse(VariantsWSServer.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
+                    return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":
                     AlignmentStorageManager sm = StorageManagerFactory.get().getAlignmentStorageManager(storageEngine);
@@ -90,8 +90,9 @@ public class FilesWSServer extends StorageWSServer {
 
                     QueryOptions options = new QueryOptions();
                     if (path != null && !path.isEmpty()) {
-                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR",
-                                "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
+//                        String rootDir = OpenCGAStorageService.getInstance().getProperties().getProperty("OPENCGA.STORAGE.ROOTDIR",
+//                                "/home/cafetero/opencga/catalog/users/jcoll/projects/1/1/");
+                        String rootDir = "";
                         options.put(AlignmentDBAdaptor.QO_BAM_PATH, Paths.get(rootDir, path.replace(":", "/")).toString());
                     }
                     options.put(AlignmentDBAdaptor.QO_FILE_ID, fileId);

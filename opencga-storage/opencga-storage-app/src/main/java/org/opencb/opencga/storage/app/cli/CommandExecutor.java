@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +43,7 @@ public abstract class CommandExecutor {
 
     protected String appHome;
 
+    protected String storageEngine;
     protected StorageConfiguration configuration;
 
     protected Logger logger;
@@ -53,11 +53,15 @@ public abstract class CommandExecutor {
     }
 
     public CommandExecutor(String logLevel, boolean verbose, String configFile) {
+        init(logLevel, verbose, configFile);
+    }
+
+    protected void init(String logLevel, boolean verbose, String configFile) {
         this.logLevel = logLevel;
         this.verbose = verbose;
         this.configFile = configFile;
 
-        /*
+        /**
          * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
          */
@@ -123,6 +127,7 @@ public abstract class CommandExecutor {
         return logger;
     }
 
+
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
      * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
@@ -138,9 +143,8 @@ public abstract class CommandExecutor {
             // We load configuration file either from app home folder or from the JAR
             Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
             if (appHome != null && Files.exists(path)) {
-                loadedConfigurationFile = appHome + "/conf/storage-configuration.yml";
-                this.configuration = StorageConfiguration
-                        .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
+                loadedConfigurationFile = path.toString();
+                this.configuration = StorageConfiguration.load(new FileInputStream(path.toFile()));
             } else {
                 loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml")
                         .toString();
@@ -152,11 +156,11 @@ public abstract class CommandExecutor {
         // logLevel parameter has preference in CLI over configuration file
         if (this.logLevel == null || this.logLevel.isEmpty()) {
             this.logLevel = this.configuration.getLogLevel();
-            configureDefaultLog(this.configuration.getLogLevel());
+            configureDefaultLog(this.logLevel);
         } else {
             if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
                 this.configuration.setLogLevel(this.logLevel);
-                configureDefaultLog(this.configuration.getLogLevel());
+                configureDefaultLog(this.logLevel);
             }
         }
 
@@ -164,6 +168,7 @@ public abstract class CommandExecutor {
         if (this.logFile != null && !this.logFile.isEmpty()) {
             this.configuration.setLogFile(logFile);
         }
+
         // If user has set up a logFile we redirect logs to it
         if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
             org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
@@ -181,13 +186,6 @@ public abstract class CommandExecutor {
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
-    @Deprecated
-    protected void assertDirectoryExists(URI outdir) {
-        if (!java.nio.file.Files.exists(Paths.get(outdir.getPath()))) {
-            logger.error("given output directory {} does not exist, please create it first.", outdir);
-            System.exit(1);
-        }
-    }
 
     protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
             throws IOException, InterruptedException {
