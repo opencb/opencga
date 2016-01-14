@@ -26,13 +26,18 @@ import java.util.stream.Collectors;
  * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class VariantTableStudyRow {
+    public static final String NOCALL = ".";
     public static final String HOM_REF = "0/0";
     public static final String HET_REF = "0/1";
     public static final String HOM_VAR = "1/1";
     public static final String OTHER = "?";
     public static final char COLUMN_KEY_SEPARATOR = '_';
+    public static final String PASS_CNT = "P";
+    public static final String CALL_CNT = "C";
     private Integer studyId;
     private Integer homRefCount = 0;
+    private Integer passCount = 0;
+    private Integer callCount = 0;
     private String chromosome;
     private int pos;
     private String ref;
@@ -42,6 +47,8 @@ public class VariantTableStudyRow {
     public VariantTableStudyRow(VariantTableStudyRow row) {
         this.studyId = row.studyId;
         this.homRefCount = row.homRefCount;
+        this.callCount = row.callCount;
+        this.passCount = row.passCount;
         this.chromosome = row.chromosome;
         this.pos = row.pos;
         this.ref = row.ref;
@@ -128,13 +135,17 @@ public class VariantTableStudyRow {
                 }
             }
             String gt = colSplit[1];
-            if (gt.equals(HOM_REF)) {
-                if (entry.getValue() == null || entry.getValue().length == 0) {
-                    variantTableStudyRow.homRefCount = 0;
-                } else {
-                    variantTableStudyRow.homRefCount = Bytes.toInt(entry.getValue());
-                }
-            } else {
+            switch (gt) {
+            case HOM_REF:
+                variantTableStudyRow.homRefCount = parseCount(entry.getValue());
+                break;
+            case CALL_CNT:
+                variantTableStudyRow.callCount = parseCount(entry.getValue());
+                break;
+            case PASS_CNT:
+                variantTableStudyRow.passCount = parseCount(entry.getValue());
+                break;
+            default:
                 if (entry.getValue() == null || entry.getValue().length == 0) {
                     variantTableStudyRow.callMap.put(gt, Collections.emptySet());
                 } else {
@@ -159,15 +170,26 @@ public class VariantTableStudyRow {
                         throw new RuntimeException(e);
                     }
                 }
+                break;
             }
         }
         return variantTableStudyRow;
     }
 
+    private static Integer parseCount(byte[] value) {
+        if (value == null || value.length == 0) {
+            return 0;
+        } else {
+            return Bytes.toInt(value);
+        }
+    }
+
     public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, ResultSet resultSet, int studyId)
             throws SQLException {
         variantTableStudyRow.homRefCount = resultSet.getInt(buildColumnKey(studyId, HOM_REF));
-        for (String gt : new String[]{HET_REF, HOM_VAR, OTHER}) {
+        variantTableStudyRow.callCount = resultSet.getInt(buildColumnKey(studyId, CALL_CNT));
+        variantTableStudyRow.passCount = resultSet.getInt(buildColumnKey(studyId, PASS_CNT));
+        for (String gt : new String[]{HET_REF, HOM_VAR, OTHER, NOCALL}) {
             Array sqlArray = resultSet.getArray(buildColumnKey(studyId, gt));
             HashSet<Integer> value = new HashSet<>();
             if (sqlArray != null && sqlArray.getArray() != null) {
@@ -244,6 +266,30 @@ public class VariantTableStudyRow {
         return homRefCount;
     }
 
+    public void addPassCount(Integer cnt) {
+        passCount += cnt;
+    }
+
+    public Integer getPassCount() {
+        return passCount;
+    }
+
+    public void setPassCount(Integer passCount) {
+        this.passCount = passCount;
+    }
+
+    public void addCallCount(Integer cnt) {
+        callCount += cnt;
+    }
+
+    public void setCallCount(Integer callCount) {
+        this.callCount = callCount;
+    }
+
+    public Integer getCallCount() {
+        return callCount;
+    }
+
     public void setHomRefCount(Integer homRefCount) {
         this.homRefCount = homRefCount;
     }
@@ -259,13 +305,14 @@ public class VariantTableStudyRow {
         Integer sid = helper.getStudyId();
         Put put = new Put(generateRowKey);
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
+        put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
+        put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));
         for (Entry<String, Set<Integer>> entry : this.callMap.entrySet()) {
             byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));
 
             List<Integer> value = new ArrayList<>(entry.getValue());
             if (!value.isEmpty()) {
                 Collections.sort(value);
-//                byte[] bytesArray = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
                 byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
                 put.addColumn(cf, column, bytesArray);
             }
@@ -286,29 +333,17 @@ public class VariantTableStudyRow {
         }
     }
 
-//    public static Map<Integer, List<byte[]>> extractStudyIds(Collection<byte[]> columnKeys) {
-//        Map<Integer, List<byte[]>> map = new HashMap<>();
-//        for (byte[] columnKey : columnKeys) {
-//            int studyId = extractStudyId(Bytes.toString(columnKey));
-//            if (map.containsKey(studyId)) {
-//                map.get(studyId).add(columnKey);
-//            } else {
-//                ArrayList<byte[]> value = new ArrayList<>();
-//                value.add(columnKey);
-//                map.put(studyId, value);
-//            }
-//        }
-//        return map;
-//    }
-
     public String toSummaryString() {
         return String.format(
-                "Submit %s: hr: %s; 0/1: %s; 1/1: %s; ?: %s",
+                "Submit %s: pass: %s; call: %s; hr: %s; 0/1: %s; 1/1: %s; ?: %s; .: %s",
                 getPos(),
+                getPassCount(),
+                getCallCount(),
                 getHomRefCount(),
-                Arrays.toString(getSampleIds("0/1").toArray()),
-                Arrays.toString(getSampleIds("1/1").toArray()),
-                Arrays.toString(getSampleIds("?").toArray())
+                Arrays.toString(getSampleIds(HET_REF).toArray()),
+                Arrays.toString(getSampleIds(HOM_VAR).toArray()),
+                Arrays.toString(getSampleIds(OTHER).toArray()),
+                Arrays.toString(getSampleIds(NOCALL).toArray())
         );
     }
 

@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
+
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -68,9 +69,16 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     }
 
     protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
+        if (annotation == null) {
+            annotation = new VariantAnnotation();
+        }
+        if (annotation.getAdditionalAttributes() == null) {
+            annotation.setAdditionalAttributes(new HashMap<String, Object>());
+        }
 
         for (VariantTableStudyRow row : rows) {
-            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(row.getStudyId(), scmOptions);
+            Integer studyId = row.getStudyId();
+            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
                 continue;
             }
@@ -80,9 +88,17 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
             studyEntry.setSamplesPosition(returnedSamplesPosition);
 
+            Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings("unchecked")
-            List<String>[] samplesDataArray = new List[returnedSamplesPosition.size()];
+            List<String>[] samplesDataArray = new List[nSamples];
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
+
+            double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
+            double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
+            double opr = passrate * callrate;
+            annotation.getAdditionalAttributes().put(studyId + "_PR", passrate);
+            annotation.getAdditionalAttributes().put(studyId + "_CR", callrate);
+            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL pass rate
 
             for (String genotype : row.getGenotypes()) {
                 String returnedGenotype = genotype.equals(VariantTableStudyRow.OTHER) ? "." : genotype;
@@ -106,7 +122,6 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row
                         .getHomRefCount();
-//                throw new IllegalArgumentException(message);
                 logger.warn(message);
             }
 

@@ -92,6 +92,8 @@ public class ArchiveDriver extends Configured implements Tool {
 
         if (HBaseUtils.createTableIfNeeded(tablename, archiveHelper.getColumnFamily(), job.getConfiguration())) {
             logger.info(String.format("Create table '%s' in hbase!", tablename));
+        } else {
+            logger.info(String.format("Table '%s' exists in hbase!", tablename));
         }
         // TODO: Update list of indexed files
         return job.waitForCompletion(true) ? 0 : 1;
