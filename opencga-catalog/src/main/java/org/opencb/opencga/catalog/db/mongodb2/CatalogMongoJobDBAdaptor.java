@@ -37,7 +37,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection jobCollection;
 
-    public CatalogMongoJobDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection jobCollection) {
+    public CatalogMongoJobDBAdaptor(MongoDBCollection jobCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;

@@ -58,7 +58,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoFileDBAdaptor fileDBAdaptor;
     private CatalogMongoJobDBAdaptor jobDBAdaptor;
     private CatalogMongoProjectDBAdaptor projectDBAdaptor;
-    private CatalogAuditDBAdaptor auditDBAdaptor;
+    private CatalogMongoAuditDBAdaptor auditDBAdaptor;
     private CatalogMongoMetaDBAdaptor metaDBAdaptor;
 
     private Logger logger;
@@ -123,7 +123,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogProjectDBAdaptor getCatalogProjectDbAdaptor() {
+    public CatalogMongoProjectDBAdaptor getCatalogProjectDbAdaptor() {
         return projectDBAdaptor;
     }
 
@@ -133,22 +133,22 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogSampleDBAdaptor getCatalogSampleDBAdaptor() {
+    public CatalogMongoSampleDBAdaptor getCatalogSampleDBAdaptor() {
         return sampleDBAdaptor;
     }
 
     @Override
-    public CatalogIndividualDBAdaptor getCatalogIndividualDBAdaptor() {
+    public CatalogMongoIndividualDBAdaptor getCatalogIndividualDBAdaptor() {
         return individualDBAdaptor;
     }
 
     @Override
-    public CatalogFileDBAdaptor getCatalogFileDBAdaptor() {
+    public CatalogMongoFileDBAdaptor getCatalogFileDBAdaptor() {
         return fileDBAdaptor;
     }
 
     @Override
-    public CatalogJobDBAdaptor getCatalogJobDBAdaptor() {
+    public CatalogMongoJobDBAdaptor getCatalogJobDBAdaptor() {
         return jobDBAdaptor;
     }
 
@@ -157,7 +157,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogAuditDBAdaptor getCatalogAuditDbAdaptor() {
+    public CatalogMongoAuditDBAdaptor getCatalogAuditDbAdaptor() {
         return auditDBAdaptor;
     }
 
@@ -185,12 +185,12 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
         */
 
-        fileDBAdaptor = new CatalogMongoFileDBAdaptor(this, fileCollection);
-        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, individualCollection);
-        jobDBAdaptor = new CatalogMongoJobDBAdaptor(this, jobCollection);
-        projectDBAdaptor = new CatalogMongoProjectDBAdaptor(this, userCollection);
-        sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, sampleCollection);
-        studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, studyCollection);
+        fileDBAdaptor = new CatalogMongoFileDBAdaptor(fileCollection, this);
+        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(individualCollection, this);
+        jobDBAdaptor = new CatalogMongoJobDBAdaptor(jobCollection, this);
+        projectDBAdaptor = new CatalogMongoProjectDBAdaptor(userCollection, this);
+        sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(sampleCollection, this);
+        studyDBAdaptor = new CatalogMongoStudyDBAdaptor(studyCollection, this);
         userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 

@@ -57,7 +57,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection sampleCollection;
 
-    public CatalogMongoSampleDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection sampleCollection) {
+    public CatalogMongoSampleDBAdaptor(MongoDBCollection sampleCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoSampleDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
@@ -194,6 +194,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         Map<String, Object> sampleParams = new HashMap<>();
+        //List<Bson> sampleParams = new ArrayList<>();
 
         String[] acceptedParams = {"source", "description"};
         filterStringParams(parameters, sampleParams, acceptedParams);
@@ -211,9 +212,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         if (!sampleParams.isEmpty()) {
-            QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(_ID, sampleId),
+            /*QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(_ID, sampleId),
                     new BasicDBObject("$set", sampleParams), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+                    */
+            Bson query = Filters.eq(_ID, sampleId);
+            Bson operation = new Document("$set", sampleParams);
+            QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
+
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount()== 0) {
                 throw CatalogDBException.idNotFound("Sample", sampleId);
             }
         }

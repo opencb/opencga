@@ -37,7 +37,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection fileCollection;
 
-    public CatalogMongoFileDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection fileCollection) {
+    public CatalogMongoFileDBAdaptor(MongoDBCollection fileCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoFileDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
@@ -259,8 +259,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
                 .start("name", fileName)
                 .append("path", filePath).get());
-        QueryResult<WriteResult> update = fileCollection.update(query, set, null);
-        if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+        QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
+        if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
         return endQuery("rename file", startTime);
@@ -354,24 +354,29 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
-        checkAclUserId(this, userId, getStudyIdByFileId(fileId));
+        checkAclUserId(dbAdaptorFactory, userId, getStudyIdByFileId(fileId));
 
-        DBObject newAclObject = getDbObject(newAcl, "ACL");
+        //DBObject newAclObject = getDbObject(newAcl, "ACL");
+        Document newAclObject = getMongoDBDocument(newAcl, "ACL");
 
         List<AclEntry> aclList = getFileAcl(fileId, userId).getResult();
-        DBObject query;
-        DBObject update;
+        Bson query;
+        Bson update;
         if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
-            query = new BasicDBObject(_ID, fileId);
-            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+            //query = new BasicDBObject(_ID, fileId);
+            // update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+            query = Filters.eq(_ID, fileId);
+            update = Updates.push("acl", newAclObject);
         } else {    // there is already another ACL: overwrite
-            query = BasicDBObjectBuilder
+            /*query = BasicDBObjectBuilder
                     .start(_ID, fileId)
                     .append("acl.userId", userId).get();
-            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));*/
+            query = Filters.and(Filters.eq(_ID, fileId), Filters.eq("acl.userId", userId));
+            update = Updates.set("acl.$", newAclObject);
         }
-        QueryResult<WriteResult> queryResult = fileCollection.update(query, update, null);
-        if (queryResult.first().getN() != 1) {
+        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
+        if (queryResult.first().getModifiedCount() != 1) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
 
@@ -636,5 +641,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         } else {
             return new Document();
         }
+    }
+
+    public MongoDBCollection getFileCollection() {
+        return fileCollection;
     }
 }

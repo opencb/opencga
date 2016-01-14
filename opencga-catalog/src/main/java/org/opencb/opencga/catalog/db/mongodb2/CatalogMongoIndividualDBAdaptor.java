@@ -30,8 +30,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api2.*;
+import org.opencb.opencga.catalog.db.api2.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
@@ -54,7 +54,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection individualCollection;
 
-    public CatalogMongoIndividualDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection individualCollection) {
+    public CatalogMongoIndividualDBAdaptor(MongoDBCollection individualCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
@@ -84,7 +84,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             throw CatalogDBException.idNotFound("Individual", individual.getMotherId());
         }
 
-        int individualId = getNewAutoIncrementId(metaCollection);
+        int individualId = getNewId();
 
         individual.setId(individualId);
 

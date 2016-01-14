@@ -510,7 +510,7 @@ class CatalogMongoDBUtils {
                     type = AbstractCatalogDBAdaptor.FilterOption.Type.NUMERICAL;
                 }
             }
-            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
+            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<DBObject>());
             annotationSetFilter.add(
                     new BasicDBObject("annotations",
                             new BasicDBObject("$elemMatch",
@@ -521,6 +521,69 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, String queryKey, ObjectMap options,
+                                             List<Document> andQuery) throws CatalogDBException {
+        List<String> optionsList = options.getAsStringList(optionKey);
+        if (queryKey == null) {
+            queryKey = "";
+        }
+        return addCompQueryFilter(option.getType(), queryKey, optionsList, andQuery);
+    }
+
+    static private List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey, List<String> optionsList,
+                                                     List<Document> andQuery) throws CatalogDBException {
+
+        ArrayList<Document> or = new ArrayList<>(optionsList.size());
+        for (String option : optionsList) {
+            Matcher matcher = operationPattern.matcher(option);
+            String operator;
+            String key;
+            String filter;
+            if (!matcher.find()) {
+                operator = "";
+                key = queryKey;
+                filter = option;
+            } else {
+                operator = matcher.group(2);
+//                if (queryKey.isEmpty()) {
+//                    key = matcher.group(1);
+//                } else {
+//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
+//                    key = queryKey + separatorDot + matcher.group(1);
+//                }
+                key = queryKey;
+                filter = matcher.group(3);
+            }
+            if (key.isEmpty()) {
+                throw new CatalogDBException("Unknown filter operation: " + option + " . Missing key");
+            }
+            switch (type) {
+                case NUMERICAL:
+                    try {
+                        double doubleValue = Double.parseDouble(filter);
+                        or.add(addNumberOperationQueryFilter(key, operator, doubleValue, new Document()));
+                    } catch (NumberFormatException e) {
+                        throw new CatalogDBException(e);
+                    }
+                    break;
+                case TEXT:
+                    or.add(addStringOperationQueryFilter(key, operator, filter, new Document()));
+                    break;
+                case BOOLEAN:
+                    or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new Document()));
+                    break;
+            }
+        }
+        if (or.isEmpty()) {
+            return andQuery;
+        } else if (or.size() == 1) {
+            andQuery.add(or.get(0));
+        } else {
+            andQuery.add(new Document("$or", or));
+        }
+
+        return andQuery;
+    }
 
     @Deprecated
     static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey,
@@ -588,6 +651,7 @@ class CatalogMongoDBUtils {
         return andQuery;
     }
 
+    @Deprecated
     static DBObject addStringOperationQueryFilter(String queryKey, String op, String filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "<":
@@ -620,6 +684,39 @@ class CatalogMongoDBUtils {
         return query;
     }
 
+    static Document addStringOperationQueryFilter(String queryKey, String op, String filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "<":
+                query.put(queryKey, new Document("$lt", filter));
+                break;
+            case "<=":
+                query.put(queryKey, new Document("$lte", filter));
+                break;
+            case ">":
+                query.put(queryKey, new Document("$gt", filter));
+                break;
+            case ">=":
+                query.put(queryKey, new Document("$gte", filter));
+                break;
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            case "~":
+            case "=~":
+                query.put(queryKey, new Document("$regex", filter));
+                break;
+            default:
+                throw new CatalogDBException("Unknown numerical query operation " + op);
+        }
+        return query;
+    }
+
+    @Deprecated
     static DBObject addNumberOperationQueryFilter(String queryKey, String op, Number filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "<":
@@ -648,10 +745,55 @@ class CatalogMongoDBUtils {
         return query;
     }
 
+    static Document addNumberOperationQueryFilter(String queryKey, String op, Number filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "<":
+                query.put(queryKey, new Document("$lt", filter));
+                break;
+            case "<=":
+                query.put(queryKey, new Document("$lte", filter));
+                break;
+            case ">":
+                query.put(queryKey, new Document("$gt", filter));
+                break;
+            case ">=":
+                query.put(queryKey, new Document("$gte", filter));
+                break;
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            default:
+                throw new CatalogDBException("Unknown string query operation " + op);
+        }
+        return query;
+    }
+
+    @Deprecated
     static DBObject addBooleanOperationQueryFilter(String queryKey, String op, Boolean filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "!=":
                 query.put(queryKey, new BasicDBObject("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            default:
+                throw new CatalogDBException("Unknown boolean query operation " + op);
+        }
+        return query;
+    }
+
+    static Document addBooleanOperationQueryFilter(String queryKey, String op, Boolean filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
                 break;
             case "":
             case "=":

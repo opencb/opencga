@@ -17,13 +17,9 @@
 package org.opencb.opencga.catalog.db.mongodb2;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
+import com.mongodb.client.model.*;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -33,8 +29,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api2.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api2.CatalogStudyDBAdaptor;
@@ -60,7 +54,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection studyCollection;
 
-    public CatalogMongoStudyDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection studyCollection) {
+    public CatalogMongoStudyDBAdaptor(MongoDBCollection studyCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
@@ -200,7 +194,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
+        List<Document> mongoQueryList = new LinkedList<>();
 
         for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -211,14 +205,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 StudyFilterOptions option = StudyFilterOptions.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option, option.name(), queryOptions, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _ID, queryOptions, mongoQueryList);
                         break;
                     case projectId:
-                        addCompQueryFilter(option, option.name(), queryOptions, _PROJECT_ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _PROJECT_ID, queryOptions, mongoQueryList);
                         break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), queryOptions, queryKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), queryKey, queryOptions, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -226,13 +220,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             }
         }
 
-        DBObject mongoQuery = new BasicDBObject();
+        Document mongoQuery = new Document();
 
         if (!mongoQueryList.isEmpty()) {
             mongoQuery.put("$and", mongoQueryList);
         }
 
-        QueryResult<DBObject> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        QueryResult<Document> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
             joinFields(study.getId(), study, queryOptions);
@@ -354,6 +348,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     private long getDiskUsageByStudy(int studyId) {
+        /*
         List<DBObject> operations = Arrays.<DBObject>asList(
                 new BasicDBObject(
                         "$match",
@@ -373,12 +368,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                                                 "$diskUsage"
                                         )).get()
                 )
-        );
+        );*/
+        List<Bson> operations = new ArrayList<>();
+        operations.add(Aggregates.match(Filters.eq(_STUDY_ID, studyId)));
+        operations.add(Aggregates.group("$" + _STUDY_ID, Accumulators.sum("diskUsage", "$diskUsage")));
 
 //        Bson match = Aggregates.match(Filters.eq(_STUDY_ID, studyId));
 //        Aggregates.group()
 
-        QueryResult<DBObject> aggregate = fileCollection.aggregate(operations, null);
+        QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
+                .aggregate(operations, null);
         if (aggregate.getNumResults() == 1) {
             Object diskUsage = aggregate.getResult().get(0).get("diskUsage");
             if (diskUsage instanceof Integer) {
@@ -535,8 +534,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
-
+//        List<DBObject> mongoQueryList = new LinkedList<>();
+        List<Document> mongoQueryList = new LinkedList<>();
 
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -547,11 +546,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 CatalogSampleDBAdaptor.VariableSetFilterOption option = CatalogSampleDBAdaptor.VariableSetFilterOption.valueOf(key);
                 switch (option) {
                     case studyId:
-                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _ID, options, mongoQueryList);
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), optionsKey, options,mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -559,12 +558,23 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             }
         }
 
+        /*
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
                 new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
                 new BasicDBObject("$unwind", "$variableSets"),
                 new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
+*/
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(_ID, studyId)));
+        aggregation.add(Projections.include("variableSets"));
+        aggregation.add(Aggregates.unwind("$variableSets"));
+        aggregation.add(Aggregates.match(new Document("$and", mongoQueryList)));
+
+        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation,
+                filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0))
                 .collect(Collectors.toList());
@@ -580,10 +590,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         int studyId = getStudyIdByVariableSetId(variableSetId);
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
 
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+/*        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
                 BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
+*/
+        Bson query = Filters.eq(_ID, studyId);
+        Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
+        QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
-        if (update.first().getN() == 0) {
+        if (update.first().getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("VariableSet", variableSetId);
         }
 

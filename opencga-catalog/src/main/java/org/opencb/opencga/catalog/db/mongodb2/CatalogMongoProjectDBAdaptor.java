@@ -56,7 +56,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
 
-    public CatalogMongoProjectDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+    public CatalogMongoProjectDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
@@ -285,14 +285,15 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
 
         if (!((Document) projectParameters).isEmpty()) {
-            Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
+            Bson query = Filters.eq("projects.id", projectId);
+            Bson updates = new Document("$set", projectParameters);
             // Fixme: Updates
                     /*
             BasicDBObject query = new BasicDBObject("projects.id", projectId);
             BasicDBObject updates = new BasicDBObject("$set", projectParameters);
             */
-            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getN() == 0) {
+            QueryResult<UpdateResult> updateResult = userCollection.update(query, updates, null);
+            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Project", projectId);
             }
         }
