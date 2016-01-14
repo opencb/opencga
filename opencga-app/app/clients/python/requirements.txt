@@ -1,1 +1,2 @@
 requests==2.7
+avro==1.7.7

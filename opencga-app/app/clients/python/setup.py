@@ -1,12 +1,13 @@
 from distutils.core import setup
 from pip.req import parse_requirements
-install_reqs = parse_requirements("requirements.txt")
+import os
+install_reqs = parse_requirements(os.path.join(os.path.dirname(__file__), "requirements.txt"))
 reqs = [str(ir.req) for ir in install_reqs if ir.req is not None]
 setup(
-    name='OpenCGA-API',
+    name='pyCGA',
     version='0.1.2',
     packages=['pyCGA', 'pyCGA.Utils'],
-    scripts=['GELpyCGA/Scripts/pyOpenCGA', 'pyCGA/Scripts/pyCGA', 'pyCGA/Scripts/pyCGAIdConverter',
+    scripts=['pyCGA/Scripts/pyCGA', 'pyCGA/Scripts/pyCGAIdConverter',
              'pyCGA/Scripts/pyCGAVariantFetcher', 'pyCGA/Scripts/pyCGALogin'],
     url='',
     license='',
