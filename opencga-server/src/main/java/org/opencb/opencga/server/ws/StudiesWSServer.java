@@ -16,17 +16,22 @@
 
 package org.opencb.opencga.server.ws;
 
-import com.wordnik.swagger.annotations.*;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Index;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -36,7 +41,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -252,7 +260,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
         try {
             String[] studyIds = studyIdStrCvs.split(",");
-            List<QueryResult> queryResults = new LinkedList<>();
+            List<org.opencb.datastore.core.QueryResult> queryResults = new LinkedList<>();
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 int studyId = catalogManager.getStudyId(studyIdStr);
@@ -281,8 +289,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
         List<Region> regions = Region.parseRegions(region);
 
-        List<QueryResult> results = new ArrayList<>();
-        QueryResult alignmentsByRegion;
+        List<org.opencb.datastore.core.QueryResult> results = new ArrayList<>();
+//        QueryResult alignmentsByRegion;
+        org.opencb.datastore.core.QueryResult alignmentsByRegion;
 
         // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
 
@@ -362,9 +371,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 if (regions.size() != 1) {
                     return createErrorResponse("", "Histogram fetch only accepts one region.");
                 }
-                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
+                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new org.opencb.datastore.core.QueryOptions(queryOptions));
             } else {
-                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
+                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new org.opencb.datastore.core.QueryOptions(queryOptions));
             }
             results.add(alignmentsByRegion);
         }

@@ -3,9 +3,9 @@ package org.opencb.opencga.server.utils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -36,9 +36,9 @@ public class VariantFetcher {
         logger = LoggerFactory.getLogger(VariantFetcher.class);
     }
 
-    public QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
+    public org.opencb.datastore.core.QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
             throws Exception {
-        QueryResult result;
+        org.opencb.datastore.core.QueryResult result;
         int fileIdNum;
 
         fileIdNum = catalogManager.getFileId(fileId);
@@ -58,13 +58,14 @@ public class VariantFetcher {
         return result;
     }
 
-    public QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
+    public org.opencb.datastore.core.QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
         return variantsStudy(studyId, region, histogram, groupBy, interval, null, sessionId, queryOptions);
     }
 
-    public QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum, String sessionId, QueryOptions queryOptions)
+    public org.opencb.datastore.core.QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum, String sessionId, QueryOptions queryOptions)
             throws Exception {
-        QueryResult result;
+//        QueryResult result;
+        org.opencb.datastore.core.QueryResult result;
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         String storageEngine = dataStore.getStorageEngine();
@@ -101,12 +102,12 @@ public class VariantFetcher {
             if (regions.length != 1) {
                 throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
             }
-            result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
+            result = dbAdaptor.getFrequency(new org.opencb.datastore.core.Query(query), Region.parseRegion(regions[0]), interval);
         } else if (groupBy != null && !groupBy.isEmpty()) {
-            result = dbAdaptor.groupBy(query, groupBy, queryOptions);
+            result = dbAdaptor.groupBy(new org.opencb.datastore.core.Query(query), groupBy, new org.opencb.datastore.core.QueryOptions(queryOptions));
         } else {
             logger.debug("getVariants {}, {}", query, queryOptions);
-            result = dbAdaptor.get(query, queryOptions);
+            result = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
             if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
                 result = convertToGA4GH(result);
@@ -115,10 +116,10 @@ public class VariantFetcher {
         return result;
     }
 
-    private QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {
+    private org.opencb.datastore.core.QueryResult<org.ga4gh.models.Variant> convertToGA4GH(org.opencb.datastore.core.QueryResult<Variant> result) {
         GAVariantFactory factory = new GAVariantFactory();
         List<org.ga4gh.models.Variant> gaVariants = factory.create(result.getResult());
-        QueryResult<org.ga4gh.models.Variant> gaResult = new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(), gaVariants);
+        org.opencb.datastore.core.QueryResult<org.ga4gh.models.Variant> gaResult = new org.opencb.datastore.core.QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(), gaVariants);
         return gaResult;
     }
 

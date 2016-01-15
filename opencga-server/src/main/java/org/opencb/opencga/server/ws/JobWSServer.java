@@ -20,8 +20,9 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
@@ -194,7 +195,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
                 QueryOptions query = new QueryOptions();
                 query.put("name", params.get(outputParam).get(0));
-                QueryResult<File> result = catalogManager.searchFile(studyId, query, queryOptions, sessionId);
+                QueryResult<File> result = catalogManager.searchFile(studyId, new Query(query), queryOptions, sessionId);
                 outDirId = result.getResult().get(0).getId();
             }
             else
@@ -248,8 +249,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
 //            Job job = jobResult.getResult().get(0);
 
-            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(
-                    localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
+            org.opencb.datastore.core.QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
 
             // Execute job
 //            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);

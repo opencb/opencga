@@ -19,8 +19,8 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -221,7 +221,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 Integer outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
                 queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                QueryResult<Job> jobQueryResult = variantStorage.calculateStats(outdirId, cohortIds, sessionId, queryOptions);
+                org.opencb.datastore.core.QueryResult<Job> jobQueryResult =
+                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new org.opencb.datastore.core.QueryOptions(queryOptions));
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
                 List<QueryResult<Cohort>> results = new LinkedList<>();

@@ -22,7 +22,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.datastore.core.*;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -277,7 +277,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             description, parents, sessionId
                     );
                     File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                            queryOptions, sessionId, false);
+                            new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
                     queryResult.setResult(Collections.singletonList(file));
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
@@ -457,17 +457,17 @@ public class FileWSServer extends OpenCGAWSServer {
             int studyIdNum = catalogManager.getStudyId(studyId);
 
             // TODO this must be changed: only one queryOptions need to be passed
-            QueryOptions query = new QueryOptions();
+            QueryOptions options = new QueryOptions();
             for (String param : params.keySet()) {
                 try {
                     CatalogFileDBAdaptor.FileFilterOption.valueOf(param.split("\\.")[0]);
-                    query.put(param, params.getFirst(param));
+                    options.put(param, params.getFirst(param));
                 } catch (IllegalArgumentException ignore) {
                 }
             }
 
-            if (query.containsKey("name") && (query.get("name") == null || query.getString("name").isEmpty())) {
-                query.remove("name");
+            if (options.containsKey("name") && (options.get("name") == null || options.getString("name").isEmpty())) {
+                options.remove("name");
                 System.out.println("Name attribute empty, it;s been removed");
             }
 
@@ -475,8 +475,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 this.queryOptions.put("limit", 1000);
                 System.out.println("Adding a limit of 1000");
             }
-            System.out.println("query = " + query.toJson());
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, this.queryOptions, sessionId);
+            System.out.println("query = " + options.toJson());
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, new Query(options), this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -513,7 +513,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
             queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
-            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
+            org.opencb.datastore.core.QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new org.opencb.datastore.core.QueryOptions(queryOptions));
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -577,7 +577,8 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             String storageEngine = dataStore.getStorageEngine();
             String dbName = dataStore.getDbName();
-            QueryResult result;
+//            QueryResult result;
+            org.opencb.datastore.core.QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {
                     //TODO: getChunkSize from file.index.attributes?  use to be 200
@@ -611,14 +612,15 @@ public class FileWSServer extends OpenCGAWSServer {
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
                     }
-                    QueryResult alignmentsByRegion;
+//                    QueryResult alignmentsByRegion;
+                    org.opencb.datastore.core.QueryResult alignmentsByRegion;
                     if (histogram) {
                         if (regions.size() != 1) {
                             return createErrorResponse("", "Histogram fetch only accepts one region.");
                         }
-                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
+                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new org.opencb.datastore.core.QueryOptions(queryOptions));
                     } else {
-                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
+                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new org.opencb.datastore.core.QueryOptions(queryOptions));
                     }
                     result = alignmentsByRegion;
                     break;
@@ -657,20 +659,21 @@ public class FileWSServer extends OpenCGAWSServer {
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
                     }
-                    QueryResult queryResult;
+//                    QueryResult queryResult;
+                    org.opencb.datastore.core.QueryResult queryResult;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        queryResult = dbAdaptor.get(query, queryOptions);
+                        queryResult = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
 //                    } else if (variantSource) {
 //                        queryOptions.put("fileId", Integer.toString(fileIdNum));
 //                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else if (!groupBy.isEmpty()) {
-                        queryResult = dbAdaptor.groupBy(query, groupBy, queryOptions);
+                        queryResult = dbAdaptor.groupBy(new org.opencb.datastore.core.Query(query), groupBy, new org.opencb.datastore.core.QueryOptions(queryOptions));
                     } else {
                         //With merge = true, will return only one result.
 //                        queryOptions.put("merge", true);
 //                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
-                        queryResult = dbAdaptor.get(query, queryOptions);
+                        queryResult = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
                     }
                     result = queryResult;
                     if (warningMsg != null) {
@@ -731,12 +734,12 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        List<QueryResult> results = new LinkedList<>();
+        List<org.opencb.datastore.core.QueryResult> results = new LinkedList<>();
         try {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
-                QueryResult result;
+                org.opencb.datastore.core.QueryResult result;
                 result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
@@ -898,7 +901,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 file = catalogManager.createFile(studyId, null, null,
                         filePath, description, parents, -1, sessionId).first();
                 file = catalogFileUtils.link(file, calculateChecksum, uri, false, false, sessionId);
-                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, queryOptions, sessionId, false);
+                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
             }
             return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
         } catch (Exception e) {
@@ -926,7 +929,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             new CatalogFileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
             file = catalogManager.getFile(file.getId(), queryOptions, sessionId).first();
-            file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, queryOptions, sessionId, false);
+            file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
 
             return createOkResponse(new QueryResult<>("relink", 0, 1, 1, null, null, Collections.singletonList(file)));
         } catch (Exception e) {
@@ -947,7 +950,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(file, false, sessionId);
-                file1 = fileMetadataReader.setMetadataInformation(file1, null, queryOptions, sessionId, false);
+                file1 = fileMetadataReader.setMetadataInformation(file1, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
                 } else {
@@ -957,7 +960,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<File> result = catalogManager.getAllFilesInFolder(file.getId(), null, sessionId).getResult();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
-                    File file1 = fileMetadataReader.setMetadataInformation(f, null, queryOptions, sessionId, false);
+                    File file1 = fileMetadataReader.setMetadataInformation(f, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
                     if (f != file1) {    //Add only modified files.
                         files.add(file1);
                     }

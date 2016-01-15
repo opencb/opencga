@@ -7,7 +7,7 @@ import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.datastore.core.Query;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
