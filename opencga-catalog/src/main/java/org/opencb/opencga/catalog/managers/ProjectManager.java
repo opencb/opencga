@@ -1,14 +1,14 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -36,7 +36,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     @Override
     public String getUserId(int projectId) throws CatalogException {
-        return userDBAdaptor.getProjectOwnerId(projectId);
+        return projectDBAdaptor.getProjectOwnerId(projectId);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         if (split.length != 2) {
             return -1;
         }
-        return userDBAdaptor.getProjectId(split[0], split[1]);
+        return projectDBAdaptor.getProjectId(split[0], split[1]);
     }
 
     @Override
@@ -79,14 +79,14 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         //Add generic permissions to the project.
         project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
 
-        QueryResult<Project> queryResult = userDBAdaptor.createProject(ownerId, project, options);
+        QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
         project = queryResult.getResult().get(0);
 
         try {
             catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
-            userDBAdaptor.deleteProject(project.getId());
+            projectDBAdaptor.deleteProject(project.getId());
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -111,7 +111,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
-        QueryResult<Project> projectResult = userDBAdaptor.getProject(projectId, options);
+        QueryResult<Project> projectResult = projectDBAdaptor.getProject(projectId, options);
         if (!projectResult.getResult().isEmpty()) {
             authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
         }
@@ -127,7 +127,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(ownerId, "ownerId");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        QueryResult<Project> allProjects = userDBAdaptor.getAllProjects(ownerId, options);
+        QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId, options);
 
         List<Project> projects = allProjects.getResult();
         authorizationManager.filterProjects(userId, projects);
@@ -143,7 +143,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
         if (parameters.containsKey("alias")) {
@@ -159,7 +159,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             }
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<Project> queryResult = userDBAdaptor.modifyProject(projectId, parameters);
+        QueryResult<Project> queryResult = projectDBAdaptor.modifyProject(projectId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
         return queryResult;
     }
@@ -169,12 +169,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult queryResult = userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+        QueryResult queryResult = projectDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
         return queryResult;
     }

@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.authentication;
 
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**

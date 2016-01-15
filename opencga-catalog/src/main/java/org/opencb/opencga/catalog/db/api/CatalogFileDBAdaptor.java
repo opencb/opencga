@@ -1,8 +1,23 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -11,15 +26,82 @@ import org.opencb.opencga.catalog.models.File;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogFileDBAdaptor {
+public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
 
-    /**
-     * File methods
-     * ***************************
-     */
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        TYPE("type", TEXT_ARRAY, ""),
+        FORMAT("format", TEXT_ARRAY, ""),
+        BIOFORMAT("bioformat", TEXT_ARRAY, ""),
+        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
+        OWNER_ID("ownerId", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", TEXT_ARRAY, ""),
+        EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
+        JOB_ID("jobId", INTEGER_ARRAY, ""),
+        SAMPLE_ID("sampleId", INTEGER_ARRAY, ""),
+
+        // TOCHECK: Pedro. Check parameter user_others_id.
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN , ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, ""),
+
+        STUDY_ID("study.id", TEXT_ARRAY, "");
+        // TOCHECK: Pedro. Add annotation support?
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
+
+
+    default boolean fileExists(int fileId) {
+        return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
+    }
+
+    default void checkFileId(int fileId) throws CatalogDBException {
+        if (fileId < 0) {
+            throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
+        }
+
+        if (!fileExists(fileId)) {
+            throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
+        }
+    }
+
 
     int getFileId(int studyId, String path) throws CatalogDBException;
 
@@ -31,7 +113,10 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<File> getAllFiles(QueryOptions query, QueryOptions options) throws CatalogDBException;
+    @Deprecated
+    default QueryResult<File> getAllFiles(Query query, QueryOptions options) throws CatalogDBException {
+        return get(query, options);
+    }
 
     QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
@@ -68,7 +153,7 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
 
-    enum FileFilterOption implements CatalogDBAdaptor.FilterOption {
+    enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         directory(Type.TEXT, ""),
 

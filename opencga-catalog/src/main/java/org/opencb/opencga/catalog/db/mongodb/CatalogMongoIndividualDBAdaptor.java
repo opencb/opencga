@@ -1,13 +1,35 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -18,26 +40,23 @@ import org.opencb.opencga.catalog.models.Variable;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements CatalogIndividualDBAdaptor {
+public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
-    private final MongoDBCollection metaCollection;
+    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection individualCollection;
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
 
-    public CatalogMongoIndividualDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            individualCollection) {
+    public CatalogMongoIndividualDBAdaptor(MongoDBCollection individualCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.individualCollection = individualCollection;
     }
 
@@ -65,11 +84,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             throw CatalogDBException.idNotFound("Individual", individual.getMotherId());
         }
 
-        int individualId = getNewAutoIncrementId(metaCollection);
+        int individualId = getNewId();
 
         individual.setId(individualId);
-        DBObject individualDbObject = getDbObject(individual, "Individual");
 
+        Document individualDbObject = getMongoDBDocument(individual, "Individual");
         individualDbObject.put(_ID, individualId);
         individualDbObject.put(_STUDY_ID, studyId);
         QueryResult<WriteResult> insert = individualCollection.insert(individualDbObject, null);
@@ -81,7 +100,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     public QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), filterOptions(options,
+        QueryResult<Document> result = individualCollection.find(new BasicDBObject(_ID, individualId), filterOptions(options,
                 FILTER_ROUTE_INDIVIDUALS));
         Individual individual = parseObject(result, Individual.class);
         if (individual == null) {
@@ -148,7 +167,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         if (!annotationSetFilter.isEmpty()) {
             mongoQuery.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
         }
-        QueryResult<DBObject> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
+        QueryResult<Document> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
         List<Individual> individuals = parseObjects(result, Individual.class);
         return endQuery("getAllIndividuals", startTime, individuals);
     }
@@ -196,10 +215,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
 
         if (!individualParameters.isEmpty()) {
-            QueryResult<WriteResult> update = individualCollection.update(
+            QueryResult<UpdateResult> update = individualCollection.update(
                     new BasicDBObject(_ID, individualId),
                     new BasicDBObject("$set", individualParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Individual", individualId);
             }
         }
@@ -227,23 +246,26 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
         DBObject object = getDbObject(annotationSet, "AnnotationSet");
 
-        DBObject query = new BasicDBObject(_ID, individualId);
+        Bson query;
+        Bson individualQuery = Filters.eq(_ID, individualId);
         if (overwrite) {
-            query.put("annotationSets.id", annotationSet.getId());
+//            query.put("annotationSets.id", annotationSet.getId());
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", annotationSet.getId()));
         } else {
-            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+//            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId())));
         }
 
-        DBObject update;
+        Bson update;
         if (overwrite) {
             update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
         } else {
             update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
         }
 
-        QueryResult<WriteResult> queryResult = individualCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = individualCollection.update(query, update, null);
 
-        if (queryResult.first().getN() != 1) {
+        if (queryResult.first().getModifiedCount() != 1) {
             throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
         }
 
@@ -255,8 +277,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
         long startTime = startQuery();
 
-        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets"))
-                .first();
+        Individual individual =
+                getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : individual.getAnnotationSets()) {
             if (as.getId().equals(annotationId)) {
@@ -269,10 +291,17 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
-        DBObject query = new BasicDBObject(_ID, individualId);
-        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
-        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
-        if (resultQueryResult.first().getN() < 1) {
+//        DBObject query = new BasicDBObject(_ID, individualId);
+//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
+//        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
+//        if (resultQueryResult.first().getN() < 1) {
+//            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+//        }
+
+        Bson eq = Filters.eq(_ID, individualId);
+        Bson pull = Updates.pull("annotationSets", new Document("id", annotationId));
+        QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
+        if (update.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
         }
 
@@ -288,8 +317,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
         checkInUse(individualId);
 
-        QueryResult<WriteResult> remove = individualCollection.remove(new BasicDBObject(_ID, individualId), options);
-        if (remove.first().getN() == 0) {
+        QueryResult<DeleteResult> remove = individualCollection.remove(new BasicDBObject(_ID, individualId), options);
+        if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.idNotFound("Individual", individualId);
         }
 
@@ -333,8 +362,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     @Override
     public int getStudyIdByIndividualId(int individualId) throws CatalogDBException {
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject(_ID, individualId), new BasicDBObject(_STUDY_ID, 1),
-                null);
+        QueryResult<Document> result =
+                individualCollection.find(new BasicDBObject(_ID, individualId), new BasicDBObject(_STUDY_ID, 1), null);
 
         if (!result.getResult().isEmpty()) {
             return (int) result.getResult().get(0).get(_STUDY_ID);
@@ -342,4 +371,101 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             throw CatalogDBException.idNotFound("Individual", individualId);
         }
     }
+
+    @Override
+    public QueryResult<Long> count(Query query) {
+        Bson bson = parseQuery(query);
+        return individualCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult distinct(Query query, String field) {
+        Bson bson = parseQuery(query);
+        return individualCollection.distinct(field, bson);
+    }
+
+    @Override
+    public QueryResult stats(Query query) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Individual> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = individualCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
+        return null;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return individualCollection.find(bson, options);
+    }
+
+    @Override
+    public QueryResult<Individual> update(Query query, ObjectMap parameters) { return null; }
+
+    @Override
+    public QueryResult<Long> delete(Query query) {
+        return null;
+    }
+
+    @Override
+    public Iterator<Individual> iterator(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public Iterator nativeIterator(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return individualCollection.nativeQuery().find(bson, options).iterator();
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(individualCollection, bsonQuery, field, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(individualCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, QueryParams.FATHER_ID.key(), "fatherId", andBsonList);
+        createOrQuery(query, QueryParams.MOTHER_ID.key(), "motherId", andBsonList);
+        createOrQuery(query, QueryParams.FAMILY.key(), "family", andBsonList);
+        createOrQuery(query, QueryParams.GENDER.key(), "gender", andBsonList);
+        createOrQuery(query, QueryParams.RACE.key(), "race", andBsonList);
+        createOrQuery(query, QueryParams.POPULATION_NAME.key(), "populationName", andBsonList);
+        createOrQuery(query, QueryParams.POPULATION_SUBPOPULATION.key(), "populationSubpopulation", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
+    }
+
 }

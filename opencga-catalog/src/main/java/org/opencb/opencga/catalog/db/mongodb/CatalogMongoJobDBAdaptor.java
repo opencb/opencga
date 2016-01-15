@@ -1,8 +1,7 @@
-package org.opencb.opencga.catalog.db.mongodb2;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -14,7 +13,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api2.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
@@ -25,9 +24,9 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.addQueryIntegerListFilter;
-import static org.opencb.opencga.catalog.db.mongodb2.CatalogMongoDBUtils.parseObjects;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addQueryIntegerListFilter;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObjects;
 
 /**
  * Created by pfurio on 08/01/16.

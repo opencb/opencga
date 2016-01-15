@@ -5,9 +5,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -27,7 +26,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
+    private CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
     private User user1;
     private User user2;

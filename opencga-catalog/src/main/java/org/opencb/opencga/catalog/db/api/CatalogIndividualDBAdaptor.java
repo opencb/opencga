@@ -1,21 +1,91 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor {
+public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
 
-    /**
-     * Individual methods
-     * ***************************
-     */
-    boolean individualExists(int individualId);
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        FATHER_ID("fatherId", INTEGER_ARRAY, ""),
+        MOTHER_ID("motherId", INTEGER_ARRAY, ""),
+        FAMILY("family", TEXT_ARRAY, ""),
+        GENDER("gender", TEXT_ARRAY, ""),
+        RACE("race", TEXT_ARRAY, ""),
+        POPULATION_NAME("populationName", TEXT_ARRAY, ""),
+        POPULATION_SUBPOPULATION("populationSubpopulation", TEXT_ARRAY, "");
+
+        // TOCHECK: Pedro. Should we be considering annotations?
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
+
+
+    default boolean individualExists(int sampleId) {
+        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+    }
+
+    default void checkIndividualId(int individualId) throws CatalogDBException {
+        if (individualId < 0) {
+            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
+        }
+
+        if (!individualExists(individualId)) {
+            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
+        }
+    }
 
     QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 
@@ -34,7 +104,7 @@ public interface CatalogIndividualDBAdaptor {
 
     int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
 
-    enum IndividualFilterOption implements CatalogDBAdaptor.FilterOption {
+    enum IndividualFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         id(Type.NUMERICAL, ""),
         name(Type.TEXT, ""),

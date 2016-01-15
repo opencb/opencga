@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db;
 
-import org.opencb.opencga.catalog.db.api2.*;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**

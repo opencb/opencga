@@ -1,15 +1,15 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -65,7 +65,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         if (projectStudy.length != 2) {
             return -2;
         }
-        int projectId = userDBAdaptor.getProjectId(split[0], projectStudy[0]);
+        int projectId = projectDBAdaptor.getProjectId(split[0], projectStudy[0]);
         return studyDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
@@ -110,7 +110,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
-        String projectOwnerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String projectOwnerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
 
         /* Check project permissions */
@@ -132,7 +132,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Job> jobs = new LinkedList<>();
 
         //Copy generic permissions from the project.
-        QueryResult<AclEntry> aclQueryResult = userDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
+        QueryResult<AclEntry> aclQueryResult = projectDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
         if (aclQueryResult.getResult().isEmpty()) {
             throw new CatalogDBException("Project " + projectId + " must have generic ACL");
         }

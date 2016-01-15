@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db.mongodb2;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
@@ -34,28 +34,13 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by jacobo on 12/09/14.
+ * Created by imedina on 08/01/16.
  */
-public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
+@Deprecated
+public class AbstractCatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 
-    static final String _ID = "_id";
-    static final String _PROJECT_ID = "_projectId";
-    static final String _STUDY_ID = "_studyId";
-    static final String FILTER_ROUTE_STUDIES = "projects.studies.";
-    static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
-    static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
-    static final String FILTER_ROUTE_FILES = "projects.studies.files.";
-    static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
-
-    protected CatalogMongoDBAdaptorFactory dbAdaptorFactory;
-
-    public CatalogMongoDBAdaptor(Logger logger) {
+    protected AbstractCatalogMongoDBAdaptor(Logger logger) {
         super(logger);
-    }
-
-    protected int getNewId() {
-//        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
     protected void createOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {

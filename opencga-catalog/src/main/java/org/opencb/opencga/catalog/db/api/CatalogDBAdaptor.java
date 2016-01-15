@@ -16,111 +16,104 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.slf4j.Logger;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
-public abstract class CatalogDBAdaptor {
+/**
+ * Created by imedina on 07/01/16.
+ */
+public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
-    protected final Logger logger;
 
-    protected CatalogDBAdaptor(Logger logger) {
-        this.logger = logger;
+    default QueryResult<Long> count() {
+        return count(new Query());
     }
 
-    protected long startQuery() {
-        return System.currentTimeMillis();
+    QueryResult<Long> count(Query query);
+
+
+
+    default QueryResult distinct(String field) {
+        return distinct(new Query(), field);
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) throws CatalogDBException {
-        return endQuery(queryId, startTime, result, null, null);
+    QueryResult distinct(Query query, String field);
+
+
+
+    default QueryResult stats() {
+        return stats(new Query());
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime) throws CatalogDBException {
-        return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
-    }
+    QueryResult stats(Query query);
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result)
-            throws CatalogDBException {
-        long end = System.currentTimeMillis();
-        result.setId(queryId);
-        result.setDbTime((int) (end - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result
-                .getNumResults(), result.getNumTotalResults());
-        if (result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()) {
-            throw new CatalogDBException(result.getErrorMsg());
+
+
+    QueryResult<T> get(Query query, QueryOptions options);
+
+    default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) {
+        Objects.requireNonNull(queries);
+        List<QueryResult<T>> queryResults = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            queryResults.add(get(query, options));
         }
-        return result;
+        return queryResults;
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result,
-                                          String errorMessage, String warnMessage) throws CatalogDBException {
-        long end = System.currentTimeMillis();
-        if (result == null) {
-            result = new LinkedList<>();
+    QueryResult nativeGet(Query query, QueryOptions options);
+
+    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) {
+        Objects.requireNonNull(queries);
+        List<QueryResult> queryResults = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            queryResults.add(nativeGet(query, options));
         }
-        int numResults = result.size();
-        QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
-                warnMessage, errorMessage, result);
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(),
-                queryResult.getNumResults(), queryResult.getNumTotalResults());
-        if (errorMessage != null && !errorMessage.isEmpty()) {
-            throw new CatalogDBException(queryResult.getErrorMsg());
-        }
-        return queryResult;
+        return queryResults;
     }
 
-    protected void checkParameter(Object param, String name) throws CatalogDBException {
-        if (param == null) {
-            throw new CatalogDBException("Error: parameter '" + name + "' is null");
-        }
-        if (param instanceof String) {
-            if (param.equals("") || param.equals("null")) {
-                throw new CatalogDBException("Error: parameter '" + name + "' is empty or it values 'null");
-            }
-        }
+    QueryResult<T> update(Query query, ObjectMap parameters);
+
+    QueryResult<Long> delete(Query query) throws CatalogDBException;
+
+
+
+    @Override
+    default Iterator<T> iterator() {
+        return iterator(new Query(), new QueryOptions());
     }
 
-    public interface FilterOption {
-        String getKey();
+    Iterator<T> iterator(Query query, QueryOptions options);
 
-        Type getType();
-
-        String getDescription();
-
-        enum Type {
-            /**
-             * Accepts a list of comma separated numerical conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=]
-             * <p>
-             * Example:
-             * getAllFiles( {diskUsage : "<200000" } )
-             * getAllFiles( {jobId : "32,33,34" } )
-             */
-            NUMERICAL,
-            /**
-             * Accepts a list of comma separated text conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=, ~, =~, !=~],
-             * where [~,=~] implements a "LIKE" with regular expression and [!=~, !~] implements a "NOT LIKE"
-             * and [<, <=, >, >=] are lexicographical operations
-             * <p>
-             * Example:
-             * getAllFiles ( { bioformat : "VARIANT," } )
-             * getAllSamples ( { name : "~SAMP_00[0-9]*"} )
-             */
-            TEXT,
-            /**
-             * Accepts a boolean condition
-             * <p>
-             * Example:
-             * getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
-             */
-            BOOLEAN
-        }
+    default Iterator nativeIterator() {
+        return nativeIterator(new Query(), new QueryOptions());
     }
+
+    Iterator nativeIterator(Query query, QueryOptions options);
+
+
+
+    QueryResult rank(Query query, String field, int numResults, boolean asc);
+
+    QueryResult groupBy(Query query, String field, QueryOptions options);
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
+
+
+
+    @Override
+    default void forEach(Consumer action) {
+        forEach(new Query(), action, new QueryOptions());
+    }
+
+    void forEach(Query query, Consumer<? super Object> action, QueryOptions options);
 
 }

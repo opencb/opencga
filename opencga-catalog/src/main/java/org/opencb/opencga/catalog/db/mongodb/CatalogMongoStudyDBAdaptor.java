@@ -1,14 +1,36 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import com.mongodb.client.model.*;
+import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -16,9 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
@@ -26,49 +48,51 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements CatalogStudyDBAdaptor {
+public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
 
-    private final CatalogDBAdaptorFactory dbAdaptorFactory;
-    private final MongoDBCollection metaCollection;
+//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection studyCollection;
-    private final MongoDBCollection fileCollection;
 
-    public CatalogMongoStudyDBAdaptor(CatalogDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaCollection, MongoDBCollection
-            studyCollection, MongoDBCollection fileCollection) {
-        super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
+    public CatalogMongoStudyDBAdaptor(MongoDBCollection studyCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
+        super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = metaCollection;
         this.studyCollection = studyCollection;
-        this.fileCollection = fileCollection;
     }
-
 
     /**
      * Study methods
      * ***************************
      */
 
-    @Override
-    public boolean studyExists(int studyId) {
-        QueryResult<Long> count = studyCollection.count(new BasicDBObject(_ID, studyId));
-        return count.getResult().get(0) != 0;
-    }
+//    @Override
+//    public boolean studyExists(int studyId) {
+//        QueryResult<Long> count = studyCollection.count(new BasicDBObject(_ID, studyId));
+//        return count.getResult().get(0) != 0;
+//    }
+//
+//    @Override
+//    public void checkStudyId(int studyId) throws CatalogDBException {
+//        if (!studyExists(studyId)) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        }
+//    }
 
-    @Override
-    public void checkStudyId(int studyId) throws CatalogDBException {
-        if (!studyExists(studyId)) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
-    }
-
-    private boolean studyAliasExists(int projectId, String studyAlias) {
+    private boolean studyAliasExists(int projectId, String studyAlias) throws CatalogDBException {
         // Check if study.alias already exists.
-        DBObject countQuery = BasicDBObjectBuilder
-                .start(_PROJECT_ID, projectId)
-                .append("alias", studyAlias).get();
+//        DBObject countQuery = BasicDBObjectBuilder
+//                .start(_PROJECT_ID, projectId)
+//                .append("alias", studyAlias).get();
+//
+//        QueryResult<Long> queryResult = studyCollection.count(countQuery);
+//        return queryResult.getResult().get(0) != 0;
 
-        QueryResult<Long> queryResult = studyCollection.count(countQuery);
-        return queryResult.getResult().get(0) != 0;
+        if (projectId < 0) {
+            throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
+        }
+
+        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        QueryResult<Long> count = count(query);
+        return count.first() != 0;
     }
 
     @Override
@@ -84,7 +108,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         }
 
         //Set new ID
-        int newId = getNewAutoIncrementId(metaCollection);
+//        int newId = getNewAutoIncrementId(metaCollection);
+        int newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         study.setId(newId);
 
         //Empty nested fields
@@ -95,7 +120,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         study.setJobs(Collections.<Job>emptyList());
 
         //Create DBObject
-        DBObject studyObject = getDbObject(study, "Study");
+        Document studyObject = getMongoDBDocument(study, "Study");
         studyObject.put(_ID, newId);
 
         //Set ProjectId
@@ -134,9 +159,30 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
 
     @Override
+    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
+//        long startTime = startQuery();
+//        //TODO: Parse QueryOptions include/exclude
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
+////        QueryResult queryResult = endQuery("get study", startTime, result);
+//
+//        List<Study> studies = parseStudies(result);
+//        if (studies.isEmpty()) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        }
+//
+//        joinFields(studyId, studies.get(0), options);
+//
+//        //queryResult.setResult(studies);
+//        return endQuery("Get Study", startTime, studies);
+
+        return get(new Query(QueryParams.ID.key(), studyId), options);
+    }
+
+    @Override
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!dbAdaptorFactory.getCatalogUserDBAdaptor().projectExists(projectId)) {
+        if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
         return endQuery("getAllSudiesInProject", startTime, getAllStudies(options == null ?
@@ -147,7 +193,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
+        List<Document> mongoQueryList = new LinkedList<>();
 
         for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -158,14 +204,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                 StudyFilterOptions option = StudyFilterOptions.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option, option.name(), queryOptions, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _ID, queryOptions, mongoQueryList);
                         break;
                     case projectId:
-                        addCompQueryFilter(option, option.name(), queryOptions, _PROJECT_ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _PROJECT_ID, queryOptions, mongoQueryList);
                         break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), queryOptions, queryKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), queryKey, queryOptions, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -173,40 +219,19 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             }
         }
 
-        DBObject mongoQuery = new BasicDBObject();
+        Document mongoQuery = new Document();
 
         if (!mongoQueryList.isEmpty()) {
             mongoQuery.put("$and", mongoQueryList);
         }
 
-        QueryResult<DBObject> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
-
+        QueryResult<Document> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
             joinFields(study.getId(), study, queryOptions);
         }
 
         return endQuery("getAllStudies", startTime, studies);
-    }
-
-    @Override
-    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        //TODO: Parse QueryOptions include/exclude
-        DBObject query = new BasicDBObject(_ID, studyId);
-        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
-//        QueryResult queryResult = endQuery("get study", startTime, result);
-
-        List<Study> studies = parseStudies(result);
-        if (studies.isEmpty()) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
-
-        joinFields(studyId, studies.get(0), options);
-
-        //queryResult.setResult(studies);
-        return endQuery("Get Study", startTime, studies);
-
     }
 
     @Override
@@ -228,7 +253,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         long startTime = startQuery();
 
         checkStudyId(studyId);
-        BasicDBObject studyParameters = new BasicDBObject();
+//        BasicDBObject studyParameters = new BasicDBObject();
+        Document studyParameters = new Document();
 
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
         filterStringParams(parameters, studyParameters, acceptedParams);
@@ -248,10 +274,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         }
 
         if (!studyParameters.isEmpty()) {
-            BasicDBObject query = new BasicDBObject(_ID, studyId);
+//            BasicDBObject query = new BasicDBObject(_ID, studyId);
+            Bson eq = Filters.eq(_ID, studyId);
             BasicDBObject updates = new BasicDBObject("$set", studyParameters);
-            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getN() == 0) {
+
+//            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
+            QueryResult<UpdateResult> updateResult = studyCollection.update(eq, updates, null);
+            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Study", studyId);
             }
         }
@@ -261,39 +290,48 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     /**
      * At the moment it does not clean external references to itself.
      */
-    @Override
-    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
-        long startTime = startQuery();
-        DBObject query = new BasicDBObject(_ID, studyId);
-        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
-
-        List<Integer> deletes = new LinkedList<>();
-
-        if (remove.getResult().get(0).getN() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        } else {
-            deletes.add(remove.getResult().get(0).getN());
-            return endQuery("delete study", startTime, deletes);
-        }
-    }
+//    @Override
+//    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
+//        long startTime = startQuery();
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
+//
+//        List<Integer> deletes = new LinkedList<>();
+//
+//        if (remove.getResult().get(0).getN() == 0) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+//        } else {
+//            deletes.add(remove.getResult().get(0).getN());
+//            return endQuery("delete study", startTime, deletes);
+//        }
+//    }
 
     @Override
     public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
-        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
-        BasicDBObject projection = new BasicDBObject("id", "true");
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
-        List<Study> studies = parseStudies(queryResult);
+//        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
+//        BasicDBObject projection = new BasicDBObject("id", "true");
+//        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
+//        List<Study> studies = parseStudies(queryResult);
+
+        Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        QueryOptions queryOptions = new QueryOptions("include", "id");
+        QueryResult<Study> studyQueryResult = get(query1, queryOptions);
+        List<Study> studies = studyQueryResult.getResult();
         return studies == null || studies.isEmpty() ? -1 : studies.get(0).getId();
     }
 
     @Override
     public int getProjectIdByStudyId(int studyId) throws CatalogDBException {
-        DBObject query = new BasicDBObject(_ID, studyId);
-        DBObject projection = new BasicDBObject(_PROJECT_ID, "true");
-        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
+//        DBObject query = new BasicDBObject(_ID, studyId);
+//        DBObject projection = new BasicDBObject(_PROJECT_ID, "true");
+//        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
+
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryOptions queryOptions = new QueryOptions("include", QueryParams.PROJECT_ID.key());
+        QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
-            DBObject study = result.getResult().get(0);
+            Document study = (Document) result.getResult().get(0);
             Object id = study.get(_PROJECT_ID);
             return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
@@ -304,11 +342,12 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     @Override
     public String getStudyOwnerId(int studyId) throws CatalogDBException {
         int projectId = getProjectIdByStudyId(studyId);
-        return dbAdaptorFactory.getCatalogUserDBAdaptor().getProjectOwnerId(projectId);
+        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(projectId);
     }
 
 
     private long getDiskUsageByStudy(int studyId) {
+        /*
         List<DBObject> operations = Arrays.<DBObject>asList(
                 new BasicDBObject(
                         "$match",
@@ -328,8 +367,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                                                 "$diskUsage"
                                         )).get()
                 )
-        );
-        QueryResult<DBObject> aggregate = fileCollection.aggregate(operations, null);
+        );*/
+        List<Bson> operations = new ArrayList<>();
+        operations.add(Aggregates.match(Filters.eq(_STUDY_ID, studyId)));
+        operations.add(Aggregates.group("$" + _STUDY_ID, Accumulators.sum("diskUsage", "$diskUsage")));
+
+//        Bson match = Aggregates.match(Filters.eq(_STUDY_ID, studyId));
+//        Aggregates.group()
+
+        QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
+                .aggregate(operations, null);
         if (aggregate.getNumResults() == 1) {
             Object diskUsage = aggregate.getResult().get(0).get("diskUsage");
             if (diskUsage instanceof Integer) {
@@ -359,7 +406,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         }
         BasicDBObject project = new BasicDBObject("groups", new BasicDBObject("$elemMatch", groupQuery));
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+// QueryResult<DBObject> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+        QueryResult<Document> queryResult = studyCollection.find(query, project, filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>(1);
         for (Study study : studies) {
@@ -384,12 +432,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
+//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
+        Bson addToSet = Updates.addToSet("groups.$.userIds", userId);
 
-        if (queryResult.first().getN() != 1) {
+//        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = studyCollection.update(and, addToSet, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to add member to group " + groupId);
         }
 
@@ -404,12 +456,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
+        Bson pull = Updates.pull("groups.$.userIds", userId);
 
-        if (queryResult.first().getN() != 1) {
+        QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
+
+        if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove member to group " + groupId);
         }
 
@@ -432,13 +487,18 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
         }
 
-        int variableSetId = getNewAutoIncrementId(metaCollection);
+//        int variableSetId = getNewAutoIncrementId(metaCollection);
+        int variableSetId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         variableSet.setId(variableSetId);
-        DBObject object = getDbObject(variableSet, "VariableSet");
-        DBObject query = new BasicDBObject(_ID, studyId);
-        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+        Document object = getMongoDBDocument(variableSet, "VariableSet");
+//        DBObject query = new BasicDBObject(_ID, studyId);
+        Bson query = Filters.eq(_ID, studyId);
 
-        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+//        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
+        Bson update = Updates.push("variableSets", object);
+
+//        QueryResult<WriteResult> queryResult = studyCollection.update(query, update, null);
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
         return endQuery("createVariableSet", startTime, getVariableSet(variableSetId, null));
     }
@@ -447,16 +507,20 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
+//        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+//        DBObject projection = new BasicDBObject(
+//                "variableSets",
+//                new BasicDBObject(
+//                        "$elemMatch",
+//                        new BasicDBObject("id", variableSetId)
+//                )
+//        );
+
+        Bson query = Filters.eq("variableSets.id", variableSetId);
+        Bson projection = Projections.elemMatch("variableSets", Filters.eq("id", variableSetId));
         QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_STUDIES);
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
-        DBObject projection = new BasicDBObject(
-                "variableSets",
-                new BasicDBObject(
-                        "$elemMatch",
-                        new BasicDBObject("id", variableSetId)
-                )
-        );
-        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filteredOptions);
+
+        QueryResult<Document> queryResult = studyCollection.find(query, projection, filteredOptions);
         List<Study> studies = parseStudies(queryResult);
         if (studies.isEmpty() || studies.get(0).getVariableSets().isEmpty()) {
             throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
@@ -469,8 +533,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
     public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
-
+//        List<DBObject> mongoQueryList = new LinkedList<>();
+        List<Document> mongoQueryList = new LinkedList<>();
 
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -481,11 +545,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
                 CatalogSampleDBAdaptor.VariableSetFilterOption option = CatalogSampleDBAdaptor.VariableSetFilterOption.valueOf(key);
                 switch (option) {
                     case studyId:
-                        addCompQueryFilter(option, option.name(), options, _ID, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), _ID, options, mongoQueryList);
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), optionsKey, options,mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -493,12 +557,23 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
             }
         }
 
+        /*
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
                 new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
                 new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
                 new BasicDBObject("$unwind", "$variableSets"),
                 new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
         ), filterOptions(options, FILTER_ROUTE_STUDIES));
+*/
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(_ID, studyId)));
+        aggregation.add(Projections.include("variableSets"));
+        aggregation.add(Aggregates.unwind("$variableSets"));
+        aggregation.add(Aggregates.match(new Document("$and", mongoQueryList)));
+
+        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation,
+                filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0))
                 .collect(Collectors.toList());
@@ -514,10 +589,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         int studyId = getStudyIdByVariableSetId(variableSetId);
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
 
-        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+/*        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
                 BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
+*/
+        Bson query = Filters.eq(_ID, studyId);
+        Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
+        QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
-        if (update.first().getN() == 0) {
+        if (update.first().getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("VariableSet", variableSetId);
         }
 
@@ -552,9 +631,12 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
 
     @Override
     public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {
-        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+//        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
+        Bson query = Filters.eq("variableSets.id", variableSetId);
+        Bson projection = Projections.include("id");
 
-        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
+        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
             Object id = queryResult.getResult().get(0).get("id");
@@ -620,4 +702,165 @@ public class CatalogMongoStudyDBAdaptor extends CatalogDBAdaptor implements Cata
         }
     }
 
+
+    @Override
+    public QueryResult<Long> count(Query query) {
+        Bson bson = parseQuery(query);
+        return studyCollection.count(bson);
+    }
+
+    @Override
+    public QueryResult distinct(Query query, String field) {
+        Bson bson = parseQuery(query);
+        return studyCollection.distinct(field, bson);
+    }
+
+    @Override
+    public QueryResult stats(Query query) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Study> get(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        List<Document> queryResult = studyCollection.find(bson, options).getResult();
+
+        // FIXME: Pedro. Parse and set clazz to study class.
+
+        return null;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return studyCollection.find(bson, options);
+    }
+
+    @Override
+    public QueryResult<Study> update(Query query, ObjectMap parameters) {
+        return null;
+    }
+
+    /**
+     * At the moment it does not clean external references to itself.
+     */
+    @Override
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+//        DBObject query = new BasicDBObject(_ID, studyId);
+        Bson bson = parseQuery(query);
+        QueryResult<DeleteResult> remove = studyCollection.remove(bson, null);
+
+//        List<Integer> deletes = new LinkedList<>();
+
+        if (remove.getResult().get(0).getDeletedCount() == 0) {
+//            throw CatalogDBException.idNotFound("Study", studyId);
+            throw CatalogDBException.newInstance("Study id '{}' not found", query.get(QueryParams.ID.key()));
+        } else {
+//            deletes.add(remove.getResult().get(0).getDeletedCount());
+            return endQuery("delete study", startTime, Collections.singletonList(remove.first().getDeletedCount()));
+        }
+    }
+
+    @Override
+    public Iterator<Study> iterator(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
+    public Iterator nativeIterator(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return studyCollection.nativeQuery().find(bson, options).iterator();
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(studyCollection, bsonQuery, field, "name", options);
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(studyCollection, bsonQuery, fields, "name", options);
+    }
+
+    @Override
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+
+    }
+
+    private Bson parseQuery(Query query) {
+        List<Bson> andBsonList = new ArrayList<>();
+
+        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
+
+        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createOrQuery(query, QueryParams.ALIAS.key(), "alias", andBsonList);
+        createOrQuery(query, QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
+        createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
+        createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        createOrQuery(query, QueryParams.PROJECT_ID.key(), "_projectId", andBsonList);
+
+        createOrQuery(query, QueryParams.GROUP_ID.key(), "group.id", andBsonList);
+
+        createOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experiment.id", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_NAME.key(), "experiment.name", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_TYPE.key(), "experiment.type", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_PLATFORM.key(), "experiment.platform", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_MANUFACTURER.key(), "experiment.manufacturer", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_DATE.key(), "experiment.date", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_LAB.key(), "experiment.lab", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_CENTER.key(), "experiment.center", andBsonList);
+        createOrQuery(query, QueryParams.EXPERIMENT_RESPONSIBLE.key(), "experiment.responsible", andBsonList);
+
+        createOrQuery(query, QueryParams.FILE_ID.key(), "file.id", andBsonList);
+        createOrQuery(query, QueryParams.FILE_NAME.key(), "file.name", andBsonList);
+        createOrQuery(query, QueryParams.FILE_TYPE.key(), "file.type", andBsonList);
+        createOrQuery(query, QueryParams.FILE_FORMAT.key(), "file.format", andBsonList);
+        createOrQuery(query, QueryParams.FILE_BIOFORMAT.key(), "file.bioformat", andBsonList);
+
+        createOrQuery(query, QueryParams.JOB_ID.key(), "job.id", andBsonList);
+        createOrQuery(query, QueryParams.JOB_NAME.key(), "job.name", andBsonList);
+        createOrQuery(query, QueryParams.JOB_USER_ID.key(), "job.userId", andBsonList);
+        createOrQuery(query, QueryParams.JOB_TOOL_NAME.key(), "job.toolName", andBsonList);
+        createOrQuery(query, QueryParams.JOB_DATE.key(), "job.date", andBsonList);
+        createOrQuery(query, QueryParams.JOB_STATUS.key(), "job.status", andBsonList);
+        createOrQuery(query, QueryParams.JOB_DISK_USAGE.key(), "job.diskUsage", andBsonList);
+
+        createOrQuery(query, QueryParams.INDIVIDUAL_ID.key(), "individual.id", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_NAME.key(), "individual.name", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_FATHER_ID.key(), "individual.fatherId", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_MOTHER_ID.key(), "individual.motherId", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_FAMILY.key(), "individual.family", andBsonList);
+        createOrQuery(query, QueryParams.INDIVIDUAL_RACE.key(), "individual.race", andBsonList);
+
+        createOrQuery(query, QueryParams.SAMPLE_ID.key(), "sample.id", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_NAME.key(), "sample.name", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_SOURCE.key(), "sample.source", andBsonList);
+        createOrQuery(query, QueryParams.SAMPLE_INDIVIDUAL_ID.key(), "sample.individualId", andBsonList);
+
+        createOrQuery(query, QueryParams.DATASET_ID.key(), "dataset.id", andBsonList);
+        createOrQuery(query, QueryParams.DATASET_NAME.key(), "dataset.name", andBsonList);
+
+        createOrQuery(query, QueryParams.COHORT_ID.key(), "cohort.id", andBsonList);
+        createOrQuery(query, QueryParams.COHORT_NAME.key(), "cohort.name", andBsonList);
+        createOrQuery(query, QueryParams.COHORT_TYPE.key(), "cohort.type", andBsonList);
+
+        if (andBsonList.size() > 0) {
+            return Filters.and(andBsonList);
+        } else {
+            return new Document();
+        }
+    }
+
+    public MongoDBCollection getStudyCollection() {
+        return studyCollection;
+    }
 }

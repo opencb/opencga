@@ -1,10 +1,12 @@
 package org.opencb.opencga.catalog.authorization;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -23,6 +25,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private static final QueryOptions FILE_INCLUDE_QUERY_OPTIONS = new QueryOptions("include",
             Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
     private final CatalogUserDBAdaptor userDBAdaptor;
+    private final CatalogProjectDBAdaptor projectDBAdaptor;
     private final CatalogStudyDBAdaptor studyDBAdaptor;
     private final CatalogFileDBAdaptor fileDBAdaptor;
     private final CatalogJobDBAdaptor jobDBAdaptor;
@@ -33,6 +36,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
         this.auditManager = auditManager;
         userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
         jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
@@ -47,7 +51,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException {
-        if (isAdmin(userId) || userDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
+//        if (isAdmin(userId) || userDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
+        if (isAdmin(userId) || projectDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
             return;
         }
 
@@ -748,7 +753,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     //TODO: Cache this?
     private boolean isStudyOwner(int studyId, String userId) throws CatalogDBException {
-        return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
+//        return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
+        return projectDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
     }
 
 
@@ -808,7 +814,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (fileIds.isEmpty()) {
             return Collections.emptyList();
         }
-        QueryOptions fileQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.id.toString(), fileIds);
+        Query fileQuery = new Query(CatalogFileDBAdaptor.FileFilterOption.id.toString(), fileIds);
         return fileDBAdaptor.getAllFiles(fileQuery, FILE_INCLUDE_QUERY_OPTIONS).getResult();
     }
 

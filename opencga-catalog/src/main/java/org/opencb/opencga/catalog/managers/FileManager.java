@@ -1,15 +1,16 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -168,7 +169,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (projectStudyPath.length <= 2) {
             return -2;
         }
-        int projectId = userDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
+        int projectId = projectDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
         int studyId = studyDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
         return fileDBAdaptor.getFileId(studyId, projectStudyPath[2]);
     }
@@ -213,7 +214,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
         List<String> paths = getParentPaths(filePath);
 
-        QueryOptions query = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
+        Query query = new Query(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
         query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
         QueryResult<File> result = fileDBAdaptor.getAllFiles(
                 query,
@@ -425,15 +426,14 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return readAll(query.getInt("studyId", -1), query, options, sessionId);
+    public QueryResult<File> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+        return readAll(query.getInt("studyId", -1), new Query(query), options, sessionId);
     }
 
     @Override
-    public QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        query = ParamUtils.defaultObject(query, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
 
@@ -527,7 +527,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         File file = fileDBAdaptor.getFile(fileId, null).first();
 
@@ -616,7 +616,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
         File file = fileDBAdaptor.getFile(fileId, null).first();

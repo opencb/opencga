@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.db.mongodb2;
+package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;

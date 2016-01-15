@@ -16,11 +16,8 @@
 
 package org.opencb.opencga.catalog;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.core.config.DataStoreServerAddress;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
@@ -28,9 +25,9 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -174,8 +171,11 @@ public class CatalogManager implements AutoCloseable {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
             }
         }
-        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
-                properties.getProperty(CATALOG_DB_DATABASE, ""));
+//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
+//                properties.getProperty(CATALOG_DB_DATABASE, ""));
+        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
+                properties.getProperty(CATALOG_DB_DATABASE, "")) {
+        };
     }
 
     @Override
@@ -344,8 +344,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.read(projectId, options, sessionId);
     }
 
-    public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId) throws CatalogException {
         return projectManager.readAll(new QueryOptions("ownerId", ownerId), options, sessionId);
     }
 
@@ -605,7 +604,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> getAllFiles(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        return fileManager.readAll(studyId, options, options, sessionId);
+        return fileManager.readAll(studyId, new Query(options), options, sessionId);
     }
 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {
@@ -618,7 +617,7 @@ public class CatalogManager implements AutoCloseable {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
         options.put("directory", folder.getPath());
-        return fileManager.readAll(studyId, options, options, sessionId);
+        return fileManager.readAll(studyId, new Query(options), options, sessionId);
     }
 
     public DataInputStream downloadFile(int fileId, String sessionId)
@@ -650,17 +649,17 @@ public class CatalogManager implements AutoCloseable {
     }
 
     /*Require role admin*/
-    public QueryResult<File> searchFile(QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<File> searchFile(Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         return searchFile(-1, query, options, sessionId);
     }
 
-    public QueryResult<File> searchFile(int studyId, QueryOptions query, String sessionId)
+    public QueryResult<File> searchFile(int studyId, Query query, String sessionId)
             throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
 
-    public QueryResult<File> searchFile(int studyId, QueryOptions query, QueryOptions options, String sessionId)
+    public QueryResult<File> searchFile(int studyId, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.readAll(studyId, query, options, sessionId);
     }

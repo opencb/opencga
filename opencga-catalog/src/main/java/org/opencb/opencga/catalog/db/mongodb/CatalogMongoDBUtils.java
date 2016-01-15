@@ -13,18 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -64,23 +69,33 @@ class CatalogMongoDBUtils {
         jsonReaderMap = new HashMap<>();
     }
 
+    @Deprecated
     static int getNewAutoIncrementId(MongoDBCollection metaCollection) {
         return getNewAutoIncrementId("idCounter", metaCollection);
     }
 
+    @Deprecated
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
-        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
-                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
-                new BasicDBObject(field, true),  //Fields
-                null,
-                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
-                new QueryOptions("returnNew", true),
-                BasicDBObject.class
-        );
+//        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
+//                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
+//                new BasicDBObject(field, true),  //Fields
+//                null,
+//                new BasicDBObject("$inc", new BasicDBObject(field, 1)), //Update
+//                new QueryOptions("returnNew", true),
+//                BasicDBObject.class
+//        );
+
+        Bson query = Filters.eq("_id", CatalogMongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Document projection = new Document(field, true);
+        Bson inc = Updates.inc(field, 1);
+        QueryOptions queryOptions = new QueryOptions("returnNew", true);
+        QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
-        return result.getResult().get(0).getInt(field);
+        return result.getResult().get(0).getInteger(field);
     }
 
+
+    @Deprecated
     static void checkUserExist(String userId, MongoDBCollection userCollection) throws CatalogDBException {
         if (userId == null) {
             throw new CatalogDBException("userId param is null");
@@ -88,7 +103,7 @@ class CatalogMongoDBUtils {
         if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
         }
-        if (userCollection.count(new BasicDBObject(_ID, userId)).first().equals(Long.valueOf(0))) {
+        if (userCollection.count(new Document(_ID, userId)).first().equals(Long.valueOf(0))) {
             throw CatalogDBException.idNotFound("User", userId);
         }
 
@@ -113,40 +128,40 @@ class CatalogMongoDBUtils {
         }
     }
 
-    static User parseUser(QueryResult<DBObject> result) throws CatalogDBException {
+    static User parseUser(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, User.class);
     }
 
-    static List<Study> parseStudies(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Study> parseStudies(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Study.class);
     }
 
-    static File parseFile(QueryResult<DBObject> result) throws CatalogDBException {
+    static File parseFile(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, File.class);
     }
 
-    static List<File> parseFiles(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<File> parseFiles(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, File.class);
     }
 
-    static Job parseJob(QueryResult<DBObject> result) throws CatalogDBException {
+    static Job parseJob(QueryResult<Document> result) throws CatalogDBException {
         return parseObject(result, Job.class);
     }
 
-    static List<Job> parseJobs(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Job> parseJobs(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Job.class);
     }
 
-    static List<Sample> parseSamples(QueryResult<DBObject> result) throws CatalogDBException {
+    static List<Sample> parseSamples(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Sample.class);
     }
 
-    static <T> List<T> parseObjects(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+    static <T> List<T> parseObjects(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
         LinkedList<T> objects = new LinkedList<>();
         ObjectReader objectReader = getObjectReader(tClass);
         try {
-            for (DBObject object : result.getResult()) {
-                objects.add(objectReader.<T>readValue(restoreDotsInKeys(object).toString()));
+            for (Document document : result.getResult()) {
+                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -154,7 +169,7 @@ class CatalogMongoDBUtils {
         return objects;
     }
 
-    static <T> T parseObject(QueryResult<DBObject> result, Class<T> tClass) throws CatalogDBException {
+    static <T> T parseObject(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
         if (result.getResult().isEmpty()) {
             return null;
         }
@@ -180,6 +195,7 @@ class CatalogMongoDBUtils {
         return jsonReaderMap.get(tClass);
     }
 
+    @Deprecated
     static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
         DBObject dbObject;
         String jsonString = null;
@@ -192,6 +208,21 @@ class CatalogMongoDBUtils {
             ), e);
         }
         return dbObject;
+    }
+
+    static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {
+        Document document;
+        String jsonString = null;
+        try {
+            jsonString = jsonObjectWriter.writeValueAsString(object);
+            document = (Document) JSON.parse(jsonString);
+            document = replaceDotsInKeys(document);
+        } catch (Exception e) {
+            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null
+                    ? ""
+                    : (" -> " + jsonString)), e);
+        }
+        return document;
     }
 //    static final String TO_REPLACE_DOTS = "\uff0e";
 
@@ -212,19 +243,19 @@ class CatalogMongoDBUtils {
     }
 
     static <T> T replaceInKeys(T object, String target, String replacement) {
-        if (object instanceof DBObject) {
-            DBObject dbObject = (DBObject) object;
+        if (object instanceof Document) {
+            Document document = (Document) object;
             List<String> keys = new ArrayList<>();
-            for (String s : dbObject.keySet()) {
+            for (String s : document.keySet()) {
                 if (s.contains(target)) {
                     keys.add(s);
                 }
-                replaceInKeys(dbObject.get(s), target, replacement);
+                replaceInKeys(document.get(s), target, replacement);
             }
             for (String key : keys) {
-                Object value = dbObject.removeField(key);
+                Object value = document.remove(key);
                 key = key.replace(target, replacement);
-                dbObject.put(key, value);
+                document.put(key, value);
             }
         } else if (object instanceof List) {
             for (Object o : ((List) object)) {
@@ -448,7 +479,7 @@ class CatalogMongoDBUtils {
             }
             String[] values = split[1].split(OR);
 
-            CatalogDBAdaptor.FilterOption.Type type = CatalogDBAdaptor.FilterOption.Type.TEXT;
+            AbstractCatalogDBAdaptor.FilterOption.Type type = AbstractCatalogDBAdaptor.FilterOption.Type.TEXT;
 
             if (variableMap != null) {
                 Variable variable = variableMap.get(variableId);
@@ -473,13 +504,13 @@ class CatalogMongoDBUtils {
                     }
                 }
                 if (variableType == Variable.VariableType.BOOLEAN) {
-                    type = CatalogDBAdaptor.FilterOption.Type.BOOLEAN;
+                    type = AbstractCatalogDBAdaptor.FilterOption.Type.BOOLEAN;
 
                 } else if (variableType == Variable.VariableType.NUMERIC) {
-                    type = CatalogDBAdaptor.FilterOption.Type.NUMERICAL;
+                    type = AbstractCatalogDBAdaptor.FilterOption.Type.NUMERICAL;
                 }
             }
-            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<>());
+            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<DBObject>());
             annotationSetFilter.add(
                     new BasicDBObject("annotations",
                             new BasicDBObject("$elemMatch",
@@ -490,8 +521,72 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, String queryKey, ObjectMap options,
+                                             List<Document> andQuery) throws CatalogDBException {
+        List<String> optionsList = options.getAsStringList(optionKey);
+        if (queryKey == null) {
+            queryKey = "";
+        }
+        return addCompQueryFilter(option.getType(), queryKey, optionsList, andQuery);
+    }
 
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey,
+    static private List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey, List<String> optionsList,
+                                                     List<Document> andQuery) throws CatalogDBException {
+
+        ArrayList<Document> or = new ArrayList<>(optionsList.size());
+        for (String option : optionsList) {
+            Matcher matcher = operationPattern.matcher(option);
+            String operator;
+            String key;
+            String filter;
+            if (!matcher.find()) {
+                operator = "";
+                key = queryKey;
+                filter = option;
+            } else {
+                operator = matcher.group(2);
+//                if (queryKey.isEmpty()) {
+//                    key = matcher.group(1);
+//                } else {
+//                    String separatorDot = matcher.group(1).isEmpty() ? "" : ".";
+//                    key = queryKey + separatorDot + matcher.group(1);
+//                }
+                key = queryKey;
+                filter = matcher.group(3);
+            }
+            if (key.isEmpty()) {
+                throw new CatalogDBException("Unknown filter operation: " + option + " . Missing key");
+            }
+            switch (type) {
+                case NUMERICAL:
+                    try {
+                        double doubleValue = Double.parseDouble(filter);
+                        or.add(addNumberOperationQueryFilter(key, operator, doubleValue, new Document()));
+                    } catch (NumberFormatException e) {
+                        throw new CatalogDBException(e);
+                    }
+                    break;
+                case TEXT:
+                    or.add(addStringOperationQueryFilter(key, operator, filter, new Document()));
+                    break;
+                case BOOLEAN:
+                    or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new Document()));
+                    break;
+            }
+        }
+        if (or.isEmpty()) {
+            return andQuery;
+        } else if (or.size() == 1) {
+            andQuery.add(or.get(0));
+        } else {
+            andQuery.add(new Document("$or", or));
+        }
+
+        return andQuery;
+    }
+
+    @Deprecated
+    static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey,
                                              List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
@@ -500,7 +595,8 @@ class CatalogMongoDBUtils {
         return addCompQueryFilter(option.getType(), optionsList, queryKey, andQuery);
     }
 
-    static private List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey,
+    @Deprecated
+    static private List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey,
                                                      List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
@@ -555,6 +651,7 @@ class CatalogMongoDBUtils {
         return andQuery;
     }
 
+    @Deprecated
     static DBObject addStringOperationQueryFilter(String queryKey, String op, String filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "<":
@@ -587,6 +684,39 @@ class CatalogMongoDBUtils {
         return query;
     }
 
+    static Document addStringOperationQueryFilter(String queryKey, String op, String filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "<":
+                query.put(queryKey, new Document("$lt", filter));
+                break;
+            case "<=":
+                query.put(queryKey, new Document("$lte", filter));
+                break;
+            case ">":
+                query.put(queryKey, new Document("$gt", filter));
+                break;
+            case ">=":
+                query.put(queryKey, new Document("$gte", filter));
+                break;
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            case "~":
+            case "=~":
+                query.put(queryKey, new Document("$regex", filter));
+                break;
+            default:
+                throw new CatalogDBException("Unknown numerical query operation " + op);
+        }
+        return query;
+    }
+
+    @Deprecated
     static DBObject addNumberOperationQueryFilter(String queryKey, String op, Number filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "<":
@@ -615,10 +745,55 @@ class CatalogMongoDBUtils {
         return query;
     }
 
+    static Document addNumberOperationQueryFilter(String queryKey, String op, Number filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "<":
+                query.put(queryKey, new Document("$lt", filter));
+                break;
+            case "<=":
+                query.put(queryKey, new Document("$lte", filter));
+                break;
+            case ">":
+                query.put(queryKey, new Document("$gt", filter));
+                break;
+            case ">=":
+                query.put(queryKey, new Document("$gte", filter));
+                break;
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            default:
+                throw new CatalogDBException("Unknown string query operation " + op);
+        }
+        return query;
+    }
+
+    @Deprecated
     static DBObject addBooleanOperationQueryFilter(String queryKey, String op, Boolean filter, DBObject query) throws CatalogDBException {
         switch (op) {
             case "!=":
                 query.put(queryKey, new BasicDBObject("$ne", filter));
+                break;
+            case "":
+            case "=":
+            case "==":
+                query.put(queryKey, filter);
+                break;
+            default:
+                throw new CatalogDBException("Unknown boolean query operation " + op);
+        }
+        return query;
+    }
+
+    static Document addBooleanOperationQueryFilter(String queryKey, String op, Boolean filter, Document query) throws CatalogDBException {
+        switch (op) {
+            case "!=":
+                query.put(queryKey, new Document("$ne", filter));
                 break;
             case "":
             case "=":

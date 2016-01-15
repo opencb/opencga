@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public abstract class AbstractManager {
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
     protected final Properties catalogProperties;
     protected final CatalogUserDBAdaptor userDBAdaptor;
+    protected final CatalogProjectDBAdaptor projectDBAdaptor;
     protected final CatalogStudyDBAdaptor studyDBAdaptor;
     protected final CatalogFileDBAdaptor fileDBAdaptor;
     protected final CatalogIndividualDBAdaptor individualDBAdaptor;
@@ -43,6 +45,8 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+
+        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
 
 }

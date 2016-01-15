@@ -1,7 +1,8 @@
 package org.opencb.opencga.catalog.managers.api;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
@@ -55,7 +56,7 @@ public interface IFileManager extends ResourceManager<Integer, File> {
             options, String sessionId)
             throws CatalogException;
 
-    QueryResult<File> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId)
+    QueryResult<File> readAll(int studyId, Query query, QueryOptions options, String sessionId)
             throws CatalogException;
 
     QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)

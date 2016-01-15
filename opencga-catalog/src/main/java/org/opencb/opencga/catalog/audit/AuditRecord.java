@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.audit;
 
-import org.opencb.datastore.core.ObjectMap;
+
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created on 18/08/15.
