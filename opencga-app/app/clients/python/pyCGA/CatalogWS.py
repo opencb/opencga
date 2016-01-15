@@ -729,6 +729,8 @@ class Studies(WS):
 
         return self.general_method(ws_category="studies", method_name="delete", item_id=studyId, **options)
 
+
+
 class Jobs(WS):
     """
     This class contains method for jobs ws (i.e, create, info)
