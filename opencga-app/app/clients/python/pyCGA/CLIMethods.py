@@ -119,7 +119,7 @@ class Methods:
         """
         Method to query stats stored with files.... generic so user has to specify certain aspects
 
-        Call: python pyCGA [--host hostname] sid query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
+        Call: python pyCGA query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
 
         :param args:
         """
