@@ -34,7 +34,7 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements CatalogFileDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
+    //private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection fileCollection;
 
     public CatalogMongoFileDBAdaptor(MongoDBCollection fileCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -613,28 +613,28 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, QueryParams.TYPE.key(), "type", andBsonList);
-        createOrQuery(query, QueryParams.FORMAT.key(), "format", andBsonList);
-        createOrQuery(query, QueryParams.BIOFORMAT.key(), "bioformat", andBsonList);
-        createOrQuery(query, QueryParams.DELETE_DATE.key(), "deleteDate", andBsonList);
-        createOrQuery(query, QueryParams.OWNER_ID.key(), "ownerId", andBsonList);
-        createOrQuery(query, QueryParams.CREATION_DATE.key(), "creationDate", andBsonList);
-        createOrQuery(query, QueryParams.MODIFICATION_DATE.key(), "modificationDate", andBsonList);
-        createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
-        createOrQuery(query, QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
-        createOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experimentId", andBsonList);
-        createOrQuery(query, QueryParams.JOB_ID.key(), "jobId", andBsonList);
-        createOrQuery(query, QueryParams.SAMPLE_ID.key(), "sampleId", andBsonList);
+        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createStringOrQuery(query, QueryParams.TYPE.key(), "type", andBsonList);
+        createStringOrQuery(query, QueryParams.FORMAT.key(), "format", andBsonList);
+        createStringOrQuery(query, QueryParams.BIOFORMAT.key(), "bioformat", andBsonList);
+        createStringOrQuery(query, QueryParams.DELETE_DATE.key(), "deleteDate", andBsonList);
+        createStringOrQuery(query, QueryParams.OWNER_ID.key(), "ownerId", andBsonList);
+        createStringOrQuery(query, QueryParams.CREATION_DATE.key(), "creationDate", andBsonList);
+        createStringOrQuery(query, QueryParams.MODIFICATION_DATE.key(), "modificationDate", andBsonList);
+        createStringOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
+        createStringOrQuery(query, QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+        createStringOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experimentId", andBsonList);
+        createStringOrQuery(query, QueryParams.JOB_ID.key(), "jobId", andBsonList);
+        createStringOrQuery(query, QueryParams.SAMPLE_ID.key(), "sampleId", andBsonList);
 
-        createOrQuery(query, QueryParams.ACL_USER_ID.key(), "acl.userId", andBsonList);
-        createOrQuery(query, QueryParams.ACL_READ.key(), "acl.read", andBsonList);
-        createOrQuery(query, QueryParams.ACL_WRITE.key(), "acl.write", andBsonList);
-        createOrQuery(query, QueryParams.ACL_EXECUTE.key(), "acl.execute", andBsonList);
-        createOrQuery(query, QueryParams.ACL_DELETE.key(), "acl.delete", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_USER_ID.key(), "acl.userId", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_READ.key(), "acl.read", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_WRITE.key(), "acl.write", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_EXECUTE.key(), "acl.execute", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_DELETE.key(), "acl.delete", andBsonList);
 
-        createOrQuery(query, QueryParams.STUDY_ID.key(), "study.id", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_ID.key(), "study.id", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

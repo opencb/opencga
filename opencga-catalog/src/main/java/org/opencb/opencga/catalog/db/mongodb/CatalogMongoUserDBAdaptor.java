@@ -48,7 +48,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
 
     private final MongoDBCollection userCollection;
-//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
 
     public CatalogMongoUserDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
@@ -497,29 +496,29 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, QueryParams.EMAIL.key(), "email", andBsonList);
-        createOrQuery(query, QueryParams.PASSWORD.key(), "password", andBsonList);
-        createOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
-        createOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
-        createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createStringOrQuery(query, QueryParams.EMAIL.key(), "email", andBsonList);
+        createStringOrQuery(query, QueryParams.PASSWORD.key(), "password", andBsonList);
+        createStringOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
+        createStringOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
+        createStringOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
 
-        createOrQuery(query, QueryParams.PROJECT_ID.key(), "project.id", andBsonList);
-        createOrQuery(query, QueryParams.PROJECT_NAME.key(), "project.name", andBsonList);
-        createOrQuery(query, QueryParams.PROJECT_ALIAS.key(), "project.alias", andBsonList);
-        createOrQuery(query, QueryParams.PROJECT_ORGANIZATION.key(), "project.organization", andBsonList);
-        createOrQuery(query, QueryParams.PROJECT_STATUS.key(), "project.status", andBsonList);
-        createOrQuery(query, QueryParams.PROJECT_LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_ID.key(), "project.id", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_NAME.key(), "project.name", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_ALIAS.key(), "project.alias", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_ORGANIZATION.key(), "project.organization", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_STATUS.key(), "project.status", andBsonList);
+        createStringOrQuery(query, QueryParams.PROJECT_LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
 
-        createOrQuery(query, QueryParams.TOOL_ID.key(), "tool.id", andBsonList);
-        createOrQuery(query, QueryParams.TOOL_NAME.key(), "tool.name", andBsonList);
-        createOrQuery(query, QueryParams.TOOL_ALIAS.key(), "tool.alias", andBsonList);
+        createStringOrQuery(query, QueryParams.TOOL_ID.key(), "tool.id", andBsonList);
+        createStringOrQuery(query, QueryParams.TOOL_NAME.key(), "tool.name", andBsonList);
+        createStringOrQuery(query, QueryParams.TOOL_ALIAS.key(), "tool.alias", andBsonList);
 
-        createOrQuery(query, QueryParams.SESSION_ID.key(), "session.id", andBsonList);
-        createOrQuery(query, QueryParams.SESSION_IP.key(), "session.ip", andBsonList);
-        createOrQuery(query, QueryParams.SESSION_LOGIN.key(), "session.login", andBsonList);
-        createOrQuery(query, QueryParams.SESSION_LOGOUT.key(), "session.logout", andBsonList);
+        createStringOrQuery(query, QueryParams.SESSION_ID.key(), "session.id", andBsonList);
+        createStringOrQuery(query, QueryParams.SESSION_IP.key(), "session.ip", andBsonList);
+        createStringOrQuery(query, QueryParams.SESSION_LOGIN.key(), "session.login", andBsonList);
+        createStringOrQuery(query, QueryParams.SESSION_LOGOUT.key(), "session.logout", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

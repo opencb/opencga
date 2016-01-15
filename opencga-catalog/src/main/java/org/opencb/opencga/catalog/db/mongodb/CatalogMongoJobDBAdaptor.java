@@ -33,7 +33,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObj
  */
 public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements CatalogJobDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection jobCollection;
 
     public CatalogMongoJobDBAdaptor(MongoDBCollection jobCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -408,15 +407,15 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.USER_ID.key(), "userId", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), "toolName", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DATE.key(), "date", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
-        createOrQuery(query, CatalogJobDBAdaptor.QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.USER_ID.key(), "userId", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), "toolName", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.DATE.key(), "date", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
+        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
 
-        createOrQuery(query, QueryParams.STUDY_ID.key(), _STUDY_ID, andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_ID.key(), _STUDY_ID, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

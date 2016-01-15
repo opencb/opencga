@@ -58,13 +58,31 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
-    protected void createOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {
-        if (query != null && query.getString(queryParam) != null && !query.getString(queryParam).isEmpty()) {
-            createOrQuery(query.getAsStringList(queryParam), mongoDbField, andBsonList);
+    protected void createIntegerOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {
+        if (query != null && query.containsKey(queryParam)) {
+            createIntegerOrQuery(query.getAsIntegerList(queryParam), mongoDbField, andBsonList);
         }
     }
 
-    protected void createOrQuery(List<String> queryValues, String mongoDbField, List<Bson> andBsonList) {
+    protected void createIntegerOrQuery(List<Integer> queryValues, String mongoDbField, List<Bson> andBsonList) {
+        if (queryValues.size() == 1) {
+            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
+        } else {
+            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
+            for (Integer queryItem : queryValues) {
+                orBsonList.add(Filters.eq(mongoDbField, queryItem));
+            }
+            andBsonList.add(Filters.or(orBsonList));
+        }
+    }
+
+    protected void createStringOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {
+        if (query != null && query.getString(queryParam) != null && !query.getString(queryParam).isEmpty()) {
+            createStringOrQuery(query.getAsStringList(queryParam), mongoDbField, andBsonList);
+        }
+    }
+
+    protected void createStringOrQuery(List<String> queryValues, String mongoDbField, List<Bson> andBsonList) {
         if (queryValues.size() == 1) {
             andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
         } else {

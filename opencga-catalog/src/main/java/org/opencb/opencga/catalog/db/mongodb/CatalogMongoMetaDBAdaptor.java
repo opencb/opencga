@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     private final MongoDBCollection metaCollection;
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
 
     public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
