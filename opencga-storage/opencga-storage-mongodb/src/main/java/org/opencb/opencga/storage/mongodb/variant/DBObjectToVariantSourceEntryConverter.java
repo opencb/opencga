@@ -24,6 +24,7 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
     public final static String ATTRIBUTES_FIELD = "attrs";
     public final static String FORMAT_FIELD = "fm";
     public final static String SAMPLES_FIELD = "samp";
+    static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
     
     private VariantStorageManager.IncludeSrc includeSrc;
 
@@ -75,7 +76,11 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
         
         // Attributes
         if (object.containsField(ATTRIBUTES_FIELD)) {
-            file.setAttributes(((DBObject) object.get(ATTRIBUTES_FIELD)).toMap());
+            BasicDBObject attributes = (BasicDBObject) object.get(ATTRIBUTES_FIELD);
+            for (Map.Entry<String, Object> o : attributes.entrySet()) {
+                file.addAttribute(o.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), o.getValue().toString());
+            }
+            
             // Unzip the "src" field, if available
             if (((DBObject) object.get(ATTRIBUTES_FIELD)).containsField("src")) {
                 byte[] o = (byte[]) ((DBObject) object.get(ATTRIBUTES_FIELD)).get("src");
@@ -143,9 +148,9 @@ public class DBObjectToVariantSourceEntryConverter implements ComplexTypeConvert
                 }
 
                 if (attrs == null) {
-                    attrs = new BasicDBObject(entry.getKey(), value);
+                    attrs = new BasicDBObject(entry.getKey().replace('.', CHARACTER_TO_REPLACE_DOTS), value);
                 } else {
-                    attrs.append(entry.getKey(), value);
+                    attrs.append(entry.getKey().replace('.', CHARACTER_TO_REPLACE_DOTS), value);
                 }
             }
 

@@ -36,6 +36,7 @@ public class DBObjectToVariantSourceEntryConverterTest {
         file = new VariantSourceEntry("f1", "s1");
         file.addAttribute("QUAL", "0.01");
         file.addAttribute("AN", "2");
+        file.addAttribute("MAX.PROC", "2");
         file.setFormat("GT");
         
         Map<String, String> na001 = new HashMap<>();
@@ -52,7 +53,8 @@ public class DBObjectToVariantSourceEntryConverterTest {
         mongoFile = new BasicDBObject(DBObjectToVariantSourceEntryConverter.FILEID_FIELD, file.getFileId())
                 .append(DBObjectToVariantSourceEntryConverter.STUDYID_FIELD, file.getStudyId());
         mongoFile.append(DBObjectToVariantSourceEntryConverter.ATTRIBUTES_FIELD,
-                new BasicDBObject("QUAL", "0.01").append("AN", "2"));
+                new BasicDBObject("QUAL", "0.01").append("AN", "2")
+                        .append("MAX" + DBObjectToVariantSourceEntryConverter.CHARACTER_TO_REPLACE_DOTS + "PROC", "2"));
         mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
         BasicDBObject genotypeCodes = new BasicDBObject();
         genotypeCodes.append("def", "0/0");
