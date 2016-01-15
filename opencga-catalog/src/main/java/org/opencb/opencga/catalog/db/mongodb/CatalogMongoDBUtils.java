@@ -215,7 +215,8 @@ class CatalogMongoDBUtils {
         String jsonString = null;
         try {
             jsonString = jsonObjectWriter.writeValueAsString(object);
-            document = (Document) JSON.parse(jsonString);
+//            document = (Document) JSON.parse(jsonString);
+            document = Document.parse(jsonString);
             document = replaceDotsInKeys(document);
         } catch (Exception e) {
             throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null

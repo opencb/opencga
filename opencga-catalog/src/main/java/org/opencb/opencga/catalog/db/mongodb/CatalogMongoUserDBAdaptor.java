@@ -118,12 +118,12 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // TODO review this code. A project 'converter' could create Document objects easily
         String errorMsg = insert.getErrorMsg() != null ? insert.getErrorMsg() : "";
-//        for (Project p : projects) {
-//            String projectErrorMsg = createProject(user.getId(), p, options).getErrorMsg();
-//            if (projectErrorMsg != null && !projectErrorMsg.isEmpty()) {
-//                errorMsg += ", " + p.getAlias() + ":" + projectErrorMsg;
-//            }
-//        }
+        for (Project p : projects) {
+            String projectErrorMsg = dbAdaptorFactory.getCatalogProjectDbAdaptor().createProject(user.getId(), p, options).getErrorMsg();
+            if (projectErrorMsg != null && !projectErrorMsg.isEmpty()) {
+                errorMsg += ", " + p.getAlias() + ":" + projectErrorMsg;
+            }
+        }
 
         //Get the inserted user.
         user.setProjects(projects);
@@ -418,7 +418,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        return userCollection.find(bson, Projections.exclude(_ID), User.class, options);
     }
 
     @Override

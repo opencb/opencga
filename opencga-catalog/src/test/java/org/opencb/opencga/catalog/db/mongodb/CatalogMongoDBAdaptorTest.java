@@ -154,7 +154,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         user1 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
         user2 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
         user3 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
-
+        System.out.println("user3 = " + user3);
 
     }
 
