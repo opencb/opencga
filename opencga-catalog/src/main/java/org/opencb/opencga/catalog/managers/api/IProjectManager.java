@@ -14,6 +14,7 @@ public interface IProjectManager extends ResourceManager<Integer, Project> {
 
     int getProjectId(String projectId) throws CatalogException;
 
-    QueryResult<Project> create(String ownerId, String name, String alias, String description,
-                                String organization, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Project> create(String ownerId, String name, String alias, String description, String organization, QueryOptions options,
+                                String sessionId) throws CatalogException;
+
 }

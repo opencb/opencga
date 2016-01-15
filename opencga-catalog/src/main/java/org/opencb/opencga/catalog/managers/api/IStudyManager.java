@@ -43,11 +43,10 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
      * @return Generated study
      * @throws CatalogException CatalogException
      */
-    QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
-                              String creatorId, String creationDate, String description, String status,
-                              String cipher, String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object>
-                                      stats,
-                              Map<String, Object> attributes, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Study> create(int projectId, String name, String alias, Study.Type type, String creatorId, String creationDate,
+                              String description, String status, String cipher, String uriScheme, URI uri,
+                              Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
+                              QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
 
@@ -56,13 +55,11 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
     /* VariableSet METHODS */
     /*---------------------*/
 
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, List<Variable> variables, String sessionId)
-            throws CatalogException;
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description, Map<String, Object> attributes,
+                                               List<Variable> variables, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, Set<Variable> variables, String sessionId)
-            throws CatalogException;
+    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description, Map<String, Object> attributes,
+                                               Set<Variable> variables, String sessionId) throws CatalogException;
 
     QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
 
