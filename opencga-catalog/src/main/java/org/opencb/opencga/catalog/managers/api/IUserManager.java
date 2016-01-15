@@ -34,8 +34,8 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
-    QueryResult<User> create(String userId, String name, String email, String password, String organization,
-                             QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<User> create(String userId, String name, String email, String password, String organization, QueryOptions options,
+                             String sessionId) throws CatalogException;
 
     /**
      * Gets the user information.
@@ -47,22 +47,19 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
-            throws CatalogException;
+    QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId) throws CatalogException;
 
-    void changePassword(String userId, String oldPassword, String newPassword)
-            throws CatalogException;
+    void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
 
-    QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
-            throws CatalogException, IOException;
+    QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
     QueryResult resetPassword(String userId, String email) throws CatalogException;
 
-    QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
-            throws CatalogException, IOException;
+    QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;
 
     QueryResult logout(String userId, String sessionId) throws CatalogException;
 
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
+
 }
