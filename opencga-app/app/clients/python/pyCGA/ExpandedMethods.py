@@ -110,3 +110,17 @@ def link_file_and_update_sample(uri, path, study_id, sample_id):
         file.update(fileId=str(file_id), sampleIds=str(sample_id))
 
 
+class AnnotationSet:
+    def __init__(self, *annotations):
+        self.data = {}
+        for annotation in annotations:
+            if isinstance(annotation["value"], float):
+                try:
+                    self.data[annotation["id"]] = int(annotation["value"])
+                except:
+                    self.data[annotation["id"]] = float(annotation["value"])
+            else:
+                self.data[annotation["id"]] = annotation["value"]
+
+    def get_json(self):
+        return self.data

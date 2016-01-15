@@ -2,10 +2,9 @@ from __future__ import print_function
 import json
 import sys
 
-from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples, Studies
-from GELpyCGA.AdditionalMethods import AnnotationSet
+from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples
 from pyCGA.Exceptions import ServerResponseException
-from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample
+from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample, AnnotationSet
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
 __author__ = 'antonior'

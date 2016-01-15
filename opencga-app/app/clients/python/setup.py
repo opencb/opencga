@@ -3,8 +3,9 @@ from pip.req import parse_requirements
 import os
 install_reqs = parse_requirements(os.path.join(os.path.dirname(__file__), "requirements.txt"))
 reqs = [str(ir.req) for ir in install_reqs if ir.req is not None]
+print os.path.join(os.path.dirname(__file__), 'pyCGA')
 setup(
-    package_dir={'': os.path.dirname(__file__)},
+    package_dir={'pyCGA': os.path.dirname(__file__), 'pyCGA.Utils': os.path.dirname(__file__)},
     name='pyCGA',
     version='0.1.2',
     packages=['pyCGA', 'pyCGA.Utils'],
