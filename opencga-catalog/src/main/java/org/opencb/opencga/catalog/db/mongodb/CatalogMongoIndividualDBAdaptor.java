@@ -51,7 +51,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
-    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection individualCollection;
 
     public CatalogMongoIndividualDBAdaptor(MongoDBCollection individualCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -451,15 +450,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createOrQuery(query, QueryParams.FATHER_ID.key(), "fatherId", andBsonList);
-        createOrQuery(query, QueryParams.MOTHER_ID.key(), "motherId", andBsonList);
-        createOrQuery(query, QueryParams.FAMILY.key(), "family", andBsonList);
-        createOrQuery(query, QueryParams.GENDER.key(), "gender", andBsonList);
-        createOrQuery(query, QueryParams.RACE.key(), "race", andBsonList);
-        createOrQuery(query, QueryParams.POPULATION_NAME.key(), "populationName", andBsonList);
-        createOrQuery(query, QueryParams.POPULATION_SUBPOPULATION.key(), "populationSubpopulation", andBsonList);
+        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
+        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
+        createStringOrQuery(query, QueryParams.FATHER_ID.key(), "fatherId", andBsonList);
+        createStringOrQuery(query, QueryParams.MOTHER_ID.key(), "motherId", andBsonList);
+        createStringOrQuery(query, QueryParams.FAMILY.key(), "family", andBsonList);
+        createStringOrQuery(query, QueryParams.GENDER.key(), "gender", andBsonList);
+        createStringOrQuery(query, QueryParams.RACE.key(), "race", andBsonList);
+        createStringOrQuery(query, QueryParams.POPULATION_NAME.key(), "populationName", andBsonList);
+        createStringOrQuery(query, QueryParams.POPULATION_SUBPOPULATION.key(), "populationSubpopulation", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

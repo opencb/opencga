@@ -156,6 +156,10 @@ class CatalogMongoDBUtils {
         return parseObjects(result, Sample.class);
     }
 
+    static Sample parseSample(QueryResult<Document> result) throws CatalogDBException {
+        return parseObject(result, Sample.class);
+    }
+
     static <T> List<T> parseObjects(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
         LinkedList<T> objects = new LinkedList<>();
         ObjectReader objectReader = getObjectReader(tClass);
@@ -174,12 +178,21 @@ class CatalogMongoDBUtils {
             return null;
         }
         try {
-            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first()).toString());
+            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first()).toJson());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
         }
     }
 
+    static <T> T parseObject(Document result, Class<T> tClass) throws CatalogDBException {
+        try {
+            return getObjectReader(tClass).readValue(restoreDotsInKeys(result).toJson());
+        } catch (IOException e) {
+            throw new CatalogDBException("Error parsing " + tClass.getName(), e);
+        }
+    }
+
+    @Deprecated
     static <T> T parseObject(DBObject result, Class<T> tClass) throws CatalogDBException {
         try {
             return getObjectReader(tClass).readValue(restoreDotsInKeys(result).toString());
@@ -215,7 +228,6 @@ class CatalogMongoDBUtils {
         String jsonString = null;
         try {
             jsonString = jsonObjectWriter.writeValueAsString(object);
-//            document = (Document) JSON.parse(jsonString);
             document = Document.parse(jsonString);
             document = replaceDotsInKeys(document);
         } catch (Exception e) {

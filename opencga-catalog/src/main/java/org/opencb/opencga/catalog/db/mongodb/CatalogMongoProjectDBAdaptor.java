@@ -52,7 +52,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implements CatalogProjectDBAdaptor {
 
-//    private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection userCollection;
 
     public CatalogMongoProjectDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
@@ -141,9 +140,14 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         */
         Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
         Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
+
         QueryResult<Document> result = userCollection.find(query, projection, options);
 
         User user = parseUser(result);
+        /* We are parsing the document to the user class because, as far as we know, there is no way to return a Document
+         with the project structure. Instead, we are always receiving a document with {projects:[{}]} that the User class
+         understands.
+        */
 
         if (user == null || user.getProjects().isEmpty()) {
             throw CatalogDBException.idNotFound("Project", projectId);
@@ -566,25 +570,25 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries.
         // FIXME: Pedro. Check how the projects are inserted in the user collection.
 
-        createOrQuery(query, QueryParams.ID.key(), "project.id", andBsonList);
-        createOrQuery(query, QueryParams.NAME.key(), "project.name", andBsonList);
-        createOrQuery(query, QueryParams.ALIAS.key(), "project.alias", andBsonList);
-        createOrQuery(query, QueryParams.ORGANIZATION.key(), "project.organization", andBsonList);
-        createOrQuery(query, QueryParams.STATUS.key(), "project.status", andBsonList);
-        createOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+        createStringOrQuery(query, QueryParams.ID.key(), "project.id", andBsonList);
+        createStringOrQuery(query, QueryParams.NAME.key(), "project.name", andBsonList);
+        createStringOrQuery(query, QueryParams.ALIAS.key(), "project.alias", andBsonList);
+        createStringOrQuery(query, QueryParams.ORGANIZATION.key(), "project.organization", andBsonList);
+        createStringOrQuery(query, QueryParams.STATUS.key(), "project.status", andBsonList);
+        createStringOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
 
-        createOrQuery(query, QueryParams.STUDY_ID.key(), "project.study.id", andBsonList);
-        createOrQuery(query, QueryParams.STUDY_NAME.key(), "project.study.name", andBsonList);
-        createOrQuery(query, QueryParams.STUDY_ALIAS.key(), "project.study.name", andBsonList);
-        createOrQuery(query, QueryParams.STUDY_CREATOR_ID.key(), "project.study.creatorId", andBsonList);
-        createOrQuery(query, QueryParams.STUDY_STATUS.key(), "project.study.status", andBsonList);
-        createOrQuery(query, QueryParams.STUDY_LAST_ACTIVITY.key(), "project.study.lastActivity", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_ID.key(), "project.study.id", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_NAME.key(), "project.study.name", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_ALIAS.key(), "project.study.name", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_CREATOR_ID.key(), "project.study.creatorId", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_STATUS.key(), "project.study.status", andBsonList);
+        createStringOrQuery(query, QueryParams.STUDY_LAST_ACTIVITY.key(), "project.study.lastActivity", andBsonList);
 
-        createOrQuery(query, QueryParams.ACL_USER_ID.key(), "project.acl.userId", andBsonList);
-        createOrQuery(query, QueryParams.ACL_READ.key(), "project.acl.read", andBsonList);
-        createOrQuery(query, QueryParams.ACL_WRITE.key(), "project.acl.write", andBsonList);
-        createOrQuery(query, QueryParams.ACL_EXECUTE.key(), "project.acl.execute", andBsonList);
-        createOrQuery(query, QueryParams.ACL_DELETE.key(), "project.acl.delete", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_USER_ID.key(), "project.acl.userId", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_READ.key(), "project.acl.read", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_WRITE.key(), "project.acl.write", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_EXECUTE.key(), "project.acl.execute", andBsonList);
+        createStringOrQuery(query, QueryParams.ACL_DELETE.key(), "project.acl.delete", andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
