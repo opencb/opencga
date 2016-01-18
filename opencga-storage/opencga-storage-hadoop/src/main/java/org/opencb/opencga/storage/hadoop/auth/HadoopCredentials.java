@@ -11,7 +11,7 @@ import java.net.URISyntaxException;
  */
 public class HadoopCredentials implements OpenCGACredentials {
 
-    private static final Integer  DEFAULT_PORT = 60000;
+    private static final Integer DEFAULT_PORT = 60000;
     private final String host;
     private final int hbasePort;
     private final String table;
@@ -20,10 +20,10 @@ public class HadoopCredentials implements OpenCGACredentials {
 //    private final int hbaseZookeeperClientPort;
 
     public HadoopCredentials(String host, String table, String user, String pass) {
-        this(host,table,user,pass,DEFAULT_PORT);
+        this(host, table, user, pass, DEFAULT_PORT);
     }
 
-    public HadoopCredentials(String host,String table, String user, String pass, Integer hbasePort) {
+    public HadoopCredentials(String host, String table, String user, String pass, Integer hbasePort) {
         this.host = host;
         this.hbasePort = hbasePort;
         this.table = table;
@@ -61,7 +61,8 @@ public class HadoopCredentials implements OpenCGACredentials {
     }
 
     @Override
-    public String toJson() {throw new UnsupportedOperationException("Not supported yet.");
+    public String toJson() {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public URI toUri() {

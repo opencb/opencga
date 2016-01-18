@@ -18,8 +18,6 @@ package org.opencb.opencga.storage.core.config;
 
 import org.opencb.datastore.core.ObjectMap;
 
-import java.util.Map;
-
 /**
  * Created by imedina on 01/05/15.
  */
@@ -28,7 +26,7 @@ public class StorageEngineConfiguration {
     private String id;
 //    private String conf;
 
-    /**
+    /*
      * options parameter defines database-specific parameters
      */
 //    private Map<String, String> options;
@@ -52,13 +50,13 @@ public class StorageEngineConfiguration {
 
     @Override
     public String toString() {
-        return "StorageEngineConfiguration{" +
-                "id='" + id + '\'' +
-//                ", conf='" + conf + '\'' +
-                ", options=" + options +
-                ", alignment=" + alignment +
-                ", variant=" + variant +
-                '}';
+        final StringBuilder sb = new StringBuilder("StorageEngineConfiguration{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", options=").append(options);
+        sb.append(", alignment=").append(alignment);
+        sb.append(", variant=").append(variant);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {

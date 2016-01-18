@@ -71,7 +71,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         this.credentials = credentials;
-        if(mongoManager == null){
+        if (mongoManager == null) {
             mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         }
         mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
@@ -82,7 +82,6 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     /**
-     *
      * @param regions Query Region
      * @param options Query Options: Expected bam_path. Optionally bai_path and view_as_pairs
      * @return
@@ -95,7 +94,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         String bam = options.getString(QO_BAM_PATH, "");
         String bai = options.getString(QO_BAI_PATH, "");
         boolean includeCoverage = options.getBoolean(QO_INCLUDE_COVERAGE, true);
-        if(bai.equals("")) {
+        if (bai.equals("")) {
             bai = getIndexFromBam(bam);
         }
         Path bamFile = Paths.get(bam);
@@ -106,19 +105,20 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         long startTime = System.currentTimeMillis();
 
 
-        if(!bam.endsWith("")){
+        if (!bam.endsWith("")) {
             queryResult.setErrorMsg("Expected parameter \"" + QO_BAM_PATH + "=*.bam\"");
             logger.warn("Expected parameter \"" + QO_BAM_PATH + "=*.bam\"");
-        } if(!bam.endsWith(".bam")){
+        }
+        if (!bam.endsWith(".bam")) {
             queryResult.setErrorMsg("Unsupported extension for \"" + QO_BAM_PATH + "=" + bam + "\"");
             logger.warn("Unsupported extension for \"" + QO_BAM_PATH + "=" + bam + "\"");
-        } else if(!bamFile.toFile().exists()) {
+        } else if (!bamFile.toFile().exists()) {
             queryResult.setErrorMsg("BAM file '" + bam + "' not found");
             logger.warn("BAM file " + bamFile + " not found");
-        } else if(!bai.endsWith(".bai")){
+        } else if (!bai.endsWith(".bai")) {
             queryResult.setErrorMsg("Can't find BAM index file. Expected parameter \"" + QO_BAI_PATH + "=*.bai\"");
             logger.warn("Can't find BAM index file. Expected parameter \"" + QO_BAI_PATH + "=*.bai\".");
-        } else if (!baiFile.toFile().exists()){
+        } else if (!baiFile.toFile().exists()) {
             queryResult.setErrorMsg("BAM index file (.bai) not found");
             logger.warn("BAM index file (.bai) " + baiFile + " for file " + bamFile + " not found");
         } else {
@@ -161,6 +161,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public QueryResult getAllAlignmentsByGene(String gene, QueryOptions options) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
     @Override
     public QueryResult getCoverageByRegion(Region region, QueryOptions options) {
         QueryResult<RegionCoverage> queryResult = new QueryResult<>(
@@ -171,7 +172,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         options.put(QO_INCLUDE_COVERAGE, true);
 
         QueryResult alignmentsResult = this.getAllAlignmentsByRegion(Arrays.asList(region), options);
-        if(alignmentsResult.getResultType().equals(AlignmentRegion.class.getCanonicalName())) {
+        if (alignmentsResult.getResultType().equals(AlignmentRegion.class.getCanonicalName())) {
 //            AlignmentRegion alignmentRegion = new AlignmentRegion(alignmentsResult.getResult(), null);
 //
 //            RegionCoverage regionCoverage = calculateCoverageByRegion(alignmentRegion, region);
@@ -194,8 +195,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         String fileId = options.getString(QO_FILE_ID);
         int chunkSize = options.getInt(QO_COVERAGE_CHUNK_SIZE, 200);
 
-        if(size%chunkSize != 0){
-            size -= size%chunkSize;
+        if (size % chunkSize != 0) {
+            size -= size % chunkSize;
         }
 
         List<DBObject> operations = new LinkedList<>();
@@ -264,15 +265,16 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         System.out.println(mongoAggregate.toString());
 
 
-    /*************/     //TODO: This should work, but doesn't
+        /*************/     //TODO: This should work, but doesn't
         System.out.println("dbName" + mongoDataStore.getDb().getName().toString());
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME);
         QueryResult<DBObject> aggregate = collection.aggregate(operations, null);
-    /*************/
+        /*************/
 
-    /*************/     //TODO: What's going on?
+        /*************/     //TODO: What's going on?
 //        long startTime = System.currentTimeMillis();
-//        AggregationOutput aggregationOutput = mongoDataStore.getDb().getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME).aggregate(operations);
+//        AggregationOutput aggregationOutput = mongoDataStore.getDb().getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME)
+// .aggregate(operations);
 //
 //        List<DBObject> results = new LinkedList<>();
 //        for (DBObject object : aggregationOutput.results()) {
@@ -280,8 +282,9 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //        }
 //
 //        long endTime = System.currentTimeMillis();
-//        QueryResult<DBObject> aggregate = new QueryResult<>(fileId, ((int) (endTime - startTime)), results.size(), results.size(), "", "", results);
-    /*************/
+//        QueryResult<DBObject> aggregate = new QueryResult<>(fileId, ((int) (endTime - startTime)), results.size(), results.size(), "",
+// "", results);
+        /*************/
 
 //        System.out.println(collection.find(new BasicDBObject(), new QueryOptions("limit", 2), null));
 //        System.out.println(collection.find(new BasicDBObject("files.id", "34"), new QueryOptions("limit", 2), null));
@@ -312,10 +315,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     private int getInt(DBObject object, String key) {
         int i;
         Object oi = object.get(key);
-        if(oi instanceof Double){
-            i = (int) (double)oi;
-        } else if(oi instanceof Float){
-            i = (int) (float)oi;
+        if (oi instanceof Double) {
+            i = (int) (double) oi;
+        } else if (oi instanceof Float) {
+            i = (int) (float) oi;
         } else {
             i = Integer.parseInt(oi.toString());
         }
@@ -325,10 +328,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     private double getDouble(DBObject object, String key) {
         double d;
         Object od = object.get(key);
-        if(od instanceof Double){
-            d = (double)od;
-        } else if(od instanceof Float){
-            d = (float)od;
+        if (od instanceof Double) {
+            d = (double) od;
+        } else if (od instanceof Float) {
+            d = (float) od;
         } else {
             d = Double.parseDouble(od.toString());
         }
@@ -336,20 +339,20 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
 
-    private QueryResult _getAllIntervalFrequencies(Region region, QueryOptions options) {
+    private QueryResult privateGetAllIntervalFrequencies(Region region, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME);
 
-        int size = region.getEnd()-region.getStart();
+        int size = region.getEnd() - region.getStart();
         String fileId = options.getString(QO_FILE_ID);
 //        boolean histogram = options.getBoolean(QO_HISTOGRAM, size < 2000);
         boolean histogram = true;
-        int batchSize = histogram? options.getInt(QO_INTERVAL_SIZE, 1000) : 1000;
+        int batchSize = histogram ? options.getInt(QO_INTERVAL_SIZE, 1000) : 1000;
         String batchName = MeanCoverage.sizeToNameConvert(batchSize);
 
         String coverageType;
         ComplexTypeConverter complexTypeConverter;
-        if(histogram) {
+        if (histogram) {
             complexTypeConverter = new DBObjectToMeanCoverageConverter();
             coverageType = CoverageMongoDBWriter.AVERAGE_FIELD;
         } else {
@@ -358,8 +361,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
         List<String> regions = new LinkedList<>();
 
-        for(int i = region.getStart()/batchSize;  i <= (region.getEnd()-1)/batchSize; i++){
-            regions.add(region.getChromosome()+"_"+i+"_"+batchName);
+        for (int i = region.getStart() / batchSize; i <= (region.getEnd() - 1) / batchSize; i++) {
+            regions.add(region.getChromosome() + "_" + i + "_" + batchName);
         }
 
 
@@ -368,15 +371,17 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         DBObject projection = BasicDBObjectBuilder
                 .start()
 //                .append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD,fileId)
-                .append(CoverageMongoDBWriter.FILES_FIELD, new BasicDBObject("$elemMatch", new BasicDBObject(CoverageMongoDBWriter.FILE_ID_FIELD,fileId)))
-                .append(CoverageMongoDBWriter.FILES_FIELD+"."+coverageType, true)
+                .append(CoverageMongoDBWriter.FILES_FIELD, new BasicDBObject("$elemMatch", new BasicDBObject(CoverageMongoDBWriter
+                        .FILE_ID_FIELD, fileId)))
+                .append(CoverageMongoDBWriter.FILES_FIELD + "." + coverageType, true)
 
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToRegionCoverageConverter.COVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToMeanCoverageConverter.AVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD, true)
                 .get();
 
-        System.out.println("db."+ CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME+".find("+query.toString()+", "+projection.toString()+")");
+        System.out.println("db." + CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME + ".find(" + query.toString() + ", " + projection
+                .toString() + ")");
 
         QueryResult queryResult = collection.find(query, projection, complexTypeConverter, null);
         queryResult.setId(region.toString());
@@ -397,7 +402,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     /* ******************************************
      *              Auxiliary queries           *
      * ******************************************/
-    private List<SAMRecord> getSamRecordsByRegion(Path bamPath, Path baiPath, Region region){
+    private List<SAMRecord> getSamRecordsByRegion(Path bamPath, Path baiPath, Region region) {
         List<SAMRecord> records = new ArrayList<>();
 
         SAMFileReader inputSam = new SAMFileReader(bamPath.toFile(), baiPath.toFile());
@@ -441,9 +446,9 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     private List<Alignment> getAlignmentsInRegion(List<Alignment> alignments, Region region) {
-        LinkedList<Alignment> filteredAlignments = new LinkedList<Alignment>();
+        LinkedList<Alignment> filteredAlignments = new LinkedList<>();
         for (Alignment alignment : alignments) {
-            if(alignment.getStart() >= region.getStart() /*&& alignment.getEnd() <= region.getEnd()*/) {
+            if (alignment.getStart() >= region.getStart() /*&& alignment.getEnd() <= region.getEnd()*/) {
                 filteredAlignments.addLast(alignment);
             }
         }
@@ -451,13 +456,16 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     private static String getIndexFromBam(String bam) {
-        String bai;
-        if(Paths.get((bai = bam+".bai")).toFile().exists()){
-            return bai;
-        } else if(Paths.get(bai = (IOUtils.removeExtension(bam) + ".bai")).toFile().exists()) {
+        String bai = bam + ".bai";
+        if (Paths.get(bai).toFile().exists()) {
             return bai;
         } else {
-            return "";
+            bai = IOUtils.removeExtension(bam) + ".bai";
+            if (Paths.get(bai).toFile().exists()) {
+                return bai;
+            } else {
+                return "";
+            }
         }
     }
 
@@ -472,7 +480,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
         RegionCoverage coverage = alignmentRegion.getCoverage();
         int from = (int) (region.getStart() - coverage.getStart());
-        int to = (int) (region.getEnd() - coverage.getStart()+1);
+        int to = (int) (region.getEnd() - coverage.getStart() + 1);
         RegionCoverage coverageAdjust = new RegionCoverage(to - from);
         coverageAdjust.setChromosome(region.getChromosome());
         coverageAdjust.setStart(region.getStart());
@@ -488,10 +496,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //            System.arraycopy(coverage.getT()  , scrPos, coverageAdjust.getT()  , destPos, length);
 
         coverageAdjust.setAll(copyOfRange(coverage.getAll(), from, to));
-        coverageAdjust.setA  (copyOfRange(coverage.getA()  , from, to));
-        coverageAdjust.setC  (copyOfRange(coverage.getC()  , from, to));
-        coverageAdjust.setG  (copyOfRange(coverage.getG()  , from, to));
-        coverageAdjust.setT  (copyOfRange(coverage.getT()  , from, to));
+        coverageAdjust.setA(copyOfRange(coverage.getA(), from, to));
+        coverageAdjust.setC(copyOfRange(coverage.getC(), from, to));
+        coverageAdjust.setG(copyOfRange(coverage.getG(), from, to));
+        coverageAdjust.setT(copyOfRange(coverage.getT(), from, to));
 
         alignmentRegion.setCoverage(null);
 

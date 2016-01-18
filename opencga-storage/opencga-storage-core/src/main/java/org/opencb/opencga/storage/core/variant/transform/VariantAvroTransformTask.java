@@ -29,29 +29,26 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
- * Created on 01/10/15
+ * Created on 01/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String, ByteBuffer> {
-
 
     private final VariantFactory factory;
     private final VariantSource source;
     private final AvroEncoder<VariantAvro> encoder;
     private boolean includeSrc = false;
 
-    protected final static Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
     private final VCFCodec vcfCodec;
     private final VariantContextToVariantConverter converter;
     private final VariantNormalizer normalizer;
     private final Path outputFileJsonFile;
     private final VariantGlobalStatsCalculator variantStatsTask;
 
+    protected final Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
 
     public VariantAvroTransformTask(VariantFactory factory,
                                     VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask) {
@@ -75,7 +72,7 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
 
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
-        this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId());
+        this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
         this.normalizer = new VariantNormalizer();
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
@@ -123,7 +120,6 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
                     }
                 }
                 variantStatsTask.apply(variants);
-
             }
         } else {
             List<VariantContext> variantContexts = new ArrayList<>(batch.size());
@@ -135,9 +131,7 @@ public class VariantAvroTransformTask implements ParallelTaskRunner.Task<String,
             }
 
             List<Variant> variants = converter.apply(variantContexts);
-
             List<Variant> normalizedVariants = normalizer.apply(variants);
-
             variantStatsTask.apply(normalizedVariants);
 
             for (Variant normalizedVariant : normalizedVariants) {

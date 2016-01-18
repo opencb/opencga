@@ -39,14 +39,14 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     public static final String STUDY_CONFIGURATION_PATH = "studyConfigurationPath";
     protected static Logger logger = LoggerFactory.getLogger(FileStudyConfigurationManager.class);
 
-    static final private Map<Integer, Path> filePaths = new HashMap<>();
+    private static final Map<Integer, Path> FILE_PATHS = new HashMap<>();
 
     public FileStudyConfigurationManager(ObjectMap objectMap) {
         super(objectMap);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyName, options);
         QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
         result.first().setStudyName(studyName);
@@ -54,7 +54,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    public QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         Path path = getPath(studyId, options);
         QueryResult<StudyConfiguration> result = readStudyConfiguration(path);
         result.first().setStudyId(studyId);
@@ -68,14 +68,16 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
             studyConfiguration = read(path);
         } catch (IOException e) {
             logger.error("Fail at reading StudyConfiguration from " + path, e);
-            return new QueryResult<>(path.getFileName().toString(), (int) (System.currentTimeMillis() - startTime), 0, 0, "", e.getMessage(), Collections.<StudyConfiguration>emptyList());
+            return new QueryResult<>(path.getFileName().toString(),
+                    (int) (System.currentTimeMillis() - startTime), 0, 0, "", e.getMessage(), Collections.<StudyConfiguration>emptyList());
         }
 
-        return new QueryResult<>(path.getFileName().toString(), (int) (System.currentTimeMillis() - startTime), 1, 1, "", "", Collections.singletonList(studyConfiguration));
+        return new QueryResult<>(path.getFileName().toString(),
+                (int) (System.currentTimeMillis() - startTime), 1, 1, "", "", Collections.singletonList(studyConfiguration));
     }
 
     @Override
-    protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
 
         Path path = getPath(studyConfiguration.getStudyId(), options);
@@ -90,8 +92,8 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
 
     private Path getPath(int studyId, QueryOptions options) {
         Path path;
-        if (filePaths.containsKey(studyId)) {
-            path = filePaths.get(studyId);
+        if (FILE_PATHS.containsKey(studyId)) {
+            path = FILE_PATHS.get(studyId);
         } else {
             Object o = options.get(STUDY_CONFIGURATION_PATH);
             if (o == null) {
@@ -102,7 +104,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
             } else {
                 path = Paths.get(o.toString());
             }
-            filePaths.put(studyId, path);
+            FILE_PATHS.put(studyId, path);
         }
         return path;
     }
@@ -121,7 +123,7 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
         return path;
     }
 
-    static public StudyConfiguration read(Path path) throws IOException {
+    public static StudyConfiguration read(Path path) throws IOException {
         if (path == null || !path.toFile().exists()) {
             return new StudyConfiguration(1, "default");
         } else {
@@ -129,9 +131,9 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
         }
     }
 
-    static public void write(StudyConfiguration studyConfiguration, Path path) throws IOException {
-        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(), studyConfiguration);
+    public static void write(StudyConfiguration studyConfiguration, Path path) throws IOException {
+        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(),
+                studyConfiguration);
     }
-
 
 }

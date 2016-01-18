@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import com.mongodb.*;
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DBObject;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.commons.io.DataWriter;
-
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
@@ -75,7 +77,8 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
 
     @Override
     public boolean open() {
-        //MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password", "*******").build();
+        //MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder().add("username", "biouser").add("password",
+        // "*******").build();
         db = mongoManager.get(credentials.getMongoDbName());
 
         return true;
@@ -106,17 +109,19 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
         List<MeanCoverage> meanCoverageList = elem.getMeanCoverage();
         RegionCoverage regionCoverage = elem.getCoverage();
 
-        if(regionCoverage != null){
+        if (regionCoverage != null) {
             DBObject coverageQuery = coverageConverter.getIdObject(regionCoverage);
             DBObject coverageObject = coverageConverter.convertToStorageType(regionCoverage);
-            secureInsert(coverageQuery, coverageObject, regionCoverage.getChromosome(), (int) regionCoverage.getStart(), regionCoverage.getAll().length);
+            secureInsert(coverageQuery, coverageObject, regionCoverage.getChromosome(), (int) regionCoverage.getStart(), regionCoverage
+                    .getAll().length);
         }
 
-        if(meanCoverageList != null) {
+        if (meanCoverageList != null) {
             for (MeanCoverage meanCoverage : meanCoverageList) {
                 DBObject query = this.meanCoverageConverter.getIdObject(meanCoverage);  //{_id:"20_2354_1k"}
                 DBObject object = meanCoverageConverter.convertToStorageType(meanCoverage);  //{avg:4.5662}
-                secureInsert(query, object, meanCoverage.getRegion().getChromosome(), meanCoverage.getRegion().getStart(), meanCoverage.getSize());
+                secureInsert(query, object, meanCoverage.getRegion().getChromosome(), meanCoverage.getRegion().getStart(), meanCoverage
+                        .getSize());
             }
         }
         return true;
@@ -127,32 +132,32 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
         boolean fileExists = true;
 
         //Check if the document exists
-        {
-            QueryResult countId = collection.count(query);
-            if (countId.getNumResults() == 1 && countId.getResultType().equals(Long.class.getCanonicalName())) {
-                if ((Long) countId.getResult().get(0) < 1) {
-                    DBObject document = BasicDBObjectBuilder.start()
-                            .append(FILES_FIELD, new BasicDBList())
-                            .append(CHR_FIELD, chromosome)
-                            .append(START_FIELD, start)
-                            .append(SIZE_FIELD, size)
-                            .get();
-                    document.putAll(query);             //{_id:<chunkId>, files:[]}
-                    collection.insert(document, null);        //Insert a document with empty files array.
-                    fileExists = false;
-                }
-            } else {
-                logger.error(countId.getErrorMsg(), countId);
+//        {
+        QueryResult countId = collection.count(query);
+        if (countId.getNumResults() == 1 && countId.getResultType().equals(Long.class.getCanonicalName())) {
+            if ((Long) countId.getResult().get(0) < 1) {
+                DBObject document = BasicDBObjectBuilder.start()
+                        .append(FILES_FIELD, new BasicDBList())
+                        .append(CHR_FIELD, chromosome)
+                        .append(START_FIELD, start)
+                        .append(SIZE_FIELD, size)
+                        .get();
+                document.putAll(query);             //{_id:<chunkId>, files:[]}
+                collection.insert(document, null);        //Insert a document with empty files array.
+                fileExists = false;
             }
+        } else {
+            logger.error(countId.getErrorMsg(), countId);
         }
+//        }
 
-        if(documentExists){
+        if (documentExists) {
             //Check if the file exists
             BasicDBObject fileQuery = new BasicDBObject(FILES_FIELD + "." + FILE_ID_FIELD, fileId);
             fileQuery.putAll(query);
             QueryResult countFile = collection.count(fileQuery);
-            if(countFile.getNumResults() == 1 && countFile.getResultType().equals(Long.class.getCanonicalName())) {
-                if((Long) countFile.getResult().get(0) < 1){
+            if (countFile.getNumResults() == 1 && countFile.getResultType().equals(Long.class.getCanonicalName())) {
+                if ((Long) countFile.getResult().get(0) < 1) {
                     fileExists = false;
                 }
             } else {
@@ -160,13 +165,13 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
             }
         }
 
-        if(fileExists){
+        if (fileExists) {
             BasicDBObject fileQuery = new BasicDBObject(FILES_FIELD + "." + FILE_ID_FIELD, fileId);
             fileQuery.putAll(query);
 
             BasicDBObject fileObject = new BasicDBObject();
-            for(String key : object.keySet()){
-                fileObject.put(FILES_FIELD+".$."+key,object.get(key));
+            for (String key : object.keySet()) {
+                fileObject.put(FILES_FIELD + ".$." + key, object.get(key));
             }
 //            DBObject update = new BasicDBObject("$set", new BasicDBObject(FILES_FIELD, fileObject));
             DBObject update = new BasicDBObject("$set", fileObject);
@@ -185,9 +190,9 @@ public class CoverageMongoDBWriter implements DataWriter<AlignmentRegion> {
 
     @Override
     public boolean write(List<AlignmentRegion> batch) {
-        for(AlignmentRegion region : batch){
-            if(region != null){
-                if(!write(region)){
+        for (AlignmentRegion region : batch) {
+            if (region != null) {
+                if (!write(region)) {
                     return false;
                 }
             }

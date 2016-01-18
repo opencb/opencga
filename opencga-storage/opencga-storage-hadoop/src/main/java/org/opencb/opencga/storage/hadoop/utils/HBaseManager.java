@@ -14,7 +14,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import java.io.IOException;
 
 /**
- * Created on 13/11/15
+ * Created on 13/11/15.
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -47,15 +47,15 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
-     *
+     * Performs an action over a table.
+     * <p>
      * * This method creates a new connection for the action to perform.
      * * Create a connection is heavy. Do not use for common operations.
      * * Use {@link HBaseManager#act(Connection, byte[], HBaseTableConsumer)} when possible
      *
      * @param tableName Table name
      * @param func      Action to perfor
-     * @throws IOException
+     * @throws IOException If any IO problem occurs
      */
     public void act(byte[] tableName, HBaseTableConsumer func) throws IOException {
         try (Connection con = ConnectionFactory.createConnection(getConf())) {
@@ -64,11 +64,12 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
+     * Performs an action over a table.
      *
+     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
-     * @throws IOException
+     * @throws IOException If any IO problem occurs
      */
     public void act(Connection con, byte[] tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
@@ -78,11 +79,12 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
+     * Performs an action over a table.
      *
+     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
-     * @throws IOException
+     * @throws IOException If any IO problem occurs
      */
     public void act(Connection con, String tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
@@ -92,8 +94,8 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
-     *
+     * Performs an action over a table.
+     * <p>
      * * This method creates a new connection for the action to perform.
      * * Create a connection is heavy. Do not use for common operations.
      * * Use {@link HBaseManager#act(Connection, byte[], HBaseTableFunction)} when possible
@@ -101,16 +103,16 @@ public class HBaseManager extends Configured {
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(String tableName, HBaseTableFunction<T> func) throws IOException {
         return act(Bytes.toBytes(tableName), func);
     }
 
     /**
-     * Performs an action over a table
-     *
+     * Performs an action over a table.
+     * <p>
      * * This method creates a new connection for the action to perform.
      * * Create a connection is heavy. Do not use for common operations.
      * * Use {@link HBaseManager#act(Connection, byte[], HBaseTableFunction)} when possible
@@ -118,8 +120,8 @@ public class HBaseManager extends Configured {
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(byte[] tableName, HBaseTableFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
@@ -129,13 +131,14 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
+     * Performs an action over a table.
      *
+     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(Connection con, byte[] tableName, HBaseTableFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
@@ -145,13 +148,14 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
+     * Performs an action over a table.
      *
+     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(Connection con, String tableName, HBaseTableFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
@@ -161,8 +165,8 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
-     *
+     * Performs an action over a table.
+     * <p>
      * * This method creates a new connection for the action to perform.
      * * Create a connection is heavy. Do not use for common operations.
      * * Use {@link HBaseManager#act(Connection, String, HBaseTableAdminFunction)} when possible
@@ -170,8 +174,8 @@ public class HBaseManager extends Configured {
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(String tableName, HBaseTableAdminFunction<T> func) throws IOException {
         try (Connection con = ConnectionFactory.createConnection(getConf())) {
@@ -180,29 +184,28 @@ public class HBaseManager extends Configured {
     }
 
     /**
-     * Performs an action over a table
+     * Performs an action over a table.
      *
+     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
      * @param <T>       Return type
-     * @return          Result of the function
-     * @throws IOException
+     * @return Result of the function
+     * @throws IOException If any IO problem occurs
      */
     public <T> T act(Connection con, String tableName, HBaseTableAdminFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
-        try (
-                Table table = con.getTable(tname);
-                Admin admin = con.getAdmin();
-        ) {
-            return func.function(table,admin);
+        try (Table table = con.getTable(tname); Admin admin = con.getAdmin()) {
+            return func.function(table, admin);
         }
     }
 
     /**
-     * Create default HBase table layout with one column family
+     * Create default HBase table layout with one column family.
      *
-     * @param tableName     HBase table name
-     * @param columnFamily  Column Family
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @param columnFamily Column Family
      * @return boolean True if a new table was created
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
@@ -218,6 +221,5 @@ public class HBaseManager extends Configured {
             return false;
         });
     }
-
 
 }

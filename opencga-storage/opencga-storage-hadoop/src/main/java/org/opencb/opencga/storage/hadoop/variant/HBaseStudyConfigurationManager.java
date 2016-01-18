@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -22,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created on 12/11/15
+ * Created on 12/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -60,12 +59,12 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        return _getStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
+    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
@@ -104,7 +103,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long startTime = System.currentTimeMillis();
         String error = "";
         logger.info("Update StudyConfiguration {}", studyConfiguration.getStudyName());
@@ -170,7 +169,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
             createTableIfMissing();
-            try(Table table = getConnection().getTable(TableName.valueOf(tableName))) {
+            try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn, bytes);
@@ -197,7 +196,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     public Connection getConnection() throws IOException {
-        if(null == connection){
+        if (null == connection) {
             connection = ConnectionFactory.createConnection(configuration);
         }
         return connection;

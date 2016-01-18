@@ -16,34 +16,35 @@
 
 package org.opencb.opencga.storage.core.config;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by imedina on 04/05/15.
  */
 public class CellBaseConfiguration {
 
-    /**
+    /*
      * URL to CellBase REST web services, by default official UCam installation is used
      */
     private List<String> hosts;
 
-    /**
+    /*
      * CellBase version to be used, by default the 'latest' stable
      */
     private String version;
 
     private DatabaseCredentials database;
 
-    /**
+    /*
      * This can be 'remote' or 'local'
      */
     private String preferred;
 
-    private static final String CELLBASE_HOST= "http://bioinfo.hpc.cam.ac.uk/cellbase/webservices/rest/";
-    private static final String CELLBASE_VERSION= "latest";
+    private static final String CELLBASE_HOST = "http://bioinfo.hpc.cam.ac.uk/cellbase/webservices/rest/";
+    private static final String CELLBASE_VERSION = "latest";
 
-    public CellBaseConfiguration () {
+    public CellBaseConfiguration() {
         this(Arrays.asList(CELLBASE_HOST), CELLBASE_VERSION, new DatabaseCredentials());
     }
 
@@ -57,12 +58,13 @@ public class CellBaseConfiguration {
 
     @Override
     public String toString() {
-        return "CellBaseConfiguration{" +
-                "hosts=" + hosts +
-                ", version='" + version + '\'' +
-                ", database=" + database +
-                ", preferred='" + preferred + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("CellBaseConfiguration{");
+        sb.append("hosts=").append(hosts);
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", database=").append(database);
+        sb.append(", preferred='").append(preferred).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public List<String> getHosts() {

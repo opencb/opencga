@@ -74,13 +74,15 @@ public class VariantStatisticsManager {
     private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
         logger.info("will write stats to {}", filePath);
-        if(filePath.toString().endsWith(".gz")) {
+        if (filePath.toString().endsWith(".gz")) {
             outputStream = new GZIPOutputStream(outputStream);
         }
         return outputStream;
     }
 
-    /** Gets iterator from OpenCGA Variant database. **/
+    /**
+     * Gets iterator from OpenCGA Variant database.
+     **/
     private Iterator<Variant> obtainIterator(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
 
         Query iteratorQuery = query != null ? query : new Query();
@@ -96,24 +98,24 @@ public class VariantStatisticsManager {
 
     /**
      * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
-     *
+     * <p>
      * steps:
-     * 
+     * <p>
      * * gets options like batchsize, overwrite, tagMap...  if(options == null) throws
      * * if no cohorts provided and the study is aggregated, uses the cohorts in the tagMap if any
      * * add the cohorts to the studyConfiuration
      * * checks invalidated stats, and set overwrite=true if needed
      * * sets up a ParallelTaskRunner: a reader, a writer and tasks
      * * writes the source stats
-     * 
-     * @param variantDBAdaptor to obtain the Variants
-     * @param output where to write the VariantStats
-     * @param cohorts cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
-     * @param cohortIds
-     * @param options (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      *
+     * @param variantDBAdaptor to obtain the Variants
+     * @param output           where to write the VariantStats
+     * @param cohorts          cohorts (subsets) of the samples. key: cohort name, defaultValue: list of sample names.
+     * @param cohortIds        Cohort ID
+     * @param studyConfiguration Study configuration object
+     * @param options          (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
-     * @throws IOException
+     * @throws Exception If any error occurs
      */
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
                            Map<String, Integer> cohortIds, StudyConfiguration studyConfiguration, QueryOptions options)
@@ -159,7 +161,7 @@ public class VariantStatisticsManager {
         VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyConfiguration.getStudyId()));
 
 
-       // reader, tasks and writer
+        // reader, tasks and writer
         Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
         if (options.containsKey(Options.FILE_ID.key())) {
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
@@ -167,7 +169,8 @@ public class VariantStatisticsManager {
         if (updateStats) {
             //Get all variants that not contain any of the required cohorts
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(),
-                    cohorts.keySet().stream().map((cohort) -> "!" + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors.joining(";")));
+                    cohorts.keySet().stream().map((cohort) -> "!" + studyConfiguration.getStudyName() + ":" + cohort).collect(Collectors
+                            .joining(";")));
         }
         logger.info("ReaderQuery: " + readerQuery.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
@@ -179,9 +182,9 @@ public class VariantStatisticsManager {
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
         StringDataWriter writer = new StringDataWriter(variantStatsPath);
-        
-        // runner 
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks*2, false);
+
+        // runner
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
         ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
 
         logger.info("starting stats creation for cohorts {}", cohorts.keySet());
@@ -206,7 +209,7 @@ public class VariantStatisticsManager {
         private boolean overwrite;
         private Map<String, Set<String>> samples;
         private StudyConfiguration studyConfiguration;
-//        private String fileId;
+        //        private String fileId;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
         private VariantSourceStats variantSourceStats;
@@ -249,7 +252,9 @@ public class VariantStatisticsManager {
                     e.printStackTrace();
                 }
             }
-            // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change VariantSource.stats to a map with every subset...
+
+            // we don't want to overwrite file stats regarding all samples with stats about a subset of samples. Maybe if we change
+            // VariantSource.stats to a map with every subset...
             if (!defaultCohortAbsent) {
                 synchronized (variantSourceStats) {
                     variantSourceStats.updateFileStats(variants);
@@ -258,7 +263,8 @@ public class VariantStatisticsManager {
             }
             logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (variants.size() != 0) {
-                logger.info("stats created up to position {}:{}", variants.get(variants.size()-1).getChromosome(), variants.get(variants.size()-1).getStart());
+                logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
+                        variants.get(variants.size() - 1).getStart());
             } else {
                 logger.info("task with empty batch");
             }
@@ -266,7 +272,8 @@ public class VariantStatisticsManager {
         }
     }
 
-    public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
+    public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws
+            IOException {
 
         URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
         URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
@@ -286,17 +293,16 @@ public class VariantStatisticsManager {
 
     }
 
-    public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
+    public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
+            throws IOException {
 
-        /** Open input streams **/
+        /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());
         InputStream variantInputStream;
         variantInputStream = new FileInputStream(variantInput.toFile());
         variantInputStream = new GZIPInputStream(variantInputStream);
 
-        /** Initialize Json parse **/
-
-
+        /* Initialize Json parse */
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 1000);
         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
         int writes = 0;
@@ -310,7 +316,8 @@ public class VariantStatisticsManager {
                 if (statsBatch.size() == batchSize) {
                     QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
                     writes += writeResult.getNumResults();
-                    logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(), statsBatch.get(statsBatch.size() - 1).getPosition());
+                    logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(), statsBatch
+                            .get(statsBatch.size() - 1).getPosition());
                     statsBatch.clear();
                 }
             }
@@ -319,7 +326,8 @@ public class VariantStatisticsManager {
         if (!statsBatch.isEmpty()) {
             QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
             writes += writeResult.getNumResults();
-            logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size()-1).getChromosome(), statsBatch.get(statsBatch.size()-1).getPosition());
+            logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(),
+                    statsBatch.get(statsBatch.size() - 1).getPosition());
             statsBatch.clear();
         }
 
@@ -330,15 +338,16 @@ public class VariantStatisticsManager {
 
     }
 
-    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
+    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
+            throws IOException {
 
-        /** Open input streams **/
+        /* Open input streams */
         Path sourceInput = Paths.get(uri.getPath());
         InputStream sourceInputStream;
         sourceInputStream = new FileInputStream(sourceInput.toFile());
         sourceInputStream = new GZIPInputStream(sourceInputStream);
 
-        /** Initialize Json parse **/
+        /* Initialize Json parse */
         JsonParser sourceParser = jsonFactory.createParser(sourceInputStream);
 
         VariantSourceStats variantSourceStats;
@@ -346,26 +355,27 @@ public class VariantStatisticsManager {
         variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
 //        }
 
-        // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource.getFileId()
+        // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
+        // .getFileId()
         variantDBAdaptor.getVariantSourceDBAdaptor().updateSourceStats(variantSourceStats, studyConfiguration, options);
 
     }
 
-    /**
-     * check that all SampleIds are in the StudyConfiguration
-     *
+    /*
+     * Check that all SampleIds are in the StudyConfiguration.
+     * <p>
      * If some cohort does not have samples, reads the content from StudyConfiguration.
      * If there is no cohortId for come cohort, reads the content from StudyConfiguration or auto-generate a cohortId
      * If some cohort has a different number of samples, check if this cohort is invalid.
-     *
+     * <p>
      * Do not update the "calculatedStats" array. Just check that the provided cohorts are not calculated or invalid.
-     *
+     * <p>
      * new requirements:
      * * an empty cohort is not an error if the study is aggregated
-     * * there may be several empty cohorts, not just the ALL, because there may be several aggregated files with different sets of hidden samples.
+     * * there may be several empty cohorts, not just the ALL, because there may be several aggregated files with different sets of
+     * hidden samples.
      * * if a cohort is already calculated, it is not an error if overwrite was provided
      *
-     * @return CohortIdList
      */
     List<Integer> checkAndUpdateStudyConfigurationCohorts(StudyConfiguration studyConfiguration,
                                                           Map<String, Set<String>> cohorts,
@@ -387,8 +397,9 @@ public class VariantStatisticsManager {
                 } else {
                     //Auto-generate cohortId. Max CohortId + 1
                     // if there are no cohorts and we are creating the first as 0
-                    cohortId = studyConfiguration.getCohortIds().isEmpty() ?
-                            0 : Collections.max(studyConfiguration.getCohortIds().values()) + 1;
+                    cohortId = studyConfiguration.getCohortIds().isEmpty()
+                            ? 0
+                            : Collections.max(studyConfiguration.getCohortIds().values()) + 1;
                 }
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
@@ -402,13 +413,13 @@ public class VariantStatisticsManager {
             if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
                 if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
                     //ERROR Duplicated cohortName
-                    throw new IOException("Duplicated cohortName " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as " +
-                            cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
+                    throw new IOException("Duplicated cohortName " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration "
+                            + "as " + cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
                 }
             } else if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
                 //ERROR Duplicated cohortId
-                throw new IOException("Duplicated cohortId " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as " +
-                        StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
+                throw new IOException("Duplicated cohortId " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as "
+                        + StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
             }
 
             final Set<Integer> sampleIds;
@@ -445,12 +456,13 @@ public class VariantStatisticsManager {
                 if (sampleIds.size() != samples.size()) {
                     throw new IOException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
-                if (studyConfiguration.getCohorts().get(cohortId) != null && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
+                if (studyConfiguration.getCohorts().get(cohortId) != null
+                        && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
                     if (!studyConfiguration.getInvalidStats().contains(cohortId)) {
                         //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
-                        throw new IOException("Different samples in cohort " + cohortName + ":" + cohortId + ". " +
-                                "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". " +
-                                "Samples provided " + samples.size() + ". Invalidate stats to continue.");
+                        throw new IOException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
+                                + "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". "
+                                + "Samples provided " + samples.size() + ". Invalidate stats to continue.");
                     }
                 }
             }
@@ -496,11 +508,8 @@ public class VariantStatisticsManager {
         }
     }
 
-    /**
-     *
-     *
-     */
-    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats) throws IOException {
+    void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, Collection<String> cohorts, boolean updateStats)
+            throws IOException {
         for (String cohortName : cohorts) {
 //            if (cohortName.equals(VariantSourceEntry.DEFAULT_COHORT)) {
 //                continue;

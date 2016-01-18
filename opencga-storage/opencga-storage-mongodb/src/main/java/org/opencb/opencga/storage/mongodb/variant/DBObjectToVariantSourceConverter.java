@@ -21,53 +21,51 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.util.JSON;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.datastore.core.ComplexTypeConverter;
+
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.mongodb.util.JSON;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.datastore.core.ComplexTypeConverter;
-
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<VariantSource, DBObject> {
 
-    public final static String FILEID_FIELD = "fid";
-    public final static String FILENAME_FIELD = "fname";
-    public final static String STUDYID_FIELD = "sid";
-    public final static String STUDYNAME_FIELD = "sname";
-//    public final static String STUDYTYPE_FIELD = "stype";
-    public final static String DATE_FIELD = "date";
-    public final static String SAMPLES_FIELD = "samp";
-    
-    public final static String STATS_FIELD = "st";
-    public final static String NUMSAMPLES_FIELD = "nSamp";
-    public final static String NUMVARIANTS_FIELD = "nVar";
-    public final static String NUMSNPS_FIELD = "nSnp";
-    public final static String NUMINDELS_FIELD = "nIndel";
-    public final static String NUMSTRUCTURAL_FIELD = "nSv";
-    public final static String NUMPASSFILTERS_FIELD = "nPass";
-    public final static String NUMTRANSITIONS_FIELD = "nTi";
-    public final static String NUMTRANSVERSIONS_FIELD = "nTv";
-    public final static String MEANQUALITY_FIELD = "meanQ";
-    
-    public final static String METADATA_FIELD = "meta";
-    public final static String HEADER_FIELD = "header";
+    public static final String FILEID_FIELD = "fid";
+    public static final String FILENAME_FIELD = "fname";
+    public static final String STUDYID_FIELD = "sid";
+    public static final String STUDYNAME_FIELD = "sname";
+    //    public static final String STUDYTYPE_FIELD = "stype";
+    public static final String DATE_FIELD = "date";
+    public static final String SAMPLES_FIELD = "samp";
+
+    public static final String STATS_FIELD = "st";
+    public static final String NUMSAMPLES_FIELD = "nSamp";
+    public static final String NUMVARIANTS_FIELD = "nVar";
+    public static final String NUMSNPS_FIELD = "nSnp";
+    public static final String NUMINDELS_FIELD = "nIndel";
+    public static final String NUMSTRUCTURAL_FIELD = "nSv";
+    public static final String NUMPASSFILTERS_FIELD = "nPass";
+    public static final String NUMTRANSITIONS_FIELD = "nTi";
+    public static final String NUMTRANSVERSIONS_FIELD = "nTv";
+    public static final String MEANQUALITY_FIELD = "meanQ";
+
+    public static final String METADATA_FIELD = "meta";
+    public static final String HEADER_FIELD = "header";
     static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
-    
-    
+
+
     @Override
     public VariantSource convertToDataModelType(DBObject object) {
         VariantSource source = new VariantSource((String) object.get(FILENAME_FIELD), (String) object.get(FILEID_FIELD),
                 (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), null, VariantSource.Aggregation.NONE);
-        
+
         // Samples
         if (object.containsField(SAMPLES_FIELD)) {
             Map<String, Integer> samplesPosition = new HashMap<>();
@@ -81,10 +79,10 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         DBObject statsObject = (DBObject) object.get(STATS_FIELD);
         if (statsObject != null) {
             VariantGlobalStats stats = new VariantGlobalStats(
-                    (int) statsObject.get(NUMVARIANTS_FIELD), (int) statsObject.get(NUMSAMPLES_FIELD), 
-                    (int) statsObject.get(NUMSNPS_FIELD), (int) statsObject.get(NUMINDELS_FIELD), 
+                    (int) statsObject.get(NUMVARIANTS_FIELD), (int) statsObject.get(NUMSAMPLES_FIELD),
+                    (int) statsObject.get(NUMSNPS_FIELD), (int) statsObject.get(NUMINDELS_FIELD),
                     0, // TODO Add structural variants to schema!
-                    (int) statsObject.get(NUMPASSFILTERS_FIELD), 
+                    (int) statsObject.get(NUMPASSFILTERS_FIELD),
                     (int) statsObject.get(NUMTRANSITIONS_FIELD),
                     (int) statsObject.get(NUMTRANSVERSIONS_FIELD),
                     -1, ((Double) statsObject.get(MEANQUALITY_FIELD)).doubleValue(), null
@@ -99,13 +97,13 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
 //            stats.setMeanQuality(((Double) statsObject.get(MEANQUALITY_FIELD)).floatValue());
             source.setStats(stats);
         }
-        
+
         // Metadata
         BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);
         for (Map.Entry<String, Object> o : metadata.entrySet()) {
             source.addMetadata(o.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), o.getValue());
         }
-        
+
         return source;
     }
 
@@ -172,5 +170,5 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
 
         return studyMongo;
     }
-    
+
 }

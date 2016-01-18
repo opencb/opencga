@@ -2,7 +2,10 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.schema.types.*;
+import org.apache.phoenix.schema.types.PArrayDataType;
+import org.apache.phoenix.schema.types.PFloat;
+import org.apache.phoenix.schema.types.PIntegerArray;
+import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -15,7 +18,7 @@ import java.util.Set;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
 
 /**
- * Created on 01/12/15
+ * Created on 01/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -93,11 +96,11 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
     }
 
     public void addVarcharArray(Put put, byte[] column, Collection<String> collection) {
-        addArray(put,column, collection, PVarcharArray.INSTANCE);
+        addArray(put, column, collection, PVarcharArray.INSTANCE);
     }
 
     public void addIntegerArray(Put put, byte[] column, Collection<Integer> collection) {
-        addArray(put,column, collection, PIntegerArray.INSTANCE);
+        addArray(put, column, collection, PIntegerArray.INSTANCE);
     }
 
     public void addArray(Put put, byte[] column, Collection collection, PArrayDataType arrayType) {

@@ -26,7 +26,7 @@ server:
 
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine
-storageEngines:
+defaultStorageEngine:
 - id: "mongodb"
   options: {}     ## this field is intended to be removed, try not to use it.
   alignment:

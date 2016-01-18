@@ -35,22 +35,24 @@ import java.util.concurrent.*;
 @Deprecated
 public class SimpleThreadRunner {
 
-    final List POISON_PILL = new LinkedList();
-    final BlockingQueue<List> readBlockingQueue;
-    final BlockingQueue<List> writeBlockingQueue;
-    final int batchSize;
-    final int capacity;
-    final Integer numTasks;
+    private final List POISON_PILL = new LinkedList();
+    private final BlockingQueue<List> readBlockingQueue;
+    private final BlockingQueue<List> writeBlockingQueue;
+    private final int batchSize;
+    private final int capacity;
+    private final Integer numTasks;
     private final ExecutorService executorService;
     private final DataReader reader;
     private final List<DataWriter> writers;
     private final List<Task> tasks;
-    protected static Logger logger = LoggerFactory.getLogger(SimpleThreadRunner.class);
+    protected Logger logger = LoggerFactory.getLogger(SimpleThreadRunner.class);
 
     public SimpleThreadRunner(DataReader reader, List<Task> tasks, DataWriter writer, int batchSize, int capacity, Integer numTasks) {
         this(reader, tasks, Collections.singletonList(writer), batchSize, capacity, numTasks);
     }
-    public SimpleThreadRunner(DataReader reader, List<Task> tasks, List<DataWriter> writers, int batchSize, int capacity, Integer numTasks) {
+
+    public SimpleThreadRunner(DataReader reader, List<Task> tasks, List<DataWriter> writers, int batchSize, int capacity, Integer
+            numTasks) {
         this.batchSize = batchSize;
         this.capacity = capacity;
         this.reader = reader;
@@ -67,6 +69,7 @@ public class SimpleThreadRunner {
 
         executorService = Executors.newFixedThreadPool(numTasks + 1 + writers.size());
     }
+
     public void run() {
         reader.open();
         reader.pre();
@@ -113,9 +116,10 @@ public class SimpleThreadRunner {
         }
 
     }
+
     class ReaderRunnable implements Runnable {
 
-        final DataReader dataReader;
+        private final DataReader dataReader;
 
         ReaderRunnable(DataReader dataReader) {
             this.dataReader = dataReader;
@@ -154,7 +158,7 @@ public class SimpleThreadRunner {
         private long timeBlockedAtSendWrite;
         private long timeTaskApply;
 
-        final List<Task> tasks;
+        private final List<Task> tasks;
 
         TaskRunnable(List<Task> tasks) {
             this.tasks = tasks;
@@ -208,11 +212,14 @@ public class SimpleThreadRunner {
 
 
         }
+
         private int finishedTasks = 0;
+
         private List<String> getBatch() throws InterruptedException {
             List<String> batch;
             batch = readBlockingQueue.take();
-//                System.out.println("task: readBlockingQueue = " + readBlockingQueue.size() + " batch.size : " + batch.size() + " : " + batchSize);
+//                System.out.println("task: readBlockingQueue = " + readBlockingQueue.size() + " batch.size : " + batch.size() + " : " +
+// batchSize);
             if (batch == POISON_PILL) {
                 logger.debug("task: POISON_PILL");
                 readBlockingQueue.put(POISON_PILL);
@@ -223,8 +230,8 @@ public class SimpleThreadRunner {
 
     class WriterRunnable implements Runnable {
 
-        long timeBlockedWatingDataToWrite = 0;
-        final DataWriter dataWriter;
+        private long timeBlockedWatingDataToWrite = 0;
+        private final DataWriter dataWriter;
 
         WriterRunnable(DataWriter dataWriter) {
             this.dataWriter = dataWriter;

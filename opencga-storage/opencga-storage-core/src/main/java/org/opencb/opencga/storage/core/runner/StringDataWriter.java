@@ -32,10 +32,12 @@ import java.util.zip.GZIPOutputStream;
  * Created by jacobo on 25/02/15.
  */
 public class StringDataWriter implements DataWriter<String> {
+
     protected OutputStream os;
     protected final Path path;
+    protected long writtenLines = 0L;
+
     protected static Logger logger = LoggerFactory.getLogger(StringDataWriter.class);
-    protected long writtenLines = 0l;
 
     public StringDataWriter(Path path) {
         this.path = path;
@@ -98,7 +100,7 @@ public class StringDataWriter implements DataWriter<String> {
     @Override
     public boolean write(String elem) {
         try {
-            if ( ++writtenLines % 1000 == 0) {
+            if (++writtenLines % 1000 == 0) {
                 logger.info("written lines = " + writtenLines);
             }
             os.write(elem.getBytes());
@@ -114,7 +116,7 @@ public class StringDataWriter implements DataWriter<String> {
         try {
             long start = System.currentTimeMillis();
             for (String b : batch) {
-                if ( ++writtenLines % 1000 == 0) {
+                if (++writtenLines % 1000 == 0) {
                     logger.info("written lines = " + writtenLines);
                 }
                 os.write(b.getBytes());

@@ -22,6 +22,7 @@ import org.opencb.datastore.core.ObjectMap;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Created by imedina on 01/05/15.
@@ -38,25 +39,30 @@ public class StorageConfigurationTest {
 
         StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
                 "mongodb",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap
+                        (), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
                 options);
 
         StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
                 "hadoop",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(), new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(),
+                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
                 options);
 
 
-
-        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
-        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
+        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
+                (Arrays.asList("localhost"), "user", "password"));
+        ServerConfiguration serverConfiguration =
+                new ServerConfiguration(9090, 9091, "mongodb", Arrays.asList("localhost"), Collections.emptyMap());
 
         storageConfiguration.setDefaultStorageEngineId("mongodb");
 
         storageConfiguration.setCellbase(cellBaseConfiguration);
-        storageConfiguration.setServer(queryServerConfiguration);
+        storageConfiguration.setServer(serverConfiguration);
 
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
@@ -70,7 +76,8 @@ public class StorageConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml").openStream());
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml")
+                .openStream());
         System.out.println("storageConfiguration = " + storageConfiguration);
     }
 

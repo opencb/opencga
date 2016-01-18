@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -59,31 +60,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MongoDBVariantStorageManager extends VariantStorageManager {
 
-    /**
+    /*
      * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
     //StorageEngine specific Properties
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS                 = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTHENTICATION_DB     = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS                  = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_VARIANTS   = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES      = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE          = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE           = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
-    //  @Deprecated   public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.WRITE_THREADS";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE         = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
-    @Deprecated public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GENEOTYPES      = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_HOSTS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.HOSTS";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_AUTH_DB = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION.DB";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_NAME = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.NAME";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_USER = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.USER";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_PASS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.PASS";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLL_VARIANTS = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.VARIANTS";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DB_COLLECTION_FILES = "OPENCGA.STORAGE.MONGODB.VARIANT.DB.COLLECTION.FILES";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BATCH_SIZE = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BATCH_SIZE";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_BULK_SIZE = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.BULK_SIZE";
+    //  @Deprecated   public static final String OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS       = "OPENCGA.STORAGE.MONGODB
+    // .VARIANT.LOAD.WRITE_THREADS";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_DEFAULT_GENOTYPE = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.DEFAULT_GENOTYPE";
+    @Deprecated
+    public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GT = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
     //StorageEngine specific options
 //    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
-    public static final String AUTHENTICATION_DB     = "authentication.db";
-    public static final String COLLECTION_VARIANTS   = "collection.variants";
-    public static final String COLLECTION_FILES      = "collection.files";
-    public static final String COLLECTION_STUDIES    = "collection.studies";
+    public static final String AUTHENTICATION_DB = "authentication.db";
+    public static final String COLLECTION_VARIANTS = "collection.variants";
+    public static final String COLLECTION_FILES = "collection.files";
+    public static final String COLLECTION_STUDIES = "collection.studies";
     public static final String BULK_SIZE = "bulkSize";
     public static final String DEFAULT_GENOTYPE = "defaultGenotype";
     public static final String ALREADY_LOADED_VARIANTS = "alreadyLoadedVariants";
@@ -144,13 +157,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         // If no database name is provided, read from the configuration file
-        if(dbName == null || dbName.isEmpty()) {
+        if (dbName == null || dbName.isEmpty()) {
             dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
         }
         String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
         String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
 
-        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions().getString(AUTHENTICATION_DB, null);
+        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()
+                .getString(AUTHENTICATION_DB, null);
 
         try {
             MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
@@ -199,7 +213,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                            files += "!" + indexedFileId + ";";
 //                        }
 //                    }
-////                    String genotypes = sampleIds.stream().map(i -> studyConfiguration.getSampleIds().inverse().get(i) + ":" + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE).collect(Collectors.joining(","));
+////                    String genotypes = sampleIds.stream().map(i -> studyConfiguration.getSampleIds().inverse().get(i) + ":" +
+// DBObjectToSamplesConverter.UNKNOWN_GENOTYPE).collect(Collectors.joining(","));
 //                    String genotypes = sampleId + ":" + DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
 //                    Long v = getDBAdaptor(null).count(new Query()
 //                            .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
@@ -210,11 +225,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
-        QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+        QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration
+                .getStudyId())
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
         Long count = countResult.first();
         if (count != 0) {
-            logger.warn("Resume mode. There are already loaded variants from the file " + studyConfiguration.getFileIds().inverse().get(fileId) + " : " + fileId + " ");
+            logger.warn("Resume mode. There are already loaded variants from the file "
+                    + studyConfiguration.getFileIds().inverse().get(fileId) + " : " + fileId + " ");
             options.put(ALREADY_LOADED_VARIANTS, count);
         }
 
@@ -230,9 +247,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         Path input = Paths.get(inputUri.getPath());
 
-        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
+//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), Options.INCLUDE_STATS.defaultValue());
-        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
+//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
 
         Set<String> defaultGenotype;
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE)) {
@@ -242,7 +259,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             if (options.containsKey(DEFAULT_GENOTYPE)) {
                 defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE));
             } else {
-                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
+                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE
+                        .defaultValue());
                 switch (studyType) {
                     case FAMILY:
                     case TRIO:
@@ -263,7 +281,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
 //        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
-        VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be filled at the VariantJsonReader in the pre()
+        VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be
+        // filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
         String dbName = options.getString(Options.DB_NAME.key(), null);
 
@@ -273,10 +292,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100);
         int bulkSize = options.getInt(BULK_SIZE, batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), 8);
-        int capacity = options.getInt("blockingQueueCapacity", loadThreads*2);
-//        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty(OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
+        int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
+//        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty
+// (OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
-        final int numWriters = loadThreads  == 1? 1 : loadThreads - numReaders; //Subtract the reader thread
+        final int numWriters = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
 
 
         //Reader
@@ -294,8 +314,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         for (int i = 0; i < numWriters; i++) {
             VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName);
 //            variantDBWriter.setBulkSize(bulkSize);
-            variantDBWriter.includeSrc(includeSrc);
-            variantDBWriter.includeSamples(includeSamples);
+//            variantDBWriter.includeSrc(includeSrc);
+//            variantDBWriter.includeSamples(includeSamples);
             variantDBWriter.includeStats(includeStats);
 //            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
 //            variantDBWriter.setDefaultGenotype(defaultGenotype);
@@ -307,6 +327,19 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
 
+        final String fileId = options.getString(Options.FILE_ID.key());
+        Task<Variant> remapIdsTask = new Task<Variant>() {
+            @Override
+            public boolean apply(List<Variant> variants) {
+                variants.forEach(variant -> variant.getStudies()
+                        .forEach(studyEntry -> {
+                            studyEntry.setStudyId(Integer.toString(studyConfiguration.getStudyId()));
+                            studyEntry.getFiles().forEach(fileEntry -> fileEntry.setFileId(fileId));
+                        }));
+                return true;
+            }
+        };
+        taskList.add(remapIdsTask);
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -314,6 +347,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         //Runner
         if (loadThreads == 1) {
             logger.info("Single thread load...");
+            List<Task<Variant>> ts = Collections.singletonList(remapIdsTask);
             VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, (List) writers, taskList, batchSize);
             vr.run();
         } else {
@@ -342,6 +376,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
                     @Override
                     public List<Variant> apply(List<Variant> batch) {
+                        try {
+                            remapIdsTask.apply(batch);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e); // IMPOSSIBLE
+                        }
                         writer.write(batch);
                         return batch;
                     }
@@ -399,7 +438,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws StorageManagerException {
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
+            StorageManagerException {
         VariantSource variantSource = readVariantSource(Paths.get(input.getPath()), null);
 
         VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
@@ -434,7 +474,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         logger.info("============================================================");
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
-            logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult.getSkippedVariants());
+            logger.error("Wrong number of skipped variants. Expected " + expectedSkippedVariants + " and got " + writeResult
+                    .getSkippedVariants());
         } else if (writeResult.getSkippedVariants() > 0) {
             logger.warn("There were " + writeResult.getSkippedVariants() + " skipped variants.");
             if (symbolicVariants > 0) {
@@ -453,12 +494,18 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             logger.info("Resume mode. Previously loaded variants: " + alreadyLoadedVariants);
         }
 
+        StorageManagerException exception = null;
         if (expectedCount != count) {
-            throw new StorageManagerException("Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count);
+            String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
+            logger.error(message);
+            exception = new StorageManagerException(message);
         } else {
             logger.info("Final number of loaded variants: " + count);
         }
         logger.info("============================================================");
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     @Override
@@ -479,8 +526,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         if (options != null && !options.getString(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, "").isEmpty()) {
             return super.buildStudyConfigurationManager(options);
         } else {
-            String dbName = options == null? null : options.getString(Options.DB_NAME.key());
-            String collectionName = options == null? null : options.getString(COLLECTION_STUDIES, "studies");
+            String dbName = options == null ? null : options.getString(Options.DB_NAME.key());
+            String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES, "studies");
             try {
                 return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
@@ -493,22 +540,21 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     /**
      * Check if the samples from the selected file can be loaded.
      * Check if the samples from the selected file can be loaded.
-     *
+     * <p>
      * MongoDB storage plugin is not able to load batches of samples in a unordered way.
      * A batch of samples is a group of samples of any size. It may be composed of one or several VCF files, depending
      * on whether it is split by region (horizontally) or not.
      * All the files from the same batch must be loaded, before loading the next batch. If a new batch of
      * samples begins to be loaded, it won't be possible to load other files from previous batches
-     *
+     * <p>
      * The StudyConfiguration must be complete, with all the indexed files, and samples in files.
      * Provided StudyConfiguration won't be modified
      * Requirements:
-     *  - All samples in file must be or loaded or not loaded
-     *  - If all samples loaded, must match (same order and samples) with the last loaded file.
-     *
+     * - All samples in file must be or loaded or not loaded
+     * - If all samples loaded, must match (same order and samples) with the last loaded file.
      *
      * @param studyConfiguration StudyConfiguration from the selected study
-     * @param fileId File to load
+     * @param fileId             File to load
      * @return Returns if this file represents a new batch of samples
      * @throws StorageManagerException If there is any unaccomplished requirement
      */
@@ -544,15 +590,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     return false; // This is NOT a new batch of samples
                 }
             } else if (someSamplesRepeated) {
-                //ERROR
-                throw new StorageManagerException("There was some already indexed samples, but not all of them. Unable to load in Storage-MongoDB");
+                throw new StorageManagerException("There was some already indexed samples, but not all of them. "
+                        + "Unable to load in Storage-MongoDB");
             }
         }
         return true; // This is a new batch of samples
     }
 
 //    @Override
-//    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws StorageManagerException {
+//    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws
+// StorageManagerException {
 //        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);
 //        if (dbAdaptor == null) {
 //            logger.debug("Do not check StudyConfiguration against the loaded in MongoDB");
@@ -560,7 +607,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //            if (dbAdaptor instanceof VariantMongoDBAdaptor) {
 //                VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
 //                StudyConfigurationManager studyConfigurationDBAdaptor = mongoDBAdaptor.getStudyConfigurationManager();
-//                StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+//                StudyConfiguration studyConfigurationFromMongo = studyConfigurationDBAdaptor.getStudyConfiguration(studyConfiguration
+// .getStudyId(), null).first();
 //
 //                //Check that the provided StudyConfiguration has the same or more information that the stored in MongoDB.
 //                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getFileIds().entrySet()) {
@@ -568,7 +616,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                        throw new StorageManagerException("StudyConfiguration do not have the file " + entry.getKey());
 //                    }
 //                    if (!studyConfiguration.getFileIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageManagerException("StudyConfiguration changes the fileId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getFileIds().get(entry.getKey()));
+//                        throw new StorageManagerException("StudyConfiguration changes the fileId of '" + entry.getKey() + "' from " +
+// entry.getValue() + " to " + studyConfiguration.getFileIds().get(entry.getKey()));
 //                    }
 //                }
 //                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getCohortIds().entrySet()) {
@@ -576,7 +625,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                        throw new StorageManagerException("StudyConfiguration do not have the cohort " + entry.getKey());
 //                    }
 //                    if (!studyConfiguration.getCohortIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageManagerException("StudyConfiguration changes the cohortId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getCohortIds().get(entry.getKey()));
+//                        throw new StorageManagerException("StudyConfiguration changes the cohortId of '" + entry.getKey() + "' from " +
+// entry.getValue() + " to " + studyConfiguration.getCohortIds().get(entry.getKey()));
 //                    }
 //                }
 //                for (Map.Entry<String, Integer> entry : studyConfigurationFromMongo.getSampleIds().entrySet()) {
@@ -584,12 +634,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //                        throw new StorageManagerException("StudyConfiguration do not have the sample " + entry.getKey());
 //                    }
 //                    if (!studyConfiguration.getSampleIds().get(entry.getKey()).equals(entry.getValue())) {
-//                        throw new StorageManagerException("StudyConfiguration changes the sampleId of '" + entry.getKey() + "' from " + entry.getValue() + " to " + studyConfiguration.getSampleIds().get(entry.getKey()));
+//                        throw new StorageManagerException("StudyConfiguration changes the sampleId of '" + entry.getKey() + "' from " +
+// entry.getValue() + " to " + studyConfiguration.getSampleIds().get(entry.getKey()));
 //                    }
 //                }
 //                studyConfigurationDBAdaptor.updateStudyConfiguration(studyConfiguration, null);
 //            } else {
-//                throw new StorageManagerException("Unknown VariantDBAdaptor '" + dbAdaptor.getClass().toString() + "'. Expected '" + VariantMongoDBAdaptor.class + "'");
+//                throw new StorageManagerException("Unknown VariantDBAdaptor '" + dbAdaptor.getClass().toString() + "'. Expected '" +
+// VariantMongoDBAdaptor.class + "'");
 //            }
 //        }
 //    }

@@ -25,9 +25,9 @@ import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
@@ -137,7 +137,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     /**
      * Insert some variants.
-     *
+     * <p>
      * |---------|-------|---------------|
      * |         | Study1|    Study2     |
      * | Variant |-------|---------------|
@@ -149,9 +149,6 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
      * | 1004    |       |   x   |       |
      * | 1006    |       |       |   x   |
      * |---------|-------|-------|-------|
-     *
-     *
-     *
      *
      * @throws StorageManagerException
      */
@@ -209,11 +206,12 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     }
 
-    public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String> valueProvider, String field) {
+    public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String>
+            valueProvider, String field) {
         assertTrue(studyConfiguration.getFileIds().values().contains(fileId));
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
-            assertEquals(valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
-                    .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
+                assertEquals(valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
+                        .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
         );
     }
 

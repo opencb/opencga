@@ -59,7 +59,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     }
 
     private static void checkNull(String value, String name) throws VariantAnnotatorException {
-        if(value == null || value.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             throw new VariantAnnotatorException("Missing defaultValue: " + name);
         }
     }
@@ -80,7 +80,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         final int numProducers = 1;
         ExecutorService executor = Executors.newFixedThreadPool(numConsumers + numProducers);
-        final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize*numConsumers*2);
+        final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize * numConsumers * 2);
         final VariantAnnotation lastElement = new VariantAnnotation();
 
         executor.execute(new Runnable() {   // producer
@@ -108,7 +108,8 @@ public class VepVariantAnnotator extends VariantAnnotator {
 //                        }
 //                    }
                     //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME //FIXME
-                    for (int i = 0; i < numConsumers; i++) {    //Add a lastElement marker. Consumers will stop reading when read this element.
+                    // Add a lastElement marker. Consumers will stop reading when read this element.
+                    for (int i = 0; i < numConsumers; i++) {
                         queue.put(lastElement);
                     }
                     logger.debug("Put Last element. queue size = {}", queue.size());

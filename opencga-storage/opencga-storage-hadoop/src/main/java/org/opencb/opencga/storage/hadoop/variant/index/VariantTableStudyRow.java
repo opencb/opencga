@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
@@ -23,38 +23,40 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
- * @author Matthias Haimel mh719+git@cam.ac.uk
- *
+ * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class VariantTableStudyRow {
+    public static final String NOCALL = ".";
     public static final String HOM_REF = "0/0";
     public static final String HET_REF = "0/1";
     public static final String HOM_VAR = "1/1";
     public static final String OTHER = "?";
     public static final char COLUMN_KEY_SEPARATOR = '_';
+    public static final String PASS_CNT = "P";
+    public static final String CALL_CNT = "C";
     private Integer studyId;
     private Integer homRefCount = 0;
+    private Integer passCount = 0;
+    private Integer callCount = 0;
     private String chromosome;
     private int pos;
     private String ref;
     private String alt;
-    private Map<String, Set<Integer>> callMap = new HashMap<String, Set<Integer>>();
+    private Map<String, Set<Integer>> callMap = new HashMap<>();
 
-    public VariantTableStudyRow(VariantTableStudyRow row){
+    public VariantTableStudyRow(VariantTableStudyRow row) {
         this.studyId = row.studyId;
         this.homRefCount = row.homRefCount;
+        this.callCount = row.callCount;
+        this.passCount = row.passCount;
         this.chromosome = row.chromosome;
         this.pos = row.pos;
         this.ref = row.ref;
         this.alt = row.alt;
-        this.callMap.putAll(
-                row.callMap.entrySet().stream().collect(Collectors.toMap(p -> p.getKey(), p -> new HashSet<Integer>(p.getValue()))));
+        this.callMap.putAll(row.callMap.entrySet().stream().collect(Collectors.toMap(p -> p.getKey(), p -> new HashSet<>(p.getValue()))));
     }
 
-    /**
-     * 
-     */
-    public VariantTableStudyRow (Integer studyId, String chr, int pos, String ref, String alt) {
+    public VariantTableStudyRow(Integer studyId, String chr, int pos, String ref, String alt) {
         this.studyId = studyId;
         this.homRefCount = 0;
         this.chromosome = chr;
@@ -62,12 +64,12 @@ public class VariantTableStudyRow {
         this.ref = ref;
         this.alt = alt;
     }
-    
+
     public int getPos() {
         return pos;
     }
 
-    public VariantTableStudyRow(Integer studyId, Variant variant){
+    public VariantTableStudyRow(Integer studyId, Variant variant) {
         this(studyId, variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
     }
 
@@ -121,25 +123,29 @@ public class VariantTableStudyRow {
 
     public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, NavigableMap<byte[], byte[]> familyMap,
                                              boolean skipOtherStudies) {
-        for(Entry<byte[], byte[]> entry : familyMap.entrySet()){
+        for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
             String colStr = Bytes.toString(entry.getKey());
             String[] colSplit = colStr.split("_", 2);
-            if(!colSplit[0].equals(variantTableStudyRow.studyId.toString())) { // check study ID for consistency check
+            if (!colSplit[0].equals(variantTableStudyRow.studyId.toString())) { // check study ID for consistency check
                 if (skipOtherStudies) {
                     continue;
                 } else {
-                    throw new IllegalStateException(
-                            String.format("Expected study id %s, but found %s in row %s", variantTableStudyRow.studyId.toString(), colSplit[0], colStr));
+                    throw new IllegalStateException(String.format("Expected study id %s, but found %s in row %s",
+                            variantTableStudyRow.studyId.toString(), colSplit[0], colStr));
                 }
             }
             String gt = colSplit[1];
-            if(gt.equals(HOM_REF)){
-                if (entry.getValue() == null || entry.getValue().length == 0) {
-                    variantTableStudyRow.homRefCount = 0;
-                } else {
-                    variantTableStudyRow.homRefCount = Bytes.toInt(entry.getValue());
-                }
-            } else {
+            switch (gt) {
+            case HOM_REF:
+                variantTableStudyRow.homRefCount = parseCount(entry.getValue());
+                break;
+            case CALL_CNT:
+                variantTableStudyRow.callCount = parseCount(entry.getValue());
+                break;
+            case PASS_CNT:
+                variantTableStudyRow.passCount = parseCount(entry.getValue());
+                break;
+            default:
                 if (entry.getValue() == null || entry.getValue().length == 0) {
                     variantTableStudyRow.callMap.put(gt, Collections.emptySet());
                 } else {
@@ -164,15 +170,26 @@ public class VariantTableStudyRow {
                         throw new RuntimeException(e);
                     }
                 }
+                break;
             }
         }
         return variantTableStudyRow;
     }
 
+    private static Integer parseCount(byte[] value) {
+        if (value == null || value.length == 0) {
+            return 0;
+        } else {
+            return Bytes.toInt(value);
+        }
+    }
+
     public static VariantTableStudyRow parse(VariantTableStudyRow variantTableStudyRow, ResultSet resultSet, int studyId)
             throws SQLException {
         variantTableStudyRow.homRefCount = resultSet.getInt(buildColumnKey(studyId, HOM_REF));
-        for (String gt : new String[]{HET_REF, HOM_VAR, OTHER}) {
+        variantTableStudyRow.callCount = resultSet.getInt(buildColumnKey(studyId, CALL_CNT));
+        variantTableStudyRow.passCount = resultSet.getInt(buildColumnKey(studyId, PASS_CNT));
+        for (String gt : new String[]{HET_REF, HOM_VAR, OTHER, NOCALL}) {
             Array sqlArray = resultSet.getArray(buildColumnKey(studyId, gt));
             HashSet<Integer> value = new HashSet<>();
             if (sqlArray != null && sqlArray.getArray() != null) {
@@ -191,15 +208,15 @@ public class VariantTableStudyRow {
         return callMap.keySet();
     }
 
-    public Set<Integer> getSampleIds(String gt){
+    public Set<Integer> getSampleIds(String gt) {
         Set<Integer> set = this.callMap.get(gt);
-        if(null == set){
+        if (null == set) {
             return Collections.emptySet();
         }
         return set;
     }
-    
-    public Set<Integer> getSampleIds(Genotype gt){
+
+    public Set<Integer> getSampleIds(Genotype gt) {
         return getSampleIds(gt.toString());
     }
 
@@ -208,54 +225,78 @@ public class VariantTableStudyRow {
     }
 
     /**
-     * 
-     * @param gt
-     * @param sampleIds
+     * @param gt        Genotype code for the samples
+     * @param sampleIds Sample numeric codes
      * @throws IllegalStateException in case the sample already exists in the collection
      */
-    public void addSampleId(String gt, Collection<Integer> sampleIds) throws IllegalStateException{
+    public void addSampleId(String gt, Collection<Integer> sampleIds) throws IllegalStateException {
         Set<Integer> set = this.callMap.get(gt);
-        if(null == set){
-            set = new HashSet<Integer>();
+        if (null == set) {
+            set = new HashSet<>();
             this.callMap.put(gt, set);
         }
         set.addAll(sampleIds);
     }
 
     /**
-     *
-     * @param gt
-     * @param sampleId
+     * @param gt       Genotype code for the samples
+     * @param sampleId Sample numeric codes
      * @throws IllegalStateException in case the sample already exists in the collection
      */
-    public void addSampleId(String gt, Integer sampleId) throws IllegalStateException{
+    public void addSampleId(String gt, Integer sampleId) throws IllegalStateException {
         Set<Integer> set = this.callMap.get(gt);
-        if(null == set){
-            set = new HashSet<Integer>();
+        if (null == set) {
+            set = new HashSet<>();
             this.callMap.put(gt, set);
         }
-        if(!set.add(sampleId)){
-            throw new IllegalStateException(String.format("Sample id %s already in gt set %s", sampleId,gt));
+        if (!set.add(sampleId)) {
+            throw new IllegalStateException(String.format("Sample id %s already in gt set %s", sampleId, gt));
         }
     }
 
     public byte[] generateRowKey(VariantTableHelper helper) {
-        return helper.generateVariantRowKey(this.chromosome, this.pos, this.ref , this.alt);
+        return helper.generateVariantRowKey(this.chromosome, this.pos, this.ref, this.alt);
     }
-    
-    public void addHomeRefCount(Integer cnt){
+
+    public void addHomeRefCount(Integer cnt) {
         this.homRefCount += cnt;
     }
+
     public Integer getHomRefCount() {
         return homRefCount;
     }
+
+    public void addPassCount(Integer cnt) {
+        passCount += cnt;
+    }
+
+    public Integer getPassCount() {
+        return passCount;
+    }
+
+    public void setPassCount(Integer passCount) {
+        this.passCount = passCount;
+    }
+
+    public void addCallCount(Integer cnt) {
+        callCount += cnt;
+    }
+
+    public void setCallCount(Integer callCount) {
+        this.callCount = callCount;
+    }
+
+    public Integer getCallCount() {
+        return callCount;
+    }
+
     public void setHomRefCount(Integer homRefCount) {
         this.homRefCount = homRefCount;
     }
 
     public Put createPut(VariantTableHelper helper) {
         byte[] generateRowKey = generateRowKey(helper);
-        if(this.callMap.containsKey(HOM_REF)){
+        if (this.callMap.containsKey(HOM_REF)) {
             throw new IllegalStateException(
                     String.format("HOM_REF data found for row %s for sample IDs %s",
                             Arrays.toString(generateRowKey), StringUtils.join(this.callMap.get(HOM_REF), ",")));
@@ -264,13 +305,14 @@ public class VariantTableStudyRow {
         Integer sid = helper.getStudyId();
         Put put = new Put(generateRowKey);
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
-        for(Entry<String, Set<Integer>> entry : this.callMap.entrySet()){
+        put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
+        put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));
+        for (Entry<String, Set<Integer>> entry : this.callMap.entrySet()) {
             byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));
-            
-            List<Integer> value = new ArrayList<Integer>(entry.getValue());
-            if(!value.isEmpty()) {
+
+            List<Integer> value = new ArrayList<>(entry.getValue());
+            if (!value.isEmpty()) {
                 Collections.sort(value);
-//                byte[] bytesArray = VariantCallProt.newBuilder().addAllSampleIds(value).build().toByteArray();
                 byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
                 put.addColumn(cf, column, bytesArray);
             }
@@ -279,7 +321,7 @@ public class VariantTableStudyRow {
     }
 
     public static String buildColumnKey(Integer sid, String gt) {
-        return new StringBuilder().append(sid).append(COLUMN_KEY_SEPARATOR).append(gt).toString();
+        return String.valueOf(sid) + COLUMN_KEY_SEPARATOR + gt;
     }
 
     public static Integer extractStudyId(String columnKey) {
@@ -291,19 +333,18 @@ public class VariantTableStudyRow {
         }
     }
 
-//    public static Map<Integer, List<byte[]>> extractStudyIds(Collection<byte[]> columnKeys) {
-//        Map<Integer, List<byte[]>> map = new HashMap<>();
-//        for (byte[] columnKey : columnKeys) {
-//            int studyId = extractStudyId(Bytes.toString(columnKey));
-//            if (map.containsKey(studyId)) {
-//                map.get(studyId).add(columnKey);
-//            } else {
-//                ArrayList<byte[]> value = new ArrayList<>();
-//                value.add(columnKey);
-//                map.put(studyId, value);
-//            }
-//        }
-//        return map;
-//    }
+    public String toSummaryString() {
+        return String.format(
+                "Submit %s: pass: %s; call: %s; hr: %s; 0/1: %s; 1/1: %s; ?: %s; .: %s",
+                getPos(),
+                getPassCount(),
+                getCallCount(),
+                getHomRefCount(),
+                Arrays.toString(getSampleIds(HET_REF).toArray()),
+                Arrays.toString(getSampleIds(HOM_VAR).toArray()),
+                Arrays.toString(getSampleIds(OTHER).toArray()),
+                Arrays.toString(getSampleIds(NOCALL).toArray())
+        );
+    }
 
 }

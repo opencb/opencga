@@ -16,11 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.mapred.AvroKey;
 import org.apache.avro.specific.SpecificDatumWriter;
@@ -36,50 +31,55 @@ import org.opencb.biodata.tools.variant.converter.VariantToProtoVcfRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
- * @author Matthias Haimel mh719+git@cam.ac.uk
- *
+ * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put> {
 
-    private final static Logger log = LoggerFactory.getLogger(VariantToVcfSliceMapper.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantToVcfSliceMapper.class);
 
     private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
-    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<ArchiveHelper>();
+    private final AtomicReference<ArchiveHelper> helper = new AtomicReference<>();
 
-    DatumWriter<VariantAvro> variantDatumWriter = new SpecificDatumWriter<VariantAvro>(VariantAvro.class);
+    private DatumWriter<VariantAvro> variantDatumWriter = new SpecificDatumWriter<>(VariantAvro.class);
 
-    public VariantToVcfSliceMapper () {
+    public VariantToVcfSliceMapper() {
     }
 
     @Override
-    protected void setup (Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
-            InterruptedException {        
+    protected void setup(Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context)
+            throws IOException, InterruptedException {
         this.helper.set(new ArchiveHelper(context.getConfiguration()));
         converter.updateVcfMeta(getHelper().getMeta());
         super.setup(context);
     }
 
-    public ArchiveHelper getHelper () {
+    public ArchiveHelper getHelper() {
         return helper.get();
     }
 
-    public int getChunkSize () {
+    public int getChunkSize() {
         return getHelper().getChunkSize();
     }
 
-    public byte[] getColumn () {
+    public byte[] getColumn() {
         return getHelper().getColumn();
     }
 
     @Override
-    protected void map (AvroKey<VariantAvro> key, NullWritable value,
-            Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
+    protected void map(AvroKey<VariantAvro> key, NullWritable value,
+                       Mapper<AvroKey<VariantAvro>, NullWritable, ImmutableBytesWritable, Put>.Context context) throws IOException,
+            InterruptedException {
         VariantAvro varAvro = key.datum();
         Variant variant = new Variant(varAvro);
         context.getCounter("OPENCGA.HBASE", "VCF_MAP").increment(1);
         List<VcfSlice> slices = convert(variant);
-        for(VcfSlice slice : slices){ // for all slice regions covered by variant
+        for (VcfSlice slice : slices) { // for all slice regions covered by variant
             Put put = getHelper().wrap(slice);
             ImmutableBytesWritable rowKey = new ImmutableBytesWritable(put.getRow());
             context.getCounter("OPENCGA.HBASE", "VCF_CONVERT").increment(1);
@@ -87,20 +87,21 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
         }
     }
 
-    public VariantToProtoVcfRecord getConverter () {
+    public VariantToProtoVcfRecord getConverter() {
         return converter;
     }
 
     /**
      * Convert a Variant to a {@link VcfSlice} converting the position into the slice position <br>
-     * e.g. using chunk size 100 with position 1234 would result in slice position 1200
+     * e.g. using chunk size 100 with position 1234 would result in slice position 1200.
+     *
      * @param variant {@link Variant}
      * @return {@link List} of type {@link VcfSlice}
      */
-    public List<VcfSlice> convert (Variant variant) {
+    public List<VcfSlice> convert(Variant variant) {
         long[] slicePositionArr = getCoveredSlicePositions(variant);
-        List<VcfSlice> sliceArr = new ArrayList<VcfSlice>(slicePositionArr.length);
-        for(long slicePos : slicePositionArr){
+        List<VcfSlice> sliceArr = new ArrayList<>(slicePositionArr.length);
+        for (long slicePos : slicePositionArr) {
             VcfRecord rec = getConverter().convertUsingSliceposition(variant, (int) slicePos);
             VcfSlice slice = VcfSlice.newBuilder()
                     .addRecords(rec)
@@ -112,31 +113,31 @@ public class VariantToVcfSliceMapper extends Mapper<AvroKey<VariantAvro>, NullWr
         return sliceArr;
     }
 
-    private long[] getCoveredSlicePositions(Variant variant){
+    private long[] getCoveredSlicePositions(Variant variant) {
         int chSize = this.getChunkSize();
         long startChunk = getConverter().getSlicePosition(variant.getStart(), chSize);
         long endChunk = getConverter().getSlicePosition(variant.getEnd(), chSize);
-        if(endChunk == startChunk){
+        if (endChunk == startChunk) {
             return new long[]{startChunk};
         }
-        int len = (int) ((endChunk - startChunk)/chSize) + 1;
+        int len = (int) ((endChunk - startChunk) / chSize) + 1;
         long[] ret = new long[len];
-        for(int i = 0; i < len; ++i){
-            ret[i] = startChunk + (((long)i) * chSize);
+        for (int i = 0; i < len; ++i) {
+            ret[i] = startChunk + (((long) i) * chSize);
         }
         return ret;
     }
 
-    private String extractChromosome (Variant var) {
-        return getHelper().standardChromosome(var.getChromosome().toString());
+    private String extractChromosome(Variant var) {
+        return getHelper().standardChromosome(var.getChromosome());
     }
 
-    public List<String> getSamples () {
+    public List<String> getSamples() {
         return this.converter.getSamples();
     }
 
-    public static Logger getLog () {
-        return log;
+    public Logger getLogger() {
+        return logger;
     }
 
 }

@@ -27,22 +27,21 @@ import org.opencb.datastore.core.ComplexTypeConverter;
  */
 public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<RegionCoverage, DBObject> {
 
-    public DBObject getIdObject(RegionCoverage regionCoverage){
+    public DBObject getIdObject(RegionCoverage regionCoverage) {
         return new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, getIdField(regionCoverage));
     }
 
-    public String getIdField(RegionCoverage regionCoverage){
+    public String getIdField(RegionCoverage regionCoverage) {
         int size = regionCoverage.getAll().length;
 
         String chunkId;
-        if(size%1000000 == 0 && size/1000000 != 0){
-            chunkId = size/1000000+"m";
-        } else if(size%1000 == 0 && size/1000 != 0){
-            chunkId = size/1000+"k";
+        if (size % 1000000 == 0 && size / 1000000 != 0) {
+            chunkId = size / 1000000 + "m";
+        } else if (size % 1000 == 0 && size / 1000 != 0) {
+            chunkId = size / 1000 + "k";
         } else {
-            chunkId = size+"";
+            chunkId = size + "";
         }
-
 
         return String.format("%s_%d_%s", regionCoverage.getChromosome(), regionCoverage.getStart() / size, chunkId);
     }
@@ -55,9 +54,10 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
         RegionCoverage regionCoverage = new RegionCoverage();
 
         BasicDBList coverageList;
-        if(dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
-            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter.COVERAGE_FIELD);
-        } else if(dbObject.containsField(CoverageMongoDBWriter.COVERAGE_FIELD)){
+        if (dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
+            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0))
+                    .get(CoverageMongoDBWriter.COVERAGE_FIELD);
+        } else if (dbObject.containsField(CoverageMongoDBWriter.COVERAGE_FIELD)) {
             coverageList = (BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD);
         } else {
             //TODO: Show a error message
@@ -69,7 +69,8 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
         for (Object o : coverageList) {
             all[i++] = ((Integer) o).shortValue();
         }
-//        short[] all = (short[]) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get(CoverageMongoWriter.COVERAGE_FIELD);
+//        short[] all = (short[]) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get
+// (CoverageMongoWriter.COVERAGE_FIELD);
         //short[] all = (short[]) dbObject.get(CoverageMongoWriter.COVERAGE_FIELD);
         regionCoverage.setAll(all);
         regionCoverage.setChromosome(split[0]);
@@ -82,15 +83,16 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
         int size = regionCoverage.getAll().length;
 
         String chunkId;
-        if(size%1000000 == 0 && size/1000000 != 0){
-            chunkId = size/1000000+"m";
-        } else if(size%1000 == 0 && size/1000 != 0){
-            chunkId = size/1000+"k";
+        if (size % 1000000 == 0 && size / 1000000 != 0) {
+            chunkId = size / 1000000 + "m";
+        } else if (size % 1000 == 0 && size / 1000 != 0) {
+            chunkId = size / 1000 + "k";
         } else {
-            chunkId = size+"";
+            chunkId = size + "";
         }
 
-        //return new BasicDBObject(ID_FIELD, String.format("%s_%d_%s", regionCoverage.getChromosome(), regionCoverage.getStart() / size, chunkId)).
+        //return new BasicDBObject(ID_FIELD, String.format("%s_%d_%s", regionCoverage.getChromosome(), regionCoverage.getStart() / size,
+        // chunkId)).
         //        append(FILES_FIELD, Arrays.asList(new BasicDBObject(COVERAGE_FIELD, regionCoverage.getAll())));
         return new BasicDBObject(CoverageMongoDBWriter.COVERAGE_FIELD, regionCoverage.getAll());
     }

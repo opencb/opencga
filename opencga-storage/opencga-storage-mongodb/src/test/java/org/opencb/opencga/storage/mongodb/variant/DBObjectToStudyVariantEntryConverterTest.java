@@ -19,18 +19,17 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class DBObjectToStudyVariantEntryConverterTest {
@@ -56,7 +55,7 @@ public class DBObjectToStudyVariantEntryConverterTest {
         fileEntry.getAttributes().put("do.we.accept.attribute.with.dots?", "yes");
         studyEntry.setFiles(Collections.singletonList(fileEntry));
         studyEntry.setFormatAsString("GT");
-        
+
         Map<String, String> na001 = new HashMap<>();
         na001.put("GT", "0/0");
         studyEntry.addSampleData("NA001", na001);
@@ -109,7 +108,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
     /* TODO move to variant converter: sourceEntry does not have stats anymore
     @Test
     public void testConvertToDataModelTypeWithStats() {
-        VariantStats stats = new VariantStats(null, -1, null, null, Variant.VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
+        VariantStats stats = new VariantStats(null, -1, null, null, Variant.VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1,
+        -1, -1);
         stats.addGenotype(new Genotype("0/0"), 100);
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
@@ -138,7 +138,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
 
     @Test
     public void testConvertToStorageTypeWithStats() {
-        VariantStats stats = new VariantStats(null, -1, null, null, Variant.VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1, -1, -1);
+        VariantStats stats = new VariantStats(null, -1, null, null, Variant.VariantType.SNV, 0.1f, 0.01f, "A", "A/A", 10, 5, -1, -1, -1,
+        -1, -1);
         stats.addGenotype(new Genotype("0/0"), 100);
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
@@ -163,11 +164,16 @@ public class DBObjectToStudyVariantEntryConverterTest {
         
         assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MAF_FIELD), converted.get(DBObjectToVariantStatsConverter.MAF_FIELD));
         assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MGF_FIELD), converted.get(DBObjectToVariantStatsConverter.MGF_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MAFALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter.MAFALLELE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter.MISSALLELE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.NUMGT_FIELD), converted.get(DBObjectToVariantStatsConverter.NUMGT_FIELD));
+        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MAFALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        .MAFALLELE_FIELD));
+        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        .MGFGENOTYPE_FIELD));
+        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        .MISSALLELE_FIELD));
+        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        .MISSGENOTYPE_FIELD));
+        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.NUMGT_FIELD), converted.get(DBObjectToVariantStatsConverter
+        .NUMGT_FIELD));
     }
     */
     @Test
@@ -176,7 +182,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
         List<String> sampleNames = null;
 
         // Test with no stats converter provided
-        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
+        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new
+                DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -186,7 +193,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
         studyEntry.getSamplesData().clear(); // TODO Samples can't be tested easily, needs a running Mongo instance
         List<String> sampleNames = null;
         // Test with a stats converter provided but no stats object
-        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
+        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new
+                DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }

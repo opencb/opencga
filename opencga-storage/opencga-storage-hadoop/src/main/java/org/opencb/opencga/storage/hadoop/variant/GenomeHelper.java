@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
@@ -28,14 +28,15 @@ import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author Matthias Haimel mh719+git@cam.ac.uk
- *
+ * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class GenomeHelper {
-    private final static Logger log = LoggerFactory.getLogger(GenomeHelper.class);
+    private final Logger log = LoggerFactory.getLogger(GenomeHelper.class);
 
-    @Deprecated public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
-    @Deprecated public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+    @Deprecated
+    public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
+    @Deprecated
+    public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
 
     public static final String CONFIG_FILE_ID = "opencga.storage.hadoop.file_id";
     public static final String OPENCGA_STORAGE_HADOOP_STUDY_ID = "opencga.storage.hadoop.study.id";
@@ -50,7 +51,8 @@ public class GenomeHelper {
     public static final String DEFAULT_META_ROW_KEY = "_METADATA";
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
-    public static Integer DEFAULT_CHUNK_SIZE = 100;
+
+    public static final int DEFAULT_CHUNK_SIZE = 100;
 
     private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
     private final char separator;
@@ -63,20 +65,17 @@ public class GenomeHelper {
     protected final HBaseManager hBaseManager;
     private int studyId;
 
-    public interface MetadataAction<T>{
+    public interface MetadataAction<T> {
         T parse(InputStream is) throws IOException;
     }
 
-    /**
-     *
-     */
-    public GenomeHelper (Configuration conf) {
+    public GenomeHelper(Configuration conf) {
         this.conf = conf;
         this.separator = conf.get(CONFIG_GENOME_VARIANT_ROW_KEY_SEP, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
-        this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY,DEFAULT_COLUMN_FAMILY));
+        this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
         this.metaRowKeyString = conf.get(CONFIG_META_ROW_KEY, DEFAULT_META_ROW_KEY);
         this.metaRowKey = Bytes.toBytes(metaRowKeyString);
         this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
@@ -84,14 +83,11 @@ public class GenomeHelper {
         this.hBaseManager = new HBaseManager(conf);
     }
 
-    /**
-     *
-     */
-    public GenomeHelper (GenomeHelper other) {
+    public GenomeHelper(GenomeHelper other) {
         this(other.getConf());
     }
 
-    public static Logger getLog() {
+    public Logger getLogger() {
         return log;
     }
 
@@ -125,74 +121,74 @@ public class GenomeHelper {
         return sb.toString();
     }
 
-    public static void setChunkSize (Configuration conf, Integer size) {
+    public static void setChunkSize(Configuration conf, Integer size) {
         conf.setInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, size);
     }
 
-    public static void setMetaRowKey(Configuration conf, String rowkey){
+    public static void setMetaRowKey(Configuration conf, String rowkey) {
         conf.set(CONFIG_META_ROW_KEY, rowkey);
     }
 
-    public static void setMetaProtoString (Configuration conf, String utfString) {
+    public static void setMetaProtoString(Configuration conf, String utfString) {
         conf.set(CONFIG_VCF_META_PROTO_STRING, utfString);
     }
 
-    public static void setStudyId(Configuration conf, Integer studyId){
+    public static void setStudyId(Configuration conf, Integer studyId) {
         conf.setInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, studyId);
     }
 
-    public int getStudyId(){
+    public int getStudyId() {
         return this.studyId;
     }
 
-    public char getSeparator () {
+    public char getSeparator() {
         return separator;
     }
 
-    public byte[] getColumnFamily () {
+    public byte[] getColumnFamily() {
         return columnFamily;
     }
 
-    public <T> T loadMetaData (Configuration conf, MetadataAction<T> action) throws IOException {
-        try{
+    public <T> T loadMetaData(Configuration conf, MetadataAction<T> action) throws IOException {
+        try {
             // try first from String
             String protoString = conf.get(CONFIG_VCF_META_PROTO_STRING, StringUtils.EMPTY);
             if (StringUtils.isNotEmpty(protoString)) {
-                getLog().info("Load Meta from PROTO string ...");
+                getLogger().info("Load Meta from PROTO string ...");
                 T obj = action.parse(new ByteArrayInputStream(ByteString.copyFromUtf8(protoString).toByteArray()));
                 return obj;
             }
             // Else from file
             String filePath = conf.get(CONFIG_VCF_META_PROTO_FILE, StringUtils.EMPTY);
             if (StringUtils.isNotEmpty(filePath)) {
-                getLog().info(String.format("Load Meta from file %s ...", filePath));
+                getLogger().info(String.format("Load Meta from file %s ...", filePath));
                 Path path = new Path(URI.create(filePath));
                 FileSystem fs = FileSystem.get(conf);
                 try (FSDataInputStream instream = fs.open(path)) {
                     return action.parse(instream);
                 }
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
         throw new IllegalStateException("VCFMeta configuration missing");
     }
 
-    public int getChunkSize () {
+    public int getChunkSize() {
         return chunkSize.get();
     }
 
-    public long getSlicePosition (long position) {
+    public long getSlicePosition(long position) {
         return getChunkSize() > 0 ? position / (long) getChunkSize() : position;
     }
-    
-    public long getStartPositionFromSlice(long slice){
-        return slice * (long)getChunkSize();
+
+    public long getStartPositionFromSlice(long slice) {
+        return slice * (long) getChunkSize();
     }
 
     public byte[] getMetaRowKey() {
-        return metaRowKey ;
+        return metaRowKey;
     }
 
     public String getMetaRowKeyString() {
@@ -201,12 +197,12 @@ public class GenomeHelper {
 
     /**
      * Generates a Row key based on Chromosome and position adjusted for the
-     * Chunk size <br>
+     * Chunk size. <br>
      * <ul>
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
      * name
      * <li>Using {@link #getSlicePosition(long)} to return slice position
-     * <ul>
+     * </ul>
      * e.g. using chunk size 100, separator _ with chr2 and 1234 would result in
      * 2_12
      *
@@ -218,7 +214,7 @@ public class GenomeHelper {
         return generateBlockIdFromSlice(chrom, getSlicePosition(position));
     }
 
-    public String generateBlockIdFromSlice(String chrom, long slice){
+    public String generateBlockIdFromSlice(String chrom, long slice) {
         StringBuilder sb = new StringBuilder(standardChromosome(chrom));
         sb.append(getSeparator());
         sb.append(String.format("%012d", slice));
@@ -226,7 +222,7 @@ public class GenomeHelper {
     }
 
     /**
-     * Changes the String from {@link #generateBlockId(String, long)} to bytes
+     * Changes the String from {@link #generateBlockId(String, long)} to bytes.
      *
      * @param chrom Chromosome
      * @param start Position
@@ -244,20 +240,21 @@ public class GenomeHelper {
         return strings[0];
     }
 
-    public Long extractSliceFromBlockId (String blockId) {
+    public Long extractSliceFromBlockId(String blockId) {
         return Long.valueOf(splitBlockId(blockId)[1]);
     }
 
-    public Long extractPositionFromBlockId (String blockId) {
+    public Long extractPositionFromBlockId(String blockId) {
         return Long.valueOf(splitBlockId(blockId)[1]) * getChunkSize();
     }
 
-    public String[] splitBlockId (String blockId) {
+    public String[] splitBlockId(String blockId) {
         char sep = getSeparator();
         String[] split = StringUtils.splitPreserveAllTokens(blockId, sep);
-        if (split.length != 2)
+        if (split.length != 2) {
             throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
                     blockId));
+        }
         return split;
     }
 
@@ -268,7 +265,7 @@ public class GenomeHelper {
      *
      */
 
-    public byte[] generateVariantRowKey(String chrom, int position){
+    public byte[] generateVariantRowKey(String chrom, int position) {
 //        StringBuilder sb = new StringBuilder(standardChromosome(chrom));
 //        sb.append(getSeparator());
 //        sb.append(String.format("%012d", position));
@@ -277,16 +274,16 @@ public class GenomeHelper {
         return generateVariantRowKey(chrom, position, "", "");
     }
 
-    public byte[] generateVariantRowKey(Variant var){
+    public byte[] generateVariantRowKey(Variant var) {
         return generateVariantRowKey(var.getChromosome(), var.getStart(), var.getReference(), var.getAlternate());
     }
 
     /**
-     * Generates a Row key based on Chromosome, position, ref and alt <br>
+     * Generates a Row key based on Chromosome, position, ref and alt. <br>
      * <ul>
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
      * name
-     * <ul>
+     * </ul>
      *
      * @param chrom    Chromosome name
      * @param position Genomic position
@@ -331,8 +328,10 @@ public class GenomeHelper {
         int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
         int referenceOffset = chrPosSeparator + 1 + intSize;
         int refAltSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0, referenceOffset);
-        String reference = (String) PVarchar.INSTANCE.toObject(variantRowKey, referenceOffset , refAltSeparator - referenceOffset, PVarchar.INSTANCE);
-        String alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1, variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
+        String reference = (String) PVarchar.INSTANCE.toObject(variantRowKey, referenceOffset, refAltSeparator - referenceOffset,
+                PVarchar.INSTANCE);
+        String alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1,
+                variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
 
         return new Variant(chromosome, position, reference, alternate);
     }
@@ -343,13 +342,14 @@ public class GenomeHelper {
 //        char sep = getSeparator();
 //        String[] split = StringUtils.splitPreserveAllTokens(rowkey, sep);
 //        if (split.length < 2)
-//            throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value `%s`", sep,
+//            throw new IllegalStateException(String.format("Variant rowkey is not valid - exected >2 blocks separaed by `%s`; value
+// `%s`", sep,
 //                    rowkey));
 //        return split;
 //    }
 
     /**
-     * Creates a standard chromosome name from the provided string
+     * Creates a standard chromosome name from the provided string.
      *
      * @param chrom Chromosome string
      * @return String chromosome name
@@ -362,15 +362,15 @@ public class GenomeHelper {
         } // TODO MT, X, Y, ...
         return chrom;
     }
-    
-    public <T extends MessageLite> Put wrapAsPut(byte[] column,byte[] row,T meta){
+
+    public <T extends MessageLite> Put wrapAsPut(byte[] column, byte[] row, T meta) {
         byte[] data = meta.toByteArray();
         Put put = new Put(row);
         put.addColumn(getColumnFamily(), column, data);
         return put;
     }
 
-    public <T extends MessageLite> Put wrapMetaAsPut(byte[] column, T meta){
+    public <T extends MessageLite> Put wrapMetaAsPut(byte[] column, T meta) {
         return wrapAsPut(column, getMetaRowKey(), meta);
     }
 

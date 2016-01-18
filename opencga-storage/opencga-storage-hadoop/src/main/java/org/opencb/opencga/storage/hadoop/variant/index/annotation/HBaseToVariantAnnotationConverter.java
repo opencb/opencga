@@ -13,7 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Created on 03/12/15
+ * Created on 03/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -32,7 +32,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     public VariantAnnotation convert(Result result) {
 
         byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantPhoenixHelper.Columns.FULL_ANNOTATION.bytes());
-        if (value != null && value.length > 0 ) {
+        if (value != null && value.length > 0) {
             try {
                 return objectMapper.readValue(value, VariantAnnotation.class);
             } catch (IOException e) {
@@ -53,7 +53,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
         }
         try {
             String value = resultSet.getString(column);
-            if (value != null && !value.isEmpty() ) {
+            if (value != null && !value.isEmpty()) {
                 try {
                     return objectMapper.readValue(value, VariantAnnotation.class);
                 } catch (IOException e) {

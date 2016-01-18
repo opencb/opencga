@@ -17,7 +17,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
- * Created on 16/12/15
+ * Created on 16/12/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */

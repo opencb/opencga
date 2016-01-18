@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
+
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -25,7 +26,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- * Created on 20/11/15
+ * Created on 20/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -54,15 +55,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     @Override
     public Variant convert(Result result) {
-        return convert(
-                genomeHelper.extractVariantFromVariantRowKey(result.getRow()),
-                VariantTableStudyRow.parse(result, genomeHelper),
+        return convert(genomeHelper.extractVariantFromVariantRowKey(result.getRow()), VariantTableStudyRow.parse(result, genomeHelper),
                 annotationConverter.convert(result));
     }
 
     public Variant convert(ResultSet resultSet) throws SQLException {
-        Variant variant = new Variant(
-                resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
+        Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
                 resultSet.getInt(VariantPhoenixHelper.Columns.POSITION.column()),
                 resultSet.getString(VariantPhoenixHelper.Columns.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.Columns.ALTERNATE.column())
@@ -71,22 +69,36 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     }
 
     protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
+        if (annotation == null) {
+            annotation = new VariantAnnotation();
+        }
+        if (annotation.getAdditionalAttributes() == null) {
+            annotation.setAdditionalAttributes(new HashMap<String, Object>());
+        }
 
         for (VariantTableStudyRow row : rows) {
-            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(row.getStudyId(), scmOptions);
+            Integer studyId = row.getStudyId();
+            QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
                 continue;
             }
             StudyConfiguration studyConfiguration = queryResult.first();
             StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
 
-
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
             studyEntry.setSamplesPosition(returnedSamplesPosition);
 
+            Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings("unchecked")
-            List<String>[] samplesDataArray = new List[returnedSamplesPosition.size()];
+            List<String>[] samplesDataArray = new List[nSamples];
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
+
+            double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
+            double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
+            double opr = passrate * callrate;
+            annotation.getAdditionalAttributes().put(studyId + "_PR", passrate);
+            annotation.getAdditionalAttributes().put(studyId + "_CR", callrate);
+            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL pass rate
 
             for (String genotype : row.getGenotypes()) {
                 String returnedGenotype = genotype.equals(VariantTableStudyRow.OTHER) ? "." : genotype;
@@ -108,8 +120,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             if (homRef != row.getHomRefCount()) {
-                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row.getHomRefCount();
-//                throw new IllegalArgumentException(message);
+                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row
+                        .getHomRefCount();
                 logger.warn(message);
             }
 
@@ -123,8 +135,6 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
         return variant;
     }
-
-
 
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
@@ -149,4 +159,5 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         }
         return returnedSamplesPosition.get(studyConfiguration.getStudyId());
     }
+
 }

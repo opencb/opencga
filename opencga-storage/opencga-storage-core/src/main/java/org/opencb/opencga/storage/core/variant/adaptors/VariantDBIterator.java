@@ -18,14 +18,14 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.variant.Variant;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
  * Created by jacobo on 9/01/15.
  */
-public abstract class VariantDBIterator implements Iterator<Variant> , AutoCloseable {
+public abstract class VariantDBIterator implements Iterator<Variant>, AutoCloseable {
+
     public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
     protected long timeFetching = 0;
     protected long timeConverting = 0;
@@ -46,7 +46,7 @@ public abstract class VariantDBIterator implements Iterator<Variant> , AutoClose
         this.timeConverting = timeConverting;
     }
 
-    protected interface TimeFunction <R, E extends Exception> {
+    protected interface TimeFunction<R, E extends Exception> {
         R call() throws E;
     }
 
@@ -68,13 +68,27 @@ public abstract class VariantDBIterator implements Iterator<Variant> , AutoClose
         }
     }
 
-    public static VariantDBIterator emptyIterator() { return EMPTY_ITERATOR; }
+    public static VariantDBIterator emptyIterator() {
+        return EMPTY_ITERATOR;
+    }
 
     static class EmptyVariantDBIterator extends VariantDBIterator {
-        EmptyVariantDBIterator() { }
-        @Override public boolean hasNext() { return false; }
-        @Override public Variant next() { throw new NoSuchElementException("Empty iterator"); }
-        @Override public void close() { }
+        EmptyVariantDBIterator() {
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Variant next() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public void close() {
+        }
     }
 
 }

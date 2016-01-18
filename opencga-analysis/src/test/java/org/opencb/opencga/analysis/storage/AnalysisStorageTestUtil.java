@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.app.StorageMain;
+import org.opencb.opencga.storage.app.StorageServerMain;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.slf4j.Logger;
 
@@ -58,7 +58,7 @@ public class AnalysisStorageTestUtil {
         logger.info("Executing opencga-storage");
         logger.info("==========================================");
         String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
-        StorageMain.Main(Arrays.copyOfRange(args, 1, args.length));
+        StorageServerMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
         logger.info("==========================================");
         logger.info("Finish opencga-storage");
         logger.info("==========================================");
