@@ -59,12 +59,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options) {
-        MongoDBCollection coll = db.getCollection(collectionName);
-        QueryBuilder qb = QueryBuilder.start();
-        options.put("studyId", studyId);
-        parseQueryOptions(options, qb);
-        
-        return coll.find(qb.get(), null, variantSourceConverter, options);
+        return getAllSourcesByStudyIds(Collections.singletonList(studyId), options);
     }
 
     @Override
@@ -80,38 +75,39 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     @Override
     public QueryResult getSamplesBySource(String fileId, QueryOptions options) {    // TODO jmmut: deprecate when we remove fileId, and change for getSamplesBySource(String studyId, QueryOptions options)
-        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
-            synchronized (StudyMongoDBAdaptor.class) {
-                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
-                    QueryResult queryResult = populateSamplesInSources();
-                    populateSamplesQueryResult(fileId, queryResult);
-                    return queryResult;
-                }
-            }
-        } 
-        
-        QueryResult queryResult = new QueryResult();
-        populateSamplesQueryResult(fileId, queryResult);
-        return queryResult;
+        return getSamplesBySources(Collections.singletonList(fileId), options);
     }
     
     @Override
     public QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options) {
-        if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+        // if any of the fileIds is not present in the "samplesInSources" cache, retrieve them again
+        if (!isAllSourcesCached(fileIds)) {
             synchronized (StudyMongoDBAdaptor.class) {
-                if (samplesInSources.size() != (long) countSources().getResult().get(0)) {
+                if (!isAllSourcesCached(fileIds)) {
                     QueryResult queryResult = populateSamplesInSources();
                     populateSamplesQueryResult(fileIds, queryResult);
                     return queryResult;
                 }
             }
-        } 
-        
+        }
+
         QueryResult queryResult = new QueryResult();
         populateSamplesQueryResult(fileIds, queryResult);
         return queryResult;
     }
-    
+
+    private boolean isAllSourcesCached(List<String> fileIds) {
+        boolean available = true;
+
+        for (String fileId : fileIds) {
+            if (!samplesInSources.containsKey(fileId)) {
+                available = false;
+                break;
+            }
+        }
+        return available;
+    }
+
     @Override
     public QueryResult getSourceDownloadUrlByName(String filename) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -169,7 +165,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 //    }
     
     /**
-     * Populates the dictionary relating sources and samples. 
+     * Repopulates the dictionary relating sources and samples.
      * 
      * @return The QueryResult with information of how long the query took
      */
@@ -180,6 +176,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         QueryResult queryResult = coll.find((DBObject)null, projection, null);
         
         List<DBObject> result = queryResult.getResult();
+        samplesInSources.clear();
         for (DBObject dbo : result) {
             String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
             DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
@@ -194,7 +191,8 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         
         return queryResult;
     }
-    
+
+    /*
     private void populateSamplesQueryResult(String fileId, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(1);
         List<String> samplesInSource = samplesInSources.get(fileId);
@@ -208,6 +206,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
             queryResult.setNumTotalResults(1);
         }
     }
+    */
 
     private void populateSamplesQueryResult(List<String> fileIds, QueryResult queryResult) {
         List<List> samples = new ArrayList<>(fileIds.size());
