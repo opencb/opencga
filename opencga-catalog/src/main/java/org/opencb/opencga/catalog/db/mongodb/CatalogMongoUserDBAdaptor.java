@@ -32,10 +32,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
+import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
@@ -427,7 +430,21 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return userCollection.find(bson, Projections.exclude(_ID), User.class, options);
+        QueryResult<User> userQueryResult = userCollection.find(bson, Projections.exclude(_ID), User.class, options);
+
+        for (User user : userQueryResult.getResult()) {
+            if (user.getProjects() != null) {
+                List<Project> projects = new ArrayList<>(user.getProjects().size());
+                for (Project project : user.getProjects()) {
+                    Query query1 = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), project.getId());
+                    QueryResult<Project> projectQueryResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(query1, options);
+                    projects.add(projectQueryResult.first());
+                }
+                user.setProjects(projects);
+            }
+        }
+
+        return userQueryResult;
     }
 
     @Override

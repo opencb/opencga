@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -52,11 +53,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements CatalogStudyDBAdaptor {
 
     private final MongoDBCollection studyCollection;
+    private StudyConverter studyConverter;
 
     public CatalogMongoStudyDBAdaptor(MongoDBCollection studyCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
+        this.studyConverter = new StudyConverter();
     }
 
     /**
@@ -722,9 +725,32 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> get(Query query, QueryOptions options) {
+    public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        return studyCollection.find(bson, Projections.exclude(_ID, _PROJECT_ID), Study.class, options);
+
+        List<String> excludeStringList = null;
+        if (options != null) {
+            excludeStringList = options.getAsStringList(MongoDBCollection.EXCLUDE, ",");
+        }
+        // Collections to be joined in study
+        List<Bson> aggregations = new ArrayList<>();
+        aggregations.add(Aggregates.match(bson));
+        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("files"))) {
+            aggregations.add(Aggregates.lookup(dbAdaptorFactory.FILE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "files"));
+        }
+        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("jobs"))) {
+            aggregations.add(Aggregates.lookup(dbAdaptorFactory.JOB_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "jobs"));
+        }
+        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("individuals"))) {
+            aggregations.add(Aggregates.lookup(dbAdaptorFactory.INDIVIDUAL_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "individuals"));
+        }
+        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("samples"))) {
+            aggregations.add(Aggregates.lookup(dbAdaptorFactory.SAMPLE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "samples"));
+        }
+
+        QueryResult<Study> studyQueryResult = studyCollection.aggregate(aggregations, studyConverter, options);
+
+        return studyQueryResult;
     }
 
     @Override

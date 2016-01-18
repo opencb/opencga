@@ -27,14 +27,14 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongo
 public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     static final String METADATA_OBJECT_ID = "METADATA";
-    private static final String USER_COLLECTION = "user";
-    private static final String STUDY_COLLECTION = "study";
-    private static final String FILE_COLLECTION = "file";
-    private static final String JOB_COLLECTION = "job";
-    private static final String SAMPLE_COLLECTION = "sample";
-    private static final String INDIVIDUAL_COLLECTION = "individual";
-    private static final String METADATA_COLLECTION = "metadata";
-    private static final String AUDIT_COLLECTION = "audit";
+    protected static final String USER_COLLECTION = "user";
+    protected static final String STUDY_COLLECTION = "study";
+    protected static final String FILE_COLLECTION = "file";
+    protected static final String JOB_COLLECTION = "job";
+    protected static final String SAMPLE_COLLECTION = "sample";
+    protected static final String INDIVIDUAL_COLLECTION = "individual";
+    protected static final String METADATA_COLLECTION = "metadata";
+    protected static final String AUDIT_COLLECTION = "audit";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
     private final String database;

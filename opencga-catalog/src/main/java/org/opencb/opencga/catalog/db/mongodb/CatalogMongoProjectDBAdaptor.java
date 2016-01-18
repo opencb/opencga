@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
@@ -54,11 +55,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implements CatalogProjectDBAdaptor {
 
     private final MongoDBCollection userCollection;
+    private ProjectConverter projectConverter;
 
     public CatalogMongoProjectDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
+        this.projectConverter = new ProjectConverter();
     }
 
     @Override
@@ -494,18 +497,33 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options) {
-        Bson bson = parseQuery(query);
-        List<Document> queryResult = userCollection.find(bson, options).getResult();
+        List<Bson> aggregates = new ArrayList<>();
 
-        // FIXME: Pedro. Parse and set clazz to study class.
+        aggregates.add(Aggregates.match(parseQuery(query)));
+        aggregates.add(Aggregates.unwind("$projects"));
 
-        return null;
+        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
+
+        for (Project project : projectQueryResult.getResult()) {
+            Query studyQuery = new Query(_PROJECT_ID, project.getId());
+            try {
+                QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
+                project.setStudies(studyQueryResult.getResult());
+            } catch (CatalogDBException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return projectQueryResult;
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
-        Bson bson = parseQuery(query);
-        return userCollection.find(bson, options);
+        List<Bson> aggregates = new ArrayList<>();
+        aggregates.add(Aggregates.match(parseQuery(query)));
+        aggregates.add(Aggregates.unwind("$projects"));
+
+        return userCollection.aggregate(aggregates, options);
     }
 
     @Override

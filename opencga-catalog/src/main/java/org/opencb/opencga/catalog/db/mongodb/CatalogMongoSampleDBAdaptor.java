@@ -776,65 +776,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
-        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-
         addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("source", QueryParams.SOURCE.key(), query, andBsonList);
         addIntegerOrQuery("individualId", QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
 
+        addIntegerOrQuery("studyId", QueryParams.STUDY_ID.key(), query, andBsonList);
+
         addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
-
-        addIntegerOrQuery(_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
-//                ACL_READ("acl.read", BOOLEAN , ""),
-//                ACL_WRITE("acl.write", BOOLEAN, ""),
-//                ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-//                ACL_DELETE("acl.delete", BOOLEAN, "");
-
-
-        addStringOrQuery("group.id", CatalogStudyDBAdaptor.QueryParams.GROUP_ID.key(), query, andBsonList);
-
-        addStringOrQuery("experiments.id", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
-        addStringOrQuery("experiments.name", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_NAME.key(), query, andBsonList);
-        addStringOrQuery("experiments.type", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_TYPE.key(), query, andBsonList);
-        addStringOrQuery("experiments.platform", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_PLATFORM.key(), query, andBsonList);
-        addStringOrQuery("experiments.manufacturer", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_MANUFACTURER.key(), query, andBsonList);
-        addStringOrQuery("experiments.date", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_DATE.key(), query, andBsonList);
-        addStringOrQuery("experiments.lab", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_LAB.key(), query, andBsonList);
-        addStringOrQuery("experiments.center", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_CENTER.key(), query, andBsonList);
-        addStringOrQuery("experiments.responsible", CatalogStudyDBAdaptor.QueryParams.EXPERIMENT_RESPONSIBLE.key(), query, andBsonList);
-
-        addStringOrQuery("files.id", CatalogStudyDBAdaptor.QueryParams.FILE_ID.key(), query, andBsonList);
-        addStringOrQuery("files.name", CatalogStudyDBAdaptor.QueryParams.FILE_NAME.key(), query, andBsonList);
-        addStringOrQuery("files.type", CatalogStudyDBAdaptor.QueryParams.FILE_TYPE.key(), query, andBsonList);
-        addStringOrQuery("files.format", CatalogStudyDBAdaptor.QueryParams.FILE_FORMAT.key(), query, andBsonList);
-        addStringOrQuery("files.bioformat", CatalogStudyDBAdaptor.QueryParams.FILE_BIOFORMAT.key(), query, andBsonList);
-
-        addStringOrQuery("jobs.id", CatalogStudyDBAdaptor.QueryParams.JOB_ID.key(), query, andBsonList);
-        addStringOrQuery("jobs.name", CatalogStudyDBAdaptor.QueryParams.JOB_NAME.key(), query, andBsonList);
-        addStringOrQuery("jobs.userId", CatalogStudyDBAdaptor.QueryParams.JOB_USER_ID.key(), query, andBsonList);
-        addStringOrQuery("jobs.toolName", CatalogStudyDBAdaptor.QueryParams.JOB_TOOL_NAME.key(), query, andBsonList);
-        addStringOrQuery("jobs.date", CatalogStudyDBAdaptor.QueryParams.JOB_DATE.key(), query, andBsonList);
-        addStringOrQuery("jobs.status", CatalogStudyDBAdaptor.QueryParams.JOB_STATUS.key(), query, andBsonList);
-        addStringOrQuery("jobs.diskUsage", CatalogStudyDBAdaptor.QueryParams.JOB_DISK_USAGE.key(), query, andBsonList);
-
-        addStringOrQuery("individuals.id", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
-        addStringOrQuery("individuals.name", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_NAME.key(), query, andBsonList);
-        addStringOrQuery("individuals.fatherId", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_FATHER_ID.key(), query, andBsonList);
-        addStringOrQuery("individuals.motherId", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_MOTHER_ID.key(), query, andBsonList);
-        addStringOrQuery("individuals.family", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_FAMILY.key(), query, andBsonList);
-        addStringOrQuery("individuals.race", CatalogStudyDBAdaptor.QueryParams.INDIVIDUAL_RACE.key(), query, andBsonList);
-
-        addStringOrQuery("samples.id", CatalogStudyDBAdaptor.QueryParams.SAMPLE_ID.key(), query, andBsonList);
-        addStringOrQuery("samples.name", CatalogStudyDBAdaptor.QueryParams.SAMPLE_NAME.key(), query, andBsonList);
-        addStringOrQuery("samples.source", CatalogStudyDBAdaptor.QueryParams.SAMPLE_SOURCE.key(), query, andBsonList);
-        addStringOrQuery("samples.individualId", CatalogStudyDBAdaptor.QueryParams.SAMPLE_INDIVIDUAL_ID.key(), query, andBsonList);
-
-        addStringOrQuery("datasets.id", CatalogStudyDBAdaptor.QueryParams.DATASET_ID.key(), query, andBsonList);
-        addStringOrQuery("datasets.name", CatalogStudyDBAdaptor.QueryParams.DATASET_NAME.key(), query, andBsonList);
-
-        addStringOrQuery("cohorts.id", CatalogStudyDBAdaptor.QueryParams.COHORT_ID.key(), query, andBsonList);
-        addStringOrQuery("cohorts.name", CatalogStudyDBAdaptor.QueryParams.COHORT_NAME.key(), query, andBsonList);
-        addStringOrQuery("cohorts.type", CatalogStudyDBAdaptor.QueryParams.COHORT_TYPE.key(), query, andBsonList);
+        // FIXME: Add boolean queries. ACL_READ, ACL_WRITE...
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
