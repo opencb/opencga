@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.*;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
+import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -29,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
@@ -163,14 +166,19 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         checkParameter(userId, "userId");
         checkParameter(password, "password");
         long startTime = startQuery();
-
+        System.out.println(userId + "::" + password);
 //        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
-        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
-        QueryResult<Long> count = userCollection.count(and);
+//        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
+        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.PASSWORD.key(), password);
+        QueryResult queryResult = nativeGet(query, new QueryOptions());
+
+        QueryResult<Long> count = count(query);
         if (count.getResult().get(0) == 0) {
             throw new CatalogDBException("Bad user or password");
         } else {
-            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+            query = new Query(QueryParams.SESSION_ID.key(), session.getId());
+//            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+            QueryResult<Long> countSessions = count(query);
             if (countSessions.getResult().get(0) != 0) {
                 throw new CatalogDBException("Already logged");
             } else {
@@ -178,7 +186,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
                 ObjectMap resultObjectMap = new ObjectMap();
                 resultObjectMap.put("sessionId", session.getId());
                 resultObjectMap.put("userId", userId);
-                return endQuery("Login", startTime, Arrays.asList(resultObjectMap));
+                return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
             }
         }
     }
@@ -292,7 +300,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
 //        BasicDBObject fields = new BasicDBObject("password", newPassword);
 //        BasicDBObject action = new BasicDBObject("$set", fields);
-        Bson set = Updates.set("password", new Document("password", newPassword));
+//        Bson set = Updates.set("password", new Document("password", newPassword));
+        Bson set = Updates.set("password", newPassword);
 
 //        QueryResult<WriteResult> update = userCollection.update(bson, set, null);
         QueryResult<UpdateResult> update = userCollection.update(bson, set, null);
@@ -390,7 +399,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
                 null);
 
         if (id.getNumResults() != 0) {
-            return (String) ((DBObject) id.getResult().get(0)).get("id");
+            return (String) ((Document) id.getResult().get(0)).get("id");
         } else {
             return "";
         }
@@ -496,29 +505,30 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createStringOrQuery(query, QueryParams.EMAIL.key(), "email", andBsonList);
-        createStringOrQuery(query, QueryParams.PASSWORD.key(), "password", andBsonList);
-        createStringOrQuery(query, QueryParams.ORGANIZATION.key(), "organization", andBsonList);
-        createStringOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
-        createStringOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
+        addStringOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("email", QueryParams.EMAIL.key(), query, andBsonList);
+        addStringOrQuery("password", QueryParams.PASSWORD.key(), query, andBsonList);
+        addStringOrQuery("organization", QueryParams.ORGANIZATION.key(), query, andBsonList);
+        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
+                MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
 
-        createStringOrQuery(query, QueryParams.PROJECT_ID.key(), "project.id", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_NAME.key(), "project.name", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_ALIAS.key(), "project.alias", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_ORGANIZATION.key(), "project.organization", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_STATUS.key(), "project.status", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+        addIntegerOrQuery("projects.id", QueryParams.PROJECT_ID.key(), query, andBsonList);
+        addStringOrQuery("projects.name", QueryParams.PROJECT_NAME.key(), query, andBsonList);
+        addStringOrQuery("projects.alias", QueryParams.PROJECT_ALIAS.key(), query, andBsonList);
+        addStringOrQuery("projects.organization", QueryParams.PROJECT_ORGANIZATION.key(), query, andBsonList);
+        addStringOrQuery("projects.status", QueryParams.PROJECT_STATUS.key(), query, andBsonList);
+        addStringOrQuery("projects.lastActivity", QueryParams.PROJECT_LAST_ACTIVITY.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.TOOL_ID.key(), "tool.id", andBsonList);
-        createStringOrQuery(query, QueryParams.TOOL_NAME.key(), "tool.name", andBsonList);
-        createStringOrQuery(query, QueryParams.TOOL_ALIAS.key(), "tool.alias", andBsonList);
+        addIntegerOrQuery("tools.id", QueryParams.TOOL_ID.key(), query, andBsonList);
+        addStringOrQuery("tools.name", QueryParams.TOOL_NAME.key(), query, andBsonList);
+        addStringOrQuery("tools.alias", QueryParams.TOOL_ALIAS.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.SESSION_ID.key(), "session.id", andBsonList);
-        createStringOrQuery(query, QueryParams.SESSION_IP.key(), "session.ip", andBsonList);
-        createStringOrQuery(query, QueryParams.SESSION_LOGIN.key(), "session.login", andBsonList);
-        createStringOrQuery(query, QueryParams.SESSION_LOGOUT.key(), "session.logout", andBsonList);
+        addStringOrQuery("sessions.id", QueryParams.SESSION_ID.key(), query, andBsonList);
+        addStringOrQuery("sessions.ip", QueryParams.SESSION_IP.key(), query, andBsonList);
+        addStringOrQuery("sessions.login", QueryParams.SESSION_LOGIN.key(), query, andBsonList);
+        addStringOrQuery("sessions.logout", QueryParams.SESSION_LOGOUT.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

@@ -262,7 +262,8 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         // FIXME This should code above
         return userDBAdaptor.login(userId, (password.length() != 40)
-                ? CatalogAuthenticationManager.cipherPassword(password) : password, session);
+                ? CatalogAuthenticationManager.cipherPassword(password)
+                : password, session);
     }
 
     @Override

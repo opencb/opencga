@@ -165,7 +165,10 @@ class CatalogMongoDBUtils {
         ObjectReader objectReader = getObjectReader(tClass);
         try {
             for (Document document : result.getResult()) {
-                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
+                document.remove("_id");
+                document.remove("_projectId");
+//                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
+                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document.toJson())));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -178,7 +181,13 @@ class CatalogMongoDBUtils {
             return null;
         }
         try {
-            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first()).toJson());
+            result.first().remove("_id");
+            result.first().remove("_studyId");
+//            String s = result.first().toJson();
+            String s = jsonObjectWriter.writeValueAsString(result.first());
+            System.out.println(">>>" + s);
+//            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
+            return getObjectReader(tClass).readValue(restoreDotsInKeys(s));
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
         }

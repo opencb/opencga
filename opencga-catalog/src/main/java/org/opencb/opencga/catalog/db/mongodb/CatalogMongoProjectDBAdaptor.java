@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -138,7 +139,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<DBObject> result = userCollection.find(query, projection, options);
         User user = parseUser(result);
         */
-        Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
+//        Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
+        Bson query = Filters.eq("projects.id", projectId);
         Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
 
         QueryResult<Document> result = userCollection.find(query, projection, options);
@@ -394,7 +396,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
 */
         Bson match1 = Aggregates.match(Filters.eq("projects.id", projectId));
-        Bson project = Projections.fields(Projections.excludeId(), Projections.include("projects.acl", "projects.id"));
+//        Bson project = Projections.fields(Projections.excludeId(), Projections.include("projects.acl", "projects.id"));
+        Bson project = Aggregates.project(Projections.fields(Projections.excludeId(), Projections.include("projects.acl", "projects.id")));
         Bson unwind1 = Aggregates.unwind("$projects");
         Bson match2 = Aggregates.match(Filters.eq("projects.id", projectId));
         Bson unwind2 = Aggregates.unwind("$projects.acl");
@@ -409,10 +412,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         operations.add(match3);
 
         QueryResult aggregate = userCollection.aggregate(operations, null);
-
         List<AclEntry> acls = new LinkedList<>();
         if (aggregate.getNumResults() != 0) {
-            DBObject aclObject = (DBObject) ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+//            DBObject aclObject = (DBObject) ((DBObject) ((DBObject) aggregate.getResult().get(0)).get("projects")).get("acl");
+            Document aclObject = (Document) ((Document) ((Document) aggregate.getResult().get(0)).get("projects")).get("acl");
             AclEntry acl = parseObject(aclObject, AclEntry.class);
             acls.add(acl);
         }
@@ -570,25 +573,26 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries.
         // FIXME: Pedro. Check how the projects are inserted in the user collection.
 
-        createStringOrQuery(query, QueryParams.ID.key(), "project.id", andBsonList);
-        createStringOrQuery(query, QueryParams.NAME.key(), "project.name", andBsonList);
-        createStringOrQuery(query, QueryParams.ALIAS.key(), "project.alias", andBsonList);
-        createStringOrQuery(query, QueryParams.ORGANIZATION.key(), "project.organization", andBsonList);
-        createStringOrQuery(query, QueryParams.STATUS.key(), "project.status", andBsonList);
-        createStringOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "project.lastActivity", andBsonList);
+        addIntegerOrQuery("projects.id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("projects.name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("projects.alias", QueryParams.ALIAS.key(), query, andBsonList);
+        addStringOrQuery("projects.organization", QueryParams.ORGANIZATION.key(), query, andBsonList);
+        addStringOrQuery("projects.status", QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("projects.lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
+                MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
 
-        createStringOrQuery(query, QueryParams.STUDY_ID.key(), "project.study.id", andBsonList);
-        createStringOrQuery(query, QueryParams.STUDY_NAME.key(), "project.study.name", andBsonList);
-        createStringOrQuery(query, QueryParams.STUDY_ALIAS.key(), "project.study.name", andBsonList);
-        createStringOrQuery(query, QueryParams.STUDY_CREATOR_ID.key(), "project.study.creatorId", andBsonList);
-        createStringOrQuery(query, QueryParams.STUDY_STATUS.key(), "project.study.status", andBsonList);
-        createStringOrQuery(query, QueryParams.STUDY_LAST_ACTIVITY.key(), "project.study.lastActivity", andBsonList);
+        addIntegerOrQuery("projects.studies.id", QueryParams.STUDY_ID.key(), query, andBsonList);
+        addStringOrQuery("projects.studies.name", QueryParams.STUDY_NAME.key(), query, andBsonList);
+        addStringOrQuery("projects.studies.alias", QueryParams.STUDY_ALIAS.key(), query, andBsonList);
+        addStringOrQuery("projects.studies.creatorId", QueryParams.STUDY_CREATOR_ID.key(), query, andBsonList);
+        addStringOrQuery("projects.studies.status", QueryParams.STUDY_STATUS.key(), query, andBsonList);
+        addStringOrQuery("projects.studies.lastActivity", QueryParams.STUDY_LAST_ACTIVITY.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.ACL_USER_ID.key(), "project.acl.userId", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_READ.key(), "project.acl.read", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_WRITE.key(), "project.acl.write", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_EXECUTE.key(), "project.acl.execute", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_DELETE.key(), "project.acl.delete", andBsonList);
+        addStringOrQuery("projects.acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
+        addStringOrQuery("projects.acl.read", QueryParams.ACL_READ.key(), query, andBsonList);
+        addStringOrQuery("projects.acl.write", QueryParams.ACL_WRITE.key(), query, andBsonList);
+        addStringOrQuery("projects.acl.execute", QueryParams.ACL_EXECUTE.key(), query, andBsonList);
+        addStringOrQuery("projects.acl.delete", QueryParams.ACL_DELETE.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

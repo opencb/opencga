@@ -450,15 +450,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createStringOrQuery(query, QueryParams.FATHER_ID.key(), "fatherId", andBsonList);
-        createStringOrQuery(query, QueryParams.MOTHER_ID.key(), "motherId", andBsonList);
-        createStringOrQuery(query, QueryParams.FAMILY.key(), "family", andBsonList);
-        createStringOrQuery(query, QueryParams.GENDER.key(), "gender", andBsonList);
-        createStringOrQuery(query, QueryParams.RACE.key(), "race", andBsonList);
-        createStringOrQuery(query, QueryParams.POPULATION_NAME.key(), "populationName", andBsonList);
-        createStringOrQuery(query, QueryParams.POPULATION_SUBPOPULATION.key(), "populationSubpopulation", andBsonList);
+        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("fatherId", QueryParams.FATHER_ID.key(), query, andBsonList);
+        addStringOrQuery("motherId", QueryParams.MOTHER_ID.key(), query, andBsonList);
+        addStringOrQuery("family", QueryParams.FAMILY.key(), query, andBsonList);
+        addStringOrQuery("gender", QueryParams.GENDER.key(), query, andBsonList);
+        addStringOrQuery("race", QueryParams.RACE.key(), query, andBsonList);
+        addStringOrQuery("populationName", QueryParams.POPULATION_NAME.key(), query, andBsonList);
+        addStringOrQuery("populationSubpopulation", QueryParams.POPULATION_SUBPOPULATION.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

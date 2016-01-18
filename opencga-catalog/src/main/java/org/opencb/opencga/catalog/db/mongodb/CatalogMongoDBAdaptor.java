@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -26,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.slf4j.Logger;
 
@@ -58,41 +58,60 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
-    protected void createIntegerOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {
-        if (query != null && query.containsKey(queryParam)) {
-            createIntegerOrQuery(query.getAsIntegerList(queryParam), mongoDbField, andBsonList);
-        }
+//    protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+//        if (query != null && query.containsKey(queryParam)) {
+//            addIntegerOrQuery(mongoDbField, query.getAsIntegerList(queryParam), andBsonList);
+//        }
+//    }
+//
+//    protected void addIntegerOrQuery(String mongoDbField, List<Integer> queryValues, List<Bson> andBsonList) {
+//        if (queryValues.size() == 1) {
+//            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
+//        } else {
+//            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
+//            for (Integer queryItem : queryValues) {
+//                orBsonList.add(Filters.eq(mongoDbField, queryItem));
+//            }
+//            andBsonList.add(Filters.or(orBsonList));
+//        }
+//    }
+    protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+            MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+}
+
+    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
-    protected void createIntegerOrQuery(List<Integer> queryValues, String mongoDbField, List<Bson> andBsonList) {
-        if (queryValues.size() == 1) {
-            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
-        } else {
-            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
-            for (Integer queryItem : queryValues) {
-                orBsonList.add(Filters.eq(mongoDbField, queryItem));
-            }
-            andBsonList.add(Filters.or(orBsonList));
-        }
+    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator comparisonOperator, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, comparisonOperator,
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
-    protected void createStringOrQuery(Query query, String queryParam, String mongoDbField, List<Bson> andBsonList) {
+//    protected void addStringOrQuery(String mongoDbField, List<String> queryValues, List<Bson> andBsonList) {
+//        if (queryValues.size() == 1) {
+//            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
+//        } else {
+//            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
+//            for (String queryItem : queryValues) {
+//                orBsonList.add(Filters.eq(mongoDbField, queryItem));
+//            }
+//            andBsonList.add(Filters.or(orBsonList));
+//        }
+//    }
+
+    protected void addQueryFilter(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ParamType paramType,
+                                  MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator, List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null && !query.getString(queryParam).isEmpty()) {
-            createStringOrQuery(query.getAsStringList(queryParam), mongoDbField, andBsonList);
+            Bson filter = MongoDBQueryUtils.createFilter(mongoDbField, queryParam, query, paramType, comparisonOperator, operator);
+            if (filter != null) {
+                andBsonList.add(filter);
+            }
         }
     }
 
-    protected void createStringOrQuery(List<String> queryValues, String mongoDbField, List<Bson> andBsonList) {
-        if (queryValues.size() == 1) {
-            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
-        } else {
-            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
-            for (String queryItem : queryValues) {
-                orBsonList.add(Filters.eq(mongoDbField, queryItem));
-            }
-            andBsonList.add(Filters.or(orBsonList));
-        }
-    }
 
     protected QueryResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {

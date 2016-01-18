@@ -325,7 +325,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.in("acl.userId", userIds)));
-        Bson unwind = Aggregates.unwind("acl");
+        Bson unwind = Aggregates.unwind("$acl");
         Bson match2 = Aggregates.match(Filters.and(Filters.in("acl.userId", userIds)));
         Bson project = Aggregates.project(Projections.include("id", "path", "acl"));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
@@ -560,7 +560,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        return fileCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), File.class, options);
     }
 
     @Override
@@ -613,28 +614,28 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createStringOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createStringOrQuery(query, QueryParams.TYPE.key(), "type", andBsonList);
-        createStringOrQuery(query, QueryParams.FORMAT.key(), "format", andBsonList);
-        createStringOrQuery(query, QueryParams.BIOFORMAT.key(), "bioformat", andBsonList);
-        createStringOrQuery(query, QueryParams.DELETE_DATE.key(), "deleteDate", andBsonList);
-        createStringOrQuery(query, QueryParams.OWNER_ID.key(), "ownerId", andBsonList);
-        createStringOrQuery(query, QueryParams.CREATION_DATE.key(), "creationDate", andBsonList);
-        createStringOrQuery(query, QueryParams.MODIFICATION_DATE.key(), "modificationDate", andBsonList);
-        createStringOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
-        createStringOrQuery(query, QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experimentId", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_ID.key(), "jobId", andBsonList);
-        createStringOrQuery(query, QueryParams.SAMPLE_ID.key(), "sampleId", andBsonList);
+        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("type", QueryParams.TYPE.key(), query, andBsonList);
+        addStringOrQuery("format", QueryParams.FORMAT.key(), query, andBsonList);
+        addStringOrQuery("bioformat", QueryParams.BIOFORMAT.key(), query, andBsonList);
+        addStringOrQuery("deleteDate", QueryParams.DELETE_DATE.key(), query, andBsonList);
+        addStringOrQuery("ownerId", QueryParams.OWNER_ID.key(), query, andBsonList);
+        addStringOrQuery("creationDate", QueryParams.CREATION_DATE.key(), query, andBsonList);
+        addStringOrQuery("modificationDate", QueryParams.MODIFICATION_DATE.key(), query, andBsonList);
+        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
+        addStringOrQuery("experimentId", QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
+        addIntegerOrQuery("jobId", QueryParams.JOB_ID.key(), query, andBsonList);
+        addIntegerOrQuery("sampleIds", QueryParams.SAMPLE_ID.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.ACL_USER_ID.key(), "acl.userId", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_READ.key(), "acl.read", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_WRITE.key(), "acl.write", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_EXECUTE.key(), "acl.execute", andBsonList);
-        createStringOrQuery(query, QueryParams.ACL_DELETE.key(), "acl.delete", andBsonList);
+        addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
+        addStringOrQuery("acl.read", QueryParams.ACL_READ.key(), query, andBsonList);
+        addStringOrQuery("acl.write", QueryParams.ACL_WRITE.key(), query, andBsonList);
+        addStringOrQuery("acl.execute", QueryParams.ACL_EXECUTE.key(), query, andBsonList);
+        addStringOrQuery("acl.delete", QueryParams.ACL_DELETE.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.STUDY_ID.key(), "study.id", andBsonList);
+        addIntegerOrQuery(_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

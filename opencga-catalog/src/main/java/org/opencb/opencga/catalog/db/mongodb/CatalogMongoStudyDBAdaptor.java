@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
@@ -723,7 +724,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return studyCollection.find(bson, Projections.exclude(_ID), Study.class, options);
+        return studyCollection.find(bson, Projections.exclude(_ID, _PROJECT_ID), Study.class, options);
     }
 
     @Override
@@ -796,58 +797,59 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createIntegerOrQuery(query, QueryParams.ID.key(), "id", andBsonList);
-        createStringOrQuery(query, QueryParams.NAME.key(), "name", andBsonList);
-        createStringOrQuery(query, QueryParams.ALIAS.key(), "alias", andBsonList);
-        createStringOrQuery(query, QueryParams.CREATOR_ID.key(), "creatorId", andBsonList);
-        createStringOrQuery(query, QueryParams.STATUS.key(), "status", andBsonList);
-        createStringOrQuery(query, QueryParams.LAST_ACTIVITY.key(), "lastActivity", andBsonList);
-        createStringOrQuery(query, QueryParams.PROJECT_ID.key(), "_projectId", andBsonList);
+        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("alias", QueryParams.ALIAS.key(), query, andBsonList);
+        addStringOrQuery("creatorId", QueryParams.CREATOR_ID.key(), query, andBsonList);
+        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
+                MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
+        addStringOrQuery("_projectId", QueryParams.PROJECT_ID.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.GROUP_ID.key(), "group.id", andBsonList);
+        addStringOrQuery("group.id", QueryParams.GROUP_ID.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.EXPERIMENT_ID.key(), "experiment.id", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_NAME.key(), "experiment.name", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_TYPE.key(), "experiment.type", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_PLATFORM.key(), "experiment.platform", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_MANUFACTURER.key(), "experiment.manufacturer", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_DATE.key(), "experiment.date", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_LAB.key(), "experiment.lab", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_CENTER.key(), "experiment.center", andBsonList);
-        createStringOrQuery(query, QueryParams.EXPERIMENT_RESPONSIBLE.key(), "experiment.responsible", andBsonList);
+        addStringOrQuery("experiments.id", QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
+        addStringOrQuery("experiments.name", QueryParams.EXPERIMENT_NAME.key(), query, andBsonList);
+        addStringOrQuery("experiments.type", QueryParams.EXPERIMENT_TYPE.key(), query, andBsonList);
+        addStringOrQuery("experiments.platform", QueryParams.EXPERIMENT_PLATFORM.key(), query, andBsonList);
+        addStringOrQuery("experiments.manufacturer", QueryParams.EXPERIMENT_MANUFACTURER.key(), query, andBsonList);
+        addStringOrQuery("experiments.date", QueryParams.EXPERIMENT_DATE.key(), query, andBsonList);
+        addStringOrQuery("experiments.lab", QueryParams.EXPERIMENT_LAB.key(), query, andBsonList);
+        addStringOrQuery("experiments.center", QueryParams.EXPERIMENT_CENTER.key(), query, andBsonList);
+        addStringOrQuery("experiments.responsible", QueryParams.EXPERIMENT_RESPONSIBLE.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.FILE_ID.key(), "file.id", andBsonList);
-        createStringOrQuery(query, QueryParams.FILE_NAME.key(), "file.name", andBsonList);
-        createStringOrQuery(query, QueryParams.FILE_TYPE.key(), "file.type", andBsonList);
-        createStringOrQuery(query, QueryParams.FILE_FORMAT.key(), "file.format", andBsonList);
-        createStringOrQuery(query, QueryParams.FILE_BIOFORMAT.key(), "file.bioformat", andBsonList);
+        addIntegerOrQuery("files.id", QueryParams.FILE_ID.key(), query, andBsonList);
+        addStringOrQuery("files.name", QueryParams.FILE_NAME.key(), query, andBsonList);
+        addStringOrQuery("files.type", QueryParams.FILE_TYPE.key(), query, andBsonList);
+        addStringOrQuery("files.format", QueryParams.FILE_FORMAT.key(), query, andBsonList);
+        addStringOrQuery("files.bioformat", QueryParams.FILE_BIOFORMAT.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.JOB_ID.key(), "job.id", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_NAME.key(), "job.name", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_USER_ID.key(), "job.userId", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_TOOL_NAME.key(), "job.toolName", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_DATE.key(), "job.date", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_STATUS.key(), "job.status", andBsonList);
-        createStringOrQuery(query, QueryParams.JOB_DISK_USAGE.key(), "job.diskUsage", andBsonList);
+        addIntegerOrQuery("jobs.id", QueryParams.JOB_ID.key(), query, andBsonList);
+        addStringOrQuery("jobs.name", QueryParams.JOB_NAME.key(), query, andBsonList);
+        addStringOrQuery("jobs.userId", QueryParams.JOB_USER_ID.key(), query, andBsonList);
+        addStringOrQuery("jobs.toolName", QueryParams.JOB_TOOL_NAME.key(), query, andBsonList);
+        addStringOrQuery("jobs.date", QueryParams.JOB_DATE.key(), query, andBsonList);
+        addStringOrQuery("jobs.status", QueryParams.JOB_STATUS.key(), query, andBsonList);
+        addStringOrQuery("jobs.diskUsage", QueryParams.JOB_DISK_USAGE.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_ID.key(), "individual.id", andBsonList);
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_NAME.key(), "individual.name", andBsonList);
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_FATHER_ID.key(), "individual.fatherId", andBsonList);
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_MOTHER_ID.key(), "individual.motherId", andBsonList);
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_FAMILY.key(), "individual.family", andBsonList);
-        createStringOrQuery(query, QueryParams.INDIVIDUAL_RACE.key(), "individual.race", andBsonList);
+        addStringOrQuery("individuals.id", QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
+        addStringOrQuery("individuals.name", QueryParams.INDIVIDUAL_NAME.key(), query, andBsonList);
+        addStringOrQuery("individuals.fatherId", QueryParams.INDIVIDUAL_FATHER_ID.key(), query, andBsonList);
+        addStringOrQuery("individuals.motherId", QueryParams.INDIVIDUAL_MOTHER_ID.key(), query, andBsonList);
+        addStringOrQuery("individuals.family", QueryParams.INDIVIDUAL_FAMILY.key(), query, andBsonList);
+        addStringOrQuery("individuals.race", QueryParams.INDIVIDUAL_RACE.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.SAMPLE_ID.key(), "sample.id", andBsonList);
-        createStringOrQuery(query, QueryParams.SAMPLE_NAME.key(), "sample.name", andBsonList);
-        createStringOrQuery(query, QueryParams.SAMPLE_SOURCE.key(), "sample.source", andBsonList);
-        createStringOrQuery(query, QueryParams.SAMPLE_INDIVIDUAL_ID.key(), "sample.individualId", andBsonList);
+        addStringOrQuery("samples.id", QueryParams.SAMPLE_ID.key(), query, andBsonList);
+        addStringOrQuery("samples.name", QueryParams.SAMPLE_NAME.key(), query, andBsonList);
+        addStringOrQuery("samples.source", QueryParams.SAMPLE_SOURCE.key(), query, andBsonList);
+        addStringOrQuery("samples.individualId", QueryParams.SAMPLE_INDIVIDUAL_ID.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.DATASET_ID.key(), "dataset.id", andBsonList);
-        createStringOrQuery(query, QueryParams.DATASET_NAME.key(), "dataset.name", andBsonList);
+        addStringOrQuery("datasets.id", QueryParams.DATASET_ID.key(), query, andBsonList);
+        addStringOrQuery("datasets.name", QueryParams.DATASET_NAME.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.COHORT_ID.key(), "cohort.id", andBsonList);
-        createStringOrQuery(query, QueryParams.COHORT_NAME.key(), "cohort.name", andBsonList);
-        createStringOrQuery(query, QueryParams.COHORT_TYPE.key(), "cohort.type", andBsonList);
+        addStringOrQuery("cohorts.id", QueryParams.COHORT_ID.key(), query, andBsonList);
+        addStringOrQuery("cohorts.name", QueryParams.COHORT_NAME.key(), query, andBsonList);
+        addStringOrQuery("cohorts.type", QueryParams.COHORT_TYPE.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

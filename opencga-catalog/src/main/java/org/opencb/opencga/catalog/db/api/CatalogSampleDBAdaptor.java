@@ -39,6 +39,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
 
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
         ACL_READ("acl.read", BOOLEAN , ""),

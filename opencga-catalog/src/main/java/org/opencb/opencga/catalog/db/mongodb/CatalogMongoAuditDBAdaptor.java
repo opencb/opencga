@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -55,7 +54,8 @@ public class CatalogMongoAuditDBAdaptor extends CatalogMongoDBAdaptor implements
 
 //        DBObject auditRecordDbObject = CatalogMongoDBUtils.getDbObject(auditRecord, "AuditRecord");
         Document auditRecordDbObject = CatalogMongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord");
-        WriteResult writeResult = auditCollection.insert(auditRecordDbObject, new QueryOptions()).first();
+//        WriteResult writeResult = auditCollection.insert(auditRecordDbObject, new QueryOptions()).first();
+        auditCollection.insert(auditRecordDbObject, new QueryOptions());
 
         return endQuery("insertAuditRecord", startQuery, Collections.singletonList(auditRecord));
     }

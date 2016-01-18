@@ -407,15 +407,15 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.ID.key(), "id", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.NAME.key(), "name", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.USER_ID.key(), "userId", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), "toolName", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.DATE.key(), "date", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.STATUS.key(), "status", andBsonList);
-        createStringOrQuery(query, CatalogJobDBAdaptor.QueryParams.DISK_USAGE.key(), "diskUsage", andBsonList);
+        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("userId", QueryParams.USER_ID.key(), query, andBsonList);
+        addStringOrQuery("toolName", QueryParams.TOOL_NAME.key(), query, andBsonList);
+        addStringOrQuery("date", QueryParams.DATE.key(), query, andBsonList);
+        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
 
-        createStringOrQuery(query, QueryParams.STUDY_ID.key(), _STUDY_ID, andBsonList);
+        addIntegerOrQuery(_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
