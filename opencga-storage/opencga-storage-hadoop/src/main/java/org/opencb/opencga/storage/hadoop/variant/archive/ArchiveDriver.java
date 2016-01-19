@@ -87,7 +87,7 @@ public class ArchiveDriver extends Configured implements Tool {
         job.setCombinerClass(VcfSliceCombiner.class);
 
 
-        TableMapReduceUtil.initTableReducerJob(tablename, null, job);
+        TableMapReduceUtil.initTableReducerJob(tablename, null, job, null, null, null, null, conf.getBoolean("addDependencyJars", true));
         job.setMapOutputValueClass(Put.class);
 
         if (HBaseUtils.createTableIfNeeded(tablename, archiveHelper.getColumnFamily(), job.getConfiguration())) {
@@ -151,11 +151,13 @@ public class ArchiveDriver extends Configured implements Tool {
 
 
     public static void main(String[] args) throws Exception {
-        System.exit(privateMain(args));
+        System.exit(privateMain(args, null));
     }
 
-    private static int privateMain(String[] args) throws Exception {
-        Configuration conf = new Configuration();
+    public static int privateMain(String[] args, Configuration conf) throws Exception {
+        if (conf == null) {
+            conf = new Configuration();
+        }
         ArchiveDriver driver = new ArchiveDriver();
         GenericOptionsParser parser = new GenericOptionsParser(conf, args);
 

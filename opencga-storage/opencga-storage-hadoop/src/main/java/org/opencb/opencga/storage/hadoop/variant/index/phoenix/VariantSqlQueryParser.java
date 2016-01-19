@@ -1,16 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
@@ -56,7 +56,7 @@ public class VariantSqlQueryParser {
 
 
     /**
-     * Select only the required columns
+     * Select only the required columns.
      *
      * Uses the params:
      * {@link VariantQueryParams#RETURNED_STUDIES}
@@ -64,6 +64,10 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#RETURNED_FILES}
      * {@link VariantQueryParams#UNKNOWN_GENOTYPE}
      *
+     * @param sb    SQLStringBuilder
+     * @param query Query to parse
+     * @param options   other options
+     * @return String builder
      */
     public StringBuilder addProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
         //TODO Fetch only FULL_ANNOTATION and genotypes data
@@ -108,6 +112,8 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#ID}
      * {@link VariantQueryParams#GENE}
      *
+     * @param query Query to parse
+     * @return List of region filters
      */
     public List<String> getRegionFilters(Query query) {
         List<String> regionFilters = new LinkedList<>();
@@ -182,6 +188,8 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#MISSING_ALLELES}
      * {@link VariantQueryParams#MISSING_GENOTYPES}
      *
+     * @param query Query to parse
+     * @return List of sql filters
      */
     public List<String> getOtherFilters(Query query) {
         List<String> filters = new LinkedList<>();
@@ -287,6 +295,9 @@ public class VariantSqlQueryParser {
      * isValidParam(new Query(PARAM.key(), 5), PARAM) == true
      * isValidParam(new Query(PARAM.key(), "sdfas"), PARAM) == true
      *
+     * @param query Query to parse
+     * @param param QueryParam to check
+     * @return If is valid or not
      */
     public static boolean isValidParam(Query query, VariantQueryParams param) {
         Object value = query.getOrDefault(param.key(), null);

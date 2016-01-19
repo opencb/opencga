@@ -126,11 +126,14 @@ public class VariantTableDriver extends Configured implements Tool {
                 VariantTableMapper.class,   // mapper class
                 null,             // mapper output key
                 null,             // mapper output value
-                job);
+                job,
+                conf.getBoolean("addDependencyJars", true));
         TableMapReduceUtil.initTableReducerJob(
                 outTable,      // output table
                 null,             // reducer class
-                job);
+                job,
+                null, null, null, null,
+                conf.getBoolean("addDependencyJars", true));
         job.setNumReduceTasks(0);
 
         boolean b = job.waitForCompletion(true);
@@ -170,8 +173,14 @@ public class VariantTableDriver extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
+        System.exit(privateMain(args, null));
+    }
+
+    public static int privateMain(String[] args, Configuration conf) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        Configuration conf = new Configuration();
+        if (conf == null) {
+            conf = new Configuration();
+        }
         VariantTableDriver driver = new VariantTableDriver();
         GenericOptionsParser parser = new GenericOptionsParser(conf, args);
 
@@ -183,7 +192,7 @@ public class VariantTableDriver extends Configured implements Tool {
                     VariantTableDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
-            System.exit(-1);
+            return -1;
         }
 
         addHBaseSettings(conf, toolArgs[0]);
@@ -200,7 +209,7 @@ public class VariantTableDriver extends Configured implements Tool {
 //      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
         int exitCode = driver.run(toolArgs);
 
-        System.exit(exitCode);
+        return exitCode;
     }
 
 }

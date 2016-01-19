@@ -76,8 +76,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
         try {
-            phoenixCon = phoenixHelper.newJdbcConnection(credentials);
-        } catch (SQLException e) {
+            phoenixCon = phoenixHelper.newJdbcConnection(conf);
+        } catch (SQLException | ClassNotFoundException e) {
             throw new IOException(e);
         }
     }

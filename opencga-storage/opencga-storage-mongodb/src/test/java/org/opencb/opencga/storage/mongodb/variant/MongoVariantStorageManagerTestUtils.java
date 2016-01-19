@@ -23,7 +23,7 @@ public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest 
         MongoDBVariantStorageManager manager = new MongoDBVariantStorageManager();
         InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-        manager.setConfiguration(storageConfiguration, "mongodb");
+        manager.setConfiguration(storageConfiguration, MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
         return manager;
     }
 
