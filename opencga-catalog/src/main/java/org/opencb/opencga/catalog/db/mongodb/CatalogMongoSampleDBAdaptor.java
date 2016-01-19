@@ -35,7 +35,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.LoggerFactory;
@@ -53,11 +53,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
+    private SampleConverter sampleConverter;
 
     public CatalogMongoSampleDBAdaptor(MongoDBCollection sampleCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoSampleDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
+        this.sampleConverter = new SampleConverter();
     }
 
     /**
@@ -184,6 +186,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
         result.setNumTotalResults(queryResult.getNumTotalResults());
         return result;
+    }
+
+    @Override
+    public QueryResult<Sample> getAllSamplesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(_STUDY_ID, studyId);
+        return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
     @Override
@@ -712,7 +721,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return sampleCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), Sample.class, options);
+        options = filterOptions(options, FILTER_ROUTE_SAMPLES);
+        return sampleCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), sampleConverter, options);
     }
 
     @Override

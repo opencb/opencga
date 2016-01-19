@@ -15,6 +15,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -36,11 +39,13 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     //private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection fileCollection;
+    private FileConverter fileConverter;
 
     public CatalogMongoFileDBAdaptor(MongoDBCollection fileCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoFileDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
+        this.fileConverter = new FileConverter();
     }
 
     private boolean filePathExists(int studyId, String path) {
@@ -87,6 +92,15 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw CatalogDBException.alreadyExists("File from study { id:" + studyId + "}", "path", file.getPath());
         }
 
+        // Update the diskUsage field from the study collection
+        try {
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
+        } catch (CatalogDBException e) {
+            deleteFile(newFileId);
+            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems " +
+                    "with the study collection.");
+        }
+
         return endQuery("Create file", startTime, getFile(newFileId, options));
     }
 
@@ -125,13 +139,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
-//        QueryResult<DBObject> queryResult = fileCollection.find(new BasicDBObject(_STUDY_ID, studyId), filterOptions(options,
-//                FILTER_ROUTE_FILES));
-        QueryResult queryResult = nativeGet(new Query(_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_FILES));
-        List<File> files = parseFiles(queryResult);
-
-        return endQuery("Get all files", startTime, files);
+        Query query = new Query(_STUDY_ID, studyId);
+        return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
     @Override
@@ -561,7 +570,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return fileCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), File.class, options);
+        options = filterOptions(options, FILTER_ROUTE_FILES);
+        return fileCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), fileConverter, options);
     }
 
     @Override

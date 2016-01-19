@@ -6,6 +6,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -14,8 +15,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
 import org.slf4j.LoggerFactory;
@@ -34,11 +38,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObj
 public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements CatalogJobDBAdaptor {
 
     private final MongoDBCollection jobCollection;
+    private JobConverter jobConverter;
 
     public CatalogMongoJobDBAdaptor(MongoDBCollection jobCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
+        this.jobConverter = new JobConverter();
     }
 
 
@@ -354,7 +360,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> get(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        options = filterOptions(options, FILTER_ROUTE_JOBS);
+        return jobCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), jobConverter, options);
     }
 
     @Override

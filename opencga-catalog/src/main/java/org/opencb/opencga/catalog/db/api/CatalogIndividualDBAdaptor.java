@@ -93,6 +93,8 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
     QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws

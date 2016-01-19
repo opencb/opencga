@@ -20,6 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -32,11 +33,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -52,11 +51,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
 
     private final MongoDBCollection individualCollection;
+    private IndividualConverter individualConverter;
 
     public CatalogMongoIndividualDBAdaptor(MongoDBCollection individualCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
+        this.individualConverter = new IndividualConverter();
     }
 
     @Override
@@ -169,6 +170,13 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         QueryResult<Document> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
         List<Individual> individuals = parseObjects(result, Individual.class);
         return endQuery("getAllIndividuals", startTime, individuals);
+    }
+
+    @Override
+    public QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(_STUDY_ID, studyId);
+        return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
     @Override
@@ -391,11 +399,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        List<Document> queryResult = individualCollection.find(bson, options).getResult();
-
-        // FIXME: Pedro. Parse and set clazz to study class.
-
-        return null;
+        options = filterOptions(options, FILTER_ROUTE_INDIVIDUALS);
+        return individualCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), individualConverter, options);
     }
 
     @Override

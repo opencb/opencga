@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
@@ -54,12 +55,13 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements CatalogUserDBAdaptor {
 
     private final MongoDBCollection userCollection;
+    private UserConverter userConverter;
 
     public CatalogMongoUserDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
-
+        this.userConverter = new UserConverter();
     }
 
     /**
@@ -430,7 +432,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        QueryResult<User> userQueryResult = userCollection.find(bson, Projections.exclude(_ID), User.class, options);
+        QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
 
         for (User user : userQueryResult.getResult()) {
             if (user.getProjects() != null) {
@@ -443,14 +445,29 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
                 user.setProjects(projects);
             }
         }
-
         return userQueryResult;
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return userCollection.find(bson, options);
+        QueryResult<Document> queryResult = userCollection.find(bson, options);
+
+        for (Document user : queryResult.getResult()) {
+            ArrayList<Document> projects = (ArrayList<Document>) user.get("projects");
+            if (projects.size() > 0) {
+                List<Document> projectsTmp = new ArrayList<>(projects.size());
+                for (Document project : projects) {
+                    Query query1 = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), project.get(CatalogProjectDBAdaptor.QueryParams.ID.key()));
+                    QueryResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
+                    projectsTmp.add(queryResult1.first());
+                }
+                user.remove("projects");
+                user.append("projects", projectsTmp);
+            }
+        }
+
+        return queryResult;
     }
 
     @Override

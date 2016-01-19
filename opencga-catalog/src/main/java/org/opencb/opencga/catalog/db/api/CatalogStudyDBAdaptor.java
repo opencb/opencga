@@ -39,6 +39,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         CREATOR_ID("creatorId", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         PROJECT_ID("_projectId", TEXT_ARRAY, ""),
 
         GROUP_ID("group.id", INTEGER_ARRAY, ""),
@@ -58,6 +59,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         FILE_TYPE("file.type", TEXT_ARRAY, ""),
         FILE_FORMAT("file.format", TEXT_ARRAY, ""),
         FILE_BIOFORMAT("file.bioformat", TEXT_ARRAY, ""),
+        FILE_DISK_USAGE("file.diskUsage", INTEGER_ARRAY, ""),
 
         JOB_ID("job.id", INTEGER_ARRAY, ""),
         JOB_NAME("job.name", TEXT_ARRAY, ""),
@@ -147,6 +149,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 //  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
 // throws CatalogManagerException;
 
+    @Deprecated
     QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
 
     default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {

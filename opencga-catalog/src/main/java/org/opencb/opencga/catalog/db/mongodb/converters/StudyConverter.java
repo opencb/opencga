@@ -5,6 +5,7 @@ import org.bson.Document;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;

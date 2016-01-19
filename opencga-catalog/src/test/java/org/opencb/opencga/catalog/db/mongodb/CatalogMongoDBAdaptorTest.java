@@ -515,7 +515,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         Study study = catalogStudyDBAdaptor.getStudy(studyId, null).first();
         assertNotNull(study);
         assertEquals(studyId, study.getId());
-        assertTrue(study.getDiskUsage() != 0);
+        assertEquals(study.getDiskUsage(), 2000);
 
         study = catalogStudyDBAdaptor.getStudy(studyId, new QueryOptions("include", "projects.studies.diskUsage").append("exclude", null)
         ).first();

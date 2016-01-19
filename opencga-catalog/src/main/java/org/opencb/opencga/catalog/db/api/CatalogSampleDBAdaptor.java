@@ -24,9 +24,7 @@ import org.opencb.opencga.catalog.models.*;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -103,6 +101,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Sample> getAllSamplesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 

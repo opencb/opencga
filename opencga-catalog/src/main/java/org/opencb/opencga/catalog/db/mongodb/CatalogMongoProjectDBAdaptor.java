@@ -520,10 +520,26 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         List<Bson> aggregates = new ArrayList<>();
+
         aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
 
-        return userCollection.aggregate(aggregates, options);
+        QueryResult<Document> projectQueryResult = userCollection.aggregate(aggregates, options);
+        ArrayList<Document> returnedProjectList = new ArrayList<>();
+
+        for (Document user : projectQueryResult.getResult()) {
+            Document project = (Document) user.get("projects");
+            Query studyQuery = new Query(_PROJECT_ID, project.get("id"));
+            QueryResult studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, options);
+            project.remove("studies");
+            project.append("studies", studyQueryResult.getResult());
+            returnedProjectList.add(project);
+        }
+
+        projectQueryResult.setResult(returnedProjectList);
+
+        return projectQueryResult;
+
     }
 
     @Override

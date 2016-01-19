@@ -232,7 +232,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         QueryResult<Document> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
         List<Study> studies = parseStudies(queryResult);
         for (Study study : studies) {
-            joinFields(study.getId(), study, queryOptions);
+            joinFields(study, queryOptions);
         }
 
         return endQuery("getAllStudies", startTime, studies);
@@ -252,6 +252,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         modifyStudy(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
+    @Deprecated
     @Override
     public QueryResult<Study> modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
@@ -677,21 +678,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
-    private void joinFields(int studyId, Study study, QueryOptions options) throws CatalogDBException {
-        if (studyId <= 0) {
+    private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
+        int studyId = study.getId();
+        if (studyId <= 0 || options == null) {
             return;
-        }
-
-        if (options == null) {
-            study.setDiskUsage(getDiskUsageByStudy(studyId));
-            return;
-        }
-
-        List<String> include = options.getAsStringList("include");
-        List<String> exclude = options.getAsStringList("exclude");
-        if ((!include.isEmpty() && include.contains(FILTER_ROUTE_STUDIES + "diskUsage")) ||
-                (!exclude.isEmpty() && !exclude.contains(FILTER_ROUTE_STUDIES + "diskUsage"))) {
-            study.setDiskUsage(getDiskUsageByStudy(studyId));
         }
 
         if (options.getBoolean("includeFiles")) {
@@ -701,8 +691,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllJobsInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeSamples")) {
-            study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor
-                    .SampleFilterOption.studyId.toString(), studyId)).getResult());
+            study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamplesInStudy(studyId, options).getResult());
+        }
+        if (options.getBoolean("includeIndividuals")) {
+            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividualsInStudy(studyId, options)
+                    .getResult());
         }
     }
 
@@ -727,42 +720,70 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-
-        List<String> excludeStringList = null;
-        if (options != null) {
-            excludeStringList = options.getAsStringList(MongoDBCollection.EXCLUDE, ",");
+        options = filterOptions(options, FILTER_ROUTE_STUDIES);
+        QueryResult<Study> result = studyCollection.find(bson, Projections.exclude(_ID, _PROJECT_ID), studyConverter, options);
+        for (Study study : result.getResult()) {
+            joinFields(study, options);
         }
-        // Collections to be joined in study
-        List<Bson> aggregations = new ArrayList<>();
-        aggregations.add(Aggregates.match(bson));
-        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("files"))) {
-            aggregations.add(Aggregates.lookup(dbAdaptorFactory.FILE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "files"));
-        }
-        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("jobs"))) {
-            aggregations.add(Aggregates.lookup(dbAdaptorFactory.JOB_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "jobs"));
-        }
-        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("individuals"))) {
-            aggregations.add(Aggregates.lookup(dbAdaptorFactory.INDIVIDUAL_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "individuals"));
-        }
-        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("samples"))) {
-            aggregations.add(Aggregates.lookup(dbAdaptorFactory.SAMPLE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "samples"));
-        }
-
-        QueryResult<Study> studyQueryResult = studyCollection.aggregate(aggregations, studyConverter, options);
-
-        return studyQueryResult;
+        return result;
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
+        //options = filterOptions(options, FILTER_ROUTE_STUDIES);
         return studyCollection.find(bson, options);
     }
 
     @Override
-    public QueryResult<Study> update(Query query, ObjectMap parameters) {
-        return null;
+    public QueryResult<Study> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        boolean properlyUpdated = false;
+        Document studyParameters = new Document();
+
+        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
+        filterStringParams(parameters, studyParameters, acceptedParams);
+
+        String[] acceptedLongParams = {"diskUsage"};
+        filterLongParams(parameters, studyParameters, acceptedLongParams);
+
+        String[] acceptedMapParams = {"attributes", "stats"};
+        filterMapParams(parameters, studyParameters, acceptedMapParams);
+
+        //Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
+        //filterEnumParams(parameters, studyParameters, acceptedEnums);
+
+        if (parameters.containsKey("uri")) {
+            URI uri = parameters.get("uri", URI.class);
+            studyParameters.put("uri", uri.toString());
+        }
+
+        if (!studyParameters.isEmpty()) {
+            Document updates = new Document("$set", studyParameters);
+            if (studyCollection.update(parseQuery(query), updates, null).getNumTotalResults() > 0) {
+                properlyUpdated = true;
+            }
+        }
+
+        return endQuery("Study update", startTime, properlyUpdated ? get(query, null) : null);
     }
+
+    /***
+     * This method is called every time a file has been inserted, modified or deleted to keep track of the current study diskUsage.
+     * @param studyId Study Identifier
+     * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
+     *                  will be >0 to increment the diskUsage field in the study collection or <0 to decrement it.
+     * @throws CatalogDBException An exception is launched when the update crashes.
+     */
+    public void updateDiskUsage(int studyId, long diskUsage) throws CatalogDBException {
+        Bson query = new Document(QueryParams.ID.key(), studyId);
+        Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
+        if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
+            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of" +
+                    " the study " + studyId);
+        }
+    }
+
 
     /**
      * At the moment it does not clean external references to itself.
@@ -830,6 +851,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
         addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
+        addIntegerOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
         addIntegerOrQuery("_projectId", QueryParams.PROJECT_ID.key(), query, andBsonList);
 
         addStringOrQuery("group.id", QueryParams.GROUP_ID.key(), query, andBsonList);
@@ -849,6 +871,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery("files.type", QueryParams.FILE_TYPE.key(), query, andBsonList);
         addStringOrQuery("files.format", QueryParams.FILE_FORMAT.key(), query, andBsonList);
         addStringOrQuery("files.bioformat", QueryParams.FILE_BIOFORMAT.key(), query, andBsonList);
+        addIntegerOrQuery("files.diskUsage", QueryParams.FILE_DISK_USAGE.key(), query, andBsonList);
 
         addIntegerOrQuery("jobs.id", QueryParams.JOB_ID.key(), query, andBsonList);
         addStringOrQuery("jobs.name", QueryParams.JOB_NAME.key(), query, andBsonList);
