@@ -11,10 +11,8 @@ import java.io.IOException;
  */
 public class ProjectConverter extends GenericConverter<Project, Document> {
 
-
     public ProjectConverter() {
         objectReader = objectMapper.reader(Project.class);
-        objectWriter = objectMapper.writerFor(Document.class);
     }
 
     @Override

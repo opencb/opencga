@@ -17,7 +17,6 @@ public class StudyConverter extends GenericConverter<Study, Document> {
 
     public StudyConverter() {
         objectReader = objectMapper.reader(Study.class);
-        objectWriter = objectMapper.writerFor(Document.class);
     }
 
     @Override

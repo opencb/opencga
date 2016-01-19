@@ -317,7 +317,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
 //        List<Study> studies = parseStudies(queryResult);
 
-        Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        Query query1 = new Query(_PROJECT_ID, projectId).append("alias", studyAlias);
         QueryOptions queryOptions = new QueryOptions("include", "id");
         QueryResult<Study> studyQueryResult = get(query1, queryOptions);
         List<Study> studies = studyQueryResult.getResult();
@@ -735,16 +735,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         // Collections to be joined in study
         List<Bson> aggregations = new ArrayList<>();
         aggregations.add(Aggregates.match(bson));
-        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("files"))) {
+        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("files"))) {
             aggregations.add(Aggregates.lookup(dbAdaptorFactory.FILE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "files"));
         }
-        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("jobs"))) {
+        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("jobs"))) {
             aggregations.add(Aggregates.lookup(dbAdaptorFactory.JOB_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "jobs"));
         }
-        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("individuals"))) {
+        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("individuals"))) {
             aggregations.add(Aggregates.lookup(dbAdaptorFactory.INDIVIDUAL_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "individuals"));
         }
-        if (excludeStringList == null || (excludeStringList != null && excludeStringList.size() > 0 && !excludeStringList.contains("samples"))) {
+        if (excludeStringList == null || (excludeStringList != null && !excludeStringList.contains("samples"))) {
             aggregations.add(Aggregates.lookup(dbAdaptorFactory.SAMPLE_COLLECTION, QueryParams.ID.key(), _STUDY_ID, "samples"));
         }
 
@@ -830,7 +830,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
         addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
-        addStringOrQuery("_projectId", QueryParams.PROJECT_ID.key(), query, andBsonList);
+        addIntegerOrQuery("_projectId", QueryParams.PROJECT_ID.key(), query, andBsonList);
 
         addStringOrQuery("group.id", QueryParams.GROUP_ID.key(), query, andBsonList);
 
