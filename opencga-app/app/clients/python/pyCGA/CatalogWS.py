@@ -519,7 +519,7 @@ class Individuals(WS):
 
         if update:
             for annt_set in self.info(str(individual_id))[0]["annotationSets"]:
-                if annt_set["variableSetId"] == variableSetId:
+                if annt_set["variableSetId"] == int(variableSetId):
                     annotationSetName = annt_set["id"]
 
                     return self.general_method(ws_category="individuals", method_name="annotate",
