@@ -366,12 +366,27 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
+    public QueryResult<Job> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         return null;
     }
 
     @Override
-    public QueryResult<Job> update(Query query, ObjectMap parameters) {
+    public QueryResult<Long> update(Query query, ObjectMap parameters) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Job> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Job> delete(int id) throws CatalogDBException {
         return null;
     }
 
@@ -415,7 +430,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("userId", QueryParams.USER_ID.key(), query, andBsonList);
         addStringOrQuery("toolName", QueryParams.TOOL_NAME.key(), query, andBsonList);

@@ -55,6 +55,7 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
+        PATH("path", TEXT, ""),
 
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_DATE("index.date", TEXT, ""),
@@ -108,8 +109,11 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
             throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
         }
 
-        if (!fileExists(fileId)) {
+        long count = count(new Query(QueryParams.ID.key(), fileId)).first();
+        if (count < 0) {
             throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the File id '{}'", count, fileId);
         }
     }
 
@@ -131,13 +135,15 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
 
     QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
+    QueryResult renameFile(int fileId, String filePath) throws CatalogDBException;
 
-    QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
+    @Deprecated
+    QueryResult<File> deleteFile(int fileId) throws CatalogDBException;
 
     /**
      * ACL methods

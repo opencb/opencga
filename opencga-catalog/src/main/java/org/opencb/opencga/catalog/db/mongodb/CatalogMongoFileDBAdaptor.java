@@ -1,11 +1,11 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.*;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -35,7 +35,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
  */
 public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements CatalogFileDBAdaptor {
 
-    //private final CatalogMongoDBAdaptorFactory dbAdaptorFactory;
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
 
@@ -47,20 +46,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     private boolean filePathExists(int studyId, String path) {
-        BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);
-        query.put("path", path);
+        Document query = new Document(_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         QueryResult<Long> count = fileCollection.count(query);
         return count.getResult().get(0) != 0;
-    }
-
-    public void checkFileExists(int fileId) throws CatalogDBException {
-        checkFileExists(fileId, "File");
-    }
-
-    public void checkFileExists(int fileId, String fileType) throws CatalogDBException {
-        if (!fileExists(fileId)) {
-            throw CatalogDBException.idNotFound(fileType, fileId);
-        }
     }
 
     @Override
@@ -80,12 +68,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         if (file.getOwnerId() == null) {
             file.setOwnerId(ownerId);
         }
-        Document fileDBObject = getMongoDBDocument(file, "File");
-        fileDBObject.put(_STUDY_ID, studyId);
-        fileDBObject.put(_ID, newFileId);
+        Document fileDocument = fileConverter.convertToStorageType(file);
+        fileDocument.append(_STUDY_ID, studyId);
+        fileDocument.append(_ID, newFileId);
 
         try {
-            fileCollection.insert(fileDBObject, null);
+            fileCollection.insert(fileDocument, null);
         } catch (DuplicateKeyException e) {
             throw CatalogDBException.alreadyExists("File from study { id:" + studyId + "}", "path", file.getPath());
         }
@@ -106,132 +94,43 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException {
-        long startTime = startQuery();
-
-//        WriteResult id = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
-        DeleteResult deleteResult = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
-        List<Integer> deletes = new LinkedList<>();
-        if (deleteResult.getDeletedCount() == 0) {
-            throw CatalogDBException.idNotFound("File", fileId);
-        } else {
-            deletes.add((int) deleteResult.getDeletedCount());
-            return endQuery("delete file", startTime, deletes);
-        }
+    public QueryResult<File> deleteFile(int fileId) throws CatalogDBException {
+        return delete(fileId);
     }
 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
-//        DBObject query = BasicDBObjectBuilder.start(_STUDY_ID, studyId).append("path", path).get();
-//        BasicDBObject projection = new BasicDBObject("id", true);
-//        QueryResult<DBObject> queryResult = fileCollection.find(query, projection, null);
-//        File file = parseFile(queryResult);
-
-        Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.eq("path", path));
+        Query query = new Query(_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         Bson projection = Projections.include("id");
-        QueryResult<Document> queryResult = fileCollection.find(query, projection, new QueryOptions());
-        File file = parseFile(queryResult);
-        return file != null ? file.getId() : -1;
+        QueryResult<File> fileQueryResult = get(query, projection, null);
+        return fileQueryResult.getResult().get(0).getId();
     }
 
     @Override
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
         Query query = new Query(_STUDY_ID, studyId);
-        return endQuery("Get all files", startTime, get(query, options).getResult());
+        return get(query, options);
     }
 
     @Override
-    public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
-        QueryResult<Document> folderResult = fileCollection.find(Filters.eq(_ID, folderId), filterOptions(options,
-                FILTER_ROUTE_FILES));
-
-        File folder = parseFile(folderResult);
-        if (!folder.getType().equals(File.Type.FOLDER)) {
-            throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
-        }
-        Object studyId = folderResult.getResult().get(0).get(_STUDY_ID);
-
-//        BasicDBObject query = new BasicDBObject(_STUDY_ID, studyId);
-//        query.put("path", new BasicDBObject("$regex", "^" + folder.getPath() + "[^/]+/?$"));
-        Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.regex("path", "^" + folder.getPath() + "[^/]+/?$"));
-//        QueryResult<DBObject> filesResult = fileCollection.find(query, null);
-        QueryResult<Document> filesResult = fileCollection.find(query, null);
-        List<File> files = parseFiles(filesResult);
-
-        return endQuery("Get all files", startTime, files);
+        Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
+        List<File> fileResults = fileCollection.find(query, null, fileConverter, null).getResult();
+        return endQuery("Get all files", startTime, fileResults);
     }
 
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        QueryOptions filterOptions = filterOptions(options, FILTER_ROUTE_FILES);
-
-        QueryResult<Document> queryResult = fileCollection.find(Filters.eq(_ID, fileId), filterOptions);
-        File file = parseFile(queryResult);
-        if (file != null) {
-            return endQuery("Get file", startTime, Arrays.asList(file));
-        } else {
-            throw CatalogDBException.idNotFound("File", fileId);
-        }
+        checkFileId(fileId);
+        Query query = new Query(_ID, fileId);
+        return get(query, options);
     }
 
+    @Deprecated
     @Override
     public QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Map<String, Object> fileParameters = new HashMap<>();
-
-        String[] acceptedParams = {"description", "uri", "creationDate", "modificationDate"};
-        filterStringParams(parameters, fileParameters, acceptedParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
-        acceptedEnums.put("type", File.Type.class);
-        acceptedEnums.put("format", File.Format.class);
-        acceptedEnums.put("bioformat", File.Bioformat.class);
-        acceptedEnums.put("status", File.Status.class);
-        filterEnumParams(parameters, fileParameters, acceptedEnums);
-
-        String[] acceptedLongParams = {"diskUsage"};
-        filterLongParams(parameters, fileParameters, acceptedLongParams);
-
-        String[] acceptedIntParams = {"jobId"};
-        filterIntParams(parameters, fileParameters, acceptedIntParams);
-        if (parameters.containsKey("jobId")) {
-//            if (!jobExists(parameters.getInt("jobId"))) {
-            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().jobExists(parameters.getInt("jobId"))) {
-                throw CatalogDBException.idNotFound("Job", parameters.getInt("jobId"));
-            }
-        }
-
-        String[] acceptedIntegerListParams = {"sampleIds"};
-        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
-        if (parameters.containsKey("sampleIds")) {
-            for (Integer sampleId : parameters.getAsIntegerList("sampleIds")) {
-                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().sampleExists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sample", sampleId);
-                }
-            }
-        }
-
-        String[] acceptedMapParams = {"attributes", "stats"};
-        filterMapParams(parameters, fileParameters, acceptedMapParams);
-
-        String[] acceptedObjectParams = {"index"};
-        filterObjectParams(parameters, fileParameters, acceptedObjectParams);
-
-        if (!fileParameters.isEmpty()) {
-//            QueryResult<WriteResult> update = fileCollection.update(Filters.eq(_ID, fileId),
-//                    new BasicDBObject("$set", fileParameters), null);
-            QueryResult<UpdateResult> update = fileCollection.update(Filters.eq(_ID, fileId), new Document("$set", fileParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("File", fileId);
-            }
-        }
-
-        return endQuery("Modify file", startTime, getFile(fileId, null));
+        return update(fileId, parameters);
     }
 
 
@@ -245,16 +144,17 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
-        File file = getFile(fileId, null).getResult().get(0);
+        Document fileDoc = (Document) nativeGet(new Query(_ID, fileId), null).getResult().get(0);
+        File file = fileConverter.convertToDataModelType(fileDoc);
 
-        int studyId = getStudyIdByFileId(fileId);
+        int studyId = (int) fileDoc.get(_STUDY_ID);
         int collisionFileId = getFileId(studyId, filePath);
         if (collisionFileId >= 0) {
             throw new CatalogDBException("Can not rename: " + filePath + " already exists");
         }
 
         if (file.getType().equals(File.Type.FOLDER)) {  // recursive over the files inside folder
-            QueryResult<File> allFilesInFolder = getAllFilesInFolder(fileId, null);
+            QueryResult<File> allFilesInFolder = getAllFilesInFolder(studyId, file.getPath(), null);
             String oldPath = file.getPath();
             filePath += filePath.endsWith("/") ? "" : "/";
             for (File subFile : allFilesInFolder.getResult()) {
@@ -262,25 +162,22 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 renameFile(subFile.getId(), replacedPath); // first part of the path in the subfiles 3
             }
         }
-        BasicDBObject query = new BasicDBObject(_ID, fileId);
-        BasicDBObject set = new BasicDBObject("$set", BasicDBObjectBuilder
-                .start("name", fileName)
-                .append("path", filePath).get());
+
+        Document query = new Document(_ID, fileId);
+        Document set = new Document("$set", new Document("name", fileName).append("path", filePath));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
         if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        return endQuery("rename file", startTime);
+        return endQuery("Rename file", startTime);
     }
 
     @Override
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject(_ID, fileId);
-//        DBObject projection = new BasicDBObject(_STUDY_ID, "true");
-        QueryResult<Document> result = fileCollection.find(Filters.eq(_ID, fileId), Projections.include(_STUDY_ID), null);
+        QueryResult queryResult = nativeGet(new Query(_ID, fileId), null);
 
-        if (!result.getResult().isEmpty()) {
-            return (int) result.getResult().get(0).get(_STUDY_ID);
+        if (!queryResult.getResult().isEmpty()) {
+            return (int) ((Document) queryResult.getResult().get(0)).get(_STUDY_ID);
         } else {
             throw CatalogDBException.idNotFound("File", fileId);
         }
@@ -288,13 +185,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public String getFileOwnerId(int fileId) throws CatalogDBException {
-        QueryResult<File> fileQueryResult = getFile(fileId, null);
-        if (fileQueryResult == null || fileQueryResult.getResult() == null || fileQueryResult.getResult().isEmpty()) {
-            throw CatalogDBException.idNotFound("File", fileId);
-        }
-        return fileQueryResult.getResult().get(0).getOwnerId();
-//        int studyId = getStudyIdByFileId(fileId);
-//        return getStudyOwnerId(studyId);
+        return getFile(fileId, null).getResult().get(0).getOwnerId();
     }
 
     /**
@@ -303,20 +194,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
-//        DBObject projection = BasicDBObjectBuilder
-//                .start("acl",
-//                        new BasicDBObject("$elemMatch",
-//                                new BasicDBObject("userId", userId)))
-//                .append(_ID, false)
-//                .get();
-
+        Query query = new Query(_ID, fileId);
         Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
-        QueryResult queryResult = fileCollection.find(Filters.eq(_ID, fileId), projection, null);
-        if (queryResult.getNumResults() == 0) {
-            throw CatalogDBException.idNotFound("File", fileId);
-        }
-        List<AclEntry> acl = parseFile(queryResult).getAcl();
-        return endQuery("get file acl", startTime, acl);
+/*
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put("elemMatch", Projections.elemMatch("acl", Filters.eq("userId", userId)));
+        queryOptions.put("include", Projections.include("acl", "userId"));
+*/
+
+        List<AclEntry> acl = get(query, projection, null).getResult().get(0).getAcl();
+        return endQuery("Get file ACL", startTime, acl);
     }
 
     @Override
@@ -552,7 +439,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<Long> count(Query query) {
-        return null;
+        Bson bson = parseQuery(query);
+        return fileCollection.count(bson);
     }
 
     @Override
@@ -565,11 +453,17 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         return null;
     }
 
-    @Override
-    public QueryResult<File> get(Query query, QueryOptions options) {
+    private QueryResult<File> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         Bson bson = parseQuery(query);
         options = filterOptions(options, FILTER_ROUTE_FILES);
-        return fileCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), fileConverter, options);
+        QueryResult<File> fileQueryResult = fileCollection.find(bson, projection, fileConverter, options);
+        return endQuery("get File", startTime, fileQueryResult.getResult());
+    }
+
+    @Override
+    public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
+        return get(query, Projections.exclude(_ID, _STUDY_ID), options);
     }
 
     @Override
@@ -579,12 +473,15 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        checkFileId(id);
+        Query query = new Query(QueryParams.ID.key(), id);
+        update(query, parameters);
+        return endQuery("Update file", startTime, get(query, null));
     }
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
-
         long startTime = startQuery();
 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
@@ -650,9 +547,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         if (!fileParameters.isEmpty()) {
             QueryResult<UpdateResult> update = fileCollection.update(queryBson, new Document("$set", fileParameters), null);
-//            if (update.getResult().isEmpty() || update.getNumTotalResults() == 0) {
-//                throw new CatalogDBException("File update: Could not update the file(s).");
-//            }
 
             // If the diskUsage of some of the files have been changed, notify to the correspondent study
             if (fileQueryResult != null) {
@@ -660,23 +554,29 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 for (Document file : (ArrayList<Document>) fileQueryResult.getResult()) {
                     long difDiskUsage = newDiskUsage - (long) file.get(QueryParams.DISK_USAGE.key());
                     int studyId = (int) file.get(_STUDY_ID);
-                    try {
-                        dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
-                    } catch (CatalogDBException e) {
-                        // Fixme: What do we do if it cannot be notified if everything has been updated already?
-                        // Could we remove all the files from the database and insert them again?
-                    }
+                    dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
                 }
             }
-            return endQuery("Modify file", startTime, Collections.singletonList(update.getNumTotalResults()));
+            return endQuery("Modify file", startTime, Collections.singletonList(update.getResult().get(0).getModifiedCount()));
         }
 
-//        return endQuery("Modify file", startTime, get(query, null));
         return endQuery("Modify file", startTime, Collections.singletonList(0L));
     }
 
     @Override
     public QueryResult<File> delete(int id) throws CatalogDBException {
+        /*        long startTime = startQuery();
+
+//        WriteResult id = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
+        DeleteResult deleteResult = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
+        List<Integer> deletes = new LinkedList<>();
+        if (deleteResult.getDeletedCount() == 0) {
+            throw CatalogDBException.idNotFound("File", fileId);
+        } else {
+            deletes.add((int) deleteResult.getDeletedCount());
+            return endQuery("delete file", startTime, deletes);
+        }
+        */
         return null;
     }
 
@@ -719,8 +619,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         List<Bson> andBsonList = new ArrayList<>();
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-
-        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("type", QueryParams.TYPE.key(), query, andBsonList);
         addStringOrQuery("format", QueryParams.FORMAT.key(), query, andBsonList);
@@ -742,6 +641,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         addStringOrQuery("attributes", QueryParams.BATTRIBUTES.key(), query, andBsonList);
         addStringOrQuery("stats", QueryParams.STATS.key(), query, andBsonList);
         addIntegerOrQuery("stats", QueryParams.NSTATS.key(), query, andBsonList);
+        addStringOrQuery("path", QueryParams.PATH.key(), query, andBsonList);
 
         addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
         addStringOrQuery("acl.read", QueryParams.ACL_READ.key(), query, andBsonList);

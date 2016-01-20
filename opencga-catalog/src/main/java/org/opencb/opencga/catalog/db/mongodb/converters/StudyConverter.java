@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
@@ -16,8 +17,11 @@ import java.util.ArrayList;
  */
 public class StudyConverter extends GenericConverter<Study, Document> {
 
+    private ObjectWriter studyWriter;
+
     public StudyConverter() {
         objectReader = objectMapper.reader(Study.class);
+        studyWriter = objectMapper.writerFor(Study.class);
     }
 
     @Override
@@ -35,7 +39,7 @@ public class StudyConverter extends GenericConverter<Study, Document> {
     public Document convertToStorageType(Study object) {
         Document document = null;
         try {
-            document = Document.parse(objectWriter.writeValueAsString(object));
+            document = Document.parse(studyWriter.writeValueAsString(object));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

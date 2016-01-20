@@ -518,6 +518,11 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
+    public QueryResult<Project> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         List<Bson> aggregates = new ArrayList<>();
 
@@ -543,7 +548,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> update(Query query, ObjectMap parameters) { return null; }
+    public QueryResult<Long> update(Query query, ObjectMap parameters) { return null; }
+
+    @Override
+    public QueryResult<Project> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Project> delete(int id) throws CatalogDBException {
+        return null;
+    }
 
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {

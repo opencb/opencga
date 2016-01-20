@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.omg.CORBA.INV_IDENT;
+import com.mongodb.client.model.Projections;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;

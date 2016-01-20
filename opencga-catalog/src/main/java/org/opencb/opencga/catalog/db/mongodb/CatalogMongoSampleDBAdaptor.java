@@ -726,13 +726,28 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    public QueryResult<Sample> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
         return sampleCollection.find(bson, options);
     }
 
     @Override
-    public QueryResult<Sample> update(Query query, ObjectMap parameters) { return null; }
+    public QueryResult<Long> update(Query query, ObjectMap parameters) { return null; }
+
+    @Override
+    public QueryResult<Sample> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Sample> delete(int id) throws CatalogDBException {
+        return null;
+    }
 
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
@@ -786,7 +801,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
-        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("source", QueryParams.SOURCE.key(), query, andBsonList);
         addIntegerOrQuery("individualId", QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);

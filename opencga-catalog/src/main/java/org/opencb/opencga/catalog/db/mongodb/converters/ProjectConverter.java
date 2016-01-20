@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
 import org.opencb.opencga.catalog.models.Project;
 
@@ -11,8 +12,11 @@ import java.io.IOException;
  */
 public class ProjectConverter extends GenericConverter<Project, Document> {
 
+    private ObjectWriter projectWriter;
+
     public ProjectConverter() {
         objectReader = objectMapper.reader(Project.class);
+        projectWriter = objectMapper.writerFor(Project.class);
     }
 
     @Override
@@ -31,7 +35,7 @@ public class ProjectConverter extends GenericConverter<Project, Document> {
     public Document convertToStorageType(Project object) {
         Document document = null;
         try {
-            document = Document.parse(objectWriter.writeValueAsString(object));
+            document = Document.parse(projectWriter.writeValueAsString(object));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

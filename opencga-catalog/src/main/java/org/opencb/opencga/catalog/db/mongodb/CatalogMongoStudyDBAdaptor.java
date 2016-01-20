@@ -729,6 +729,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
+    public QueryResult<Study> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
         //options = filterOptions(options, FILTER_ROUTE_STUDIES);
@@ -736,9 +741,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        boolean properlyUpdated = false;
         Document studyParameters = new Document();
 
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
@@ -760,30 +764,22 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         if (!studyParameters.isEmpty()) {
             Document updates = new Document("$set", studyParameters);
-            if (studyCollection.update(parseQuery(query), updates, null).getNumTotalResults() > 0) {
-                properlyUpdated = true;
-            }
+            Long nModified = studyCollection.update(parseQuery(query), updates, null).getNumTotalResults();
+            return endQuery("Study update", startTime, Collections.singletonList(nModified));
         }
 
-        return endQuery("Study update", startTime, properlyUpdated ? get(query, null) : null);
+        return endQuery("Study update", startTime, Collections.singletonList(0L));
     }
 
-    /***
-     * This method is called every time a file has been inserted, modified or deleted to keep track of the current study diskUsage.
-     * @param studyId Study Identifier
-     * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
-     *                  will be >0 to increment the diskUsage field in the study collection or <0 to decrement it.
-     * @throws CatalogDBException An exception is launched when the update crashes.
-     */
-    public void updateDiskUsage(int studyId, long diskUsage) throws CatalogDBException {
-        Bson query = new Document(QueryParams.ID.key(), studyId);
-        Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
-        if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
-            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of" +
-                    " the study " + studyId);
-        }
+    @Override
+    public QueryResult<Study> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
     }
 
+    @Override
+    public QueryResult<Study> delete(int id) throws CatalogDBException {
+        return null;
+    }
 
     /**
      * At the moment it does not clean external references to itself.
@@ -805,6 +801,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             return endQuery("delete study", startTime, Collections.singletonList(remove.first().getDeletedCount()));
         }
     }
+
 
     @Override
     public Iterator<Study> iterator(Query query, QueryOptions options) {
@@ -844,7 +841,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("alias", QueryParams.ALIAS.key(), query, andBsonList);
         addStringOrQuery("creatorId", QueryParams.CREATOR_ID.key(), query, andBsonList);
@@ -909,5 +906,21 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     public MongoDBCollection getStudyCollection() {
         return studyCollection;
+    }
+
+    /***
+     * This method is called every time a file has been inserted, modified or deleted to keep track of the current study diskUsage.
+     * @param studyId Study Identifier
+     * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
+     *                  will be >0 to increment the diskUsage field in the study collection or <0 to decrement it.
+     * @throws CatalogDBException An exception is launched when the update crashes.
+     */
+    public void updateDiskUsage(int studyId, long diskUsage) throws CatalogDBException {
+        Bson query = new Document(QueryParams.ID.key(), studyId);
+        Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
+        if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
+            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of" +
+                    " the study " + studyId);
+        }
     }
 }

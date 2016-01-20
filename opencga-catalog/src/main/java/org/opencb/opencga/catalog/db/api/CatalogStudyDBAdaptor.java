@@ -120,17 +120,19 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
 
 
-    default boolean studyExists(int studyId) {
-        return count(new Query(QueryParams.ID.key(), studyId)).first() > 0;
+    default Long studyExists(int studyId) {
+        return count(new Query(QueryParams.ID.key(), studyId)).first();
     }
 
     default void checkStudyId(int studyId) throws CatalogDBException {
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
-
-        if (!studyExists(studyId)) {
+        Long count = studyExists(studyId);
+        if (count < 0) {
             throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the Study id '{}'", count, studyId);
         }
     }
 

@@ -69,10 +69,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     public QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
-
-        if (!dbAdaptorFactory.getCatalogStudyDBAdaptor().studyExists(studyId)) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         if (!getAllIndividuals(new QueryOptions(IndividualFilterOption.name.toString(), individual.getName()).append
                 (IndividualFilterOption.studyId.toString(), studyId)).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
@@ -404,17 +401,32 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) {
-        Bson bson = parseQuery(query);
-        return individualCollection.find(bson, options);
+    public QueryResult<Individual> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
     }
 
     @Override
-    public QueryResult<Individual> update(Query query, ObjectMap parameters) { return null; }
+    public QueryResult<Individual> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters) { return null; }
 
     @Override
     public QueryResult<Long> delete(Query query) {
         return null;
+    }
+
+    @Override
+    public QueryResult<Individual> delete(int id) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        return individualCollection.find(bson, options);
     }
 
     @Override
@@ -455,7 +467,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addIntegerOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("fatherId", QueryParams.FATHER_ID.key(), query, andBsonList);
         addStringOrQuery("motherId", QueryParams.MOTHER_ID.key(), query, andBsonList);

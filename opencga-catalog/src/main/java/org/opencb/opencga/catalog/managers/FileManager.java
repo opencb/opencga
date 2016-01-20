@@ -295,9 +295,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!studyDBAdaptor.studyExists(studyId)) {
-            throw new CatalogException("Study { id: " + studyId + "} does not exist.");
-        }
+        studyDBAdaptor.checkStudyId(studyId);
 
         if (!ownerId.equals(userId)) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
@@ -547,7 +545,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         switch (file.getType()) {
             case FOLDER: {
-                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(fileId, null);
+                QueryResult<File> allFilesInFolder = fileDBAdaptor.getAllFilesInFolder(studyId, file.getPath(), null);
                 // delete recursively. Walk tree depth first
                 for (File subfolder : allFilesInFolder.getResult()) {
                     if (subfolder.getType() == File.Type.FOLDER) {

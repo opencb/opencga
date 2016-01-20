@@ -114,7 +114,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         user.setLastActivity(TimeUtils.getTimeMillis());
 //        DBObject userDBObject = getDbObject(user, "User " + user.getId());
         Document userDBObject = getMongoDBDocument(user, "User " + user.getId());
-        userDBObject.put(_ID, user.getId());
+        userDBObject.append(_ID, user.getId());
 
         QueryResult insert;
         try {
@@ -449,6 +449,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
+    public QueryResult<User> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
@@ -471,7 +476,17 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> update(Query query, ObjectMap parameters) {
+    public QueryResult<Long> update(Query query, ObjectMap parameters) {
+        return null;
+    }
+
+    @Override
+    public QueryResult<User> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<User> delete(int id) throws CatalogDBException {
         return null;
     }
 
@@ -539,7 +554,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addStringOrQuery("id", QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("email", QueryParams.EMAIL.key(), query, andBsonList);
         addStringOrQuery("password", QueryParams.PASSWORD.key(), query, andBsonList);

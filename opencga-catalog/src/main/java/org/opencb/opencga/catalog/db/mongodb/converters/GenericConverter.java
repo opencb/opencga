@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class GenericConverter<M, D> implements ComplexTypeConverter<M, D> {
 
-    protected ObjectMapper objectMapper;
+    protected final ObjectMapper objectMapper;
+    protected final ObjectWriter objectWriter;
     protected ObjectReader objectReader;
-    protected ObjectWriter objectWriter;
 
     protected Logger logger;
 

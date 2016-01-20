@@ -720,9 +720,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Test
     public void deleteFileTest() throws CatalogDBException, IOException {
         int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        QueryResult<Integer> delete = catalogFileDBAdaptor.deleteFile(fileId);
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId);
         System.out.println(delete);
-        assertTrue(delete.first() == 1);
+        assertTrue(delete.getNumResults() == 1);
         try {
             System.out.println(catalogFileDBAdaptor.deleteFile(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
                     (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists")));

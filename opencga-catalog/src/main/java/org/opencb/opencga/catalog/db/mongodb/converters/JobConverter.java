@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
 import org.opencb.opencga.catalog.models.Job;
 
@@ -11,8 +12,11 @@ import java.io.IOException;
  */
 public class JobConverter extends GenericConverter<Job, Document> {
 
+    private ObjectWriter jobWriter;
+
     public JobConverter() {
         objectReader = objectMapper.reader(Job.class);
+        jobWriter = objectMapper.writerFor(Job.class);
     }
 
     @Override
@@ -30,7 +34,7 @@ public class JobConverter extends GenericConverter<Job, Document> {
     public Document convertToStorageType(Job object) {
         Document document = null;
         try {
-            document = Document.parse(objectWriter.writeValueAsString(object));
+            document = Document.parse(jobWriter.writeValueAsString(object));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

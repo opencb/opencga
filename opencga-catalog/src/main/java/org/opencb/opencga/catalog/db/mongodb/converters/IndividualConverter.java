@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
 import org.opencb.opencga.catalog.models.Individual;
 
@@ -11,8 +12,10 @@ import java.io.IOException;
  */
 public class IndividualConverter extends GenericConverter<Individual, Document> {
 
+    private ObjectWriter individualWriter;
     public IndividualConverter() {
         objectReader = objectMapper.reader(Individual.class);
+        individualWriter = objectMapper.writerFor(Individual.class);
     }
 
     @Override
@@ -30,7 +33,7 @@ public class IndividualConverter extends GenericConverter<Individual, Document> 
     public Document convertToStorageType(Individual object) {
         Document document = null;
         try {
-            document = Document.parse(objectWriter.writeValueAsString(object));
+            document = Document.parse(individualWriter.writeValueAsString(object));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
