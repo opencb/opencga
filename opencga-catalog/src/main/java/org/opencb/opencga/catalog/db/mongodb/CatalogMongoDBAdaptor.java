@@ -58,7 +58,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
-//    protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+    //    protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
 //        if (query != null && query.containsKey(queryParam)) {
 //            addIntegerOrQuery(mongoDbField, query.getAsIntegerList(queryParam), andBsonList);
 //        }
@@ -75,10 +75,16 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 //            andBsonList.add(Filters.or(orBsonList));
 //        }
 //    }
+
+    protected void addBooleanOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.BOOLEAN, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+    }
+
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
         addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,
-            MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
-}
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+    }
 
     protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
         addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, MongoDBQueryUtils.ComparisonOperator.EQUAL,

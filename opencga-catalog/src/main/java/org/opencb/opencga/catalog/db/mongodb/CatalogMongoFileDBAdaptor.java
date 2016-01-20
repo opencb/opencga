@@ -15,9 +15,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
-import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -580,8 +578,94 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> update(Query query, ObjectMap parameters) {
-        return null;
+    public QueryResult<File> update(Query query, ObjectMap parameters) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
+        QueryResult fileQueryResult = null;
+        if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
+            QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(QueryParams.DISK_USAGE.key(),
+                    QueryParams.STUDY_ID.key()));
+            fileQueryResult = nativeGet(query, queryOptions);
+        }
+
+        // We perform the update.
+        Bson queryBson = parseQuery(query);
+        Map<String, Object> fileParameters = new HashMap<>();
+
+        String[] acceptedParams = {
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(),
+                QueryParams.MODIFICATION_DATE.key()};
+        // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
+        filterStringParams(parameters, fileParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
+        acceptedEnums.put("type", File.Type.class);
+        acceptedEnums.put("format", File.Format.class);
+        acceptedEnums.put("bioformat", File.Bioformat.class);
+        acceptedEnums.put("status", File.Status.class);
+        try {
+            filterEnumParams(parameters, fileParameters, acceptedEnums);
+        } catch (CatalogDBException e) {
+            e.printStackTrace();
+            throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
+        }
+
+        String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
+        filterLongParams(parameters, fileParameters, acceptedLongParams);
+
+        String[] acceptedIntParams = {QueryParams.JOB_ID.key()};
+        // Fixme: Add "experiment_id" ?
+        filterIntParams(parameters, fileParameters, acceptedIntParams);
+        // Check if the job exists.
+        if (parameters.containsKey(QueryParams.JOB_ID.key())) {
+            if (!this.dbAdaptorFactory.getCatalogJobDBAdaptor().jobExists(parameters.getInt(QueryParams.JOB_ID.key()))) {
+                throw CatalogDBException.idNotFound("Job", parameters.getInt(QueryParams.JOB_ID.key()));
+            }
+        }
+
+        String[] acceptedIntegerListParams = {QueryParams.SAMPLE_IDS.key()};
+        filterIntegerListParams(parameters, fileParameters, acceptedIntegerListParams);
+        // Check if the sample ids exist.
+        if (parameters.containsKey(QueryParams.SAMPLE_IDS.key())) {
+            for (Integer sampleId : parameters.getAsIntegerList(QueryParams.SAMPLE_IDS.key())) {
+                if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().sampleExists(sampleId)) {
+                    throw CatalogDBException.idNotFound("Sample", sampleId);
+                }
+            }
+        }
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
+        filterMapParams(parameters, fileParameters, acceptedMapParams);
+        // Fixme: Attributes and stats can be also parsed to numeric or boolean
+/*
+        String[] acceptedObjectParams = {QueryParams.INDEX.key()};
+        filterObjectParams(parameters, fileParameters, acceptedObjectParams);
+*/
+        if (!fileParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = fileCollection.update(queryBson, new Document("$set", fileParameters), null);
+            if (update.getResult().isEmpty() || update.getNumTotalResults() == 0) {
+                throw new CatalogDBException("File update: Could not update the file(s).");
+            }
+
+            // If the diskUsage of some of the files have been changed, notify to the correspondent study
+            if (fileQueryResult != null) {
+                long newDiskUsage = parameters.getLong(QueryParams.DISK_USAGE.key());
+                for (Document file : (ArrayList<Document>) fileQueryResult.getResult()) {
+                    long difDiskUsage = newDiskUsage - (long) file.get(QueryParams.DISK_USAGE.key());
+                    int studyId = (int) file.get(_STUDY_ID);
+                    try {
+                        dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
+                    } catch (CatalogDBException e) {
+                        // Fixme: What do we do if it cannot be notified if everything has been updated already?
+                        // Could we remove all the files from the database and insert them again?
+                    }
+                }
+            }
+        }
+
+        return endQuery("Modify file", startTime, get(query, null));
     }
 
     @Override
@@ -629,21 +713,34 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         addStringOrQuery("type", QueryParams.TYPE.key(), query, andBsonList);
         addStringOrQuery("format", QueryParams.FORMAT.key(), query, andBsonList);
         addStringOrQuery("bioformat", QueryParams.BIOFORMAT.key(), query, andBsonList);
+        addStringOrQuery("uri", QueryParams.URI.key(), query, andBsonList);
         addStringOrQuery("deleteDate", QueryParams.DELETE_DATE.key(), query, andBsonList);
         addStringOrQuery("ownerId", QueryParams.OWNER_ID.key(), query, andBsonList);
         addStringOrQuery("creationDate", QueryParams.CREATION_DATE.key(), query, andBsonList);
         addStringOrQuery("modificationDate", QueryParams.MODIFICATION_DATE.key(), query, andBsonList);
+        addStringOrQuery("description", QueryParams.DESCRIPTION.key(), query, andBsonList);
         addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
         addStringOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
         addStringOrQuery("experimentId", QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
         addIntegerOrQuery("jobId", QueryParams.JOB_ID.key(), query, andBsonList);
-        addIntegerOrQuery("sampleIds", QueryParams.SAMPLE_ID.key(), query, andBsonList);
+        addIntegerOrQuery("sampleIds", QueryParams.SAMPLE_IDS.key(), query, andBsonList);
+        addStringOrQuery("attributes", QueryParams.ATTRIBUTES.key(), query, andBsonList);
+        addIntegerOrQuery("attributes", QueryParams.NATTRIBUTES.key(), query, andBsonList);
+        // Fixme: Battributes should be addBooleanOrQuery
+        addStringOrQuery("attributes", QueryParams.BATTRIBUTES.key(), query, andBsonList);
+        addStringOrQuery("stats", QueryParams.STATS.key(), query, andBsonList);
+        addIntegerOrQuery("stats", QueryParams.NSTATS.key(), query, andBsonList);
 
         addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
         addStringOrQuery("acl.read", QueryParams.ACL_READ.key(), query, andBsonList);
         addStringOrQuery("acl.write", QueryParams.ACL_WRITE.key(), query, andBsonList);
         addStringOrQuery("acl.execute", QueryParams.ACL_EXECUTE.key(), query, andBsonList);
         addStringOrQuery("acl.delete", QueryParams.ACL_DELETE.key(), query, andBsonList);
+
+        addStringOrQuery("index.userId", QueryParams.INDEX_USER_ID.key(), query, andBsonList);
+        addStringOrQuery("index.date", QueryParams.INDEX_DATE.key(), query, andBsonList);
+        addStringOrQuery("index.status", QueryParams.INDEX_STATUS.key(), query, andBsonList);
+        addIntegerOrQuery("index.jobId", QueryParams.INDEX_JOB_ID.key(), query, andBsonList);
 
         addIntegerOrQuery(_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
 

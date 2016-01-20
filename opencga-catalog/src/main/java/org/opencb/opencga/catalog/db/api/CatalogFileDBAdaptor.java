@@ -26,9 +26,7 @@ import org.opencb.opencga.catalog.models.File;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -41,15 +39,28 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         TYPE("type", TEXT_ARRAY, ""),
         FORMAT("format", TEXT_ARRAY, ""),
         BIOFORMAT("bioformat", TEXT_ARRAY, ""),
+        URI("uri", TEXT_ARRAY, ""),
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
         OWNER_ID("ownerId", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
+        DESCRIPTION("description", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", TEXT_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         JOB_ID("jobId", INTEGER_ARRAY, ""),
-        SAMPLE_ID("sampleId", INTEGER_ARRAY, ""),
+        SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+        STATS("stats", TEXT, ""),
+        NSTATS("nstats", DECIMAL, ""),
+
+        INDEX_USER_ID("index.userId", TEXT, ""),
+        INDEX_DATE("index.date", TEXT, ""),
+        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
+        INDEX_JOB_ID("index.jobId", TEXT, ""),
+        // Fixme: Index attributes
 
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
