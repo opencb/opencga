@@ -76,10 +76,10 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 //        }
 //    }
 
-    protected void addBooleanOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.BOOLEAN, MongoDBQueryUtils.ComparisonOperator.EQUAL,
-                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
-    }
+//    protected void addBooleanOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
+//        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.BOOLEAN, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+//                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+//    }
 
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
         addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,

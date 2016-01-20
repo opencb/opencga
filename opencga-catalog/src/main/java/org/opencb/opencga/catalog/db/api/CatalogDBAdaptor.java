@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.omg.CORBA.INV_IDENT;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -80,7 +81,13 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
         return queryResults;
     }
 
-    QueryResult<T> update(Query query, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult<T> update(int id, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
+
+
+    QueryResult<T> delete(int id) throws CatalogDBException;
 
     QueryResult<Long> delete(Query query) throws CatalogDBException;
 

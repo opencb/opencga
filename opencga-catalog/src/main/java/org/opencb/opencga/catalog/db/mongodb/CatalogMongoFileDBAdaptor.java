@@ -578,7 +578,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> update(Query query, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> update(int id, ObjectMap parameters) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
 
         long startTime = startQuery();
 
@@ -639,15 +644,15 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, fileParameters, acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
-/*
-        String[] acceptedObjectParams = {QueryParams.INDEX.key()};
+
+        String[] acceptedObjectParams = {"index"};
         filterObjectParams(parameters, fileParameters, acceptedObjectParams);
-*/
+
         if (!fileParameters.isEmpty()) {
             QueryResult<UpdateResult> update = fileCollection.update(queryBson, new Document("$set", fileParameters), null);
-            if (update.getResult().isEmpty() || update.getNumTotalResults() == 0) {
-                throw new CatalogDBException("File update: Could not update the file(s).");
-            }
+//            if (update.getResult().isEmpty() || update.getNumTotalResults() == 0) {
+//                throw new CatalogDBException("File update: Could not update the file(s).");
+//            }
 
             // If the diskUsage of some of the files have been changed, notify to the correspondent study
             if (fileQueryResult != null) {
@@ -663,9 +668,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                     }
                 }
             }
+            return endQuery("Modify file", startTime, Collections.singletonList(update.getNumTotalResults()));
         }
 
-        return endQuery("Modify file", startTime, get(query, null));
+//        return endQuery("Modify file", startTime, get(query, null));
+        return endQuery("Modify file", startTime, Collections.singletonList(0L));
+    }
+
+    @Override
+    public QueryResult<File> delete(int id) throws CatalogDBException {
+        return null;
     }
 
     @Override
