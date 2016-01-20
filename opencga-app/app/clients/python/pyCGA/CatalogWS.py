@@ -523,14 +523,14 @@ class Individuals(WS):
                     annotationSetName = annt_set["id"]
 
                     return self.general_method(ws_category="individuals", method_name="annotate",
-                                               item_id=str(individual_id), annotationSetName=annotationSetName,
+                                               item_id=str(individual_id), annotateSetName=annotationSetName,
                                                variableSetId=variableSetId, update="true", data=data
                                                )
 
         annotationSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
         return self.general_method(ws_category="individuals", method_name="annotate",
-                                   item_id=str(individual_id), annotationSetName=annotationSetName,
+                                   item_id=str(individual_id), annotateSetName=annotationSetName,
                                    variableSetId=variableSetId, update="false", data=data
                                    )
 
