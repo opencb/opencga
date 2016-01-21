@@ -82,6 +82,9 @@ class WS:
         :return: list of results
         """
 
+        if "limit" not in options:
+            options["limit"] = -1
+
         options_string = ""
         if options:
             options_string = "&".join([option_name + "=" + options[option_name] for option_name in options])
