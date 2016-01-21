@@ -23,7 +23,10 @@ class WS:
             session = token
         self.session_id = session["sid"]
         self.host = session["host"]
-        self.instance = instance
+        if "instance" in session:
+            self.instance = session["instance"]
+        else:
+            self.instance = instance
         self.pre_url = os.path.join(self.host, self.instance, "webservices", "rest", version)
 
     @staticmethod
