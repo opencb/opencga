@@ -138,9 +138,9 @@ class Methods:
                 if "stats" in result:
                     try:
                         if isinstance(result["stats"][level1], list) and result["stats"][level1]!=[]:
-                            print(result["name"] + "\t" + ",".join([term[level2] for term in result["stats"][level1]]))
+                            print(result["name"] + "\t" + ",".join(map(str, [term[level2] for term in result["stats"][level1]])))
                         elif isinstance(result["stats"][level1], dict):
-                            print(result["name"] + "\t" + result["stats"][level1][level2])
+                            print(result["name"] + "\t" + str(result["stats"][level1][level2]))
                         else:
                             print(result["name"] + "\t" + "ERROR")
                     except:
