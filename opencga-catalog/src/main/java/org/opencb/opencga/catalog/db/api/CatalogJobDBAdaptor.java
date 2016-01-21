@@ -87,18 +87,9 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     default QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), jobId);
-        QueryResult<Job> jobQueryResult = get(query, new QueryOptions());
-        if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", jobId);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Job id '{}' does not exist (or there are too many)", jobId);
-        }
-        return jobQueryResult;
+        return delete(jobId);
     }
 
     default QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {

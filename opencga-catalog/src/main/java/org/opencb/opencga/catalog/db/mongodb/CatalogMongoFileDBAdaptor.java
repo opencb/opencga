@@ -488,7 +488,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult fileQueryResult = null;
         if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
             QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(QueryParams.DISK_USAGE.key(),
-                    QueryParams.STUDY_ID.key()));
+                    _STUDY_ID));
             fileQueryResult = nativeGet(query, queryOptions);
         }
 
@@ -654,7 +654,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         addStringOrQuery("index.status", QueryParams.INDEX_STATUS.key(), query, andBsonList);
         addIntegerOrQuery("index.jobId", QueryParams.INDEX_JOB_ID.key(), query, andBsonList);
 
-        addIntegerOrQuery(_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
+        addIntegerOrQuery(_STUDY_ID, _STUDY_ID, query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

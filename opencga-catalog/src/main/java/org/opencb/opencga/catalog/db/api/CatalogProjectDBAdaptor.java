@@ -98,17 +98,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
     QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
     default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
-        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), projectId);
-        QueryResult<Project> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Project id '{}' has not been deleted", projectId);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Project id '{}' does not exist", projectId);
-        }
-        return sampleQueryResult;
+        return delete(projectId);
     }
 
     QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;

@@ -32,15 +32,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -288,6 +286,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            joinFields(user, options);
 //            return endQuery("Get user", startTime, Collections.singletonList(user));
 //        }
+        checkUserExists(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
         query.append(QueryParams.LAST_ACTIVITY.key(), lastActivity);
         return get(query, options);
@@ -430,7 +429,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> get(Query query, QueryOptions options) {
+    public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
 
@@ -446,11 +445,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
         }
         return userQueryResult;
-    }
-
-    @Override
-    public QueryResult<User> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
     }
 
     @Override
@@ -487,7 +481,17 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> delete(int id) throws CatalogDBException {
-        return null;
+        Query query = new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), id);
+        QueryResult<User> userQueryResult = get(query, null);
+        if (userQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("User id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.idNotFound("User id '{}' does not exist (or there are too many)", id);
+        }
+        return userQueryResult;
     }
 
     /**

@@ -5,6 +5,7 @@ import com.mongodb.DBObject;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
@@ -366,11 +367,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         return null;
     }
@@ -387,12 +383,24 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> delete(int id) throws CatalogDBException {
-        return null;
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Job> jobQueryResult = get(query, null);
+        if (jobQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.idNotFound("Job id '{}' does not exist (or there are too many)", id);
+        }
+        return jobQueryResult;
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) {
-        return null;
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long timeStart =startQuery();
+        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query), null);
+        return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
     }
 
     @Override

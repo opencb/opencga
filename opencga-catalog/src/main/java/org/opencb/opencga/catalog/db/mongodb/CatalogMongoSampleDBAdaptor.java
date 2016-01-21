@@ -726,11 +726,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Sample> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
         return sampleCollection.find(bson, options);

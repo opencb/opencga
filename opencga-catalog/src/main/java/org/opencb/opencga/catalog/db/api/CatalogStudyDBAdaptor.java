@@ -129,7 +129,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
         Long count = studyExists(studyId);
-        if (count < 0) {
+        if (count <= 0) {
             throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
         } else if (count > 1) {
             throw CatalogDBException.newInstance("'{}' documents found with the Study id '{}'", count, studyId);

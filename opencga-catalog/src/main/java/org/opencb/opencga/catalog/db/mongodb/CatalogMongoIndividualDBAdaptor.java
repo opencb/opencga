@@ -401,11 +401,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
     public QueryResult<Individual> update(int id, ObjectMap parameters) throws CatalogDBException {
         return null;
     }

@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -496,11 +497,12 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> get(Query query, QueryOptions options) {
+    public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         List<Bson> aggregates = new ArrayList<>();
 
-        aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
+        aggregates.add(Aggregates.match(parseQuery(query)));
 
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
@@ -514,12 +516,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             }
         }
 
-        return projectQueryResult;
-    }
-
-    @Override
-    public QueryResult<Project> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
+        return endQuery("Get project", startTime, projectQueryResult.getResult());
     }
 
     @Override
@@ -557,7 +554,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Project> delete(int id) throws CatalogDBException {
-        return null;
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Project> projectQueryResult = get(query, null);
+        if (projectQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Project id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.idNotFound("Project id '{}' does not exist (or there are too many)", id);
+        }
+        return projectQueryResult;
     }
 
     @Override
@@ -565,17 +572,11 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         long startTime = startQuery();
 
         Bson bson = parseQuery(query);
-        Bson pull = Updates.pull("projects", new Document("id", query.get(CatalogUserDBAdaptor.QueryParams.PROJECT_ID.key())));
-
-//        DBObject query = new BasicDBObject("projects.id", projectId);
-//        DBObject pull = new BasicDBObject("$pull",
-//                new BasicDBObject("projects",
-//                        new BasicDBObject("id", projectId)));
+        Bson pull = Updates.pull("projects", new Document(QueryParams.ID.key(), query.get(QueryParams.ID.key())));
 
         QueryResult<UpdateResult> update = userCollection.update(bson, pull, null);
         List<Long> deletes = new LinkedList<>();
         if (update.getResult().get(0).getModifiedCount() == 0) {
-//            throw CatalogDBException.idNotFound("Project", projectId);
             throw CatalogDBException.newInstance("Project id '{}' not found", query.get(CatalogUserDBAdaptor.QueryParams.PROJECT_ID.key()));
         } else {
             deletes.add(update.getResult().get(0).getModifiedCount());

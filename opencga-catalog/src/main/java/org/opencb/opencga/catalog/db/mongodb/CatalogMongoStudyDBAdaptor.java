@@ -164,6 +164,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
+        checkStudyId(studyId);
 //        long startTime = startQuery();
 //        //TODO: Parse QueryOptions include/exclude
 //        DBObject query = new BasicDBObject(_ID, studyId);
@@ -189,9 +190,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
-        return endQuery("getAllSudiesInProject", startTime, getAllStudies(options == null ?
-                new QueryOptions(StudyFilterOptions.projectId.toString(), projectId) :
-                options.append(StudyFilterOptions.projectId.toString(), projectId)));
+        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
+        return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
     public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
@@ -721,16 +721,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         options = filterOptions(options, FILTER_ROUTE_STUDIES);
-        QueryResult<Study> result = studyCollection.find(bson, Projections.exclude(_ID, _PROJECT_ID), studyConverter, options);
+        QueryResult<Study> result = studyCollection.find(bson, null, studyConverter, options);
         for (Study study : result.getResult()) {
             joinFields(study, options);
         }
         return result;
-    }
-
-    @Override
-    public QueryResult<Study> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        return null;
     }
 
     @Override
@@ -778,7 +773,17 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Study> delete(int id) throws CatalogDBException {
-        return null;
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Study> studyQueryResult = get(query, null);
+        if (studyQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.idNotFound("Study id '{}' does not exist (or there are too many)", id);
+        }
+        return studyQueryResult;
     }
 
     /**

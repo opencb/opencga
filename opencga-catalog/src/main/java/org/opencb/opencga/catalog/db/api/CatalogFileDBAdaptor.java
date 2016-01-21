@@ -68,9 +68,8 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         ACL_READ("acl.read", BOOLEAN , ""),
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
 
-        STUDY_ID("study.id", TEXT_ARRAY, "");
         // TOCHECK: Pedro. Add annotation support?
 
         private final String key;
@@ -110,7 +109,7 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         }
 
         long count = count(new Query(QueryParams.ID.key(), fileId)).first();
-        if (count < 0) {
+        if (count <= 0) {
             throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
         } else if (count > 1) {
             throw CatalogDBException.newInstance("'{}' documents found with the File id '{}'", count, fileId);
