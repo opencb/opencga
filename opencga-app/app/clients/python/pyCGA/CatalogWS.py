@@ -68,8 +68,8 @@ class Users(WS):
         :param password: user password
         """
 
-        self.general_method("users", "create", email=email, userId=userId, name=name, organization=organization,
-                            password=password, **options)
+        return self.general_method("users", "create", email=email, userId=userId, name=name, organization=organization,
+                                   password=password, **options)
 
     def change_email(self, userId, nemail, **options):
         """
