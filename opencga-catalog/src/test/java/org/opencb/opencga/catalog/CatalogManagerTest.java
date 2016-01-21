@@ -1615,6 +1615,15 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testModifySampleUnknownIndividual() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+        assertEquals(-1, sample.getIndividualId());
+    }
+
+    @Test
     public void testDeleteSample() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
