@@ -26,6 +26,7 @@ class Methods:
         try:
             sid = user.login_method(args.user, args.pwd)[0].get("sessionId")
             print(sid)
+            return sid
         except ServerResponseException as e:
             print(str(e), file=sys.stderr)
 
