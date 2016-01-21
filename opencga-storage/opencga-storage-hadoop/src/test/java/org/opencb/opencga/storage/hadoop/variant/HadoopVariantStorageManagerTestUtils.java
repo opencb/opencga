@@ -12,12 +12,14 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.tools.ant.types.Commandline;
-import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
@@ -28,42 +30,34 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created on 15/10/15
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantStorageManagerTest extends VariantStorageManagerTest {
+public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerTestUtils implements VariantStorageTest {
 
-    static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManagerTest.class);
-    static HBaseTestingUtility utility = null;
-    static Configuration configuration;
+    public static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManagerTestUtils.class);
+    public static AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
+    public static AtomicReference<Configuration> configuration = new AtomicReference<>(null);
 
-    @After
-    public void shutdown() throws Exception {
-        try {
-            utility.shutdownMiniCluster();
-        } finally {
-            utility = null;
-        }
-    }
 
-    @Override
-    public synchronized VariantStorageManager getVariantStorageManager() throws Exception {
 
-        if (utility == null) {
-            utility = new HBaseTestingUtility();
-            utility.startMiniCluster(1);
-            configuration = utility.getConfiguration();
+    @BeforeClass
+    public static void initializeMiniCluster() throws Exception {
+        if (utility.get() == null) {
+            utility.set(new HBaseTestingUtility());
+            utility.get().startMiniCluster(1);
+            configuration.set(utility.get().getConfiguration());
 
-            System.out.println("MRJobConfig.CACHE_FILES = " + configuration.get(MRJobConfig.CACHE_FILES));
 //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
 //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
 //            miniMRClientCluster.start();
 
-            HBaseManager hBaseManager = new HBaseManager(configuration);
-            Connection con = ConnectionFactory.createConnection(configuration);
+            HBaseManager hBaseManager = new HBaseManager(configuration.get());
+            Connection con = ConnectionFactory.createConnection(configuration.get());
 
             String tableName = "table";
             byte[] columnFamily = Bytes.toBytes("0");
@@ -86,51 +80,63 @@ public class HadoopVariantStorageManagerTest extends VariantStorageManagerTest {
             TableName tname = TableName.valueOf(tableName);
             try (Admin admin = con.getAdmin()) {
                 if (admin.tableExists(tname)) {
-                    utility.deleteTable(tableName);
+                    utility.get().deleteTable(tableName);
                 }
             }
-
-
 
             con.close();
 
         }
+    }
+    @AfterClass
+    public static void shutdownMiniCluster() throws Exception {
+        try {
+            if (utility.get() != null) {
+                utility.get().shutdownMiniCluster();
+            }
+        } finally {
+            utility.set(null);
+        }
+    }
+
+    @Override
+    public HadoopVariantStorageManager getVariantStorageManager() throws Exception {
 
         HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
 
-        InputStream is = HadoopVariantStorageManagerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+        InputStream is = HadoopVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
         storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        configuration.setBoolean("addDependencyJars", false);
-        configuration.forEach(entry -> options.put(entry.getKey(), entry.getValue()));
+        configuration.get().setBoolean("addDependencyJars", false);
+        configuration.get().forEach(entry -> options.put(entry.getKey(), entry.getValue()));
 
-        FileSystem fs = FileSystem.get(configuration);
+        FileSystem fs = FileSystem.get(configuration.get());
         String value = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
 //        String value = new Path("opencga_test/").toUri().toString();
         System.out.println(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + value);
         options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, value);
-        variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + configuration.get(HConstants.ZOOKEEPER_QUORUM)));
+        variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        manager.mrExecutor = new TestMRExecutor(configuration);
-        manager.conf = configuration;
+        manager.mrExecutor = new TestMRExecutor(configuration.get());
+        manager.conf = configuration.get();
         return manager;
     }
 
     @Override
     public void clearDB(String tableName) throws Exception {
         TableName tname = TableName.valueOf(tableName);
-        try (Connection con = ConnectionFactory.createConnection(configuration); Admin admin = con.getAdmin()) {
+        try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
             if (admin.tableExists(tname)) {
-                utility.deleteTable(tableName);
+                utility.get().deleteTable(tableName);
             }
         }
     }
 
-    static class TestMRExecutor implements MRExecutor {
+    class TestMRExecutor implements MRExecutor {
 
         private final Configuration configuration;
 
@@ -165,15 +171,5 @@ public class HadoopVariantStorageManagerTest extends VariantStorageManagerTest {
             return 0;
         }
     }
-
-//    @Override
-//    protected VariantStorageManager getVariantStorageManager() throws Exception {
-//        return HadoopVariantStorageManagetTestUtils.getVariantStorageManager();
-//    }
-//
-//    @Override
-//    protected void clearDB(String dbName) throws Exception {
-//        HadoopVariantStorageManagetTestUtils.clearDB(dbName);
-//    }
 
 }

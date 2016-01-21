@@ -236,11 +236,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         if (query.getBoolean("archive", false)) {
             String study = query.getString(STUDIES.key());
-            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+            StudyConfiguration studyConfiguration;
             int studyId;
             if (StringUtils.isNumeric(study)) {
                 studyId = Integer.parseInt(study);
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
             } else {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
                 studyId = studyConfiguration.getStudyId();
             }
 

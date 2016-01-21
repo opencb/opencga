@@ -73,6 +73,10 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             }
         }
         VcfSliceProtos.VcfRecord vcfRecord = vcfRecordIterator.next();
+        if (vcfRecord.getRelativeStart() < 0) {
+            //Skip duplicated variant!
+            return next();
+        }
 
         Variant variant;
         try {
