@@ -23,6 +23,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
  */
 public class VariantSqlQueryParser {
 
+    public static final String COUNT = "count";
     private final GenomeHelper genomeHelper;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
@@ -70,8 +71,12 @@ public class VariantSqlQueryParser {
      * @return String builder
      */
     public StringBuilder addProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
-        //TODO Fetch only FULL_ANNOTATION and genotypes data
-        return sb.append(" * ");
+        if (options.getBoolean(COUNT)) {
+            return sb.append(" COUNT(*) ");
+        } else {
+            //TODO Fetch only FULL_ANNOTATION and genotypes data
+            return sb.append(" * ");
+        }
     }
 
     public StringBuilder addWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {

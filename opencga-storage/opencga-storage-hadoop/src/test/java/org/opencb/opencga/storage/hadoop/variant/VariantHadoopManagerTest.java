@@ -4,15 +4,20 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -21,6 +26,11 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 15/10/15
@@ -29,39 +39,39 @@ import java.net.URI;
  */
 public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUtils {
 
-    @Test
-    public void testLoadGvcf() throws Exception {
-        clearDB(DB_NAME);
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+    private VariantHadoopDBAdaptor dbAdaptor;
+    private VariantSource source;
+    private StudyConfiguration studyConfiguration;
+    private ETLResult etlResult = null;
 
-        URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
+    @Before
+    public void loadSingleVcf() throws Exception {
+        if (etlResult == null) {
+            clearDB(DB_NAME);
+            HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
-        ETLResult etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                        .append(Options.ANNOTATE.key(), true)
-                        .append(Options.CALCULATE_STATS.key(), false)
-                        .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
-                        .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
-        );
+            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
 
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+            studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+            etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                            .append(Options.ANNOTATE.key(), true)
+                            .append(Options.CALCULATE_STATS.key(), false)
+                            .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
+                            .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
+            );
 
-        VariantSource source = variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
-        VariantGlobalStats stats = source.getStats();
-        Assert.assertNotNull(stats);
+            dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
-        checkMeta(dbAdaptor);
-
-        checkArchiveTable(dbAdaptor);
-        checkVariantTable(dbAdaptor, stats);
-
-        queryArchiveTable(studyConfiguration, dbAdaptor, stats);
-        queryVariantTable(studyConfiguration, dbAdaptor);
+            source = variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
+            VariantGlobalStats stats = source.getStats();
+            Assert.assertNotNull(stats);
+        }
 
     }
 
-    public void queryVariantTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor) {
+    @Test
+    public void queryVariantTable() {
         System.out.println("Query from Variant table");
         for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()),
                 new QueryOptions()); iterator.hasNext(); ) {
@@ -71,7 +81,50 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
         System.out.println("End query from Analysis table");
     }
 
-    public void queryArchiveTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, VariantGlobalStats stats) {
+    @Test
+    public void countVariants() {
+        long totalCount = dbAdaptor.count(new Query()).first();
+        long partialCount1 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:1-15030")).first();
+        long partialCount2 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:15030-60000")).first();
+        assertEquals(totalCount, partialCount1 + partialCount2);
+    }
+
+    @Test
+    public void getVariantByGene() {
+
+        // Group by Gene
+        HashMap<String, Long> genesCount = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            HashSet<String> genesInVariant = new HashSet<>();
+            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                String geneName = consequenceType.getGeneName();
+                if (geneName != null) {
+                    genesInVariant.add(geneName);
+                }
+                geneName = consequenceType.getEnsemblGeneId();
+                if (geneName != null) {
+                    genesInVariant.add(geneName);
+                }
+            }
+            for (String geneName : genesInVariant) {
+                genesCount.put(geneName, genesCount.getOrDefault(geneName, 0L) + 1);
+            }
+        }
+        System.out.println("genesCount = " + genesCount);
+
+        //Count for each gene
+        for (Map.Entry<String, Long> entry : genesCount.entrySet()) {
+            System.out.println("Gene " + entry.getKey() + " in " + entry.getValue() + " variants");
+            QueryResult<Long> queryResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.GENE.key(), entry.getKey()));
+            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+            long count = queryResult.first();
+            assertEquals(entry.getValue().longValue(), count);
+        }
+
+    }
+
+    @Test
+    public void queryArchiveTable() {
         final int[] numVariants = {0};
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
@@ -83,10 +136,11 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
             numVariants[0]++;
         });
         System.out.println("End query from Archive table");
-        Assert.assertEquals(stats.getNumRecords(), numVariants[0]);
+        assertEquals(source.getStats().getNumRecords(), numVariants[0]);
     }
 
-    public void checkVariantTable(VariantHadoopDBAdaptor dbAdaptor, VariantGlobalStats stats) throws java.io.IOException {
+    @Test
+    public void checkVariantTable() throws java.io.IOException {
         System.out.println("Query from HBase : " + DB_NAME);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
@@ -104,10 +158,11 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
             return num;
         });
         System.out.println("End query from HBase : " + DB_NAME);
-        Assert.assertEquals(stats.getVariantTypeCount(VariantType.SNP) + stats.getVariantTypeCount(VariantType.SNV), numVariants);
+        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
     }
 
-    public void checkArchiveTable(VariantHadoopDBAdaptor dbAdaptor) throws java.io.IOException {
+    @Test
+    public void checkArchiveTable() throws java.io.IOException {
         String tableName = ArchiveHelper.getTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
@@ -123,7 +178,8 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
         System.out.println("End query from archive HBase " + tableName);
     }
 
-    public void checkMeta(VariantHadoopDBAdaptor dbAdaptor) {
+    @Test
+    public void checkMeta() {
         System.out.println("Get studies");
         for (String studyName : dbAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions())) {
             System.out.println("studyName = " + studyName);

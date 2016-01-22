@@ -49,8 +49,7 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Set<String> biotype = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
-            String value = consequenceType.getGeneName();
-            addNotNull(genes, value);
+            addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());

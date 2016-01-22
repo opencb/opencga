@@ -216,8 +216,20 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) {
-        // TODO Auto-generated method stub
-        return null;
+
+        long startTime = System.currentTimeMillis();
+        String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
+        System.out.println("sql = " + sql);
+        try {
+            Statement statement = phoenixCon.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+            resultSet.next();
+            long count = resultSet.getLong(1);
+            return new QueryResult<>("count", ((int) (System.currentTimeMillis() - startTime)),
+                    1, 1, "", "", Collections.singletonList(count));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -289,7 +301,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
-            logger.debug(sql);
+            logger.info(sql);
 
 //            try (Statement statement = phoenixCon.createStatement()) {
 //                ResultSet resultSet = statement.executeQuery(sql);
