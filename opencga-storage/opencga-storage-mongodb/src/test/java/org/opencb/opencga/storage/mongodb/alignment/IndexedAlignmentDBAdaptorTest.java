@@ -26,7 +26,7 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
@@ -69,7 +69,7 @@ public class IndexedAlignmentDBAdaptorTest extends GenericTest {
         bamFile = rootDir.resolve(bamFileName);
         Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption
                 .REPLACE_EXISTING);
-        BamUtils.createBai(bamFile, rootDir);
+        AlignmentFileUtils.createIndex(bamFile, rootDir);
 
         ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment()
                 .getOptions();
