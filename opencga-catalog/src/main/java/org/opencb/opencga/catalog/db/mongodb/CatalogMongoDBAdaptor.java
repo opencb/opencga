@@ -27,13 +27,11 @@ import org.opencb.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.db.api.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -397,9 +395,10 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
 
     /**
      * @param filePath assuming 'pathRelativeToStudy + name'
+     * @param options
      */
     @Override
-    public QueryResult renameFile(int fileId, String filePath) throws CatalogDBException {
+    public QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Path path = Paths.get(filePath);
@@ -419,7 +418,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             filePath += filePath.endsWith("/")? "" : "/";
             for (File subFile : allFilesInFolder.getResult()) {
                 String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
-                renameFile(subFile.getId(), replacedPath); // first part of the path in the subfiles 3
+                renameFile(subFile.getId(), replacedPath, null); // first part of the path in the subfiles 3
             }
         }
         BasicDBObject query = new BasicDBObject(_ID, fileId);
@@ -430,7 +429,7 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
         if (update.getResult().isEmpty() || update.getResult().get(0).getN() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        return endQuery("rename file", startTime);
+        return endQuery("rename file", startTime, getFile(fileId, options));
     }
 
     @Override

@@ -807,7 +807,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     public static class UpdateFile {
-//        public String name;
+        public String name;
         public File.Format format;
         public File.Bioformat bioformat;
 //        public String path;

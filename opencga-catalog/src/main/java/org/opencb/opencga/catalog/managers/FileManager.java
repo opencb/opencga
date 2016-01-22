@@ -489,8 +489,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         //Path and Name must be changed with "raname" and/or "move" methods.
                         case "path":
                         case "name":
-                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
-                                    "Use \"rename\" instead");
+                            break;
                         case "type":
                         default:
                             throw new CatalogException("Parameter '" + s + "' can't be changed. " +
@@ -499,6 +498,16 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
                 break;
         }
+        //Path and Name must be changed with "raname" and/or "move" methods.
+        if (parameters.containsKey("name")) {
+            logger.info("Rename file using update method!");
+            rename(fileId, parameters.getString("name"), sessionId);
+        }
+        if (parameters.containsKey("path") ) {
+            logger.info("Move file using update method!");
+            move(fileId, parameters.getString("path"), options, sessionId);
+        }
+
         String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
         QueryResult queryResult = fileDBAdaptor.modifyFile(fileId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
@@ -596,14 +605,21 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkPath(newName, "newName");
+        ParamUtils.checkFileName(newName, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
-        File file = fileDBAdaptor.getFile(fileId, null).first();
+        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
+        File file = fileResult.first();
+
+        if (file.getName().equals(newName)) {
+            fileResult.setId("rename");
+            fileResult.setWarningMsg("File name '" + newName + "' is the original name. Do nothing.");
+            return fileResult;
+        }
 
         if (isRootFolder(file)) {
             throw new CatalogException("Can not rename root folder");
@@ -622,24 +638,29 @@ public class FileManager extends AbstractManager implements IFileManager {
         CatalogIOManager catalogIOManager;
         URI studyUri = getStudyUri(studyId);
         boolean isExternal = isExternal(file); //If the file URI is not null, the file is external located.
+        QueryResult<File> result;
         switch (file.getType()) {
             case FOLDER:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
                     catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
+                result = fileDBAdaptor.renameFile(fileId, newPath, null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
-                return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
+                break;
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
                     catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
+                result = fileDBAdaptor.renameFile(fileId, newPath, null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
-                return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
+                break;
+            default:
+                throw new CatalogException("Unknown file type " + file.getType());
         }
 
-        return null;
+        return result;
     }
 
     @Override
