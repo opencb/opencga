@@ -332,7 +332,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
 
         Query query = new Query(QueryParams.ID.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions("include", _PROJECT_ID);
+        QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + _PROJECT_ID);
         QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
@@ -719,20 +719,34 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         Bson bson = parseQuery(query);
-        options = filterOptions(options, FILTER_ROUTE_STUDIES);
-        QueryResult<Study> result = studyCollection.find(bson, studyConverter, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        QueryResult<Study> result = studyCollection.find(bson, studyConverter, qOptions);
         for (Study study : result.getResult()) {
             joinFields(study, options);
         }
-        return result;
+        return endQuery("Get study", startTime, result.getResult());
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        //options = filterOptions(options, FILTER_ROUTE_STUDIES);
-        return studyCollection.find(bson, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        // Fixme: If necessary, include in the results also the files, jobs, individuals...
+        return studyCollection.find(bson, qOptions);
     }
 
     @Override
@@ -768,7 +782,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Study> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+
+        long startTime = startQuery();
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
+        if (update.getNumTotalResults() != 1) {
+            throw new CatalogDBException("Could not update study with id " + id);
+        }
+        return endQuery("Update study", startTime, getStudy(id, null));
+
     }
 
     @Override
@@ -854,7 +875,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
         addIntegerOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
-        addIntegerOrQuery("_projectId", QueryParams.PROJECT_ID.key(), query, andBsonList);
+        addIntegerOrQuery(_PROJECT_ID, QueryParams.PROJECT_ID.key(), query, andBsonList);
+        addIntegerOrQuery(_PROJECT_ID, _PROJECT_ID, query, andBsonList);
 
         addStringOrQuery("group.id", QueryParams.GROUP_ID.key(), query, andBsonList);
 

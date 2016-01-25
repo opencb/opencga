@@ -110,7 +110,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 
     protected void addQueryFilter(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ParamType paramType,
                                   MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator, List<Bson> andBsonList) {
-        if (query != null && query.getString(queryParam) != null && !query.getString(queryParam).isEmpty()) {
+        if (query != null && query.getString(queryParam) != null) {
             Bson filter = MongoDBQueryUtils.createFilter(mongoDbField, queryParam, query, paramType, comparisonOperator, operator);
             if (filter != null) {
                 andBsonList.add(filter);

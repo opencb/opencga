@@ -512,7 +512,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 break;
         }
         String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
-        QueryResult queryResult = fileDBAdaptor.modifyFile(fileId, parameters);
+        QueryResult queryResult = fileDBAdaptor.update(fileId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
         userDBAdaptor.updateUserLastActivity(ownerId);
         return queryResult;

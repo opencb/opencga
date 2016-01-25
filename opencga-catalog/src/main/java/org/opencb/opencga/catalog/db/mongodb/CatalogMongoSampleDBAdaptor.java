@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -99,11 +100,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
+        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 
 //        DBObject query = new BasicDBObject(_ID, sampleId);
         Query query1 = new Query(QueryParams.ID.key(), sampleId);
-        QueryResult<Sample> sampleQueryResult = get(query1, filteredOptions);
+        QueryResult<Sample> sampleQueryResult = get(query1, options);
 
 //        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
 //        List<Sample> samples = parseSamples(queryResult);
@@ -691,8 +692,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         DBObject query = new BasicDBObject(_ID, sampleId);
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
         */
-        Bson query = new BsonDocument(_ID, new BsonInt32(sampleId));
-        Bson update = Updates.pull("annotationSets", new BsonDocument("id", new BsonString(annotationId)));
+        Bson query = new Document(_ID, sampleId);
+        Bson update = Updates.pull("annotationSets", new Document("id", annotationId));
         QueryResult<UpdateResult> resultQueryResult = sampleCollection.update(query, update, null);
         if (resultQueryResult.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
@@ -719,16 +720,32 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Sample> get(Query query, QueryOptions options) {
+    public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         Bson bson = parseQuery(query);
-        options = filterOptions(options, FILTER_ROUTE_SAMPLES);
-        return sampleCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), sampleConverter, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
+        QueryResult<Sample> sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
+        return endQuery("Get sample", startTime, sampleQueryResult.getResult());
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return sampleCollection.find(bson, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        //qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(_ID, _STUDY_ID));
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
+        return sampleCollection.find(bson, qOptions);
     }
 
     @Override
@@ -750,6 +767,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
 //        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
 //        checkInUse(sampleId);
+        // Fixme: Remove the id of the sample from the sampleIds array from file
         Bson bson = parseQuery(query);
         DeleteResult deleteResult = sampleCollection.remove(bson, null).getResult().get(0);
         if (deleteResult.getDeletedCount() == 0) {

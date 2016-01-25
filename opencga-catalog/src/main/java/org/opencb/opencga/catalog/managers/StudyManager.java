@@ -161,10 +161,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             }
         }
 
-        study = studyDBAdaptor.modifyStudy(study.getId(), new ObjectMap("uri", uri)).first();
+        study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
         auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
         int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
-        rootFile = fileDBAdaptor.modifyFile(rootFileId, new ObjectMap("uri", uri)).first();
+        rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
         auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
         userDBAdaptor.updateUserLastActivity(projectOwnerId);

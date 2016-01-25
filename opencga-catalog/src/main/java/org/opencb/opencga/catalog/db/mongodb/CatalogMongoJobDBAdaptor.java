@@ -360,15 +360,32 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> get(Query query, QueryOptions options) {
+    public QueryResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         Bson bson = parseQuery(query);
-        options = filterOptions(options, FILTER_ROUTE_JOBS);
-        return jobCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), jobConverter, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
+        QueryResult<Job> jobQueryResult = jobCollection.find(bson, jobConverter, qOptions);
+        return endQuery("Get job", startTime, jobQueryResult.getResult());
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        //qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(_ID, _STUDY_ID));
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
+        return jobCollection.find(bson, qOptions);
     }
 
     @Override

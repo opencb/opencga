@@ -21,7 +21,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
 
@@ -58,6 +60,16 @@ public class CatalogMongoStudyDBAdaptorTest {
         assertEquals(2100, catalogStudyDBAdaptor.getStudy(5,null).getResult().get(0).getDiskUsage());
         catalogStudyDBAdaptor.updateDiskUsage(5,-200);
         assertEquals(1900, catalogStudyDBAdaptor.getStudy(5,null).getResult().get(0).getDiskUsage());
+    }
+
+    /***
+     * The test will check whether it is possible to create a new study using an alias that is already being used, but on a different project.
+     */
+    @Test
+    public void createStudySameAliasDifferentProject() throws CatalogDBException {
+        QueryResult<Study> ph1 = catalogStudyDBAdaptor.createStudy(1, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null),
+                null);
+        assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }
 
 

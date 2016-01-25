@@ -438,7 +438,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         //DBObject newAclObject = getDbObject(newAcl, "ACL");
 
         List<AclEntry> projectAcls = getProjectAcl(projectId, userId).getResult();
-        Bson query = new BsonDocument("projects.ids", new BsonInt32(projectId));
+        Bson query = new Document("projects.id", projectId);
         Bson push = Updates.push("projects.$.acl", newAclObject);
         if (!projectAcls.isEmpty()) { // ensure that there is no acl for that user in that project. pull
             Bson pull = Updates.pull("projects.$.acl", Filters.eq("userId", userId));

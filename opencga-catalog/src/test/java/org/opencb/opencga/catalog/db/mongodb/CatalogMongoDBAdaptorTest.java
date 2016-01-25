@@ -795,7 +795,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
-        catalogDBAdaptor.getCatalogFileDBAdaptor().modifyFile(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
+        catalogDBAdaptor.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
 
         thrown.expect(CatalogDBException.class);
         QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());

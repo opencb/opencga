@@ -88,8 +88,8 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
-        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId,
-                Function.identity()));
+        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream()
+                .collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
         assertEquals(2, annotationSets.size());
         assertEquals(annot1, annotationSets.get(annot1.getId()));
         assertEquals(annot2, annotationSets.get(annot2.getId()));

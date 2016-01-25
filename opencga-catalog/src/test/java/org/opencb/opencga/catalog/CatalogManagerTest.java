@@ -76,72 +76,6 @@ public class CatalogManagerTest extends GenericTest {
     private int s_8;
     private int s_9;
 
-    /* TYPE_FILE UTILS */
-    public static java.io.File createDebugFile() throws IOException {
-        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
-        return createDebugFile(fileTestName);
-    }
-
-    public static java.io.File createDebugFile(String fileTestName) throws IOException {
-        return createDebugFile(fileTestName, 200);
-    }
-
-    public static java.io.File createDebugFile(String fileTestName, int lines) throws IOException {
-        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
-
-        os.writeBytes("Debug file name: " + fileTestName + "\n");
-        for (int i = 0; i < 100; i++) {
-            os.writeBytes(i + ", ");
-        }
-        for (int i = 0; i < lines; i++) {
-            os.writeBytes(StringUtils.randomString(500));
-            os.write('\n');
-        }
-        os.close();
-
-        return Paths.get(fileTestName).toFile();
-    }
-
-    public static void clearCatalog(Properties properties) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-        db.getDb().drop();
-        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-
-        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
-        deleteFolderTree(rootdir.toFile());
-        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
-            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    public static void deleteFolderTree(java.io.File folder) {
-        java.io.File[] files = folder.listFiles();
-        if (files != null) {
-            for (java.io.File f : files) {
-                if (f.isDirectory()) {
-                    deleteFolderTree(f);
-                } else {
-                    f.delete();
-                }
-            }
-        }
-        folder.delete();
-    }
-
     @Before
     public void setUp() throws IOException, CatalogException {
         InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
@@ -273,6 +207,72 @@ public class CatalogManagerTest extends GenericTest {
             catalogManager.logout("user3", sessionIdUser3);
         }
 //        catalogManager.close();
+    }
+
+    /* TYPE_FILE UTILS */
+    public static java.io.File createDebugFile() throws IOException {
+        String fileTestName = "/tmp/fileTest " + StringUtils.randomString(5);
+        return createDebugFile(fileTestName);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName) throws IOException {
+        return createDebugFile(fileTestName, 200);
+    }
+
+    public static java.io.File createDebugFile(String fileTestName, int lines) throws IOException {
+        DataOutputStream os = new DataOutputStream(new FileOutputStream(fileTestName));
+
+        os.writeBytes("Debug file name: " + fileTestName + "\n");
+        for (int i = 0; i < 100; i++) {
+            os.writeBytes(i + ", ");
+        }
+        for (int i = 0; i < lines; i++) {
+            os.writeBytes(StringUtils.randomString(500));
+            os.write('\n');
+        }
+        os.close();
+
+        return Paths.get(fileTestName).toFile();
+    }
+
+    public static void clearCatalog(Properties properties) throws IOException {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+        db.getDb().drop();
+        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+
+        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
+        deleteFolderTree(rootdir.toFile());
+        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
+            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
+    public static void deleteFolderTree(java.io.File folder) {
+        java.io.File[] files = folder.listFiles();
+        if (files != null) {
+            for (java.io.File f : files) {
+                if (f.isDirectory()) {
+                    deleteFolderTree(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        folder.delete();
     }
 
     public CatalogManager getTestCatalogManager() {

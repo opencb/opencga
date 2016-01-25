@@ -6,6 +6,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -104,7 +105,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         Query query = new Query(_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, "id");
         QueryResult<File> fileQueryResult = get(query, options);
-        return fileQueryResult.getResult().get(0).getId();
+        return fileQueryResult.getNumTotalResults() == 1 ? fileQueryResult.getResult().get(0).getId() : -1;
     }
 
     @Override
@@ -141,6 +142,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult renameFile(int fileId, String filePath) throws CatalogDBException {
         long startTime = startQuery();
+
+        checkFileId(fileId);
 
         Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
@@ -465,7 +468,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(_ID, _STUDY_ID));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
         QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
@@ -474,7 +476,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
+
+        return fileCollection.find(bson, qOptions);
     }
 
     @Override
@@ -493,8 +504,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
         QueryResult fileQueryResult = null;
         if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
-            QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(QueryParams.DISK_USAGE.key(),
-                    _STUDY_ID));
+            QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(
+                    FILTER_ROUTE_FILES + QueryParams.DISK_USAGE.key(), FILTER_ROUTE_FILES + _STUDY_ID));
             fileQueryResult = nativeGet(query, queryOptions);
         }
 
@@ -557,8 +568,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             // If the diskUsage of some of the files have been changed, notify to the correspondent study
             if (fileQueryResult != null) {
                 long newDiskUsage = parameters.getLong(QueryParams.DISK_USAGE.key());
-                for (Document file : (ArrayList<Document>) fileQueryResult.getResult()) {
-                    long difDiskUsage = newDiskUsage - (long) file.get(QueryParams.DISK_USAGE.key());
+                for (Document file : (List<Document>) fileQueryResult.getResult()) {
+                    long difDiskUsage = newDiskUsage - Long.parseLong(file.get(QueryParams.DISK_USAGE.key()).toString());
                     int studyId = (int) file.get(_STUDY_ID);
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
                 }
@@ -571,24 +582,25 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> delete(int id) throws CatalogDBException {
-        /*        long startTime = startQuery();
+        long startTime = startQuery();
 
-//        WriteResult id = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
-        DeleteResult deleteResult = fileCollection.remove(new BasicDBObject(_ID, fileId), null).getResult().get(0);
-        List<Integer> deletes = new LinkedList<>();
-        if (deleteResult.getDeletedCount() == 0) {
-            throw CatalogDBException.idNotFound("File", fileId);
-        } else {
-            deletes.add((int) deleteResult.getDeletedCount());
-            return endQuery("delete file", startTime, deletes);
+        QueryResult<File> file = getFile(id, null);
+
+        Bson query = new Document(_ID, id);
+        DeleteResult removedFile = fileCollection.remove(query, null).first();
+
+        if (removedFile.getDeletedCount() != 1) {
+            throw new CatalogDBException("Could not remove file " + id);
         }
-        */
-        return null;
+
+        return endQuery("Delete file", startTime, file.getResult());
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) {
-        return null;
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryResult<DeleteResult> deleteResult = fileCollection.remove(parseQuery(query), null);
+        return endQuery("Delete file", startTime, Collections.singletonList(deleteResult.first().getDeletedCount()));
     }
 
     @Override

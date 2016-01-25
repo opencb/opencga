@@ -394,10 +394,31 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> get(Query query, QueryOptions options) {
+    public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
+        long startTime = startQuery();
         Bson bson = parseQuery(query);
-        options = filterOptions(options, FILTER_ROUTE_INDIVIDUALS);
-        return individualCollection.find(bson, Projections.exclude(_ID, _STUDY_ID), individualConverter, options);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
+        QueryResult<Individual> individualQueryResult = individualCollection.find(bson, individualConverter, qOptions);
+        return endQuery("Get Individual", startTime, individualQueryResult.getResult());
+    }
+
+    @Override
+    public QueryResult nativeGet(Query query, QueryOptions options) {
+        Bson bson = parseQuery(query);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
+        return individualCollection.find(bson, qOptions);
     }
 
     @Override
@@ -416,12 +437,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> delete(int id) throws CatalogDBException {
         return null;
-    }
-
-    @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) {
-        Bson bson = parseQuery(query);
-        return individualCollection.find(bson, options);
     }
 
     @Override
