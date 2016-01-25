@@ -199,7 +199,7 @@ public class VariantVcfExporter {
         if (lastLineIndex >= 0) {
             String substring = fileHeader.substring(0, lastLineIndex);
             if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
                 returnedSamples = new ArrayList<>(samplesPosition.size());
                 for (int i = 0; i < samplesPosition.size(); i++) {
                     returnedSamples.add(samplesPosition.get(i));
