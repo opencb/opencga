@@ -40,7 +40,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
-        PROJECT_ID("_projectId", TEXT_ARRAY, ""),
+        PROJECT_ID("projectId", TEXT_ARRAY, ""),
 
         GROUP_ID("group.id", INTEGER_ARRAY, ""),
 

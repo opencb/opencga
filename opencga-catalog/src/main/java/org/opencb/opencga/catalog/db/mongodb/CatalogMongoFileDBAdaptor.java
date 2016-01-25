@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.common.ListUtils;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
@@ -101,8 +102,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
         Query query = new Query(_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
-        Bson projection = Projections.include("id");
-        QueryResult<File> fileQueryResult = get(query, projection, null);
+        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, "id");
+        QueryResult<File> fileQueryResult = get(query, options);
         return fileQueryResult.getResult().get(0).getId();
     }
 
@@ -116,7 +117,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = Filters.and(Filters.eq(_STUDY_ID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
-        List<File> fileResults = fileCollection.find(query, null, fileConverter, null).getResult();
+        List<File> fileResults = fileCollection.find(query, fileConverter, null).getResult();
         return endQuery("Get all files", startTime, fileResults);
     }
 
@@ -196,13 +197,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         Query query = new Query(_ID, fileId);
         Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
+        QueryOptions options = new QueryOptions(MongoDBCollection.ELEM_MATCH, projection);
 /*
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put("elemMatch", Projections.elemMatch("acl", Filters.eq("userId", userId)));
         queryOptions.put("include", Projections.include("acl", "userId"));
 */
 
-        List<AclEntry> acl = get(query, projection, null).getResult().get(0).getAcl();
+        List<AclEntry> acl = get(query, options).getResult().get(0).getAcl();
         return endQuery("Get file ACL", startTime, acl);
     }
 
@@ -453,17 +455,21 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         return null;
     }
 
-    private QueryResult<File> get(Query query, Bson projection, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        Bson bson = parseQuery(query);
-        options = filterOptions(options, FILTER_ROUTE_FILES);
-        QueryResult<File> fileQueryResult = fileCollection.find(bson, projection, fileConverter, options);
-        return endQuery("get File", startTime, fileQueryResult.getResult());
-    }
-
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
-        return get(query, Projections.exclude(_ID, _STUDY_ID), options);
+        long startTime = startQuery();
+        Bson bson = parseQuery(query);
+        QueryOptions qOptions;
+        if (options != null) {
+            qOptions = options;
+        } else {
+            qOptions = new QueryOptions();
+        }
+        qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(_ID, _STUDY_ID));
+        qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
+
+        QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
+        return endQuery("get File", startTime, fileQueryResult.getResult());
     }
 
     @Override
@@ -619,7 +625,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         List<Bson> andBsonList = new ArrayList<>();
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(_ID, _ID, query, andBsonList);
+        addIntegerOrQuery(QueryParams.ID.key(), QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("type", QueryParams.TYPE.key(), query, andBsonList);
         addStringOrQuery("format", QueryParams.FORMAT.key(), query, andBsonList);

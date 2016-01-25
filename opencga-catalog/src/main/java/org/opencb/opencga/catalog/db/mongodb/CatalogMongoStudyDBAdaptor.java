@@ -93,7 +93,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
 
-        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
+        Query query = new Query(_PROJECT_ID, projectId).append("alias", studyAlias);
         QueryResult<Long> count = count(query);
         return count.first() != 0;
     }
@@ -190,7 +190,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
-        Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
+        Query query = new Query(_PROJECT_ID, projectId);
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
@@ -332,7 +332,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
 
         Query query = new Query(QueryParams.ID.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions("include", QueryParams.PROJECT_ID.key());
+        QueryOptions queryOptions = new QueryOptions("include", _PROJECT_ID);
         QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
@@ -721,7 +721,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         options = filterOptions(options, FILTER_ROUTE_STUDIES);
-        QueryResult<Study> result = studyCollection.find(bson, null, studyConverter, options);
+        QueryResult<Study> result = studyCollection.find(bson, studyConverter, options);
         for (Study study : result.getResult()) {
             joinFields(study, options);
         }
