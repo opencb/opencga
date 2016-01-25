@@ -1745,7 +1745,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             QueryBuilder statsBuilder = new QueryBuilder();
             statsBuilder.and(DBObjectToVariantStatsConverter.STUDY_ID).is(studyId);
-            statsBuilder.and(DBObjectToVariantStatsConverter.COHORT_ID).is(cohortId);
+            if (cohortId != null) {
+                statsBuilder.and(DBObjectToVariantStatsConverter.COHORT_ID).is(cohortId);
+            }
             addCompQueryFilter(key, operatorValue, statsBuilder);
             builder.and(DBObjectToVariantConverter.STATS_FIELD).elemMatch(statsBuilder.get());
         } else {
