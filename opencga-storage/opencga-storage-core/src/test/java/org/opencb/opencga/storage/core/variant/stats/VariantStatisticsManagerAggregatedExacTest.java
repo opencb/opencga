@@ -60,7 +60,7 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
         runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
                 new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
                         .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false));
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
 
