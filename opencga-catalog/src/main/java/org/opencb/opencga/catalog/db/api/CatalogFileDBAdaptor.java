@@ -110,7 +110,7 @@ public interface CatalogFileDBAdaptor {
 
     QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult renameFile(int fileId, String name) throws CatalogDBException;
+    QueryResult<File> renameFile(int fileId, String name, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Integer> deleteFile(int fileId) throws CatalogDBException;
 

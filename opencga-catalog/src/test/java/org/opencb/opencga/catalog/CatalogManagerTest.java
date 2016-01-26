@@ -39,14 +39,12 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -623,6 +621,26 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(paths.contains("Data/nested2/"));
         assertTrue(paths.contains("Data/nested2/folder/"));
         assertTrue(paths.contains("Data/nested2/folder/file2.txt"));
+    }
+
+    @Test
+    public void renameFileEmptyName() throws CatalogException {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("null or empty"));
+
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "", sessionIdUser);
+    }
+
+    @Test
+    public void renameFileSlashInName() throws CatalogException {
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "my/folder", sessionIdUser);
+    }
+
+    @Test
+    public void renameFileAlreadyExists() throws CatalogException {
+        thrown.expect(CatalogIOException.class);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "analysis", sessionIdUser);
     }
 
     @Test
@@ -1612,6 +1630,15 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
+    }
+
+    @Test
+    public void testModifySampleUnknownIndividual() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+        assertEquals(-1, sample.getIndividualId());
     }
 
     @Test

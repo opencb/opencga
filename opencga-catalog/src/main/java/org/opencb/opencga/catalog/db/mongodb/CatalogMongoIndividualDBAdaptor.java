@@ -185,7 +185,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         for (String individualIdParam : individualIdParams) {
             if (individualParameters.containsKey(individualIdParam)) {
                 Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
-                if (!individualExists(individualId1)) {
+                if (individualId1 > 0 && !individualExists(individualId1)) {
                     throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
                 }
             }

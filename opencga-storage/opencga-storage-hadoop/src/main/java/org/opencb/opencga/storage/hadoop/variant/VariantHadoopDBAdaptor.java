@@ -366,6 +366,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+        return null;
+    }
+
+    @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
         return null;

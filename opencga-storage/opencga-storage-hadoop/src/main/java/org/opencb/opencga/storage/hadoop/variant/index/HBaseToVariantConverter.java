@@ -140,7 +140,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> unorderedSamplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                BiMap<Integer, String> unorderedSamplesPosition =
+                        StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
                 samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
                 for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
                     samplesPosition.put(unorderedSamplesPosition.get(i), i);

@@ -183,8 +183,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
         if (sampleParams.containsKey("individualId")) {
-            if (!dbAdaptorFactory.getCatalogIndividualDBAdaptor().individualExists(parameters.getInt("individualId"))) {
-                throw CatalogDBException.idNotFound("Individual", parameters.getInt("individualId"));
+            int individualId = parameters.getInt("individualId");
+            if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().individualExists(individualId)) {
+                throw CatalogDBException.idNotFound("Individual", individualId);
             }
         }
 

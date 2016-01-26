@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -221,7 +222,7 @@ public class FileMetadataReader {
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
             //Read samples from file
-            List<String> sampleNames = null;
+            List<String> sortedSampleNames = null;
             switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
                 case VARIANT: {
                     Object variantSourceObj = null;
@@ -232,21 +233,21 @@ public class FileMetadataReader {
                     }
                     if (variantSourceObj != null) {
                         if (variantSourceObj instanceof VariantSource) {
-                            sampleNames = ((VariantSource) variantSourceObj).getSamples();
+                            sortedSampleNames = ((VariantSource) variantSourceObj).getSamples();
                         } else if (variantSourceObj instanceof Map) {
-                            sampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
+                            sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
                         } else {
                             logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}", variantSourceObj.getClass(), VariantSource.class, Map.class);
                         }
                     }
 
-                    if (sampleNames == null) {
+                    if (sortedSampleNames == null) {
                         VariantSource variantSource = readVariantSource(study, file, fileUri);
                         if (variantSource != null) {
                             attributes.put("variantSource", variantSource);
-                            sampleNames = variantSource.getSamples();
+                            sortedSampleNames = variantSource.getSamples();
                         } else {
-                            sampleNames = new LinkedList<>();
+                            sortedSampleNames = new LinkedList<>();
                         }
                     }
                     break;
@@ -260,20 +261,20 @@ public class FileMetadataReader {
                     }
                     if (alignmentHeaderObj != null) {
                         if (alignmentHeaderObj instanceof AlignmentHeader) {
-                            sampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
+                            sortedSampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
                         } else if (alignmentHeaderObj instanceof Map) {
-                            sampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
+                            sortedSampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
                         } else {
                             logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}", alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
                         }
                     }
-                    if (sampleNames == null) {
+                    if (sortedSampleNames == null) {
                         AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
                         if (alignmentHeader != null) {
                             attributes.put("alignmentHeader", alignmentHeader);
-                            sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                            sortedSampleNames = getSampleFromAlignmentHeader(alignmentHeader);
                         } else {
-                            sampleNames = new LinkedList<>();
+                            sortedSampleNames = new LinkedList<>();
                         }
                     }
                     break;
@@ -283,22 +284,23 @@ public class FileMetadataReader {
 //                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
             }
 
-            if (sampleNames.isEmpty()) {
+            if (sortedSampleNames.isEmpty()) {
                 return new LinkedList<>();
             }
 
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
-            sampleQueryOptions.add("name", sampleNames);
+            sampleQueryOptions.add("name", sortedSampleNames);
             sampleList = catalogManager.getAllSamples(study.getId(), sampleQueryOptions, sessionId).getResult();
 
             //check if all file samples exists on Catalog
-            if (sampleList.size() != sampleNames.size()) {   //Size does not match. Find the missing samples.
-                Set<String> set = new HashSet<>(sampleNames);
+            if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
+                //Use a LinkedHashSet to keep the order
+                Set<String> set = new LinkedHashSet<>(sortedSampleNames);
                 for (Sample sample : sampleList) {
                     set.remove(sample.getName());
                 }
-                logger.warn("Missing samples: m{}", set);
+                logger.warn("Missing samples: {}", set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
@@ -321,6 +323,15 @@ public class FileMetadataReader {
                     throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
                 }
             }
+
+            //Samples may not be sorted.
+            //Sort samples as they appear in the original file.
+            Map<String, Sample> sampleMap = sampleList.stream().collect(Collectors.toMap(Sample::getName, Function.identity()));
+            sampleList = new ArrayList<>(sampleList.size());
+            for (String sampleName : sortedSampleNames) {
+                sampleList.add(sampleMap.get(sampleName));
+            }
+
         } else {
             //Get samples from file.sampleIds
             QueryOptions queryOptions = new QueryOptions(options);

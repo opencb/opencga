@@ -28,11 +28,6 @@ import java.util.concurrent.ExecutionException;
 public class BenchmarkManager {
 
     private StorageConfiguration storageConfiguration;
-//    String load = null;
-//    String numOfRepetition = null;
-//    String tableName = null;
-//    String query = null;
-//    boolean isLoadRequired;
 
     public BenchmarkManager(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
@@ -52,34 +47,4 @@ public class BenchmarkManager {
     private void loadDataToHBase(String filePath) {
         //TODO : If user wants to load the data to HBase and then benchmarking
     }
-
-    public void run(String[] args) throws ClassNotFoundException, StorageManagerException, InstantiationException, IllegalAccessException {
-
-//        load = args[0];
-//        numOfRepetition = args[1];
-//        tableName = args[2];
-//        query = args[3];
-//        isLoadRequired = Boolean.parseBoolean(args[4]);
-//
-//        System.out.println("load :: " + load);
-//        System.out.println("numOfRepetition :: " + numOfRepetition);
-//        System.out.println("tableName :: " + tableName);
-//        System.out.println("query :: " + query);
-//        System.out.println("isLoadRequired :: " + isLoadRequired);
-
-//        String dbTableName = null;
-//        if (isLoadRequired) {
-//            //use the file path and table name provided by user
-//            //loadDataToHBase(loadFilePath);
-//            //dbTableName = tableName;
-//        } else {
-//            // use the default HBase tables for query
-//            dbTableName = tableName;
-//        }
-//
-//        StorageConfiguration storageConfiguration = new StorageConfiguration();
-//        variantBenchmark(storageConfiguration, numOfRepetition, dbTableName, query);
-
-    }
-
 }
