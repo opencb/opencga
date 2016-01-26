@@ -167,17 +167,26 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_id() {
+        testGetAllVariants_rs(VariantDBAdaptor.VariantQueryParams.ID.key());
+    }
+    @Test
+    public void testGetAllVariants_xref() {
+        testGetAllVariants_rs(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key());
+    }
+
+    public void testGetAllVariants_rs(String key) {
         // This test queries a single ID with no more options
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005");
+        Query query = new Query(key, "rs1137005");
         queryResult = dbAdaptor.get(query, null);
         Variant variant = queryResult.first();
         assertEquals(1, queryResult.getNumResults());
         assertEquals(variant.getStart(), Integer.valueOf(1650807));
         assertTrue(variant.getIds().contains("rs1137005"));
 
-        query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");
+        query = new Query(key, "rs1137005,rs150535390");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
+        queryResult.getResult().forEach(v -> assertTrue(v.getIds().contains("rs1137005") || v.getIds().contains("rs150535390")));
     }
 
     @Test

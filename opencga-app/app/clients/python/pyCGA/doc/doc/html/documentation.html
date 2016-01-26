@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Welcome to pyCGA &mdash; pyCGA 0.1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Installation" href="installation.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="#" class="icon icon-home"> pyCGA
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#ids-in-opencga">Ids in OpenCGA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#pycgaidconverter">pyCGAIdConverter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#common-use-examples">Common use examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#pycgalogin">PyCGALogin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#user-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#file-tools">File Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyCGA.html#use-case-example">Use case example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#sample-tools">Sample Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#individuals-tools">Individuals Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#variable-sets-tools">Variable Sets Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="#">pyCGA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="#">Docs</a> &raquo;</li>
+      
+    <li>Welcome to pyCGA</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="welcome-to-pycga">
+<h1>Welcome to pyCGA<a class="headerlink" href="#welcome-to-pycga" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://github.com/opencb/opencga/wiki">OpenCGA</a>  is an open-source project that aims to provide a Big Data storage engine and analysis
+framework for genomic scale data analysis of hundreds of terabytes or even petabytes. For users,
+its main features will include uploading and downloading files to a repository, storing their
+information in a generic way (non-dependant of the original file-format) and retrieving this information
+efficiently.</p>
+<p>The aim of this python package is provide an interface using the OpenCGA web services from python, and make
+easy and comprehensive the use of OpenCGA. And also provide a CLI usable from</p>
+<p>The code is open source, and <a class="reference external" href="https://github.com/opencb/">available on github</a>.</p>
+<p>The main documentation for the project is organized into a couple sections:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#getting-started"><span>Getting Started</span></a></li>
+<li><a class="reference internal" href="#api-docs"><span>API Documentation</span></a></li>
+<li><a class="reference internal" href="#cli-docs"><span>CLI Documentation</span></a></li>
+<li><a class="reference internal" href="#dev-docs"><span>Developer Documentation</span></a></li>
+</ul>
+<div class="section" id="getting-started">
+<span id="id1"></span><h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#ids-in-opencga">Ids in OpenCGA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#pycgaidconverter">pyCGAIdConverter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ids.html#common-use-examples">Common use examples</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="api-documentation">
+<span id="api-docs"></span><h2>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="cli-documentation">
+<span id="cli-docs"></span><h2>CLI Documentation<a class="headerlink" href="#cli-documentation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#pycgalogin">PyCGALogin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#user-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#file-tools">File Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#sample-tools">Sample Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#individuals-tools">Individuals Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#variable-sets-tools">Variable Sets Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="developer-documentation">
+<span id="dev-docs"></span><h2>Developer Documentation<a class="headerlink" href="#developer-documentation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

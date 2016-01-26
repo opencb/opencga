@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.opencb.datastore.core.QueryParam.Type.TEXT;
@@ -236,6 +237,14 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
+    /**
+     * Returns all the possible samples to be returned by an specific query.
+     *
+     * @param query     Query to execute
+     * @param options   Query Options
+     * @return  Map key: StudyId, value: list of sampleIds
+     */
+    Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options);
 
     QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 

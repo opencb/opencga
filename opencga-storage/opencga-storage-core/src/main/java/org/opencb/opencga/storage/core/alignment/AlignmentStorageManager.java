@@ -22,7 +22,8 @@ import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.biodata.tools.alignment.BamUtils;
+
+import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -118,7 +119,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
         UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
         return inputUri;
     }
 
@@ -157,7 +158,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
         storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
 
@@ -177,7 +178,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         //2 Index (bai)
         if (createBai) {
-            Path bamIndexPath = BamUtils.createBai(input, output);
+            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output);
         }
 
         //3 Calculate Coverage and transform
