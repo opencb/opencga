@@ -38,9 +38,9 @@ import java.util.List;
  */
 public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 
-    static final String _ID = "_id";
-    static final String _PROJECT_ID = "_projectId";
-    static final String _STUDY_ID = "_studyId";
+    static final String PRIVATE_ID = "_id";
+    static final String PRIVATE_PROJECT_ID = "_projectId";
+    static final String PRIVATE_STUDY_ID = "_studyId";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";

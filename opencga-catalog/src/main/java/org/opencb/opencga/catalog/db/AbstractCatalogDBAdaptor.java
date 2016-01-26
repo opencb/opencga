@@ -98,8 +98,9 @@ public abstract class AbstractCatalogDBAdaptor {
              * The accepted operators are: [<, <=, >, >=, =, , !=]
              * <p>
              * Example:
-             * getAllFiles( {diskUsage : "<200000" } )
-             * getAllFiles( {jobId : "32,33,34" } )
+             * getAllFiles ( {diskUsage : "<200000" } )
+             * getAllFiles ( {jobId : "32,33,34" } )
+             * </p>
              */
             NUMERICAL,
             /**
@@ -111,13 +112,15 @@ public abstract class AbstractCatalogDBAdaptor {
              * Example:
              * getAllFiles ( { bioformat : "VARIANT," } )
              * getAllSamples ( { name : "~SAMP_00[0-9]*"} )
+             * </p>
              */
             TEXT,
             /**
-             * Accepts a boolean condition
+             * Accepts a boolean condition.
              * <p>
              * Example:
              * getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
+             * </p>
              */
             BOOLEAN
         }

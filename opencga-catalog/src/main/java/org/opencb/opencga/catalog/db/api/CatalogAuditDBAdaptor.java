@@ -23,7 +23,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**
- * Created on 18/08/15
+ * Created on 18/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */

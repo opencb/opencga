@@ -191,7 +191,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         projection.put("_id", false);
         QueryResult<DBObject> result = userCollection.find(query, projection, options);
 */
-        Bson query = new BsonDocument(CatalogMongoDBAdaptor._ID, new BsonString(userId));
+        Bson query = new BsonDocument(CatalogMongoDBAdaptor.PRIVATE_ID, new BsonString(userId));
         Bson projection = Projections.fields(Projections.include("projects"), Projections.excludeId());
         QueryResult<Document> result = userCollection.find(query, projection, options);
 
@@ -206,7 +206,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
 
-    /**
+    /*
      * db.user.update(
      * {
      * "projects.id" : projectId,
@@ -371,7 +371,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return null;
     }
 
-    /**
+    /*
      * db.user.aggregate(
      * {"$match": {"projects.id": 2}},
      * {"$project": {"projects.acl":1, "projects.id":1}},
@@ -503,7 +503,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
         for (Project project : projectQueryResult.getResult()) {
-            Query studyQuery = new Query(_PROJECT_ID, project.getId());
+            Query studyQuery = new Query(PRIVATE_PROJECT_ID, project.getId());
             try {
                 QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
                 project.setStudies(studyQueryResult.getResult());
@@ -527,7 +527,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         for (Document user : projectQueryResult.getResult()) {
             Document project = (Document) user.get("projects");
-            Query studyQuery = new Query(_PROJECT_ID, project.get("id"));
+            Query studyQuery = new Query(PRIVATE_PROJECT_ID, project.get("id"));
             QueryResult studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, options);
             project.remove("studies");
             project.append("studies", studyQueryResult.getResult());

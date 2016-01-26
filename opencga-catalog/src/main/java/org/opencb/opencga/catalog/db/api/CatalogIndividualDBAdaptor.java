@@ -123,11 +123,11 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
         attributes("attributes", Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),
-        battributes("attributes", Type.BOOLEAN, ""),;
+        battributes("attributes", Type.BOOLEAN, "");
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
 
         IndividualFilterOption(Type type, String description) {
             this._key = name();

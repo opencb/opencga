@@ -81,8 +81,8 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
             /* Check all collections are empty */
             for (Map.Entry<String, MongoDBCollection> entry : collections.entrySet()) {
                 if (entry.getValue().count().first() != 0L) {
-                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey() + " is " +
-                            "not empty.");
+                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey() + " is "
+                            + "not empty.");
                 }
             }
 
@@ -166,15 +166,24 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
             throw new CatalogDBException("Unable to connect to MongoDB");
         }
 
+        metaCollection = db.getCollection(METADATA_COLLECTION);
+        userCollection = db.getCollection(USER_COLLECTION);
+        studyCollection = db.getCollection(STUDY_COLLECTION);
+        fileCollection = db.getCollection(FILE_COLLECTION);
+        sampleCollection = db.getCollection(SAMPLE_COLLECTION);
+        individualCollection = db.getCollection(INDIVIDUAL_COLLECTION);
+        jobCollection = db.getCollection(JOB_COLLECTION);
+        auditCollection = db.getCollection(AUDIT_COLLECTION);
+
         collections = new HashMap<>();
-        collections.put(METADATA_COLLECTION, metaCollection = db.getCollection(METADATA_COLLECTION));
-        collections.put(USER_COLLECTION, userCollection = db.getCollection(USER_COLLECTION));
-        collections.put(STUDY_COLLECTION, studyCollection = db.getCollection(STUDY_COLLECTION));
-        collections.put(FILE_COLLECTION, fileCollection = db.getCollection(FILE_COLLECTION));
-        collections.put(SAMPLE_COLLECTION, sampleCollection = db.getCollection(SAMPLE_COLLECTION));
-        collections.put(INDIVIDUAL_COLLECTION, individualCollection = db.getCollection(INDIVIDUAL_COLLECTION));
-        collections.put(JOB_COLLECTION, jobCollection = db.getCollection(JOB_COLLECTION));
-        collections.put(AUDIT_COLLECTION, auditCollection = db.getCollection(AUDIT_COLLECTION));
+        collections.put(METADATA_COLLECTION, metaCollection);
+        collections.put(USER_COLLECTION, userCollection);
+        collections.put(STUDY_COLLECTION, studyCollection);
+        collections.put(FILE_COLLECTION, fileCollection);
+        collections.put(SAMPLE_COLLECTION, sampleCollection);
+        collections.put(INDIVIDUAL_COLLECTION, individualCollection);
+        collections.put(JOB_COLLECTION, jobCollection);
+        collections.put(AUDIT_COLLECTION, auditCollection);
 
         /*
         userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);

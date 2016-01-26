@@ -77,7 +77,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
     @Deprecated
     QueryResult<File> deleteFile(int fileId) throws CatalogDBException;
 
-    /**
+    /*
      * ACL methods
      * ***************************
      */
@@ -91,7 +91,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException;
 
-    /**
+    /*
      * Dataset methods
      * ***************************
      */
@@ -203,11 +203,11 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         @Deprecated startDate(Type.TEXT, ""),
         @Deprecated endDate(Type.TEXT, ""),
         @Deprecated like(Type.TEXT, ""),
-        @Deprecated startsWith(Type.TEXT, ""),;
+        @Deprecated startsWith(Type.TEXT, "");
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
 
         FileFilterOption(Type type, String description) {
             this._key = name();

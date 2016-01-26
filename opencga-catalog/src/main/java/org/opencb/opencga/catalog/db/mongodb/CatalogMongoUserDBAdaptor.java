@@ -63,7 +63,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         this.userConverter = new UserConverter();
     }
 
-    /**
+    /*
      * *************************
      * User methods
      * ***************************
@@ -76,7 +76,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public boolean userExists(String userId) {
-        QueryResult<Long> count = userCollection.count(new BasicDBObject(_ID, userId));
+        QueryResult<Long> count = userCollection.count(new BasicDBObject(PRIVATE_ID, userId));
         long l = count.getResult().get(0);
         return l != 0;
     }
@@ -113,7 +113,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         user.setLastActivity(TimeUtils.getTimeMillis());
 //        DBObject userDBObject = getDbObject(user, "User " + user.getId());
         Document userDBObject = getMongoDBDocument(user, "User " + user.getId());
-        userDBObject.append(_ID, user.getId());
+        userDBObject.append(PRIVATE_ID, user.getId());
 
         QueryResult insert;
         try {
@@ -138,7 +138,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("insertUser", startTime, result, errorMsg, null);
     }
 
-    /**
+    /*
      * TODO: delete user from:
      * project acl and owner
      * study acl and owner
@@ -157,7 +157,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        long startTime = startQuery();
 //
 ////        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
-//        WriteResult wr = userCollection.remove(new BasicDBObject(_ID, userId), null).getResult().get(0);
+//        WriteResult wr = userCollection.remove(new BasicDBObject(PRIVATE_ID, userId), null).getResult().get(0);
 //        if (wr.getN() == 0) {
 //            throw CatalogDBException.idNotFound("User", userId);
 //        } else {
@@ -247,7 +247,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
-        anonymous.put(_ID, user.getId());
+        anonymous.put(PRIVATE_ID, user.getId());
 
         userCollection.insert(anonymous, null);
 //        try {
@@ -276,7 +276,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        if (!userExists(userId)) {
 //            throw CatalogDBException.idNotFound("User", userId);
 //        }
-//        DBObject query = new BasicDBObject(_ID, userId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, userId);
 //        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
 //        QueryResult<DBObject> result = userCollection.find(query, options);
 //        User user = parseUser(result);
@@ -338,8 +338,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
-// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(_ID, userId), new BasicDBObject("$set", userParameters), null);
-            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(_ID, userId), new Document("$set", userParameters), null);
+// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(PRIVATE_ID, userId),
+//                   new BasicDBObject("$set", userParameters), null);
+            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(PRIVATE_ID, userId),
+                    new Document("$set", userParameters), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("User", userId);
             }
@@ -494,7 +496,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return userQueryResult;
     }
 
-    /**
+    /*
      * TODO: delete user from:
      * project acl and owner
      * study acl and owner
@@ -558,7 +560,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addStringOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("email", QueryParams.EMAIL.key(), query, andBsonList);
         addStringOrQuery("password", QueryParams.PASSWORD.key(), query, andBsonList);

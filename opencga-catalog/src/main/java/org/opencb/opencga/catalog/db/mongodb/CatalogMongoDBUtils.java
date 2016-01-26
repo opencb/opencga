@@ -40,15 +40,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.PRIVATE_ID;
 
 /**
  * Created by imedina on 21/11/14.
  */
 class CatalogMongoDBUtils {
 
-    public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect
-            (Collectors.toSet());
+    public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
+            .collect(Collectors.toSet());
     public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
@@ -103,7 +103,7 @@ class CatalogMongoDBUtils {
         if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
         }
-        if (userCollection.count(new Document(_ID, userId)).first().equals(Long.valueOf(0))) {
+        if (userCollection.count(new Document(PRIVATE_ID, userId)).first().equals(Long.valueOf(0))) {
             throw CatalogDBException.idNotFound("User", userId);
         }
 
@@ -114,9 +114,22 @@ class CatalogMongoDBUtils {
     * Helper methods
     ********************/
 
+    /**
+     * Checks if the field {@link AclEntry#userId} is valid.
+     *
+     * The "userId" can be:
+     *  - '*' referring to all the users. See {@link AclEntry#USER_OTHERS_ID}
+     *  - '@{groupId}' referring to a {@link Group}. See {@link AclEntry#USER_OTHERS_ID}
+     *  - '{userId}' referring to a specific user.
+     *
+     * @param dbAdaptorFactory dbAdaptorFactory
+     * @param userId userId
+     * @param studyId studyId
+     * @throws CatalogDBException CatalogDBException
+     */
     public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, int studyId) throws CatalogDBException {
         if (userId.equals(AclEntry.USER_OTHERS_ID)) {
-
+            return;
         } else if (userId.startsWith("@")) {
             String groupId = userId.substring(1);
             QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
@@ -248,14 +261,12 @@ class CatalogMongoDBUtils {
     }
 //    static final String TO_REPLACE_DOTS = "\uff0e";
 
-    /**
-     * Scan all the DBObject and replace all the dots in keys with
-     *
-     * @param object
-     * @return
+    /***
+     * Scan all the DBObject and replace all the dots in keys with.
+     * @param object object
+     * @param <T> T
+     * @return T
      */
-
-
     static <T> T replaceDotsInKeys(T object) {
         return replaceInKeys(object, ".", TO_REPLACE_DOTS);
     }
@@ -312,9 +323,9 @@ class CatalogMongoDBUtils {
      * name
      * ]
      *
-     * @param options
-     * @param route
-     * @return
+     * @param options options
+     * @param route route
+     * @return QueryOptions
      */
     static QueryOptions filterOptions(QueryOptions options, String route) {
         if (options == null) {
@@ -336,10 +347,10 @@ class CatalogMongoDBUtils {
                 }
                 if (listName.equals("include")) {
                     filteredList.add("id");
-                    filteredList.add(_ID);
+                    filteredList.add(PRIVATE_ID);
                 } else if (listName.equals("exclude")) {
                     filteredList.remove("id");
-                    filteredList.remove(_ID);
+                    filteredList.remove(PRIVATE_ID);
                 }
                 filteredOptions.put(listName, filteredList);
             }
@@ -362,8 +373,8 @@ class CatalogMongoDBUtils {
                 String parameterValue = parameters.getString(e.getKey());
                 Set<String> set = (Set<String>) EnumSet.allOf(e.getValue()).stream().map(Object::toString).collect(Collectors.toSet());
                 if (!set.contains(parameterValue)) {
-                    throw new CatalogDBException("Invalid parameter { " + e.getKey() + ": \"" + parameterValue + "\" }. Accepted values " +
-                            "from Enum " + e.getValue() + " " + EnumSet.allOf(e.getValue()));
+                    throw new CatalogDBException("Invalid parameter { " + e.getKey() + ": \"" + parameterValue + "\" }. Accepted values "
+                            + "from Enum " + e.getValue() + " " + EnumSet.allOf(e.getValue()));
                 }
                 filteredParams.put(e.getKey(), parameterValue);
             }
@@ -480,26 +491,26 @@ class CatalogMongoDBUtils {
     public static void addAnnotationQueryFilter(String optionKey, QueryOptions options, List<DBObject> annotationSetFilter, Map<String,
             Variable> variableMap) throws CatalogDBException {
         // Annotation Filters
-        final String AND = ";";
-        final String OR = ",";
-        final String IS = ":";
+        final String sepAnd = ";";
+        final String sepOr = ",";
+        final String sepIs = ":";
 
-        for (String annotation : options.getAsStringList(optionKey, AND)) {
-            String[] split = annotation.split(IS, 2);
+        for (String annotation : options.getAsStringList(optionKey, sepAnd)) {
+            String[] split = annotation.split(sepIs, 2);
             if (split.length != 2) {
                 throw new CatalogDBException("Malformed annotation query : " + annotation);
             }
             final String variableId;
             final String route;
             if (split[0].contains(".")) {
-                String[] variableId_route = split[0].split("\\.", 2);
-                variableId = variableId_route[0];
-                route = "." + variableId_route[1];
+                String[] variableIdRoute = split[0].split("\\.", 2);
+                variableId = variableIdRoute[0];
+                route = "." + variableIdRoute[1];
             } else {
                 variableId = split[0];
                 route = "";
             }
-            String[] values = split[1].split(OR);
+            String[] values = split[1].split(sepOr);
 
             AbstractCatalogDBAdaptor.FilterOption.Type type = AbstractCatalogDBAdaptor.FilterOption.Type.TEXT;
 
@@ -513,8 +524,8 @@ class CatalogMongoDBUtils {
                             throw new CatalogDBException("Unable to query variable " + split[0]);
                         }
                         if (variable.getVariableSet() != null) {
-                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream().collect(Collectors.toMap
-                                    (Variable::getId, Function.<Variable>identity()));
+                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
+                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();
@@ -553,9 +564,8 @@ class CatalogMongoDBUtils {
         return addCompQueryFilter(option.getType(), queryKey, optionsList, andQuery);
     }
 
-    static private List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey, List<String>
-            optionsList,
-                                                     List<Document> andQuery) throws CatalogDBException {
+    private static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey,
+                                                     List<String> optionsList, List<Document> andQuery) throws CatalogDBException {
 
         ArrayList<Document> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
@@ -596,6 +606,8 @@ class CatalogMongoDBUtils {
                 case BOOLEAN:
                     or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new Document()));
                     break;
+                default:
+                    break;
             }
         }
         if (or.isEmpty()) {
@@ -621,9 +633,8 @@ class CatalogMongoDBUtils {
     }
 
     @Deprecated
-    static private List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String
-            queryKey,
-                                                     List<DBObject> andQuery) throws CatalogDBException {
+    private static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList,
+                                                     String queryKey, List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
@@ -663,6 +674,8 @@ class CatalogMongoDBUtils {
                     break;
                 case BOOLEAN:
                     or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new BasicDBObject()));
+                    break;
+                default:
                     break;
             }
         }
@@ -861,6 +874,8 @@ class CatalogMongoDBUtils {
                 case "~":
                 case "=~":
                     query.put(queryKey, new BasicDBObject("$regex", filter));
+                    break;
+                default:
                     break;
             }
         } catch (NumberFormatException e) {

@@ -25,7 +25,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 public interface CatalogDBAdaptorFactory {
 
     /**
-     * Says if the catalog database is ready to be used. If false, needs to be initialized
+     * Says if the catalog database is ready to be used. If false, needs to be initialized.
+     * @return boolean
      */
     boolean isCatalogDBReady();
 

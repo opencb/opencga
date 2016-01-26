@@ -30,7 +30,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
-    /**
+    /*
      * Study methods
      * ***************************
      */
@@ -96,7 +96,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
 
-    /**
+    /*
      * VariableSet Methods
      * ***************************
      */
@@ -207,11 +207,11 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         stats(Type.TEXT, ""),
         attributes(Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),
-        battributes("attributes", Type.BOOLEAN, ""),;
+        battributes("attributes", Type.BOOLEAN, "");
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
 
         StudyFilterOptions(String key, Type type, String description) {
             this._key = key;

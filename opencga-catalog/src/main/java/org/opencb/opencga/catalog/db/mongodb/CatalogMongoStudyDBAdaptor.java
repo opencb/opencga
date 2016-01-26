@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
- * Created on 07/09/15
+ * Created on 07/09/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -62,14 +62,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         this.studyConverter = new StudyConverter();
     }
 
-    /**
+    /*
      * Study methods
      * ***************************
      */
 
 //    @Override
 //    public boolean studyExists(int studyId) {
-//        QueryResult<Long> count = studyCollection.count(new BasicDBObject(_ID, studyId));
+//        QueryResult<Long> count = studyCollection.count(new BasicDBObject(PRIVATE_ID, studyId));
 //        return count.getResult().get(0) != 0;
 //    }
 //
@@ -82,7 +82,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     private boolean studyAliasExists(int projectId, String studyAlias) throws CatalogDBException {
         // Check if study.alias already exists.
 //        DBObject countQuery = BasicDBObjectBuilder
-//                .start(_PROJECT_ID, projectId)
+//                .start(PRIVATE_PROJECT_ID, projectId)
 //                .append("alias", studyAlias).get();
 //
 //        QueryResult<Long> queryResult = studyCollection.count(countQuery);
@@ -92,7 +92,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
 
-        Query query = new Query(_PROJECT_ID, projectId).append("alias", studyAlias);
+        Query query = new Query(PRIVATE_PROJECT_ID, projectId).append("alias", studyAlias);
         QueryResult<Long> count = count(query);
         return count.first() != 0;
     }
@@ -123,10 +123,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         //Create DBObject
         Document studyObject = getMongoDBDocument(study, "Study");
-        studyObject.put(_ID, newId);
+        studyObject.put(PRIVATE_ID, newId);
 
         //Set ProjectId
-        studyObject.put(_PROJECT_ID, projectId);
+        studyObject.put(PRIVATE_PROJECT_ID, projectId);
 
         //Insert
         QueryResult<WriteResult> updateResult = studyCollection.insert(studyObject, null);
@@ -166,7 +166,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         checkStudyId(studyId);
 //        long startTime = startQuery();
 //        //TODO: Parse QueryOptions include/exclude
-//        DBObject query = new BasicDBObject(_ID, studyId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
 //        QueryResult result = studyCollection.find(query, filterOptions(options, FILTER_ROUTE_STUDIES));
 ////        QueryResult queryResult = endQuery("get study", startTime, result);
 //
@@ -189,7 +189,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (!dbAdaptorFactory.getCatalogProjectDbAdaptor().projectExists(projectId)) {
             throw CatalogDBException.idNotFound("Project", projectId);
         }
-        Query query = new Query(_PROJECT_ID, projectId);
+        Query query = new Query(PRIVATE_PROJECT_ID, projectId);
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
@@ -207,10 +207,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 StudyFilterOptions option = StudyFilterOptions.valueOf(key);
                 switch (option) {
                     case id:
-                        addCompQueryFilter(option, option.name(), _ID, queryOptions, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), PRIVATE_ID, queryOptions, mongoQueryList);
                         break;
                     case projectId:
-                        addCompQueryFilter(option, option.name(), _PROJECT_ID, queryOptions, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), PRIVATE_PROJECT_ID, queryOptions, mongoQueryList);
                         break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
@@ -278,8 +278,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         if (!studyParameters.isEmpty()) {
-//            BasicDBObject query = new BasicDBObject(_ID, studyId);
-            Bson eq = Filters.eq(_ID, studyId);
+//            BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId);
+            Bson eq = Filters.eq(PRIVATE_ID, studyId);
             BasicDBObject updates = new BasicDBObject("$set", studyParameters);
 
 //            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
@@ -297,7 +297,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //    @Override
 //    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
 //        long startTime = startQuery();
-//        DBObject query = new BasicDBObject(_ID, studyId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
 //        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
 //
 //        List<Integer> deletes = new LinkedList<>();
@@ -311,12 +311,12 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //    }
     @Override
     public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
-//        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
+//        DBObject query = BasicDBObjectBuilder.start(PRIVATE_PROJECT_ID, projectId).append("alias", studyAlias).get();
 //        BasicDBObject projection = new BasicDBObject("id", "true");
 //        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
 //        List<Study> studies = parseStudies(queryResult);
 
-        Query query1 = new Query(_PROJECT_ID, projectId).append("alias", studyAlias);
+        Query query1 = new Query(PRIVATE_PROJECT_ID, projectId).append("alias", studyAlias);
         QueryOptions queryOptions = new QueryOptions("include", "id");
         QueryResult<Study> studyQueryResult = get(query1, queryOptions);
         List<Study> studies = studyQueryResult.getResult();
@@ -325,17 +325,17 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public int getProjectIdByStudyId(int studyId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject(_ID, studyId);
-//        DBObject projection = new BasicDBObject(_PROJECT_ID, "true");
+//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
+//        DBObject projection = new BasicDBObject(PRIVATE_PROJECT_ID, "true");
 //        QueryResult<DBObject> result = studyCollection.find(query, projection, null);
 
         Query query = new Query(QueryParams.ID.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + _PROJECT_ID);
+        QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_ID);
         QueryResult result = nativeGet(query, queryOptions);
 
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
-            Object id = study.get(_PROJECT_ID);
+            Object id = study.get(PRIVATE_PROJECT_ID);
             return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Study", studyId);
@@ -355,7 +355,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 new BasicDBObject(
                         "$match",
                         new BasicDBObject(
-                                _STUDY_ID,
+                                PRIVATE_STUDY_ID,
                                 studyId
                                 //new BasicDBObject("$in",studyIds)
                         )
@@ -363,7 +363,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 new BasicDBObject(
                         "$group",
                         BasicDBObjectBuilder
-                                .start("_id", "$" + _STUDY_ID)
+                                .start("_id", "$" + PRIVATE_STUDY_ID)
                                 .append("diskUsage",
                                         new BasicDBObject(
                                                 "$sum",
@@ -372,10 +372,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 )
         );*/
         List<Bson> operations = new ArrayList<>();
-        operations.add(Aggregates.match(Filters.eq(_STUDY_ID, studyId)));
-        operations.add(Aggregates.group("$" + _STUDY_ID, Accumulators.sum("diskUsage", "$diskUsage")));
+        operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
+        operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("diskUsage", "$diskUsage")));
 
-//        Bson match = Aggregates.match(Filters.eq(_STUDY_ID, studyId));
+//        Bson match = Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId));
 //        Aggregates.group()
 
         QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
@@ -399,7 +399,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        BasicDBObject query = new BasicDBObject(_ID, studyId);
+        BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId);
         BasicDBObject groupQuery = new BasicDBObject();
         if (userId != null) {
             groupQuery.put("userIds", userId);
@@ -423,7 +423,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     boolean groupExists(int studyId, String groupId) throws CatalogDBException {
-        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
+        BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId).append("groups.id", groupId);
         return studyCollection.count(query).first() == 1;
     }
 
@@ -435,8 +435,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
+//        BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
 
 //        BasicDBObject update = new BasicDBObject("$addToSet", new BasicDBObject("groups.$.userIds", userId));
         Bson addToSet = Updates.addToSet("groups.$.userIds", userId);
@@ -459,8 +459,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
         }
 
-//        BasicDBObject query = new BasicDBObject(_ID, studyId).append("groups.id", groupId);
-        Bson and = Filters.and(Filters.eq(_ID, studyId), Filters.eq("groups.id", groupId));
+//        BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId).append("groups.id", groupId);
+        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
 
 //        BasicDBObject update = new BasicDBObject("$pull", new BasicDBObject("groups.$.userIds", userId));
         Bson pull = Updates.pull("groups.$.userIds", userId);
@@ -494,8 +494,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         int variableSetId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         variableSet.setId(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
-//        DBObject query = new BasicDBObject(_ID, studyId);
-        Bson query = Filters.eq(_ID, studyId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
+        Bson query = Filters.eq(PRIVATE_ID, studyId);
 
 //        DBObject update = new BasicDBObject("$push", new BasicDBObject("variableSets", object));
         Bson update = Updates.push("variableSets", object);
@@ -548,7 +548,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 CatalogSampleDBAdaptor.VariableSetFilterOption option = CatalogSampleDBAdaptor.VariableSetFilterOption.valueOf(key);
                 switch (option) {
                     case studyId:
-                        addCompQueryFilter(option, option.name(), _ID, options, mongoQueryList);
+                        addCompQueryFilter(option, option.name(), PRIVATE_ID, options, mongoQueryList);
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
@@ -562,7 +562,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         /*
         QueryResult<DBObject> queryResult = studyCollection.aggregate(Arrays.<DBObject>asList(
-                new BasicDBObject("$match", new BasicDBObject(_ID, studyId)),
+                new BasicDBObject("$match", new BasicDBObject(PRIVATE_ID, studyId)),
                 new BasicDBObject("$project", new BasicDBObject("variableSets", 1)),
                 new BasicDBObject("$unwind", "$variableSets"),
                 new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
@@ -570,7 +570,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 */
 
         List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.eq(_ID, studyId)));
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
         aggregation.add(Projections.include("variableSets"));
         aggregation.add(Aggregates.unwind("$variableSets"));
         aggregation.add(Aggregates.match(new Document("$and", mongoQueryList)));
@@ -592,10 +592,10 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         int studyId = getStudyIdByVariableSetId(variableSetId);
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
 
-/*        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(_ID, studyId), new BasicDBObject("$pull", new
+/*        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(PRIVATE_ID, studyId), new BasicDBObject("$pull", new
                 BasicDBObject("variableSets", new BasicDBObject("id", variableSetId))), null);
 */
-        Bson query = Filters.eq(_ID, studyId);
+        Bson query = Filters.eq(PRIVATE_ID, studyId);
         Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
         QueryResult<UpdateResult> update = studyCollection.update(query, operation, null);
 
@@ -619,8 +619,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividuals(new QueryOptions
-                (CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSetId));
+        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividuals(
+                new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.variableSetId.toString(), variableSetId));
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
             for (Individual individual : individuals.getResult()) {
@@ -811,7 +811,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long startTime = startQuery();
-//        DBObject query = new BasicDBObject(_ID, studyId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
         Bson bson = parseQuery(query);
         QueryResult<DeleteResult> remove = studyCollection.remove(bson, null);
 
@@ -865,7 +865,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
-        addIntegerOrQuery(_ID, QueryParams.ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("alias", QueryParams.ALIAS.key(), query, andBsonList);
         addStringOrQuery("creatorId", QueryParams.CREATOR_ID.key(), query, andBsonList);
@@ -873,8 +873,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
         addIntegerOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
-        addIntegerOrQuery(_PROJECT_ID, QueryParams.PROJECT_ID.key(), query, andBsonList);
-        addIntegerOrQuery(_PROJECT_ID, _PROJECT_ID, query, andBsonList);
+        addIntegerOrQuery(PRIVATE_PROJECT_ID, QueryParams.PROJECT_ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_PROJECT_ID, PRIVATE_PROJECT_ID, query, andBsonList);
 
         addStringOrQuery("group.id", QueryParams.GROUP_ID.key(), query, andBsonList);
 
@@ -938,15 +938,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      *
      * @param studyId   Study Identifier
      * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
-     *                  will be >0 to increment the diskUsage field in the study collection or <0 to decrement it.
+     *                  will be > 0 to increment the diskUsage field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
     public void updateDiskUsage(int studyId, long diskUsage) throws CatalogDBException {
         Bson query = new Document(QueryParams.ID.key(), studyId);
         Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
         if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
-            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of" +
-                    " the study " + studyId);
+            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of"
+                    + " the study " + studyId);
         }
     }
 }
