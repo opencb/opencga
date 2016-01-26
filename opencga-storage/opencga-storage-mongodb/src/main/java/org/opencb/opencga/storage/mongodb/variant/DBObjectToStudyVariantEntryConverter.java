@@ -17,9 +17,12 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DBObject;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -37,12 +40,19 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
 
     public final static String FILEID_FIELD = "fid";
     public final static String STUDYID_FIELD = "sid";
-    public final static String ALTERNATES_FIELD = "alts";
     public final static String ATTRIBUTES_FIELD = "attrs";
     //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
     public static final String ORI_FIELD = "_ori";
+
+    public final static String ALTERNATES_FIELD = "alts";
+    public static final String ALTERNATES_CHR = "chr";
+    public static final String ALTERNATES_ALT = "alt";
+    public static final String ALTERNATES_REF = "ref";
+    public static final String ALTERNATES_START = "start";
+    public static final String ALTERNATES_END = "end";
+    public static final String ALTERNATES_TYPE = "type";
 
     private boolean includeSrc;
     private Set<Integer> returnedFiles;
@@ -162,16 +172,37 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         }
 
         // Alternate alleles
-        if (fileObject != null && fileObject.containsField(ALTERNATES_FIELD)) {
-            List list = (List) fileObject.get(ALTERNATES_FIELD);
+//        if (fileObject != null && fileObject.containsField(ALTERNATES_COORDINATES_FIELD)) {
+            List<DBObject> list = (List<DBObject>) object.get(ALTERNATES_FIELD);
+            if (list != null && !list.isEmpty()) {
+                for (DBObject dbObject : list) {
+                    VariantType variantType = null;
+                    String type = (String) dbObject.get(ALTERNATES_TYPE);
+                    if (type != null && !type.isEmpty()) {
+                        variantType = VariantType.valueOf(type);
+
+                    }
+                    AlternateCoordinate alternateCoordinate = new AlternateCoordinate(
+                            (String) dbObject.get(ALTERNATES_CHR),
+                            (Integer) dbObject.get(ALTERNATES_START),
+                            (Integer) dbObject.get(ALTERNATES_END),
+                            (String) dbObject.get(ALTERNATES_REF),
+                            (String) dbObject.get(ALTERNATES_ALT),
+                            variantType);
+                    if (study.getSecondaryAlternates() == null) {
+                        study.setSecondaryAlternates(new ArrayList<>(list.size()));
+                    }
+                    study.getSecondaryAlternates().add(alternateCoordinate);
+                }
+            }
 //            String[] alternatives = new String[list.size()];
 //            int i = 0;
 //            for (Object o : list) {
 //                alternatives[i] = o.toString();
 //                i++;
 //            }
-            study.setSecondaryAlternates(list);
-        }
+//            study.setSecondaryAlternates(list);
+//        }
 
 
 //        if (fileObject != null && fileObject.containsField(FORMAT_FIELD)) {
@@ -218,8 +249,28 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         BasicDBObject fileObject = new BasicDBObject(FILEID_FIELD, fileId);
 
         // Alternate alleles
+        List<DBObject> alternates = new LinkedList<>();
         if (object.getSecondaryAlternates().size() > 0) {   // assuming secondaryAlternates doesn't contain the primary alternate
-            fileObject.append(ALTERNATES_FIELD, object.getSecondaryAlternates());
+            fileObject.append(ALTERNATES_FIELD, object.getSecondaryAlternatesAlleles());
+            for (AlternateCoordinate coordinate : object.getSecondaryAlternates()) {
+                BasicDBObjectBuilder alt = BasicDBObjectBuilder.start(ALTERNATES_ALT, coordinate.getAlternate());
+                if (coordinate.getChromosome() != null) {
+                    alt.add(ALTERNATES_CHR, coordinate.getChromosome());
+                }
+                if (coordinate.getReference() != null) {
+                    alt.add(ALTERNATES_REF, coordinate.getReference());
+                }
+                if (coordinate.getStart() != null) {
+                    alt.add(ALTERNATES_START, coordinate.getStart());
+                }
+                if (coordinate.getStart() != null) {
+                    alt.add(ALTERNATES_END, coordinate.getEnd());
+                }
+                if (coordinate.getType() != null) {
+                    alt.add(ALTERNATES_TYPE, coordinate.getType().toString());
+                }
+                alternates.add(alt.get());
+            }
         }
 
         // Attributes
@@ -277,6 +328,9 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         int studyId = Integer.parseInt(object.getStudyId());
         BasicDBObject mongoFile = new BasicDBObject(STUDYID_FIELD, studyId);
         mongoFile.append(FILES_FIELD, Collections.singletonList(fileObject));
+        if (alternates != null && !alternates.isEmpty()) {
+            mongoFile.append(ALTERNATES_FIELD, alternates);
+        }
 
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {

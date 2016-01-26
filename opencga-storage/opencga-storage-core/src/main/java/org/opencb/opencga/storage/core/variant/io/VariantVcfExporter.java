@@ -2,8 +2,11 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -14,7 +17,14 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.ClinVar;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.Cosmic;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.GeneDrugInteraction;
+import org.opencb.biodata.models.variant.avro.Gwas;
+import org.opencb.biodata.models.variant.avro.Score;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.Query;
@@ -30,7 +40,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -190,7 +199,7 @@ public class VariantVcfExporter {
         if (lastLineIndex >= 0) {
             String substring = fileHeader.substring(0, lastLineIndex);
             if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
                 returnedSamples = new ArrayList<>(samplesPosition.size());
                 for (int i = 0; i < samplesPosition.size(); i++) {
                     returnedSamples.add(samplesPosition.get(i));

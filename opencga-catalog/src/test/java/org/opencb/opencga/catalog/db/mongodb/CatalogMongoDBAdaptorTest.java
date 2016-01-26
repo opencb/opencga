@@ -697,14 +697,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         String newName = "newFile.bam";
         String parentPath = "data/";
         int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName));
+        System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName, null));
 
         File file = catalogFileDBAdaptor.getFile(fileId, null).first();
         assertEquals(file.getName(), newName);
         assertEquals(file.getPath(), parentPath + newName);
 
         try {
-            catalogFileDBAdaptor.renameFile(-1, "noFile");
+            catalogFileDBAdaptor.renameFile(-1, "noFile", null);
             fail("error: expected \"file not found\"exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -712,7 +712,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         int folderId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
         String folderName = "folderName";
-        catalogFileDBAdaptor.renameFile(folderId, folderName);
+        catalogFileDBAdaptor.renameFile(folderId, folderName, null);
         assertTrue(catalogFileDBAdaptor.getFile(fileId, null).first().getPath().equals(folderName + "/" + newName));
 
     }

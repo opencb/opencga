@@ -6,20 +6,27 @@ import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Index;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * Created by hpccoll1 on 18/08/15.
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ *
+ * Created on 18/08/15.
  */
 public class VariantFetcher {
 
@@ -86,10 +93,26 @@ public class VariantFetcher {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
         }
 
-
         logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 //        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
+        Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
+
+        Map<Object, List<Sample>> samplesMap = new HashMap<>();
+        for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
+                        new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), entry.getValue())
+                                .append("exclude", Arrays.asList("projects.studies.samples.annotationSets",
+                                        "projects.studies.samples.attributes"))
+                        , sessionId);
+                if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
+                    throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserIdBySessionId(sessionId)
+                            + " can't read all the requested samples");
+                }
+                samplesMap.put(entry.getKey(), samplesQueryResult.getResult());
+            }
+        }
 
         String[] regions;
         if (regionStr != null) {
@@ -105,6 +128,11 @@ public class VariantFetcher {
             result = dbAdaptor.getFrequency(new org.opencb.datastore.core.Query(query), Region.parseRegion(regions[0]), interval);
         } else if (groupBy != null && !groupBy.isEmpty()) {
             result = dbAdaptor.groupBy(new org.opencb.datastore.core.Query(query), groupBy, new org.opencb.datastore.core.QueryOptions(queryOptions));
+        } else if (queryOptions.getBoolean("samplesMetadata")) {
+            List<ObjectMap> list = samplesMap.entrySet().stream()
+                    .map(entry -> new ObjectMap("id", entry.getKey()).append("samples", entry.getValue()))
+                    .collect(Collectors.toList());
+            result = new org.opencb.datastore.core.QueryResult("getVariantSamples", 0, list.size(), list.size(), "", "", list);
         } else {
             logger.debug("getVariants {}, {}", query, queryOptions);
             result = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));

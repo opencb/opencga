@@ -139,7 +139,7 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
     @Deprecated
     QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult renameFile(int fileId, String filePath) throws CatalogDBException;
+    QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
     QueryResult<File> deleteFile(int fileId) throws CatalogDBException;

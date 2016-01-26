@@ -138,9 +138,11 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     /**
      * @param filePath assuming 'pathRelativeToStudy + name'
+     * @param options
      */
     @Override
-    public QueryResult renameFile(int fileId, String filePath) throws CatalogDBException {
+    public QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         checkFileId(fileId);
@@ -163,7 +165,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             filePath += filePath.endsWith("/") ? "" : "/";
             for (File subFile : allFilesInFolder.getResult()) {
                 String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
-                renameFile(subFile.getId(), replacedPath); // first part of the path in the subfiles 3
+                renameFile(subFile.getId(), replacedPath, null); // first part of the path in the subfiles 3
             }
         }
 
@@ -173,7 +175,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);
         }
-        return endQuery("Rename file", startTime);
+        return endQuery("Rename file", startTime, getFile(fileId, options));
     }
 
     @Override

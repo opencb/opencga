@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.datastore.core.QueryResult;
@@ -155,7 +154,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
-        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration);
+        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
         if (sampleIds == null || sampleIds.isEmpty()) {
@@ -423,29 +422,17 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!__returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
-            if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> unorderedSamplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
-                samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
-                for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
-                    samplesPosition.put(unorderedSamplesPosition.get(i), i);
-                }
-            } else {
-                samplesPosition = new LinkedHashMap<>(returnedSamples.size());
-                int index = 0;
-                BiMap<String, Integer> indexedSamplesId = getIndexedSamplesIdMap(studyConfiguration.getStudyId());
-                for (String returnedSample : returnedSamples) {
-                    if (indexedSamplesId.containsKey(returnedSample)) {
-                        samplesPosition.put(returnedSample, index++);
-                    }
-                }
-//                for (String sample : indexedSamplesId.keySet()) {
-//                    samplesPosition.put(sample, index++);
-//                }
-            }
+            samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
+                    this.returnedSamples, sc -> getIndexedSamplesIdMap(sc.getStudyId()));
             __returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
         }
-        LinkedHashMap<String, Integer> samplesPosition = __returnedSamplesPosition.get(studyConfiguration.getStudyId());
-        return samplesPosition;
+        return __returnedSamplesPosition.get(studyConfiguration.getStudyId());
+    }
+
+    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
+            StudyConfiguration studyConfiguration,
+            LinkedHashSet<String> returnedSamples) {
+        return StudyConfiguration.getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamples);
     }
 
 

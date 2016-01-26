@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.BiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.mongodb.*;
@@ -530,6 +531,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return queryResult;
     }
 
+    @Override
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+        if (studyIds.isEmpty()) {
+            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        }
+
+        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
+                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
+        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+
+        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
+            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
+            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
+            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
+            samples.put(studyId, sampleNames);
+        }
+
+        return samples;
+    }
 
 
     @Override
@@ -756,7 +780,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
-                String xrefs = query.getString(VariantQueryParams.GENE.key());
+                String xrefs = query.getString(VariantQueryParams.ANNOT_XREF.key());
                 addQueryStringFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREFS_FIELD + "." +
                         DBObjectToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
@@ -1130,6 +1154,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
         List<Integer> studiesIds;
+        if (studiesNames == null) {
+            return Collections.emptyList();
+        }
         studiesIds = new ArrayList<>(studiesNames.size());
         for (Object studyObj : studiesNames) {
             if (studyObj instanceof Integer) {
@@ -1718,7 +1745,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             QueryBuilder statsBuilder = new QueryBuilder();
             statsBuilder.and(DBObjectToVariantStatsConverter.STUDY_ID).is(studyId);
-            statsBuilder.and(DBObjectToVariantStatsConverter.COHORT_ID).is(cohortId);
+            if (cohortId != null) {
+                statsBuilder.and(DBObjectToVariantStatsConverter.COHORT_ID).is(cohortId);
+            }
             addCompQueryFilter(key, operatorValue, statsBuilder);
             builder.and(DBObjectToVariantConverter.STATS_FIELD).elemMatch(statsBuilder.get());
         } else {
