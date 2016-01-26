@@ -91,7 +91,8 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
-    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator comparisonOperator, List<Bson> andBsonList) {
+    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator
+            comparisonOperator, List<Bson> andBsonList) {
         addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, comparisonOperator,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
@@ -109,7 +110,8 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 //    }
 
     protected void addQueryFilter(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ParamType paramType,
-                                  MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator, List<Bson> andBsonList) {
+                                  MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator,
+                                  List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {
             Bson filter = MongoDBQueryUtils.createFilter(mongoDbField, queryParam, query, paramType, comparisonOperator, operator);
             if (filter != null) {
@@ -140,7 +142,8 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, QueryOptions options) {
+    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, QueryOptions
+            options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new QueryResult();
         }

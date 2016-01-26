@@ -28,6 +28,42 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
+    default boolean projectExists(int projectId) {
+        return count(new Query("project.id", projectId)).first() > 0;
+    }
+
+    default void checkProjectId(int projectId) throws CatalogDBException {
+        if (projectId < 0) {
+            throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
+        }
+
+        if (!projectExists(projectId)) {
+            throw CatalogDBException.newInstance("Project id '{}' does not exist", projectId);
+        }
+    }
+
+    QueryResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
+
+    default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
+        return delete(projectId);
+    }
+
+    QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
+
+    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+
+    int getProjectId(String userId, String projectAlias) throws CatalogDBException;
+
+    String getProjectOwnerId(int projectId) throws CatalogDBException;
+
+    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+
+    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
@@ -45,7 +81,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN , ""),
+        ACL_READ("acl.read", BOOLEAN, ""),
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
         ACL_DELETE("acl.delete", BOOLEAN, "");
@@ -75,42 +111,5 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
             return description;
         }
     }
-
-    default boolean projectExists(int projectId) {
-        return count(new Query("project.id", projectId)).first() > 0;
-    }
-
-    default void checkProjectId(int projectId) throws CatalogDBException {
-        if (projectId < 0) {
-            throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
-        }
-
-        if (!projectExists(projectId)) {
-            throw CatalogDBException.newInstance("Project id '{}' does not exist", projectId);
-        }
-    }
-
-    QueryResult<Project> createProject(String userId, Project project, QueryOptions options) throws CatalogDBException;
-
-
-    QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
-
-    default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
-        return delete(projectId);
-    }
-
-    QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
-
-    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
-
-    int getProjectId(String userId, String projectAlias) throws CatalogDBException;
-
-    String getProjectOwnerId(int projectId) throws CatalogDBException;
-
-    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
-
-    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
 
 }

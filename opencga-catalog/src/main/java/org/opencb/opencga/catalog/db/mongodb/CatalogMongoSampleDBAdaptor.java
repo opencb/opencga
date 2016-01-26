@@ -34,7 +34,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -227,7 +226,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             Bson operation = new Document("$set", sampleParams);
             QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
 
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount()== 0) {
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Sample", sampleId);
             }
         }
@@ -383,7 +382,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //        int studyId = getStudyIdBySampleId(sampleId);
 //
 //        QueryOptions query = new QueryOptions(FileFilterOption.sampleIds.toString(), sampleId);
-//        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path"));
+//        QueryOptions queryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files
+// .path"));
 //        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().getAllFiles(query, queryOptions);
 //        if (fileQueryResult.getNumResults() != 0) {
 //            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : " +
@@ -623,7 +623,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         /*QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, sampleId));*/
         QueryResult<Long> count = sampleCollection.count(new BsonDocument("annotationSets.id", new BsonString(annotationSet.getId()))
-                        .append(_ID, new BsonInt32(sampleId)));
+                .append(_ID, new BsonInt32(sampleId)));
         if (overwrite) {
             if (count.getResult().get(0) == 0) {
                 throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
@@ -750,7 +750,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) { return null; }
+    public QueryResult<Long> update(Query query, ObjectMap parameters) {
+        return null;
+    }
 
     @Override
     public QueryResult<Sample> update(int id, ObjectMap parameters) throws CatalogDBException {

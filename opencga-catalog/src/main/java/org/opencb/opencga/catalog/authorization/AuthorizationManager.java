@@ -49,8 +49,8 @@ public interface AuthorizationManager {
      * Any other permission require to be SAMPLE_MANAGER, role:ADMIN or studyOwner
      *
      * @param individualId individualId
-     * @param userId userId
-     * @param permission Permission
+     * @param userId       userId
+     * @param permission   Permission
      * @throws CatalogException CatalogException
      */
     void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException;
@@ -104,7 +104,7 @@ public interface AuthorizationManager {
     /**
      * Removes from the list the samples that the user can not read.
      *
-     * @param userId UserId
+     * @param userId  UserId
      * @param studyId StudyId
      * @param samples Samples
      * @throws CatalogException CatalogException

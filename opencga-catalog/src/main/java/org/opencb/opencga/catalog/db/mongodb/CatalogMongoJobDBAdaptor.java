@@ -7,7 +7,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -17,10 +16,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
-import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
 import org.slf4j.LoggerFactory;
@@ -30,8 +27,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.addQueryIntegerListFilter;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObjects;
 
 /**
  * Created by pfurio on 08/01/16.
@@ -82,7 +77,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //            return endQuery("delete job", startTime, Collections.singletonList(job));
 //        }
 //    }
-
     @Override
     public QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
@@ -276,7 +270,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //                        new BasicDBObject("id", id)
 //                )
 //        );
-//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, new QueryOptions("include", Collections.singletonList("tools")));
+//        QueryResult<DBObject> queryResult = userCollection.find(query, projection, new QueryOptions("include", Collections
+// .singletonList("tools")));
 
         Bson query = Filters.eq("tools.id", id);
         Bson projection = Projections.fields(Projections.elemMatch("tools", Filters.eq("id", id)), Projections.include("tools"));
@@ -341,7 +336,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public boolean experimentExists(int experimentId) {
         return false;
     }
-
 
 
     @Override
@@ -415,7 +409,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
-        long timeStart =startQuery();
+        long timeStart = startQuery();
         QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query), null);
         return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
     }

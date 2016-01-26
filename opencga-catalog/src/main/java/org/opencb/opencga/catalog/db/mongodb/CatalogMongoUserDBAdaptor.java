@@ -34,11 +34,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +164,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            return endQuery("Delete user", startTime, Arrays.asList(wr.getN()));
 //        }
 //    }
-
     @Override
     public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
         checkParameter(userId, "userId");
@@ -410,7 +410,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
 
-
     @Override
     public QueryResult<Long> count(Query query) {
         Bson bsonDocument = parseQuery(query);
@@ -457,7 +456,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             if (projects.size() > 0) {
                 List<Document> projectsTmp = new ArrayList<>(projects.size());
                 for (Document project : projects) {
-                    Query query1 = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), project.get(CatalogProjectDBAdaptor.QueryParams.ID.key()));
+                    Query query1 = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), project.get(CatalogProjectDBAdaptor
+                            .QueryParams.ID.key()));
                     QueryResult<Document> queryResult1 = dbAdaptorFactory.getCatalogProjectDbAdaptor().nativeGet(query1, options);
                     projectsTmp.add(queryResult1.first());
                 }

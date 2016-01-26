@@ -95,6 +95,7 @@ public class Job {
     private Map<String, Object> resourceManagerAttributes;
     private String error;
     private String errorDescription;
+
     public Job() {
     }
 

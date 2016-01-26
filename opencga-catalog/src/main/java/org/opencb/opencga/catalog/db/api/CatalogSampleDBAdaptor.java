@@ -31,53 +31,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
-    enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        SOURCE("source", TEXT_ARRAY, ""),
-        INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
-
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
-
-        // TOCHECK: Pedro. Check parameter user_others_id.
-        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN , ""),
-        ACL_WRITE("acl.write", BOOLEAN, ""),
-        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, "");
-        // TOCHECK: Pedro. Add annotation and attributes support?
-
-
-        private final String key;
-        private Type type;
-        private String description;
-
-        QueryParams(String key, Type type, String description) {
-            this.key = key;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        public Type type() {
-            return type;
-        }
-
-        @Override
-        public String description() {
-            return description;
-        }
-    }
-
-
-    /**
+    /*
      * Samples methods
-     * ***************************
      */
 
     default boolean sampleExists(int sampleId) {
@@ -98,6 +53,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
@@ -136,9 +92,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
 
-    /**
+
+    /*
      * Cohort methods
-     * ***************************
      */
 
     QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
@@ -152,6 +108,49 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
 
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
+
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        SOURCE("source", TEXT_ARRAY, ""),
+        INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
+
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+
+        // TOCHECK: Pedro. Check parameter user_others_id.
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN, ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
+        // TOCHECK: Pedro. Add annotation and attributes support?
+
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
 
     enum SampleFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
@@ -172,14 +171,16 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
+
         SampleFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
+
         SampleFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;
@@ -223,14 +224,16 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         bstats("stats", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
 
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
+
         CohortFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
+
         CohortFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;
@@ -263,14 +266,16 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         battributes("attributes", Type.BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),;
 
-        final private String _key;
-        final private String _description;
-        final private Type _type;
+        private final String _key;
+        private final String _description;
+        private final Type _type;
+
         VariableSetFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
+
         VariableSetFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;

@@ -99,7 +99,7 @@ public interface AuditManager {
      *
      * @param query        Query to execute. Must validate with AuditQueryParam
      * @param queryOptions Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @param sessionId sessionId
+     * @param sessionId    sessionId
      * @return A QueryResult with a list of all matching AuditRecords
      * @throws CatalogException CatalogException
      */

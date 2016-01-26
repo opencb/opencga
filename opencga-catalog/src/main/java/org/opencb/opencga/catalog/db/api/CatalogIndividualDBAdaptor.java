@@ -33,6 +33,39 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  */
 public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
 
+    default boolean individualExists(int sampleId) {
+        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
+    }
+
+    default void checkIndividualId(int individualId) throws CatalogDBException {
+        if (individualId < 0) {
+            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
+        }
+
+        if (!individualExists(individualId)) {
+            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
+        }
+    }
+
+    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws
+            CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
+
+    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+
+    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
@@ -72,40 +105,6 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         }
     }
 
-
-    default boolean individualExists(int sampleId) {
-        return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
-    }
-
-    default void checkIndividualId(int individualId) throws CatalogDBException {
-        if (individualId < 0) {
-            throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
-        }
-
-        if (!individualExists(individualId)) {
-            throw CatalogDBException.newInstance("Indivivual id '{}' does not exist", individualId);
-        }
-    }
-
-    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
-
-    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws
-            CatalogDBException;
-
-    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
-
-    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
-
-    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
-
     enum IndividualFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         id(Type.NUMERICAL, ""),
@@ -129,11 +128,13 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         final private String _key;
         final private String _description;
         final private Type _type;
+
         IndividualFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
+
         IndividualFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;

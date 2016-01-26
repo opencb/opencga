@@ -31,73 +31,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
-
-    enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        TYPE("type", TEXT_ARRAY, ""),
-        FORMAT("format", TEXT_ARRAY, ""),
-        BIOFORMAT("bioformat", TEXT_ARRAY, ""),
-        URI("uri", TEXT_ARRAY, ""),
-        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
-        OWNER_ID("ownerId", TEXT_ARRAY, ""),
-        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
-        MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
-        DESCRIPTION("description", TEXT_ARRAY, ""),
-        STATUS("status", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", TEXT_ARRAY, ""),
-        EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
-        JOB_ID("jobId", INTEGER_ARRAY, ""),
-        SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATS("stats", TEXT, ""),
-        NSTATS("nstats", DECIMAL, ""),
-        PATH("path", TEXT, ""),
-
-        INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_DATE("index.date", TEXT, ""),
-        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
-        INDEX_JOB_ID("index.jobId", TEXT, ""),
-        // Fixme: Index attributes
-
-        // TOCHECK: Pedro. Check parameter user_others_id.
-        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN , ""),
-        ACL_WRITE("acl.write", BOOLEAN, ""),
-        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, "");
-
-        // TOCHECK: Pedro. Add annotation support?
-
-        private final String key;
-        private Type type;
-        private String description;
-
-        QueryParams(String key, Type type, String description) {
-            this.key = key;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        public Type type() {
-            return type;
-        }
-
-        @Override
-        public String description() {
-            return description;
-        }
-    }
-
+public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     default boolean fileExists(int fileId) {
         return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
@@ -115,7 +49,6 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
             throw CatalogDBException.newInstance("'{}' documents found with the File id '{}'", count, fileId);
         }
     }
-
 
     int getFileId(int studyId, String path) throws CatalogDBException;
 
@@ -169,6 +102,71 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
 
     QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
 
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        TYPE("type", TEXT_ARRAY, ""),
+        FORMAT("format", TEXT_ARRAY, ""),
+        BIOFORMAT("bioformat", TEXT_ARRAY, ""),
+        URI("uri", TEXT_ARRAY, ""),
+        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
+        OWNER_ID("ownerId", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
+        DESCRIPTION("description", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", TEXT_ARRAY, ""),
+        EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
+        JOB_ID("jobId", INTEGER_ARRAY, ""),
+        SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+        STATS("stats", TEXT, ""),
+        NSTATS("nstats", DECIMAL, ""),
+        PATH("path", TEXT, ""),
+
+        INDEX_USER_ID("index.userId", TEXT, ""),
+        INDEX_DATE("index.date", TEXT, ""),
+        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
+        INDEX_JOB_ID("index.jobId", TEXT, ""),
+        // Fixme: Index attributes
+
+        // TOCHECK: Pedro. Check parameter user_others_id.
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN, ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
+
+        // TOCHECK: Pedro. Add annotation support?
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
+
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         directory(Type.TEXT, ""),
@@ -210,11 +208,13 @@ public interface CatalogFileDBAdaptor  extends CatalogDBAdaptor<File> {
         final private String _key;
         final private String _description;
         final private Type _type;
+
         FileFilterOption(Type type, String description) {
             this._key = name();
             this._description = description;
             this._type = type;
         }
+
         FileFilterOption(String key, Type type, String description) {
             this._key = key;
             this._description = description;

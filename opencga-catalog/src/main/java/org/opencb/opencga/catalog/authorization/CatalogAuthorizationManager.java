@@ -272,7 +272,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId,
                                                                  int studyId, String groupId, List<String> paths)
             throws CatalogDBException {
-        for (Iterator<String> iterator = paths.iterator(); iterator.hasNext();) {
+        for (Iterator<String> iterator = paths.iterator(); iterator.hasNext(); ) {
             String path = iterator.next();
             if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
                 Map<String, AclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
@@ -560,7 +560,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             studyAuthContextMap.put(studyAuthenticationContext.studyId, studyAuthenticationContext);
         }
 
-        for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext();) {
+        for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
             int studyId;
             StudyAuthenticationContext specificStudyAuthenticationContext;
@@ -616,7 +616,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         Map<Integer, AclEntry> sampleAclMap = new HashMap<>();
 
-        for (Iterator<Cohort> iterator = cohorts.iterator(); iterator.hasNext();) {
+        for (Iterator<Cohort> iterator = cohorts.iterator(); iterator.hasNext(); ) {
             Cohort cohort = iterator.next();
             for (Integer sampleId : cohort.getSamples()) {
                 AclEntry sampleACL;
@@ -643,7 +643,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        for (Iterator<Individual> iterator = individuals.iterator(); iterator.hasNext();) {
+        for (Iterator<Individual> iterator = individuals.iterator(); iterator.hasNext(); ) {
             Individual individual = iterator.next();
             try {
                 checkIndividualPermission(individual.getId(), userId, CatalogPermission.READ);
@@ -824,6 +824,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
          * Map<Path, Map<UserId, AclEntry>>
          */
         private final Map<String, Map<String, AclEntry>> pathUserAclMap;
+
         public StudyAuthenticationContext(int studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();

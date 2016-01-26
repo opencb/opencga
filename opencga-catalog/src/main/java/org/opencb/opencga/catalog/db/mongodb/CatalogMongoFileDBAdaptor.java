@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.core.common.ListUtils;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;

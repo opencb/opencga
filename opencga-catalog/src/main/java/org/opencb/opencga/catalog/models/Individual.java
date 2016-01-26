@@ -35,6 +35,7 @@ public class Individual {
     private Population population;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
+
     public Individual() {
     }
 

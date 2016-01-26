@@ -26,7 +26,6 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongo
  */
 public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
-    static final String METADATA_OBJECT_ID = "METADATA";
     protected static final String USER_COLLECTION = "user";
     protected static final String STUDY_COLLECTION = "study";
     protected static final String FILE_COLLECTION = "file";
@@ -35,6 +34,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     protected static final String INDIVIDUAL_COLLECTION = "individual";
     protected static final String METADATA_COLLECTION = "metadata";
     protected static final String AUDIT_COLLECTION = "audit";
+    static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
     private final MongoDBConfiguration configuration;
     private final String database;

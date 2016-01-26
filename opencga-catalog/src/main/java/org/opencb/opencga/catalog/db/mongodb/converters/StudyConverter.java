@@ -3,14 +3,9 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Created by pfurio on 18/01/16.

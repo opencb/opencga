@@ -17,14 +17,12 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -35,7 +33,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -185,7 +182,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //            return endQuery("delete project", startTime, deletes);
 //        }
 //    }
-
     @Override
     public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
@@ -545,7 +541,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) { return null; }
+    public QueryResult<Long> update(Query query, ObjectMap parameters) {
+        return null;
+    }
 
     @Override
     public QueryResult<Project> update(int id, ObjectMap parameters) throws CatalogDBException {

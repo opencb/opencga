@@ -90,7 +90,7 @@ public interface CatalogClient {
         Integer getProjectId(String projectId) throws CatalogException;
 
         QueryResult<Project> create(String ownerId, String name, String alias, String description,
-                                           String organization, QueryOptions options) throws CatalogException;
+                                    String organization, QueryOptions options) throws CatalogException;
     }
 
     interface CatalogStudyClient extends CatalogResourceClient<Study> {
@@ -118,10 +118,10 @@ public interface CatalogClient {
         Integer getFileId(String fileId) throws CatalogException;
 
         QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.Status status,
-                                        long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
-                                        Map<String, Object> stats, Map<String, Object> attributes,
-                                        boolean parents) throws CatalogException;
+                                 String ownerId, String creationDate, String description, File.Status status,
+                                 long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
+                                 Map<String, Object> stats, Map<String, Object> attributes,
+                                 boolean parents) throws CatalogException;
     }
 
     interface CatalogJobClient extends CatalogResourceClient<Job> {

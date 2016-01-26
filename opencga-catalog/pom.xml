@@ -95,9 +95,6 @@
                         <phase>validate</phase>
                         <configuration>
                             <configLocation>../checkstyle.xml</configLocation>
-                            <excludes>
-                                org/opencb/opencga/catalog/db/**
-                            </excludes>
                         </configuration>
                         <goals>
                             <goal>check</goal>

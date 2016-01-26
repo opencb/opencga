@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import com.mongodb.client.model.Projections;
-import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -43,7 +41,6 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
     QueryResult<Long> count(Query query);
 
 
-
     default QueryResult distinct(String field) {
         return distinct(new Query(), field);
     }
@@ -51,13 +48,11 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
     QueryResult distinct(Query query, String field);
 
 
-
     default QueryResult stats() {
         return stats(new Query());
     }
 
     QueryResult stats(Query query);
-
 
 
     QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
@@ -93,7 +88,6 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
     QueryResult<Long> delete(Query query) throws CatalogDBException;
 
 
-
     @Override
     default Iterator<T> iterator() {
         return iterator(new Query(), new QueryOptions());
@@ -108,13 +102,11 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
     Iterator nativeIterator(Query query, QueryOptions options);
 
 
-
     QueryResult rank(Query query, String field, int numResults, boolean asc);
 
     QueryResult groupBy(Query query, String field, QueryOptions options);
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
-
 
 
     @Override

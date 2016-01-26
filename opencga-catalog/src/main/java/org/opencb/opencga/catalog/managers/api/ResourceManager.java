@@ -23,8 +23,8 @@ public interface ResourceManager<I, R> {
     /**
      * Reads an object from Catalog given an ID.
      *
-     * @param id      Id of the object to read
-     * @param options Read options
+     * @param id        Id of the object to read
+     * @param options   Read options
      * @param sessionId sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
@@ -34,8 +34,8 @@ public interface ResourceManager<I, R> {
     /**
      * Read all the R objects matching with the query on the QueryOptions.
      *
-     * @param query   Query to catalog.
-     * @param options Query options, like "include", "exclude", "limit" and "skip"
+     * @param query     Query to catalog.
+     * @param options   Query options, like "include", "exclude", "limit" and "skip"
      * @param sessionId sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
@@ -47,8 +47,8 @@ public interface ResourceManager<I, R> {
      *
      * @param id         Id of the object to update
      * @param parameters Parameters to change.
-     * @param options options
-     * @param sessionId sessionId
+     * @param options    options
+     * @param sessionId  sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -57,8 +57,8 @@ public interface ResourceManager<I, R> {
     /**
      * Delete an specified entry from Catalog.
      *
-     * @param id      Id of the object to delete
-     * @param options Deleting options.
+     * @param id        Id of the object to delete
+     * @param options   Deleting options.
      * @param sessionId sessionId
      * @return The deleted object
      * @throws CatalogException CatalogException

@@ -48,7 +48,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     static CatalogMongoDBAdaptorFactory catalogDBAdaptor;
 
-//    @Rule
+    //    @Rule
 //    public Timeout globalTimeout = new Timeout(2000); // 200 ms max per method tested
     static User user1;
     static User user2;
@@ -56,10 +56,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     CatalogUserDBAdaptor catalogUserDBAdaptor;
-    private CatalogStudyDBAdaptor catalogStudyDBAdaptor;
     CatalogProjectDBAdaptor catalogProjectDBAdaptor;
     CatalogFileDBAdaptor catalogFileDBAdaptor;
     CatalogJobDBAdaptor catalogJobDBAdaptor;
+    private CatalogStudyDBAdaptor catalogStudyDBAdaptor;
 
     @AfterClass
     public static void afterClass() {
@@ -96,7 +96,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        catalogDBAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database);
+        catalogDBAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
+                database);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
@@ -137,7 +138,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                         ".vcf", null, null, "", File.Status.READY, 1000)
                                         ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
                                         LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String,
-                                Object>emptyMap(),
+                                        Object>emptyMap(),
                                         Collections.<String, Object>emptyMap()
                                 )
                         ), Collections.<String, Object>emptyMap())

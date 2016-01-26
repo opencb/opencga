@@ -30,6 +30,59 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  */
 public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
+    /*
+     * User methods
+     */
+    boolean checkUserCredentials(String userId, String sessionId);
+
+    default boolean userExists(String userId) {
+        return count(new Query(QueryParams.ID.key(), userId)).getResult().get(0) > 0;
+    }
+
+    default void checkUserExists(String userId) throws CatalogDBException {
+        if (StringUtils.isEmpty(userId)) {
+            throw CatalogDBException.newInstance("User id '{}' is not valid: ", userId);
+        }
+
+        if (!userExists(userId)) {
+            throw CatalogDBException.newInstance("User id '{}' does not exist", userId);
+        }
+    }
+
+    QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
+            throws CatalogDBException;
+
+    QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
+
+    QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;
+
+    @Deprecated
+    default QueryResult<Long> deleteUser(String userId) throws CatalogDBException {
+        return delete(new Query(QueryParams.ID.key(), userId));
+    }
+
+    QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
+
+    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
+
+    QueryResult logout(String userId, String sessionId) throws CatalogDBException;
+
+    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException;
+
+    QueryResult logoutAnonymous(String sessionId) throws CatalogDBException;
+
+    QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
+
+    void updateUserLastActivity(String userId) throws CatalogDBException;
+
+    QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
+
+    QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException;
+
+    String getUserIdBySessionId(String sessionId);
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
@@ -82,64 +135,6 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
             return description;
         }
     }
-
-    /**
-     * User methods
-     * ***************************
-     */
-    boolean checkUserCredentials(String userId, String sessionId);
-
-    default boolean userExists(String userId) {
-        return count(new Query(QueryParams.ID.key(), userId)).getResult().get(0) > 0;
-    }
-
-    default void checkUserExists(String userId) throws CatalogDBException {
-        if (StringUtils.isEmpty(userId)) {
-            throw CatalogDBException.newInstance("User id '{}' is not valid: ", userId);
-        }
-
-        if (!userExists(userId)) {
-            throw CatalogDBException.newInstance("User id '{}' does not exist", userId);
-        }
-    }
-
-    QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
-            throws CatalogDBException;
-
-    QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
-
-
-    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
-
-
-    QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException;
-
-    default QueryResult<Long> deleteUser(String userId) throws CatalogDBException {
-        return delete(new Query(QueryParams.ID.key(), userId));
-    }
-
-
-    QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
-
-    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
-
-    QueryResult logout(String userId, String sessionId) throws CatalogDBException;
-
-    QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException;
-
-    QueryResult logoutAnonymous(String sessionId) throws CatalogDBException;
-
-
-    QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
-
-    void updateUserLastActivity(String userId) throws CatalogDBException;
-
-
-    QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
-
-    QueryResult<Session> getSession(String userId, String sessionId) throws CatalogDBException;
-
-    String getUserIdBySessionId(String sessionId);
 
 
     /**

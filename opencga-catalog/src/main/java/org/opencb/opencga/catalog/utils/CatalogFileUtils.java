@@ -525,7 +525,7 @@ public class CatalogFileUtils {
      * modificationDate
      * attributes.checksum
      *
-     * @param file file
+     * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
      *                          TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.

@@ -143,7 +143,7 @@ public class CatalogSampleAnnotationsLoader {
      * @param individual  Individual from Pedigree file
      * @param sampleMap   Map<String, Sample>, to relate "sampleName" with "sampleId"
      * @param variableSet VariableSet to annotate
-     * @param fields fields
+     * @param fields      fields
      * @return Map<String, Object> Map
      */
     protected Map<String, Object> getAnnotation(Individual individual, Map<String, Sample> sampleMap, VariableSet variableSet,

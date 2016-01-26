@@ -158,7 +158,7 @@ public class CatalogAnnotationsValidator {
         }
 
         //Remove null values
-        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext();) {
+        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext(); ) {
             Annotation annotation = iterator.next();
             if (annotation.getValue() == null) {
                 iterator.remove();

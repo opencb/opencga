@@ -23,14 +23,93 @@ import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.VariableSet;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.DECIMAL;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
+
+    /**
+     * Study methods
+     * ***************************
+     */
+
+
+    default Long studyExists(int studyId) {
+        return count(new Query(QueryParams.ID.key(), studyId)).first();
+    }
+
+    default void checkStudyId(int studyId) throws CatalogDBException {
+        if (studyId < 0) {
+            throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
+        }
+        Long count = studyExists(studyId);
+        if (count <= 0) {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the Study id '{}'", count, studyId);
+        }
+    }
+
+    QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
+
+    void updateStudyLastActivity(int studyId) throws CatalogDBException;
+
+    @Deprecated
+    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+
+//  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
+// throws CatalogManagerException;
+
+    default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
+        if (sampleQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        }
+        return sampleQueryResult;
+    }
+
+    int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
+
+    int getProjectIdByStudyId(int studyId) throws CatalogDBException;
+
+    String getStudyOwnerId(int studyId) throws CatalogDBException;
+
+    QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+
+    QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+
+    /**
+     * VariableSet Methods
+     * ***************************
+     */
+
+    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
+
+    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+
+    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
@@ -114,87 +193,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
     }
 
-    /**
-     * Study methods
-     * ***************************
-     */
-
-
-    default Long studyExists(int studyId) {
-        return count(new Query(QueryParams.ID.key(), studyId)).first();
-    }
-
-    default void checkStudyId(int studyId) throws CatalogDBException {
-        if (studyId < 0) {
-            throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
-        }
-        Long count = studyExists(studyId);
-        if (count <= 0) {
-            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
-        } else if (count > 1) {
-            throw CatalogDBException.newInstance("'{}' documents found with the Study id '{}'", count, studyId);
-        }
-    }
-
-    QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
-
-    void updateStudyLastActivity(int studyId) throws CatalogDBException;
-
-//  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
-// throws CatalogManagerException;
-
-    @Deprecated
-    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
-
-    default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
-        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
-        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
-        }
-        return sampleQueryResult;
-    }
-
-    int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
-
-    int getProjectIdByStudyId(int studyId) throws CatalogDBException;
-
-    String getStudyOwnerId(int studyId) throws CatalogDBException;
-
-    QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
-
-    QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
-
-    /**
-     * VariableSet Methods
-     * ***************************
-     */
-
-    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
-
-    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
-
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
-
-    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
-
     enum StudyFilterOptions implements AbstractCatalogDBAdaptor.FilterOption {
         id(Type.NUMERICAL, ""),
         projectId(Type.NUMERICAL, ""),
@@ -214,11 +212,13 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         final private String _key;
         final private String _description;
         final private Type _type;
+
         StudyFilterOptions(String key, Type type, String description) {
             this._key = key;
             this._description = description;
             this._type = type;
         }
+
         StudyFilterOptions(Type type, String description) {
             this._key = name();
             this._description = description;

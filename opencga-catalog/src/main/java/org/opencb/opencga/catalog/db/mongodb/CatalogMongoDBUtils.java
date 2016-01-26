@@ -47,12 +47,12 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
  */
 class CatalogMongoDBUtils {
 
-    public static final Set<String> datastoreOptions = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect
+    public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream().collect
             (Collectors.toSet());
-    public static final Set<String> otherOptions = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
+    public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
-    //    public static final Pattern operationPattern = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
-    public static final Pattern operationPattern = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
@@ -438,11 +438,11 @@ class CatalogMongoDBUtils {
     /*  */
 
     static boolean isDataStoreOption(String key) {
-        return datastoreOptions.contains(key);
+        return DATASTORE_OPTIONS.contains(key);
     }
 
     static boolean isOtherKnownOption(String key) {
-        return otherOptions.contains(key);
+        return OTHER_OPTIONS.contains(key);
     }
 
 
@@ -543,7 +543,8 @@ class CatalogMongoDBUtils {
         }
     }
 
-    static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, String queryKey, ObjectMap options,
+    static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, String queryKey, ObjectMap
+            options,
                                              List<Document> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
@@ -552,12 +553,13 @@ class CatalogMongoDBUtils {
         return addCompQueryFilter(option.getType(), queryKey, optionsList, andQuery);
     }
 
-    static private List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey, List<String> optionsList,
+    static private List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey, List<String>
+            optionsList,
                                                      List<Document> andQuery) throws CatalogDBException {
 
         ArrayList<Document> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
-            Matcher matcher = operationPattern.matcher(option);
+            Matcher matcher = OPERATION_PATTERN.matcher(option);
             String operator;
             String key;
             String filter;
@@ -608,7 +610,8 @@ class CatalogMongoDBUtils {
     }
 
     @Deprecated
-    static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey,
+    static List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String
+            queryKey,
                                              List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
@@ -618,12 +621,13 @@ class CatalogMongoDBUtils {
     }
 
     @Deprecated
-    static private List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String queryKey,
+    static private List<DBObject> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, List<String> optionsList, String
+            queryKey,
                                                      List<DBObject> andQuery) throws CatalogDBException {
 
         ArrayList<DBObject> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
-            Matcher matcher = operationPattern.matcher(option);
+            Matcher matcher = OPERATION_PATTERN.matcher(option);
             String operator;
             String key;
             String filter;

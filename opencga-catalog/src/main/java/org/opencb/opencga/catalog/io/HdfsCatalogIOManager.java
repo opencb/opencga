@@ -63,7 +63,6 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 //         */
 //
 //    }
-
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
 

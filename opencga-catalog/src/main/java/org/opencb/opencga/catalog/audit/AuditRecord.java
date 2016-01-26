@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
  */
 public class AuditRecord {
     public static final String CREATE = "create";
-//    public enum Status {running, done, fail}
+    //    public enum Status {running, done, fail}
     public static final String UPDATE = "update";
     public static final String DELETE = "delete";
     public static final String INDEX = "index";
@@ -26,6 +26,7 @@ public class AuditRecord {
     private String userId;
     private String description;
     private ObjectMap attributes;
+
     public AuditRecord() {
     }
 

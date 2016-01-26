@@ -28,47 +28,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
-    enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        USER_ID("userId", TEXT_ARRAY, ""),
-        TOOL_NAME("toolName", TEXT_ARRAY, ""),
-        DATE("date", TEXT_ARRAY, ""),
-        STATUS("status", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", DECIMAL, ""),
-
-        STUDY_ID("studyId", INTEGER_ARRAY, "");
-
-
-        private final String key;
-        private Type type;
-        private String description;
-
-        QueryParams(String key, Type type, String description) {
-            this.key = key;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        public Type type() {
-            return type;
-        }
-
-        @Override
-        public String description() {
-            return description;
-        }
-    }
-
-    /**
+    /*
      * Job methods
-     * ***************************
      */
 
     default boolean jobExists(int jobId) {
@@ -114,10 +75,8 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     int getStudyIdByJobId(int jobId) throws CatalogDBException;
 
-
-    /**
+    /*
      * Tool methods
-     * ***************************
      */
 
     QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
@@ -128,13 +87,50 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<Tool> getAllTools(QueryOptions queryOptions) throws CatalogDBException;
 
-//    public abstract QueryResult<Tool> searchTool(QueryOptions options);
-
-    /**
+    /*
      * Experiments methods
-     * ***************************
      */
 
     boolean experimentExists(int experimentId);
+
+//    public abstract QueryResult<Tool> searchTool(QueryOptions options);
+
+    enum QueryParams implements QueryParam {
+        ID("id", INTEGER_ARRAY, ""),
+        NAME("name", TEXT_ARRAY, ""),
+        USER_ID("userId", TEXT_ARRAY, ""),
+        TOOL_NAME("toolName", TEXT_ARRAY, ""),
+        DATE("date", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", DECIMAL, ""),
+
+        STUDY_ID("studyId", INTEGER_ARRAY, "");
+
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
 
 }

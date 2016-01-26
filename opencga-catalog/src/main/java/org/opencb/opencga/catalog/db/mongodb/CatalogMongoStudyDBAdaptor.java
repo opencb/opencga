@@ -79,7 +79,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //            throw CatalogDBException.idNotFound("Study", studyId);
 //        }
 //    }
-
     private boolean studyAliasExists(int projectId, String studyAlias) throws CatalogDBException {
         // Check if study.alias already exists.
 //        DBObject countQuery = BasicDBObjectBuilder
@@ -310,7 +309,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //            return endQuery("delete study", startTime, deletes);
 //        }
 //    }
-
     @Override
     public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
 //        DBObject query = BasicDBObjectBuilder.start(_PROJECT_ID, projectId).append("alias", studyAlias).get();
@@ -554,7 +552,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                         break;
                     default:
                         String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), optionsKey, options,mongoQueryList);
+                        addCompQueryFilter(option, entry.getKey(), optionsKey, options, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -937,7 +935,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     /***
      * This method is called every time a file has been inserted, modified or deleted to keep track of the current study diskUsage.
-     * @param studyId Study Identifier
+     *
+     * @param studyId   Study Identifier
      * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
      *                  will be >0 to increment the diskUsage field in the study collection or <0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.

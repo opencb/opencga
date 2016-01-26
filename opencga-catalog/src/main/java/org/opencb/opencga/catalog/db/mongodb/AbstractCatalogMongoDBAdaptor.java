@@ -82,7 +82,8 @@ public class AbstractCatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, QueryOptions options) {
+    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, QueryOptions
+            options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new QueryResult();
         }

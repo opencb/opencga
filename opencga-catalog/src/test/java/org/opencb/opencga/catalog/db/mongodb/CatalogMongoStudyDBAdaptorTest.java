@@ -27,7 +27,8 @@ import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by pfurio on 19/01/16.
@@ -56,14 +57,15 @@ public class CatalogMongoStudyDBAdaptorTest {
 
     @Test
     public void updateDiskUsage() throws Exception {
-        catalogStudyDBAdaptor.updateDiskUsage(5,100);
-        assertEquals(2100, catalogStudyDBAdaptor.getStudy(5,null).getResult().get(0).getDiskUsage());
-        catalogStudyDBAdaptor.updateDiskUsage(5,-200);
-        assertEquals(1900, catalogStudyDBAdaptor.getStudy(5,null).getResult().get(0).getDiskUsage());
+        catalogStudyDBAdaptor.updateDiskUsage(5, 100);
+        assertEquals(2100, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
+        catalogStudyDBAdaptor.updateDiskUsage(5, -200);
+        assertEquals(1900, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
     }
 
     /***
-     * The test will check whether it is possible to create a new study using an alias that is already being used, but on a different project.
+     * The test will check whether it is possible to create a new study using an alias that is already being used, but on a different
+     * project.
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogDBException {

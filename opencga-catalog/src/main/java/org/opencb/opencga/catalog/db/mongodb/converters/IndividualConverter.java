@@ -13,6 +13,7 @@ import java.io.IOException;
 public class IndividualConverter extends GenericConverter<Individual, Document> {
 
     private ObjectWriter individualWriter;
+
     public IndividualConverter() {
         objectReader = objectMapper.reader(Individual.class);
         individualWriter = objectMapper.writerFor(Individual.class);
