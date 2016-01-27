@@ -93,7 +93,7 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
         return iterator(new Query(), new QueryOptions());
     }
 
-    Iterator<T> iterator(Query query, QueryOptions options);
+    CatalogDBIterator<T> iterator(Query query, QueryOptions options);
 
     default Iterator nativeIterator() {
         return nativeIterator(new Query(), new QueryOptions());

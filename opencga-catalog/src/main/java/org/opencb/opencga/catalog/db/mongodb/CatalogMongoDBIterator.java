@@ -18,15 +18,13 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
-
-import java.io.Closeable;
-import java.util.Iterator;
 
 /**
  * Created by imedina on 27/01/16.
  */
-public class CatalogMongoDBIterator<E> implements Iterator<E>, Closeable {
+public class CatalogMongoDBIterator<E> implements CatalogDBIterator<E> {
 
     private MongoCursor mongoCursor;
     private GenericConverter<E, Document> converter;

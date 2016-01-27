@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DuplicateKeyException;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -35,6 +34,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
@@ -529,7 +529,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public Iterator<User> iterator(Query query, QueryOptions options) {
+    public CatalogDBIterator<User> iterator(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
         return new CatalogMongoDBIterator<>(iterator, userConverter);
@@ -560,7 +560,12 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
-
+        Objects.requireNonNull(action);
+        CatalogDBIterator<User> catalogDBIterator = iterator(query, options);
+        while (catalogDBIterator.hasNext()) {
+            action.accept(catalogDBIterator.next());
+        }
+        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) {
