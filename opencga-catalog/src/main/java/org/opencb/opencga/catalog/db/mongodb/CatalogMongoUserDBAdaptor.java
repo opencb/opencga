@@ -34,10 +34,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
@@ -78,22 +75,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public boolean userExists(String userId) {
-        QueryResult<Long> count = userCollection.count(new BasicDBObject(PRIVATE_ID, userId));
-        long l = count.getResult().get(0);
-        return l != 0;
-    }
-
-    @Override
-    public void checkUserExists(String userId) throws CatalogDBException {
-        checkUserExist(userId, userCollection);
-    }
-
-    @Override
     public QueryResult<User> createUser(String userId, String userName, String email, String password,
                                         String organization, QueryOptions options) throws CatalogDBException {
         checkParameter(userId, "userId");
-        long startTime = startQuery();
+        //long startTime = startQuery();
 
         if (userExists(userId)) {
             throw new CatalogDBException("User {id:\"" + userId + "\"} already exists");
@@ -141,32 +126,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("insertUser", startTime, result, errorMsg, null);
     }
 
-    /*
-     * TODO: delete user from:
-     * project acl and owner
-     * study acl and owner
-     * file acl and creator
-     * job userid
-     * also, delete his:
-     * projects
-     * studies
-     * analysesS
-     * jobs
-     * files
-     */
-//    @Override
-//    public QueryResult<Long> deleteUser(String userId) throws CatalogDBException {
-//        checkParameter(userId, "userId");
-//        long startTime = startQuery();
-//
-////        WriteResult id = nativeUserCollection.remove(new BasicDBObject("id", userId));
-//        WriteResult wr = userCollection.remove(new BasicDBObject(PRIVATE_ID, userId), null).getResult().get(0);
-//        if (wr.getN() == 0) {
-//            throw CatalogDBException.idNotFound("User", userId);
-//        } else {
-//            return endQuery("Delete user", startTime, Arrays.asList(wr.getN()));
-//        }
-//    }
     @Override
     public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
         checkParameter(userId, "userId");
@@ -176,7 +135,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
 //        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.PASSWORD.key(), password);
-        QueryResult queryResult = nativeGet(query, new QueryOptions());
+        //QueryResult queryResult = nativeGet(query, new QueryOptions());
 
         QueryResult<Long> count = count(query);
         if (count.getResult().get(0) == 0) {
@@ -445,16 +404,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        return null;
-    }
-
-    @Override
-    public QueryResult<User> update(int id, ObjectMap parameters) throws CatalogDBException {
-        throw new NotImplementedException("Update user by int id. The id should be a string.");
-    }
-
-    public QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
@@ -471,16 +421,28 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
-// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(PRIVATE_ID, userId),
-//                   new BasicDBObject("$set", userParameters), null);
-            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(PRIVATE_ID, userId),
+            QueryResult<UpdateResult> update = userCollection.update(parseQuery(query),
                     new Document("$set", userParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("User", userId);
-            }
+            return endQuery("Update user", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
-        return endQuery("Modify user", startTime);
+        return endQuery("Update user", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public QueryResult<User> update(int id, ObjectMap parameters) throws CatalogDBException {
+        throw new NotImplementedException("Update user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        checkUserExists(userId);
+        Query query = new Query(QueryParams.ID.key(), userId);
+        QueryResult<Long> update = update(query, parameters);
+        if (update.getResult().isEmpty() || update.first() != 1) {
+            throw new CatalogDBException("Could not update user " + userId);
+        }
+        return endQuery("Update user", startTime, get(query, null));
     }
 
     @Override
