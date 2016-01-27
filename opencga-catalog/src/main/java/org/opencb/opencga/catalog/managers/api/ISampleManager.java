@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,7 +26,7 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
 
     QueryResult<Annotation> load(File file) throws CatalogException;
 
-    QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Sample> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<AnnotationSet> annotate(int sampleId, String annotationSetId, int variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet,

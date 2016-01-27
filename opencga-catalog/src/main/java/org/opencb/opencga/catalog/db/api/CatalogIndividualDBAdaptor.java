@@ -51,6 +51,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
@@ -75,7 +76,8 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         GENDER("gender", TEXT_ARRAY, ""),
         RACE("race", TEXT_ARRAY, ""),
         POPULATION_NAME("populationName", TEXT_ARRAY, ""),
-        POPULATION_SUBPOPULATION("populationSubpopulation", TEXT_ARRAY, "");
+        POPULATION_SUBPOPULATION("populationSubpopulation", TEXT_ARRAY, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, "");
 
         // TOCHECK: Pedro. Should we be considering annotations?
 

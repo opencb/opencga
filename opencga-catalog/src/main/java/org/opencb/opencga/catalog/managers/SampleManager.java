@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -149,15 +150,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> create(QueryOptions params, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(params, "params");
+    public QueryResult<Sample> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                params.getInt("studyId"),
-                params.getString("name"),
-                params.getString("source"),
-                params.getString("description"),
-                params.getMap("attributes"),
-                params,
+                objectMap.getInt("studyId"),
+                objectMap.getString("name"),
+                objectMap.getString("source"),
+                objectMap.getString("description"),
+                objectMap.getMap("attributes"),
+                options,
                 sessionId
         );
     }
@@ -179,6 +180,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 .<AnnotationSet>emptyList(),
                 attributes);
 
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.createSample(studyId, sample, options);
         auditManager.recordCreation(AuditRecord.Resource.sample, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
@@ -196,17 +198,16 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(query, "query");
+    public QueryResult<Sample> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        query.putAll(options);
-        query.put(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId);
-        QueryResult<Sample> queryResult = sampleDBAdaptor.getAllSamples(query);
+        query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options);
 
         authorizationManager.filterSamples(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
@@ -215,9 +216,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Sample> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Sample> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(query, "query");
-        return readAll(query.getInt("studyId", -1), query, options, sessionId);
+        return readAll(query.getInt(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
     }
 
     @Override
@@ -245,7 +246,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.DELETE);
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.deleteSample(sampleId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.delete(sampleId);
         auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -262,7 +263,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        //options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -298,7 +299,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!sampleIds.isEmpty() && readAll(studyId, new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), sampleIds)
+        if (!sampleIds.isEmpty() && readAll(studyId, new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds)
                 , null, sessionId).getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -86,7 +87,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
-            projectDBAdaptor.deleteProject(project.getId());
+            projectDBAdaptor.delete(project.getId());
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
@@ -94,13 +95,15 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> create(QueryOptions params, String sessionId) throws CatalogException {
-        return create(params.getString("ownerId"),
-                params.getString("name"),
-                params.getString("alias"),
-                params.getString("description"),
-                params.getString("organization"),
-                params, sessionId
+    public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
+        return create(
+                objectMap.getString("ownerId"),
+                objectMap.getString("name"),
+                objectMap.getString("alias"),
+                objectMap.getString("description"),
+                objectMap.getString("organization"),
+                options, sessionId
         );
     }
 
@@ -119,8 +122,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
 

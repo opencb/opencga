@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers.api;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -16,7 +17,7 @@ public interface IIndividualManager extends ResourceManager<Integer, Individual>
     QueryResult<Individual> create(int studyId, String name, String family, int fatherId, int motherId, Individual.Gender gender,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Individual> readAll(int studyId, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Individual> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<AnnotationSet> annotate(int individualId, String annotationSetId, int variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, String sessionId) throws CatalogException;

@@ -20,7 +20,7 @@ import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -99,9 +99,9 @@ public class CatalogSampleAnnotationsLoader {
         }
 
         //Add Samples
-        QueryOptions samplesQuery = new QueryOptions("name", new LinkedList<>(ped.getIndividuals().keySet()));
+        Query samplesQuery = new Query("name", new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, sessionId).getResult()) {
+        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, null, sessionId).getResult()) {
             loadedSamples.put(sample.getName(), sample);
         }
 
@@ -133,8 +133,8 @@ public class CatalogSampleAnnotationsLoader {
 
         //TODO: Create Cohort
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("variableSetId", variableSetId),
-                sessionId);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("variableSetId", variableSetId),
+                null, sessionId);
         return new QueryResult<>("loadPedigree", (int) (System.currentTimeMillis() - startTime),
                 sampleMap.size(), sampleMap.size(), null, null, sampleQueryResult.getResult());
     }

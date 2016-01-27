@@ -125,6 +125,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
         PATH("path", TEXT, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_DATE("index.date", TEXT, ""),

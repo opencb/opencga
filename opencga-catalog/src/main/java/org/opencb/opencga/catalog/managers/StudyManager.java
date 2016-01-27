@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -156,7 +157,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 uri = catalogIOManager.createStudy(projectOwnerId, Integer.toString(projectId), Integer.toString(study.getId()));
             } catch (CatalogIOException e) {
                 e.printStackTrace();
-                studyDBAdaptor.deleteStudy(study.getId());
+                studyDBAdaptor.delete(study.getId());
                 throw e;
             }
         }
@@ -177,24 +178,25 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Study> create(QueryOptions params, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(params, "QueryOptions");
+    public QueryResult<Study> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
+        // FIXME: Change the projectId, name... per CatalogStudyDBAdaptor.QueryParams...
         return create(
-                params.getInt("projectId", -1),
-                params.getString("name"),
-                params.getString("alias"),
-                Study.Type.valueOf(params.getString("type", Study.Type.CASE_CONTROL.toString())),
-                params.getString("creatorId"),
-                params.getString("creationDate"),
-                params.getString("description"),
-                params.getString("status"),
-                params.getString("cipher"),
-                params.getString("uriScheme"),
-                params.get("uri", URI.class, null),
-                params.get("datastores", Map.class, null),
-                params.getMap("stats"),
-                params.getMap("attributes"),
-                params, sessionId
+                objectMap.getInt("projectId", -1),
+                objectMap.getString("name"),
+                objectMap.getString("alias"),
+                Study.Type.valueOf(objectMap.getString("type", Study.Type.CASE_CONTROL.toString())),
+                objectMap.getString("creatorId"),
+                objectMap.getString("creationDate"),
+                objectMap.getString("description"),
+                objectMap.getString("status"),
+                objectMap.getString("cipher"),
+                objectMap.getString("uriScheme"),
+                objectMap.get("uri", URI.class, null),
+                objectMap.get("datastores", Map.class, null),
+                objectMap.getMap("stats"),
+                objectMap.getMap("attributes"),
+                options, sessionId
         );
     }
 
@@ -219,19 +221,17 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Study> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Study> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        query = ParamUtils.defaultObject(query, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         if (!options.containsKey("include") || options.get("include") == null || options.getAsStringList("include").isEmpty()) {
             options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
-        query.putAll(options);
-
-        QueryResult<Study> allStudies = studyDBAdaptor.getAllStudies(query);
+        QueryResult<Study> allStudies = studyDBAdaptor.get(query, options);
         List<Study> studies = allStudies.getResult();
 
         authorizationManager.filterStudies(userId, studies);
@@ -266,7 +266,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<Study> result = studyDBAdaptor.modifyStudy(studyId, parameters);
+        QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
     }

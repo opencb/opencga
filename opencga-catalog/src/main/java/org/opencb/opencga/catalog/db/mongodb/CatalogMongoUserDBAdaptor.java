@@ -24,6 +24,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -266,7 +267,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         String userId = "anonymous_" + sessionId;
         logout(userId, sessionId);
-        deleteUser(userId);
+        delete(userId);
         return endQuery("Logout anonymous", startTime);
     }
 
@@ -317,37 +318,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public void updateUserLastActivity(String userId) throws CatalogDBException {
-        modifyUser(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
-    }
-
-    @Override
-    public QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-        Map<String, Object> userParameters = new HashMap<>();
-
-        final String[] acceptedParams = {"name", "email", "organization", "lastActivity", "status"};
-        filterStringParams(parameters, userParameters, acceptedParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
-        filterEnumParams(parameters, userParameters, acceptedEnums);
-
-        final String[] acceptedIntParams = {"diskQuota", "diskUsage"};
-        filterIntParams(parameters, userParameters, acceptedIntParams);
-
-        final String[] acceptedMapParams = {"attributes", "configs"};
-        filterMapParams(parameters, userParameters, acceptedMapParams);
-
-        if (!userParameters.isEmpty()) {
-// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(PRIVATE_ID, userId),
-//                   new BasicDBObject("$set", userParameters), null);
-            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(PRIVATE_ID, userId),
-                    new Document("$set", userParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("User", userId);
-            }
-        }
-
-        return endQuery("Modify user", startTime);
+        update(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
     }
 
     @Override
@@ -411,12 +382,12 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
     }
 
-
     @Override
     public QueryResult<Long> count(Query query) {
         Bson bsonDocument = parseQuery(query);
         return userCollection.count(bsonDocument);
     }
+
 
     @Override
     public QueryResult distinct(Query query, String field) {
@@ -478,11 +449,44 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        throw new NotImplementedException("Update user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        Map<String, Object> userParameters = new HashMap<>();
+
+        final String[] acceptedParams = {"name", "email", "organization", "lastActivity", "status"};
+        filterStringParams(parameters, userParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
+        filterEnumParams(parameters, userParameters, acceptedEnums);
+
+        final String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+        filterIntParams(parameters, userParameters, acceptedIntParams);
+
+        final String[] acceptedMapParams = {"attributes", "configs"};
+        filterMapParams(parameters, userParameters, acceptedMapParams);
+
+        if (!userParameters.isEmpty()) {
+// QueryResult<WriteResult> update = userCollection.update(new BasicDBObject(PRIVATE_ID, userId),
+//                   new BasicDBObject("$set", userParameters), null);
+            QueryResult<UpdateResult> update = userCollection.update(Filters.eq(PRIVATE_ID, userId),
+                    new Document("$set", userParameters), null);
+            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
+                throw CatalogDBException.idNotFound("User", userId);
+            }
+        }
+
+        return endQuery("Modify user", startTime);
     }
 
     @Override
     public QueryResult<User> delete(int id) throws CatalogDBException {
+        throw new NotImplementedException("Delete user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> delete(String id) throws CatalogDBException {
         Query query = new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), id);
         QueryResult<User> userQueryResult = get(query, null);
         if (userQueryResult.getResult().size() == 1) {

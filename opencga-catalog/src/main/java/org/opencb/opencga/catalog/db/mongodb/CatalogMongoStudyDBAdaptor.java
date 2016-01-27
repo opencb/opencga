@@ -193,6 +193,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
+    @Deprecated
     public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -248,7 +249,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public void updateStudyLastActivity(int studyId) throws CatalogDBException {
-        modifyStudy(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
+        update(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
     @Deprecated
@@ -749,6 +750,45 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        //FIXME: Check the commented code from modifyStudy
+        /*
+        long startTime = startQuery();
+
+        checkStudyId(studyId);
+//        BasicDBObject studyParameters = new BasicDBObject();
+        Document studyParameters = new Document();
+
+        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
+        filterStringParams(parameters, studyParameters, acceptedParams);
+
+        String[] acceptedLongParams = {"diskUsage"};
+        filterLongParams(parameters, parameters, acceptedLongParams);
+
+        String[] acceptedMapParams = {"attributes", "stats"};
+        filterMapParams(parameters, studyParameters, acceptedMapParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
+        filterEnumParams(parameters, studyParameters, acceptedEnums);
+
+        if (parameters.containsKey("uri")) {
+            URI uri = parameters.get("uri", URI.class);
+            studyParameters.put("uri", uri.toString());
+        }
+
+        if (!studyParameters.isEmpty()) {
+//            BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId);
+            Bson eq = Filters.eq(PRIVATE_ID, studyId);
+            BasicDBObject updates = new BasicDBObject("$set", studyParameters);
+
+//            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
+            QueryResult<UpdateResult> updateResult = studyCollection.update(eq, updates, null);
+            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
+                throw CatalogDBException.idNotFound("Study", studyId);
+            }
+        }
+        return endQuery("Modify study", startTime, getStudy(studyId, null));
+        * */
+
         long startTime = startQuery();
         Document studyParameters = new Document();
 
@@ -792,6 +832,20 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult<Study> delete(int id) throws CatalogDBException {
+        //FIXME: Check the following commented code from deleteStudy
+        /*
+        * Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
+        if (sampleQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
+        }
+        return sampleQueryResult;
+        * */
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Study> studyQueryResult = get(query, null);
         if (studyQueryResult.getResult().size() == 1) {

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -71,22 +72,21 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> create(QueryOptions params, String sessionId)
-            throws CatalogException {
+    public QueryResult<User> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                params.getString("id"),
-                params.getString("name"),
-                params.getString("email"),
-                params.getString("password"),
-                params.getString("organization"),
-                params, sessionId
+                objectMap.getString("id"),
+                objectMap.getString("name"),
+                objectMap.getString("email"),
+                objectMap.getString("password"),
+                objectMap.getString("organization"),
+                options, sessionId
         );
     }
 
     @Override
     public QueryResult<User> create(String id, String name, String email, String password, String organization,
-                                    QueryOptions options, String sessionId)
-            throws CatalogException {
+                                    QueryOptions options, String sessionId) throws CatalogException {
 
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(password, "password");
@@ -165,8 +165,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<User> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -196,7 +195,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             checkEmail(parameters.getString("email"));
         }
         userDBAdaptor.updateUserLastActivity(userId);
-        QueryResult<User> queryResult = userDBAdaptor.modifyUser(userId, parameters);
+        QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
         return queryResult;
     }
@@ -214,7 +213,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             } catch (CatalogIOException e) {
                 e.printStackTrace();
             }
-            userDBAdaptor.deleteUser(userId);
+            userDBAdaptor.delete(userId);
         }
         user.setId("deleteUser");
         auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);

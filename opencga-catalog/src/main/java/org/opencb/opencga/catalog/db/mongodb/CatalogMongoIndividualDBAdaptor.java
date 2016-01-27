@@ -109,6 +109,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException {
         int variableSetId = options.getInt(CatalogSampleDBAdaptor.SampleFilterOption.variableSetId.toString());
@@ -490,6 +491,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         addStringOrQuery("race", QueryParams.RACE.key(), query, andBsonList);
         addStringOrQuery("populationName", QueryParams.POPULATION_NAME.key(), query, andBsonList);
         addStringOrQuery("populationSubpopulation", QueryParams.POPULATION_SUBPOPULATION.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -44,10 +45,16 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
 
     @Override
-    public QueryResult<Individual> create(QueryOptions params, String sessionId)
-            throws CatalogException {
-        return create(params.getInt("studyId"), params.getString("name"), params.getString("family"),
-                params.getInt("fatherId"), params.getInt("motherId"), params.get("gender", Individual.Gender.class), params, sessionId);
+    public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
+        return create(
+                objectMap.getInt("studyId"),
+                objectMap.getString("name"),
+                objectMap.getString("family"),
+                objectMap.getInt("fatherId"),
+                objectMap.getInt("motherId"),
+                objectMap.get("gender", Individual.Gender.class),
+                options, sessionId);
     }
 
     @Override
@@ -83,26 +90,23 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<Individual> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        options = ParamUtils.defaultObject(query, QueryOptions::new);
-        if (options != null) {
-            query.putAll(options);
-        }
-        return readAll(query.getInt("studyId"), query, sessionId);
+    public QueryResult<Individual> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        return readAll(query.getInt("studyId"), query, options, sessionId);
     }
 
     @Override
-    public QueryResult<Individual> readAll(int studyId, QueryOptions options, String sessionId)
+    public QueryResult<Individual> readAll(int studyId, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(sessionId, "sessionId");
+        query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        options.add(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId);
-        QueryResult<Individual> queryResult = individualDBAdaptor.getAllIndividuals(options);
+        query.append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, options);
         authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;

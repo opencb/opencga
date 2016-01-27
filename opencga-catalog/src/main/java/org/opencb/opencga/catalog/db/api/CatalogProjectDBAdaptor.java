@@ -48,6 +48,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
         return delete(projectId);
     }

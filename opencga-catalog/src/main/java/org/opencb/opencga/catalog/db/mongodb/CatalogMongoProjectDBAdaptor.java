@@ -185,24 +185,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
-/*        DBObject query = new BasicDBObject("id", userId);
-        DBObject projection = new BasicDBObject("projects", true);
-        projection.put("_id", false);
-        QueryResult<DBObject> result = userCollection.find(query, projection, options);
-*/
-        Bson query = new BsonDocument(CatalogMongoDBAdaptor.PRIVATE_ID, new BsonString(userId));
-        Bson projection = Projections.fields(Projections.include("projects"), Projections.excludeId());
-        QueryResult<Document> result = userCollection.find(query, projection, options);
-
-        User user = parseUser(result);
-        List<Project> projects = user.getProjects();
-        for (Project project : projects) {
-            joinFields(project, options);
-        }
-        return endQuery(
-                "User projects list", startTime,
-                projects);
+        Query query = new Query(CatalogMongoDBAdaptor.PRIVATE_ID, userId);
+        return endQuery("User projects list", startTime, get(query, options).getResult());
     }
 
 

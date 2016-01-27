@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
@@ -113,22 +114,21 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 //        studyId = 2;
 //        variableSetId = 7;
 
-        QueryOptions options = new QueryOptions("variableSetId", variableSetId);
+        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
+        QueryOptions options = new QueryOptions("limit", 2);
 
-        options.put("annotation", "family:GB84");
-        options.put("limit", 2);
-        System.out.println(catalogManager.getAllSamples(studyId, options, sessionId));
+        System.out.println(catalogManager.getAllSamples(studyId, query, options, sessionId));
 
-        options.put("annotation", "sex:2;Population:ITU");
-        QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.put("annotation", "sex:2;Population:ITU");
+        QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(femaleIta);
 
-        options.put("annotation", "sex:1;Population:ITU");
-        QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.put("annotation", "sex:1;Population:ITU");
+        QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(maleIta);
 
-        options.put("annotation", "Population:ITU");
-        QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.put("annotation", "Population:ITU");
+        QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(ita);
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());

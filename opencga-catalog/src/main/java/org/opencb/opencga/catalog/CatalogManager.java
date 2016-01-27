@@ -345,7 +345,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Project> getAllProjects(String ownerId, QueryOptions options, String sessionId) throws CatalogException {
-        return projectManager.readAll(new QueryOptions("ownerId", ownerId), options, sessionId);
+        return projectManager.readAll(new Query("ownerId", ownerId), options, sessionId);
     }
 
     public QueryResult renameProject(int projectId, String newProjectAlias, String sessionId)
@@ -431,13 +431,13 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options,
+        return studyManager.readAll(new Query(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options,
                 sessionId);
     }
 
-    public QueryResult<Study> getAllStudies(QueryOptions options, String sessionId)
+    public QueryResult<Study> getAllStudies(Query query, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(options, options, sessionId);
+        return studyManager.readAll(query, options, sessionId);
     }
 
     public QueryResult renameStudy(int studyId, String newStudyAlias, String sessionId)
@@ -721,7 +721,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.readAll(new QueryOptions("status",
+        return jobManager.readAll(new Query("status",
                 Arrays.asList(
                         Job.Status.PREPARED.toString(),
                         Job.Status.QUEUED.toString(),
@@ -736,8 +736,8 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readAll(studyId, null, null, sessionId);
     }
 
-    public QueryResult<Job> getAllJobs(int studyId, QueryOptions query, String sessionId) throws CatalogException {
-        return jobManager.readAll(studyId, query, query, sessionId);
+    public QueryResult<Job> getAllJobs(int studyId, Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobManager.readAll(studyId, query, queryOptions, sessionId);
     }
 
 
@@ -761,8 +761,9 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.read(individualId, options, sessionId);
     }
 
-    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        return individualManager.readAll(studyId, options, sessionId);
+    public QueryResult<Individual> getAllIndividuals(int studyId, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return individualManager.readAll(studyId, query, options, sessionId);
     }
 
     public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions options, String sessionId) throws CatalogException {
@@ -789,8 +790,8 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.read(sampleId, options, sessionId);
     }
 
-    public QueryResult<Sample> getAllSamples(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.readAll(studyId, options, options, sessionId);
+    public QueryResult<Sample> getAllSamples(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.readAll(studyId, query, options, sessionId);
     }
 
     public QueryResult<Sample> modifySample(int sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
@@ -937,7 +938,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readTool(id, sessionId);
     }
 
-    public QueryResult<Tool> getAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return jobManager.readAllTools(queryOptions, sessionId);
+    public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobManager.readAllTools(query, queryOptions, sessionId);
     }
 }

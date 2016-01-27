@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -10,6 +11,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -52,27 +54,27 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> create(QueryOptions params, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(params, "Params");
+    public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
         try {
             return create(
-                    params.getInt("studyId"),
-                    params.getString("name"),
-                    params.getString("toolName"),
-                    params.getString("description"),
-                    params.getString("execution"),
+                    objectMap.getInt("studyId"),
+                    objectMap.getString("name"),
+                    objectMap.getString("toolName"),
+                    objectMap.getString("description"),
+                    objectMap.getString("execution"),
                     Collections.emptyMap(),
-                    params.getString("commandLine"),
-                    params.containsKey("tmpOutDirUri") ? new URI(null, params.getString("tmpOutDirUri"), null) : null,
-                    params.getInt("outDirId"),
-                    params.getAsIntegerList("inputFiles"),
-                    params.getAsIntegerList("outputFiles"),
-                    params.getMap("attributes"),
-                    params.getMap("resourceManagerAttributes"),
-                    Job.Status.valueOf(params.getString("status")),
-                    params.getLong("startTime"),
-                    params.getLong("endTime"),
-                    params,
+                    objectMap.getString("commandLine"),
+                    objectMap.containsKey("tmpOutDirUri") ? new URI(null, objectMap.getString("tmpOutDirUri"), null) : null,
+                    objectMap.getInt("outDirId"),
+                    objectMap.getAsIntegerList("inputFiles"),
+                    objectMap.getAsIntegerList("outputFiles"),
+                    objectMap.getMap("attributes"),
+                    objectMap.getMap("resourceManagerAttributes"),
+                    Job.Status.valueOf(options.getString("status")),
+                    objectMap.getLong("startTime"),
+                    objectMap.getLong("endTime"),
+                    options,
                     sessionId
             );
         } catch (URISyntaxException e) {
@@ -81,12 +83,11 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor, Map<String, String>
-            params, String commandLine,
-                                   URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles,
-                                   Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes,
-                                   Job.Status status, long startTime, long endTime, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor,
+                                   Map<String, String> params, String commandLine, URI tmpOutDirUri, int outDirId,
+                                   List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
+                                   Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime,
+                                   long endTime, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -146,36 +147,34 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, QueryOptions::new);
-        //Get studyId from Query and call to readAll
-        int studyId = query.getInt("studyId", -1);
+    public QueryResult<Job> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        int studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         return readAll(studyId, query, options, sessionId);
     }
 
     @Override
-    public QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        query = ParamUtils.defaultObject(query, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         // If studyId is null, check if there is any on the query
         // Else, ensure that studyId is in the Query
         if (studyId < 0) {
-            studyId = query.getInt("studyId", -1);
+            studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         } else {
-            query.put("studyId", studyId);
+            query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
-        query.putAll(options);
+        //query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             if (studyId < 0) {
-                throw new CatalogException("Permission denied. Can't get jobs without specify an StudyId");
+                throw new CatalogException("Permission denied. Can't get jobs without specifying an StudyId");
             } else {
                 authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
             }
         }
-        QueryResult<Job> queryResult = jobDBAdaptor.getAllJobs(query, options);
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, options);
         authorizationManager.filterJobs(userId, queryResult.getResult(), studyId);
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
@@ -202,7 +201,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.deleteJob(jobId);
+        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId);
         auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -273,7 +272,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Tool> readAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return jobDBAdaptor.getAllTools(queryOptions);
+    public QueryResult<Tool> readAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return jobDBAdaptor.getAllTools(query, queryOptions);
     }
 }

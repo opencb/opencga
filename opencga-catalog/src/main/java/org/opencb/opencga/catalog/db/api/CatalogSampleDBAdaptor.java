@@ -70,7 +70,10 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
 
+    @Deprecated
     default QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+        return delete(sampleId);
+        /*
         // TODO check that the sample is not in use!
 
         Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), sampleId);
@@ -83,7 +86,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         } else {
             throw CatalogDBException.newInstance("Sample id '{}' does not exist", sampleId);
         }
-        return sampleQueryResult;
+        return sampleQueryResult;*/
     }
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;

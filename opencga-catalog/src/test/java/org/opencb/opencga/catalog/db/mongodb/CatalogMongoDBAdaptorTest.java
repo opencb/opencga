@@ -189,12 +189,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
-        QueryResult deleteUser = catalogUserDBAdaptor.deleteUser(deletable1.getId());
+        QueryResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
 
         thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.deleteUser(deletable1.getId());
+        catalogUserDBAdaptor.delete(deletable1.getId());
     }
 
     @Test
@@ -296,7 +296,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
         ObjectMap configs = new ObjectMap("genomemaps", genomeMapsConfig);
         ObjectMap objectMap = new ObjectMap("configs", configs.toJson());
-        catalogUserDBAdaptor.modifyUser(user1.getId(), objectMap);
+        catalogUserDBAdaptor.update(user1.getId(), objectMap);
 
         User user = catalogUserDBAdaptor.getUser(user1.getId(), null, null).first();
         System.out.println(user);
@@ -353,12 +353,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
         System.out.println(result);
         p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.deleteProject(p.getId());
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId());
 
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
         thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
-        catalogProjectDBAdaptor.deleteProject(-1);
+        catalogProjectDBAdaptor.delete(-1);
     }
 
     @Test
@@ -474,7 +474,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         int projectId = catalogProjectDBAdaptor.getProjectId("jcoll", "P1");
         Study study = catalogStudyDBAdaptor.createStudy(projectId, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "", "", null),
                 null).first();
-        QueryResult<Study> queryResult = catalogStudyDBAdaptor.deleteStudy(study.getId());
+        QueryResult<Study> queryResult = catalogStudyDBAdaptor.delete(study.getId());
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
 
@@ -487,7 +487,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         }
 
         try {
-            QueryResult<Study> queryResult1 = catalogStudyDBAdaptor.deleteStudy(-1);
+            QueryResult<Study> queryResult1 = catalogStudyDBAdaptor.delete(-1);
             fail("error: Expected \"Study not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -570,7 +570,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         objectMap.put("attributes", new ObjectMap(newAttributes).toJson());
         objectMap.put("alias", unexpectedNewAlias);
 
-        QueryResult<Study> queryResult = catalogStudyDBAdaptor.modifyStudy(studyId, objectMap);
+        QueryResult<Study> queryResult = catalogStudyDBAdaptor.update(studyId, objectMap);
         Study modifiedStudy = queryResult.first();
 
         Study study = catalogStudyDBAdaptor.getStudy(studyId, null).first();
@@ -775,7 +775,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
-        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
 

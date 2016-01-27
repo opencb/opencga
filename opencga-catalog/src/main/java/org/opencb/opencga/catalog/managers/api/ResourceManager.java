@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -13,12 +14,13 @@ public interface ResourceManager<I, R> {
     /**
      * Creates a R object entry in Catalog.
      *
-     * @param params    Object with all the attributes of the object
+     * @param objectMap Object with all the attributes of the object
+     * @param options Object the includes/excludes to obtain the object after the creation
      * @param sessionId sessionId
      * @return The created object
      * @throws CatalogException CatalogException
      */
-    QueryResult<R> create(QueryOptions params, String sessionId) throws CatalogException;
+    QueryResult<R> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Reads an object from Catalog given an ID.
@@ -40,7 +42,7 @@ public interface ResourceManager<I, R> {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    QueryResult<R> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<R> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Update an existing catalog entry.

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,7 +26,7 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
                             Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, Job.Status status,
                             long startTime, long endTime, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Job> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Job> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     URI createJobOutDir(int studyId, String dirName, String sessionId) throws CatalogException;
 
@@ -36,6 +37,6 @@ public interface IJobManager extends ResourceManager<Integer, Job> {
 
     QueryResult<Tool> readTool(int id, String sessionId) throws CatalogException;
 
-    QueryResult<Tool> readAllTools(QueryOptions queryOptions, String sessionId) throws CatalogException;
+    QueryResult<Tool> readAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException;
 
 }

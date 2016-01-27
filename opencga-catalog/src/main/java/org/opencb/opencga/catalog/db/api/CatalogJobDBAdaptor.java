@@ -28,10 +28,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
-    /*
-     * Job methods
-     */
-
     default boolean jobExists(int jobId) {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
     }
@@ -63,7 +59,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     }
 
     @Deprecated
-    QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> getAllJobs(Query query, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
@@ -85,7 +81,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     int getToolId(String userId, String toolAlias) throws CatalogDBException;
 
-    QueryResult<Tool> getAllTools(QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     /*
      * Experiments methods

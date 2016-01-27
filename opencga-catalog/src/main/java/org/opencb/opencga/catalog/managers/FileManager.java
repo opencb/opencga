@@ -216,33 +216,32 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         Query query = new Query(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
         query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
-        QueryResult<File> result = fileDBAdaptor.getAllFiles(
-                query,
-                options);
+        QueryResult<File> result = fileDBAdaptor.get(query, options);
         result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
     }
 
     @Override
-    public QueryResult<File> create(QueryOptions params, String sessionId) throws CatalogException {
+    public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                params.getInt("studyId"),
-                File.Type.valueOf(params.getString("type", File.Type.FILE.toString())),
-                File.Format.valueOf(params.getString("format", File.Format.PLAIN.toString())),
-                File.Bioformat.valueOf(params.getString("type", File.Bioformat.NONE.toString())),
-                params.getString("path", null),
-                params.getString("ownerId", null),
-                params.getString("creationDate", null),
-                params.getString("description", null),
-                File.Status.valueOf(params.getString("type", File.Status.STAGE.toString())),
-                params.getLong("diskUsage", 0),
-                params.getInt("experimentId", -1),
-                params.getAsIntegerList("sampleIds"),
-                params.getInt("jobId", -1),
-                params.getMap("stats", null),
-                params.getMap("attributes", null),
-                params.getBoolean("parents"),
-                params,
+                objectMap.getInt("studyId"),
+                File.Type.valueOf(objectMap.getString("type", File.Type.FILE.toString())),
+                File.Format.valueOf(objectMap.getString("format", File.Format.PLAIN.toString())),
+                File.Bioformat.valueOf(objectMap.getString("type", File.Bioformat.NONE.toString())),
+                objectMap.getString("path", null),
+                objectMap.getString("ownerId", null),
+                objectMap.getString("creationDate", null),
+                objectMap.getString("description", null),
+                File.Status.valueOf(objectMap.getString("type", File.Status.STAGE.toString())),
+                objectMap.getLong("diskUsage", 0),
+                objectMap.getInt("experimentId", -1),
+                objectMap.getAsIntegerList("sampleIds"),
+                objectMap.getInt("jobId", -1),
+                objectMap.getMap("stats", null),
+                objectMap.getMap("attributes", null),
+                objectMap.getBoolean("parents"),
+                options,
                 sessionId
         );
     }
@@ -424,16 +423,17 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> readAll(QueryOptions query, QueryOptions options, String sessionId) throws CatalogException {
-        return readAll(query.getInt("studyId", -1), new Query(query), options, sessionId);
+    public QueryResult<File> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        return readAll(query.getInt("studyId", -1), query, options, sessionId);
     }
 
     @Override
     public QueryResult<File> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
 
         if (studyId <= 0) {
             switch (authorizationManager.getUserRole(userId)) {
@@ -446,7 +446,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
             query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
         }
-        QueryResult<File> queryResult = fileDBAdaptor.getAllFiles(query, options);
+        QueryResult<File> queryResult = fileDBAdaptor.get(query, options);
         authorizationManager.filterFiles(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
 

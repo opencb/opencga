@@ -54,6 +54,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
@@ -70,18 +71,9 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 //  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
 // throws CatalogManagerException;
 
+    @Deprecated
     default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
-        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
-        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
-        }
-        return sampleQueryResult;
+        return delete(studyId);
     }
 
     int getStudyId(int projectId, String studyAlias) throws CatalogDBException;

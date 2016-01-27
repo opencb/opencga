@@ -305,6 +305,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
         }
         */
+        CatalogMongoDBUtils.checkAclUserId(dbAdaptorFactory, userId, getStudyIdBySampleId(sampleId));
+
         List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
         if (aclList.isEmpty()) { // there is no acl for that user in that file. Push
             query = new BsonDocument(PRIVATE_ID, new BsonInt32(sampleId));
@@ -761,7 +763,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> delete(int id) throws CatalogDBException {
-        return null;
+        // TODO check that the sample is not in use!
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+        if (sampleQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.newInstance("Sample id '{}' does not exist", id);
+        }
+        return sampleQueryResult;
     }
 
     @Override
@@ -822,7 +835,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         addStringOrQuery("source", QueryParams.SOURCE.key(), query, andBsonList);
         addIntegerOrQuery("individualId", QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
 
-        addIntegerOrQuery("studyId", QueryParams.STUDY_ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
 
         addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
         // FIXME: Add boolean queries. ACL_READ, ACL_WRITE...

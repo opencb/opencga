@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -93,20 +94,11 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
-//        long startTime = startQuery();
-//        QueryResult<DBObject> queryResult =
-// jobCollection.find(new BasicDBObject(PRIVATE_STUDY_ID, studyId), filterOptions(options, FILTER_ROUTE_JOBS));
-//        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_STUDY_ID, studyId),
-//                    filterOptions(options, FILTER_ROUTE_JOBS));
-//        List<Job> jobs = parseJobs(queryResult);
-//        return endQuery("Get all jobs", startTime, jobs);
-
-
         // Check the studyId first and throw an Exception is not found
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
         // Retrieve and return Jobs
-        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
+        Query query = new Query(PRIVATE_STUDY_ID, studyId);
         return get(query, options);
     }
 
@@ -179,9 +171,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public int getStudyIdByJobId(int jobId) throws CatalogDBException {
-//        DBObject query = new BasicDBObject(PRIVATE_ID, jobId);
-//        DBObject projection = new BasicDBObject(PRIVATE_STUDY_ID, true);
-        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), Projections.include(PRIVATE_STUDY_ID), null);
+        Query query = new Query(QueryParams.ID.key(), jobId);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
+        QueryResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
             Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
@@ -193,7 +185,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Deprecated
     @Override
-    public QueryResult<Job> getAllJobs(QueryOptions query, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> getAllJobs(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Document mongoQuery = new Document();
@@ -313,10 +305,18 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Tool> getAllTools(QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
-        DBObject query = new BasicDBObject();
+        List<Bson> aggregations = Arrays.asList(
+                Aggregates.project(Projections.include("tools")),
+                Aggregates.unwind("$tools"),
+                Aggregates.match(parseQuery(query))
+        );
+        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
+                .aggregate(aggregations, queryOptions);
+
+/*        DBObject query = new BasicDBObject();
         addQueryStringListFilter("userId", queryOptions, PRIVATE_ID, query);
         addQueryIntegerListFilter("id", queryOptions, "tools.id", query);
         addQueryIntegerListFilter("alias", queryOptions, "tools.alias", query);
@@ -328,7 +328,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
                         new BasicDBObject("$match", query)
                 ), queryOptions);
 
-
+*/
         List<User> users = parseObjects(queryResult, User.class);
         List<Tool> tools = users.stream().map(user -> user.getTools().get(0)).collect(Collectors.toList());
         return endQuery("Get tools", startTime, tools);
@@ -357,6 +357,37 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
+
+        // FIXME: Take into account the following commented code:
+        /*
+        * long startTime = startQuery();
+
+        Document mongoQuery = new Document();
+
+        if (query.containsKey("ready")) {
+            if (query.getBoolean("ready")) {
+                mongoQuery.put("status", Job.Status.READY.name());
+            } else {
+                mongoQuery.put("status", new BasicDBObject("$ne", Job.Status.READY.name()));
+            }
+            query.remove("ready");
+        }
+
+//        if (query.containsKey("studyId")) {
+//            addQueryIntegerListFilter("studyId", query, PRIVATE_STUDY_ID, mongoQuery);
+//        }
+//
+//        if (query.containsKey("status")) {
+//            addQueryStringListFilter("status", query, mongoQuery);
+//        }
+
+//        System.out.println("query = " + query);
+//        QueryResult<DBObject> queryResult = jobCollection.find(mongoQuery, null);
+        QueryResult<Document> queryResult = jobCollection.find(mongoQuery, null);
+        List<Job> jobs = parseJobs(queryResult);
+        return endQuery("Search job", startTime, jobs);
+        * */
+
         long startTime = startQuery();
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -460,6 +491,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         addStringOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
 
         addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
+        addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

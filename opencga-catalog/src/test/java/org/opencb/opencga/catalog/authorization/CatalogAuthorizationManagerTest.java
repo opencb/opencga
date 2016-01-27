@@ -451,8 +451,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesOwner() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), ownerSessionId).getResult().stream()
-                .collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new Query(), new QueryOptions(), ownerSessionId)
+                .getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertTrue(sampleMap.containsKey(smp2));
@@ -461,8 +461,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesAdmin() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), studyAdmin1SessionId).getResult().stream()
-                .collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new Query(), new QueryOptions(), studyAdmin1SessionId)
+                .getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));
@@ -471,8 +471,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllSamplesMember() throws CatalogException {
-        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new QueryOptions(), memberSessionId).getResult().stream()
-                .collect(Collectors.toMap(Sample::getId, f -> f));
+        Map<Integer, Sample> sampleMap = catalogManager.getAllSamples(s1, new Query(), new QueryOptions(), memberSessionId)
+                .getResult().stream().collect(Collectors.toMap(Sample::getId, f -> f));
 
         assertTrue(sampleMap.containsKey(smp1));
         assertFalse(sampleMap.containsKey(smp2));
@@ -507,9 +507,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readAllIndividuals() throws CatalogException {
-        assertEquals(2, catalogManager.getAllIndividuals(s1, null, ownerSessionId).getNumResults());
-        assertEquals(2, catalogManager.getAllIndividuals(s1, null, studyAdmin1SessionId).getNumResults());
-        assertEquals(1, catalogManager.getAllIndividuals(s1, null, memberSessionId).getNumResults());
+        assertEquals(2, catalogManager.getAllIndividuals(s1, null, null, ownerSessionId).getNumResults());
+        assertEquals(2, catalogManager.getAllIndividuals(s1, null, null, studyAdmin1SessionId).getNumResults());
+        assertEquals(1, catalogManager.getAllIndividuals(s1, null, null, memberSessionId).getNumResults());
     }
 
 

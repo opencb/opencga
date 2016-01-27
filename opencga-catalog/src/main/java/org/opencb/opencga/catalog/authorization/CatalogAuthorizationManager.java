@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -57,9 +58,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         if (permission.equals(CatalogPermission.READ)) {
-            final QueryOptions query = new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId)
-                    .append("include", "projects.studies.id");
-            for (Study study : studyDBAdaptor.getAllStudies(query).getResult()) {
+            final Query query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+            final QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, "projects.studies.id");
+            for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
                 try {
                     checkStudyPermission(study.getId(), userId, StudyPermission.READ_STUDY);
                     return; //Return if can read some study
@@ -815,7 +816,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return Collections.emptyList();
         }
         Query fileQuery = new Query(CatalogFileDBAdaptor.FileFilterOption.id.toString(), fileIds);
-        return fileDBAdaptor.getAllFiles(fileQuery, FILE_INCLUDE_QUERY_OPTIONS).getResult();
+        return fileDBAdaptor.get(fileQuery, FILE_INCLUDE_QUERY_OPTIONS).getResult();
     }
 
     static class StudyAuthenticationContext {
