@@ -57,14 +57,19 @@ public class ArchiveDriver extends Configured implements Tool {
         Configuration conf = getConf();
         URI inputFile = URI.create(conf.get(OPT_VCF_FILE));
         URI inputMetaFile = URI.create(conf.get(OPT_VCF_META_FILE));
-        String tablename = conf.get(GenomeHelper.CONFIG_ARCHIVE_TABLE);
+        String tableName = conf.get(GenomeHelper.CONFIG_ARCHIVE_TABLE);
+        int studyId = conf.getInt(GenomeHelper.OPENCGA_STORAGE_HADOOP_STUDY_ID, -1);
+        int fileId = conf.getInt(GenomeHelper.CONFIG_FILE_ID, -1);
 
 /*  SERVER details  */
 
         // add metadata config as string
         VcfMeta meta = readMetaData(conf, inputMetaFile);
-        storeMetaData(meta, tablename, conf);
-        conf.set(GenomeHelper.CONFIG_FILE_ID, meta.getVariantSource().getFileId());
+        // StudyID and FileID may not be correct. Use the given through the CLI and overwrite the values from meta.
+        meta.getVariantSource().setStudyId(Integer.toString(studyId));
+        meta.getVariantSource().setFileId(Integer.toString(fileId));
+        storeMetaData(meta, tableName, conf);
+
         GenomeHelper.setChunkSize(conf, 1000);
         ArchiveHelper archiveHelper = new ArchiveHelper(conf, meta);
 
@@ -87,13 +92,13 @@ public class ArchiveDriver extends Configured implements Tool {
         job.setCombinerClass(VcfSliceCombiner.class);
 
 
-        TableMapReduceUtil.initTableReducerJob(tablename, null, job, null, null, null, null, conf.getBoolean("addDependencyJars", true));
+        TableMapReduceUtil.initTableReducerJob(tableName, null, job, null, null, null, null, conf.getBoolean("addDependencyJars", true));
         job.setMapOutputValueClass(Put.class);
 
-        if (HBaseUtils.createTableIfNeeded(tablename, archiveHelper.getColumnFamily(), job.getConfiguration())) {
-            logger.info(String.format("Create table '%s' in hbase!", tablename));
+        if (HBaseUtils.createTableIfNeeded(tableName, archiveHelper.getColumnFamily(), job.getConfiguration())) {
+            logger.info(String.format("Create table '%s' in hbase!", tableName));
         } else {
-            logger.info(String.format("Table '%s' exists in hbase!", tablename));
+            logger.info(String.format("Table '%s' exists in hbase!", tableName));
         }
         // TODO: Update list of indexed files
         return job.waitForCompletion(true) ? 0 : 1;
@@ -149,6 +154,16 @@ public class ArchiveDriver extends Configured implements Tool {
         return new VcfMeta(new VariantSource(variantFileMetadata));
     }
 
+    public static String buildCommandLineArgs(URI input, URI inputMeta, String server, String outputTable, int studyId, int fileId) {
+        StringBuilder stringBuilder = new StringBuilder()
+                .append(input).append(' ')
+                .append(inputMeta).append(' ')
+                .append(server).append(' ')
+                .append(outputTable).append(' ')
+                .append(studyId).append(' ')
+                .append(fileId);
+        return stringBuilder.toString();
+    }
 
     public static void main(String[] args) throws Exception {
         System.exit(privateMain(args, null));
@@ -164,8 +179,8 @@ public class ArchiveDriver extends Configured implements Tool {
         //get the args w/o generic hadoop args
         String[] toolArgs = parser.getRemainingArgs();
 
-        if (toolArgs.length != 4) {
-            System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>\n",
+        if (toolArgs.length != 6) {
+            System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <server> <output-table> <study-id> <file-id>\n",
                     ArchiveDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
@@ -176,6 +191,8 @@ public class ArchiveDriver extends Configured implements Tool {
         conf.set(OPT_VCF_META_FILE, toolArgs[1]);
         VariantTableDriver.addHBaseSettings(conf, toolArgs[2]);
         conf.set(GenomeHelper.CONFIG_ARCHIVE_TABLE, toolArgs[3]);
+        conf.set(GenomeHelper.OPENCGA_STORAGE_HADOOP_STUDY_ID, toolArgs[4]);
+        conf.set(GenomeHelper.CONFIG_FILE_ID, toolArgs[5]);
 
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);

@@ -25,6 +25,7 @@ import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
@@ -38,7 +39,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
@@ -461,7 +461,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         }
 
         //TODO: Expect JSON file
-        VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+        VariantSource source = readVariantSource(input, options);
 
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
@@ -507,6 +507,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
+        buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
         options.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
 
         return input;
@@ -742,6 +743,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             studyName = studyName.substring(index + 1);
         }
         return studyName + "_" + fileId;
+    }
+
+    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+        if (input.getScheme() == null || input.getScheme().equals("file")) {
+            return readVariantSource(Paths.get(input.getPath()), null);
+        } else {
+            throw new StorageManagerException("Can not read files from " + input.getScheme());
+        }
     }
 
     public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {

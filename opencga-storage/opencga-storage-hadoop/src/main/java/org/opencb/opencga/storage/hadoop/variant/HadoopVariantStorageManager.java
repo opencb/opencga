@@ -54,19 +54,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-        getLogger().info("Pre input: " + input);
-        getLogger().info("Pre output: " + output);
+        super.preLoad(input, output);
 
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()),
-                    options.getString(Options.STUDY_NAME.key()));
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        }
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
@@ -76,27 +67,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             options.put(HADOOP_LOAD_ARCHIVE, loadArch);
             options.put(HADOOP_LOAD_VARIANT, loadVar);
         }
-
-//        VariantSource variantSource = readVariantSource(Paths.get(input), null);
-        VariantSource source = readVariantSource(input, options);
-
-        int fileId;
-        String fileName = source.getFileName();
-        try {
-            fileId = Integer.parseInt(source.getFileId());
-        } catch (NumberFormatException e) {
-            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
-        }
-        options.put(Options.FILE_ID.key(), fileId);
-        checkNewFile(studyConfiguration, fileId, fileName);
-        studyConfiguration.getFileIds().put(fileName, fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
-
-        // updates object with file ID and generate sample IDs
-        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
-        buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
 
         if (loadArch) {
 
@@ -142,7 +112,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     //TODO: Generalize this
-    VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+    @Override
+    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         VariantSource source;
 
         if (input.getScheme().startsWith("file")) {
@@ -196,10 +167,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
             Class execClass = ArchiveDriver.class;
             String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
-            String args = input
-                    + " " + vcfMeta
-                    + " " + archiveTable.getHostAndPort()
-                    + " " + archiveTable.getTable();
+            String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta, archiveTable.getHostAndPort(),
+                    archiveTable.getTable(), options.getInt(Options.STUDY_ID.key()), options.getInt(Options.FILE_ID.key()));
 
             logger.debug("------------------------------------------------------");
             logger.debug(executable + " " + args);
@@ -207,6 +176,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             int exitValue = getMRExecutor(options).run(executable, args);
             logger.debug("------------------------------------------------------");
             logger.debug("Exit value: {}", exitValue);
+            if (exitValue != 0) {
+                throw new StorageManagerException("Error loading file " + input + " into archive table \""
+                        + archiveTable.getTable() + "\"");
+            }
         }
 
         if (loadVar) {
@@ -222,6 +195,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             int exitValue = getMRExecutor(options).run(executable, args);
             logger.debug("------------------------------------------------------");
             logger.debug("Exit value: {}", exitValue);
+            if (exitValue != 0) {
+                throw new StorageManagerException("Error loading file " + input + " into variant table \""
+                        + variantsTable.getTable() + "\"");
+            }
         }
 
         return input; // TODO  change return value?

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -69,6 +70,10 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.info("Get StudyConfiguration {} from DB {}", studyName, tableName);
+        if (StringUtils.isEmpty(studyName)) {
+            return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
+                    studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
+        }
         Get get = new Get(studiesRow);
         byte[] columnQualifier = Bytes.toBytes(studyName);
         get.addColumn(genomeHelper.getColumnFamily(), columnQualifier);
