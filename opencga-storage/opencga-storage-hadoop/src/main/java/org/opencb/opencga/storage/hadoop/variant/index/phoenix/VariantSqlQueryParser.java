@@ -110,8 +110,6 @@ public class VariantSqlQueryParser {
      *
      * {@link VariantQueryParams#REGION}
      * {@link VariantQueryParams#CHROMOSOME}
-     * {@link VariantQueryParams#REFERENCE}
-     * {@link VariantQueryParams#ALTERNATE}
      *
      * Using annotation:
      * {@link VariantQueryParams#ID}
@@ -133,19 +131,7 @@ public class VariantSqlQueryParser {
             }
         }
 
-        if (isValidParam(query, CHROMOSOME)) {
-            for (String chromosome : query.getAsStringList(CHROMOSOME.key())) {
-                regionFilters.add(Columns.CHROMOSOME + " = " + chromosome);
-            }
-        }
-
-        if (isValidParam(query, REFERENCE)) {
-            logger.warn("Unsupported filter " +  REFERENCE);
-        }
-
-        if (isValidParam(query, ALTERNATE)) {
-            logger.warn("Unsupported filter " +  ALTERNATE);
-        }
+        addStringQueryFilters(query, CHROMOSOME, Columns.CHROMOSOME, regionFilters);
 
         if (isValidParam(query, ID)) {
             logger.warn("Unsupported filter " +  ID);
@@ -170,6 +156,8 @@ public class VariantSqlQueryParser {
      * A variant will pass this filters if matches with ALL of this filters.
      *
      * Variant filters:
+     * {@link VariantQueryParams#REFERENCE}
+     * {@link VariantQueryParams#ALTERNATE}
      * {@link VariantQueryParams#TYPE}
      * {@link VariantQueryParams#STUDIES}
      * {@link VariantQueryParams#FILES}
@@ -200,6 +188,10 @@ public class VariantSqlQueryParser {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
+        addStringQueryFilters(query, REFERENCE, Columns.REFERENCE, filters);
+
+        addStringQueryFilters(query, ALTERNATE, Columns.ALTERNATE, filters);
+
         if (isValidParam(query, TYPE)) {
             logger.warn("Unsupported filter " +  TYPE);
         }
@@ -309,6 +301,15 @@ public class VariantSqlQueryParser {
         return (value != null)
                 && !(value instanceof String && ((String) value).isEmpty()
                 || value instanceof Collection && ((Collection) value).isEmpty());
+    }
+
+
+    public static void addStringQueryFilters(Query query, VariantQueryParams param, Columns columns, List<String> filters) {
+        if (isValidParam(query, param)) {
+            for (String value : query.getAsStringList(param.key())) {
+                filters.add(columns + " = '" + value + "'");
+            }
+        }
     }
 
 }

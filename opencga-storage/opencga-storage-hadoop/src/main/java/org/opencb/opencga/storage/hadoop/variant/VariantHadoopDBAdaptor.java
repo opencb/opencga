@@ -175,43 +175,53 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult delete(Query query, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteStudy(String studyName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult<Variant> get(Query query, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
+
+        List<Variant> variants = new LinkedList<>();
+        VariantDBIterator iterator = iterator(query, options);
+        iterator.forEachRemaining(variants::add);
+        long numTotalResults = -1;
+        if (options != null && !options.getBoolean("skipCount")) {
+            numTotalResults = count(query).first();
+        }
+        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
     }
 
     @Override
     public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
+        List<QueryResult<Variant>> results = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            results.add(get(query, options));
+        }
+        return results;
     }
 
     @Override
@@ -235,7 +245,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult distinct(Query query, String field) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -331,74 +341,72 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public void forEach(Consumer<? super Variant> action) {
-        // TODO Auto-generated method stub
-
+        iterator().forEachRemaining(action);
     }
 
     @Override
     public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-        // TODO Auto-generated method stub
-
+        iterator(query, options).forEachRemaining(action);
     }
 
     @Override
     public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
