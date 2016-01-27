@@ -398,7 +398,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
         QueryResult<Job> jobQueryResult = jobCollection.find(bson, jobConverter, qOptions);
-        return endQuery("Get job", startTime, jobQueryResult.getResult());
+        return endQuery("Get job", startTime, jobQueryResult);
     }
 
     @Override

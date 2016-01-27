@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -528,7 +530,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public Iterator<User> iterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator, userConverter);
     }
 
     @Override

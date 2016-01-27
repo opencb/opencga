@@ -29,7 +29,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     default boolean projectExists(int projectId) {
-        return count(new Query("project.id", projectId)).first() > 0;
+        return count(new Query(QueryParams.ID.key(), projectId)).first() > 0;
     }
 
     default void checkProjectId(int projectId) throws CatalogDBException {

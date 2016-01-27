@@ -44,21 +44,19 @@ public abstract class AbstractCatalogDBAdaptor {
         return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result)
-            throws CatalogDBException {
-        long end = System.currentTimeMillis();
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) throws CatalogDBException {
         result.setId(queryId);
-        result.setDbTime((int) (end - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result
-                .getNumResults(), result.getNumTotalResults());
+        result.setDbTime((int) (System.currentTimeMillis() - startTime));
+        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(),
+                result.getNumResults(), result.getNumTotalResults());
         if (result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()) {
             throw new CatalogDBException(result.getErrorMsg());
         }
         return result;
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result,
-                                          String errorMessage, String warnMessage) throws CatalogDBException {
+    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage)
+            throws CatalogDBException {
         long end = System.currentTimeMillis();
         if (result == null) {
             result = new LinkedList<>();
