@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -17,6 +18,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * Created on 21/01/16
@@ -66,29 +69,51 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         Map<String, Variant> variants = new HashMap<>();
         for (Variant variant : dbAdaptor) {
             String v = variant.toString();
-            Assert.assertFalse(variants.containsKey(v));
+            assertFalse(variants.containsKey(v));
             variants.put(v, variant);
-//            variant.setAnnotation(null);
-//            System.out.println(variant.toJson());
+            VariantAnnotation a = variant.getAnnotation();
+            variant.setAnnotation(null);
+            System.out.println(variant.toJson());
+            variant.setAnnotation(a);
         }
+        String studyName = studyConfiguration.getStudyName();
 
-        Assert.assertEquals(7, variants.size());
         // TODO: Add more asserts
         /*                      s1  s2
-        1	10013	.	T	C   0/1
-        1	10014	.	A	T   0/1
-        1	10014	.	A	G   0/2
-        1	10030	.	T	G   0/0
-        1	10031	.	T	G
-        1	10032	.	A	G
-
+        1	10013	.	T	C   0/1 0/0
+        1	10014	.	A	T   0/1 0/2
+        1	10014	.	A	G   0/2 0/1
+        1	10030	.	T	G   0/0 0/1
+        1	10031	.	T	G   0/1 0/1
+        1	10032	.	A	G   0/1 0/0
         */
-        Assert.assertTrue(variants.containsKey("1:10013:T:C"));
-        Assert.assertTrue(variants.containsKey("1:10014:A:T"));
-        Assert.assertTrue(variants.containsKey("1:10014:A:G"));
-        Assert.assertTrue(variants.containsKey("1:10030:T:G"));
-        Assert.assertTrue(variants.containsKey("1:10031:T:G"));
-        Assert.assertTrue(variants.containsKey("1:10032:A:G"));
+
+        assertEquals(6, variants.size());
+        assertTrue(variants.containsKey("1:10013:T:C"));
+        assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:10014:A:T"));
+        assertEquals("0/1", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s1", "GT"));
+//        assertEquals("0/2", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals(".", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:10014:A:G"));
+//        assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals(".", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:10030:T:G"));
+        assertEquals("0/0", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/1", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:10031:T:G"));
+        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:10032:A:G"));
+        assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
     }
 }
