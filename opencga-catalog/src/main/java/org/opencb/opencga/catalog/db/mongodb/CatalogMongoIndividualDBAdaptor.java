@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
@@ -451,9 +452,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public Iterator nativeIterator(Query query, QueryOptions options) {
+    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return individualCollection.nativeQuery().find(bson, options).iterator();
+        MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator);
     }
 
     @Override

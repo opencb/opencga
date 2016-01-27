@@ -29,6 +29,10 @@ public class CatalogMongoDBIterator<E> implements CatalogDBIterator<E> {
     private MongoCursor mongoCursor;
     private GenericConverter<E, Document> converter;
 
+    CatalogMongoDBIterator(MongoCursor mongoCursor) { //Package protected
+        this(mongoCursor, null);
+    }
+
     CatalogMongoDBIterator(MongoCursor mongoCursor, GenericConverter<E, Document> converter) { //Package protected
         this.mongoCursor = mongoCursor;
         this.converter = converter;
@@ -42,7 +46,11 @@ public class CatalogMongoDBIterator<E> implements CatalogDBIterator<E> {
     @Override
     public E next() {
         Document next = (Document) mongoCursor.next();
-        return converter.convertToDataModelType(next);
+        if (converter != null) {
+            return converter.convertToDataModelType(next);
+        } else {
+            return (E) next;
+        }
     }
 
     @Override

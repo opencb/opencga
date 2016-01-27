@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -89,17 +88,17 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
 
     @Override
-    default Iterator<T> iterator() {
+    default CatalogDBIterator<T> iterator() {
         return iterator(new Query(), new QueryOptions());
     }
 
     CatalogDBIterator<T> iterator(Query query, QueryOptions options);
 
-    default Iterator nativeIterator() {
+    default CatalogDBIterator nativeIterator() {
         return nativeIterator(new Query(), new QueryOptions());
     }
 
-    Iterator nativeIterator(Query query, QueryOptions options);
+    CatalogDBIterator nativeIterator(Query query, QueryOptions options);
 
 
     QueryResult rank(Query query, String field, int numResults, boolean asc);

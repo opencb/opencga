@@ -611,7 +611,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public Iterator nativeIterator(Query query, QueryOptions options) {
+    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) {
         return null;
     }
 

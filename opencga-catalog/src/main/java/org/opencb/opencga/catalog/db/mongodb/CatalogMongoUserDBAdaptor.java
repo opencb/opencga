@@ -536,9 +536,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public Iterator nativeIterator(Query query, QueryOptions options) {
+    public CatalogDBIterator<Document> nativeIterator(Query query, QueryOptions options) {
         Bson bson = parseQuery(query);
-        return userCollection.nativeQuery().find(bson, options).iterator();
+        MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator);
     }
 
     @Override
