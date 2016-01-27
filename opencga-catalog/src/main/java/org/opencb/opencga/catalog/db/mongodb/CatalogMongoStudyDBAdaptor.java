@@ -695,8 +695,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamplesInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeIndividuals")) {
-            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividualsInStudy(studyId, options)
-                    .getResult());
+            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividualsInStudy(studyId, options).getResult());
         }
     }
 
@@ -724,10 +723,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
-            qOptions = options;
+            qOptions = new QueryOptions(options);
         } else {
             qOptions = new QueryOptions();
         }
+
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
         QueryResult<Study> result = studyCollection.find(bson, studyConverter, qOptions);
         for (Study study : result.getResult()) {
