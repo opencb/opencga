@@ -99,6 +99,7 @@
                             <excludes>
                                 org/opencb/opencga/storage/app/cli/client/CliOptionsParser.java,
                                 org/opencb/opencga/storage/app/cli/server/ServerCliOptionsParser.java,
+                                org/opencb/opencga/storage/app/cli/OptionsParser.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,
                                 org/opencb/opencga/storage/hadoop/variant/index/models/protobuf/VariantCallProtos.java,

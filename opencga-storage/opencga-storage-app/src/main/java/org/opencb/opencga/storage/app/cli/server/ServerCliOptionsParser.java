@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.app.cli.server;
 import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.app.cli.OptionsParser;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,12 +28,8 @@ import java.util.Map;
 /**
  * Created by imedina on 02/03/15.
  */
-public class ServerCliOptionsParser {
+public class ServerCliOptionsParser extends OptionsParser {
 
-    private final JCommander jcommander;
-
-    private final GeneralOptions generalOptions;
-    private final CommonOptions commonOptions;
 
     //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;
     private RestCommandOptions restCommandOptions;
@@ -40,11 +37,6 @@ public class ServerCliOptionsParser {
 
 
     public ServerCliOptionsParser() {
-
-        generalOptions = new GeneralOptions();
-        jcommander = new JCommander(generalOptions);
-
-        commonOptions = new CommonOptions();
 
         restCommandOptions = new RestCommandOptions();
         jcommander.addCommand("rest", restCommandOptions);
@@ -62,99 +54,6 @@ public class ServerCliOptionsParser {
 
     }
 
-    public void parse(String[] args) throws ParameterException {
-        jcommander.parse(args);
-    }
-
-    public String getCommand() {
-        return (jcommander.getParsedCommand() != null) ? jcommander.getParsedCommand() : "";
-    }
-
-    public String getSubCommand() {
-        String parsedCommand = jcommander.getParsedCommand();
-        if (jcommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return null;
-        }
-    }
-
-    public boolean isHelp() {
-        String parsedCommand = jcommander.getParsedCommand();
-        if (parsedCommand != null) {
-            JCommander jCommander = jcommander.getCommands().get(parsedCommand);
-            List<Object> objects = jCommander.getObjects();
-            if (!objects.isEmpty() && objects.get(0) instanceof CommonOptions) {
-                return ((CommonOptions) objects.get(0)).help;
-            }
-        }
-        return getCommonOptions().help;
-    }
-
-
-    public class GeneralOptions {
-
-        @Parameter(names = {"-h", "--help"}, help = true)
-        public boolean help;
-
-        @Parameter(names = {"--version"})
-        public boolean version;
-
-    }
-
-    /**
-     * This class contains all those parameters available for all 'commands'
-     */
-    public class CommandOptions {
-
-        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
-        public boolean help;
-
-        public JCommander getSubCommand() {
-            return jcommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
-        }
-
-        public String getParsedSubCommand() {
-            String parsedCommand = jcommander.getParsedCommand();
-            if (jcommander.getCommands().containsKey(parsedCommand)) {
-                String subCommand = jcommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand: "";
-            } else {
-                return "";
-            }
-        }
-    }
-
-
-    /**
-     * This class contains all those common parameters available for all 'subcommands'
-     */
-    public class CommonOptions {
-
-        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
-        public boolean help;
-
-        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel = "info";
-
-        @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logFile;
-
-        @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
-        public boolean verbose = false;
-
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
-        public String configFile;
-
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "Default storage engine for the server, if not set then is read from storage-configuration.yml")
-        public String storageEngine;
-
-        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
-                ".compression=snappy", hidden = false)
-        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
-
-    }
 
 
     /*
@@ -166,6 +65,8 @@ public class ServerCliOptionsParser {
         RestStartCommandOptions restStartCommandOptions;
         RestStopCommandOptions restStopCommandOptions;
         RestStatusCommandOptions restStatusCommandOptions;
+
+        CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
 
         public RestCommandOptions() {
             this.restStartCommandOptions = new RestStartCommandOptions();
@@ -183,6 +84,8 @@ public class ServerCliOptionsParser {
         GrpcStartCommandOptions grpcStartCommandOptions = new GrpcStartCommandOptions();
         GrpcStopCommandOptions grpcStopCommandOptions = new GrpcStopCommandOptions();
         GrpcStatusCommandOptions grpcStatusCommandOptions = new GrpcStatusCommandOptions();
+
+        CommonOptions commonOptions = ServerCliOptionsParser.this.commonOptions;
 
         public GrpcCommandOptions() {
             this.grpcStartCommandOptions = new GrpcStartCommandOptions();

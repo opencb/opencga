@@ -48,18 +48,19 @@ public abstract class CommandExecutor {
 
     protected Logger logger;
 
-    public CommandExecutor() {
-        this("info", false, null);
+    public CommandExecutor(OptionsParser.CommonOptions options) {
+        init(options);
     }
 
-    public CommandExecutor(String logLevel, boolean verbose, String configFile) {
-        init(logLevel, verbose, configFile);
+    protected void init(OptionsParser.CommonOptions options) {
+        init(options.logLevel, options.verbose, options.configFile, options.storageEngine);
     }
 
-    protected void init(String logLevel, boolean verbose, String configFile) {
+    protected void init(String logLevel, boolean verbose, String configFile, String storageEngine) {
         this.logLevel = logLevel;
         this.verbose = verbose;
         this.configFile = configFile;
+        this.storageEngine = storageEngine;
 
         /**
          * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason

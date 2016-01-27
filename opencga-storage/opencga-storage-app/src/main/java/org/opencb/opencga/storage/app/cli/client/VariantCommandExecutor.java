@@ -32,6 +32,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
+import org.opencb.opencga.storage.app.cli.OptionsParser;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -76,15 +77,13 @@ public class VariantCommandExecutor extends CommandExecutor {
     private CliOptionsParser.VariantCommandOptions variantCommandOptions;
 
     public VariantCommandExecutor(CliOptionsParser.VariantCommandOptions variantCommandOptions) {
+        super(variantCommandOptions.commonOptions);
         this.variantCommandOptions = variantCommandOptions;
     }
 
-    private void init(CliOptionsParser.CommonOptions commonOptions) throws Exception {
+    private void configure(OptionsParser.CommonOptions commonOptions) throws Exception {
 
         this.logFile = commonOptions.logFile;
-
-        // Call to super init() method
-        super.init(commonOptions.logLevel, commonOptions.verbose, commonOptions.configFile);
 
         /**
          * Getting VariantStorageManager
@@ -114,27 +113,27 @@ public class VariantCommandExecutor extends CommandExecutor {
         String subCommandString = variantCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
             case "index":
-                init(variantCommandOptions.indexVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions);
                 index();
                 break;
             case "query":
-                init(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
                 query();
                 break;
             case "query-grpc":
-                init(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
                 queryGrpc();
                 break;
             case "annotation":
-                init(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
                 annotation();
                 break;
             case "stats":
-                init(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 stats();
                 break;
             case "benchmark":
-                init(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 benchmark();
                 break;
             default:

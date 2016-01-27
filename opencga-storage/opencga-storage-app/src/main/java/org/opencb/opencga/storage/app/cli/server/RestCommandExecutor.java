@@ -37,6 +37,7 @@ public class RestCommandExecutor extends CommandExecutor {
     private ServerCliOptionsParser.RestCommandOptions restCommandOptions;
 
     public RestCommandExecutor(ServerCliOptionsParser.RestCommandOptions restCommandOptions) {
+        super(restCommandOptions.commonOptions);
         this.restCommandOptions = restCommandOptions;
     }
 
@@ -47,9 +48,6 @@ public class RestCommandExecutor extends CommandExecutor {
         String subCommandString = restCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
             case "start":
-                init(restCommandOptions.restStartCommandOptions.commonOptions.logLevel,
-                        restCommandOptions.restStartCommandOptions.commonOptions.verbose,
-                        restCommandOptions.restStartCommandOptions.commonOptions.configFile);
                 start();
                 break;
             case "stop":

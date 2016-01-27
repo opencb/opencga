@@ -48,15 +48,13 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     private CliOptionsParser.AlignmentCommandOptions commandOptions;
 
     public AlignmentCommandExecutor(CliOptionsParser.AlignmentCommandOptions commandOptions) {
+        super(commandOptions.commonOptions);
         this.commandOptions = commandOptions;
     }
 
-    private void init(CliOptionsParser.CommonOptions commonOptions) throws Exception {
+    private void configure(CliOptionsParser.CommonOptions commonOptions) throws Exception {
 
         this.logFile = commonOptions.logFile;
-
-        // Call to super init() method
-        super.init(commonOptions.logLevel, commonOptions.verbose, commonOptions.configFile);
 
         /**
          * Getting VariantStorageManager
@@ -86,11 +84,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         String subCommandString = commandOptions.getParsedSubCommand();
         switch (subCommandString) {
             case "index":
-                init(commandOptions.indexAlignmentsCommandOptions.commonOptions);
+                configure(commandOptions.indexAlignmentsCommandOptions.commonOptions);
                 index();
                 break;
             case "query":
-                init(commandOptions.queryAlignmentsCommandOptions.commonOptions);
+                configure(commandOptions.queryAlignmentsCommandOptions.commonOptions);
                 query();
                 break;
             default:

@@ -40,6 +40,7 @@ public class GrpcCommandExecutor extends CommandExecutor {
     private ServerCliOptionsParser.GrpcCommandOptions grpcCommandOptions;
 
     public GrpcCommandExecutor(ServerCliOptionsParser.GrpcCommandOptions grpcCommandOptions) {
+        super(grpcCommandOptions.commonOptions);
         this.grpcCommandOptions = grpcCommandOptions;
     }
 
@@ -53,7 +54,8 @@ public class GrpcCommandExecutor extends CommandExecutor {
             case "start":
                 init(grpcCommandOptions.grpcStartCommandOptions.commonOptions.logLevel,
                         grpcCommandOptions.grpcStartCommandOptions.commonOptions.verbose,
-                        grpcCommandOptions.grpcStartCommandOptions.commonOptions.configFile);
+                        grpcCommandOptions.grpcStartCommandOptions.commonOptions.configFile,
+                        grpcCommandOptions.grpcStartCommandOptions.commonOptions.storageEngine);
                 start();
                 break;
             case "stop":
