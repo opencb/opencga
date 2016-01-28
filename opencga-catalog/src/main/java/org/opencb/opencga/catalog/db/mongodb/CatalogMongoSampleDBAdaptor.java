@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -707,6 +708,35 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
+    public void checkInUse(int sampleId) throws CatalogDBException {
+        int studyId = getStudyIdBySampleId(sampleId);
+
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_FILES + CatalogFileDBAdaptor
+                .QueryParams.ID.key(), FILTER_ROUTE_FILES + CatalogFileDBAdaptor.QueryParams.PATH.key()));
+        QueryResult<File> fileQueryResult = dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, queryOptions);
+        if (fileQueryResult.getNumResults() != 0) {
+            String msg = "Can't delete Sample " + sampleId + ", still in use in \"sampleId\" array of files : "
+                    + fileQueryResult.getResult().stream()
+                            .map(file -> "{ id: " + file.getId() + ", path: \"" + file.getPath() + "\" }")
+                            .collect(Collectors.joining(", ", "[", "]"));
+            throw new CatalogDBException(msg);
+        }
+
+
+        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
+                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
+        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+        if (cohortQueryResult.getNumResults() != 0) {
+            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
+                    + cohortQueryResult.getResult().stream()
+                            .map(cohort -> "{ id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" }")
+                            .collect(Collectors.joining(", ", "[", "]"));
+            throw new CatalogDBException(msg);
+        }
+
+    }
+
     @Override
     public QueryResult<Long> count(Query query) {
         Bson bson = parseQuery(query);
@@ -788,10 +818,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> delete(int id) throws CatalogDBException {
-        // TODO check that the sample is not in use!
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
         if (sampleQueryResult.getResult().size() == 1) {
+            // Check if the sample is being used anywhere
+            checkInUse(id);
             QueryResult<Long> delete = delete(query);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);

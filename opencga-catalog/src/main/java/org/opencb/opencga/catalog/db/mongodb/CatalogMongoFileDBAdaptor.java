@@ -82,7 +82,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         try {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
         } catch (CatalogDBException e) {
-            deleteFile(newFileId);
+            delete(newFileId);
             throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
                     + "with the study collection.");
         }

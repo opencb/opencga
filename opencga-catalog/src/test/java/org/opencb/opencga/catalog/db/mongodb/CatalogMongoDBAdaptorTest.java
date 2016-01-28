@@ -799,7 +799,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogDBAdaptor.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
 
         thrown.expect(CatalogDBException.class);
-        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
     }
 
     @Test
@@ -812,7 +812,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Collections.singletonList(createResult.first().getId()), null), null);
 
         thrown.expect(CatalogDBException.class);
-        QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
     }
 
     @Test

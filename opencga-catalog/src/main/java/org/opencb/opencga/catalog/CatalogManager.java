@@ -604,7 +604,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> getAllFiles(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        return fileManager.readAll(studyId, new Query(options), options, sessionId);
+        Query query;
+        if (options != null) {
+            query = new Query(options);
+        } else {
+            query = new Query();
+        }
+        return fileManager.readAll(studyId, query, options, sessionId);
     }
 
     public QueryResult<File> getAllFilesInFolder(int folderId, QueryOptions options, String sessionId) throws CatalogException {

@@ -617,6 +617,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
+        addStringOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList); // User id
         addIntegerOrQuery("projects." + QueryParams.ID.key(), QueryParams.ID.key(), query, andBsonList);
         addStringOrQuery("projects." + QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
         addStringOrQuery("projects." + QueryParams.ALIAS.key(), QueryParams.ALIAS.key(), query, andBsonList);

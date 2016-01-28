@@ -522,7 +522,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
-        aggregation.add(Projections.include("variableSets"));
+        aggregation.add(Aggregates.project(Projections.include("variableSets")));
         aggregation.add(Aggregates.unwind("$variableSets"));
         aggregation.add(Aggregates.match(new Document("$and", mongoQueryList)));
 
