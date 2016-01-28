@@ -63,8 +63,9 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         MISSING_ALLELES("missingAlleles", TEXT_ARRAY, ""),
         MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, ""),
         ANNOTATION_EXISTS("annotationExists", TEXT_ARRAY, ""),
-
-        GENOTYPE("genotype", TEXT_ARRAY, ""),
+        //[<study>:]<sample>:<genotype>[,<genotype>]*
+        GENOTYPE("genotype", TEXT_ARRAY, "Samples with a specific genotype:"
+                + " {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1"),
         ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY, ""),
         ANNOT_XREF("annot-xref", TEXT_ARRAY, ""),
         ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY, ""),

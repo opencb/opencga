@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
@@ -33,6 +34,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private final byte[] columnFamily;
     private final byte[] fileIdBytes;
     private ResultScanner resultScanner;
+    private int startPosition = 0;
+    private int endPosition = Integer.MAX_VALUE;
+    private VcfSliceProtos.VcfRecord nextVcfRecord = null;
 
     public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
@@ -53,29 +57,31 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
 
     @Override
     public boolean hasNext() {
-        return count < limit && (vcfRecordIterator.hasNext() || iterator.hasNext());
+        if (nextVcfRecord != null) {
+            return true;
+        } else {
+            nextVcfRecord = nextVcfRecord();
+            return nextVcfRecord != null;
+        }
     }
 
     @Override
     public Variant next() {
-        if (!hasNext()) {
+        if (!(count < limit)) {
             throw new NoSuchElementException("Limit reached");
         }
-        if (!vcfRecordIterator.hasNext()) {
-            Result result = fetch(iterator::next);
-            byte[] rid = result.getRow();
-            try {
-                byte[] value = result.getValue(columnFamily, fileIdBytes);
-                vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
-                vcfRecordIterator = vcfSlice.getRecordsList().iterator();
-            } catch (InvalidProtocolBufferException e) {
-                throw new RuntimeException(e);
-            }
+
+        final VcfSliceProtos.VcfRecord vcfRecord;
+
+        if (nextVcfRecord != null) {
+            vcfRecord = nextVcfRecord;
+            nextVcfRecord = null;
+        } else {
+            vcfRecord = nextVcfRecord();
         }
-        VcfSliceProtos.VcfRecord vcfRecord = vcfRecordIterator.next();
-        if (vcfRecord.getRelativeStart() < 0) {
-            //Skip duplicated variant!
-            return next();
+
+        if (vcfRecord == null) {
+            throw new NoSuchElementException("Limit reached");
         }
 
         Variant variant;
@@ -94,6 +100,30 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         return variant;
     }
 
+    private VcfSliceProtos.VcfRecord nextVcfRecord() {
+        VcfSliceProtos.VcfRecord vcfRecord;
+        int variantStart;
+        do {
+            if (!vcfRecordIterator.hasNext()) {
+                if (!iterator.hasNext()) {
+                    return null;
+                }
+                Result result = fetch(iterator::next);
+                byte[] rid = result.getRow();
+                try {
+                    byte[] value = result.getValue(columnFamily, fileIdBytes);
+                    vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
+                    vcfRecordIterator = vcfSlice.getRecordsList().iterator();
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            vcfRecord = vcfRecordIterator.next();
+            variantStart = vcfSlice.getPosition() + vcfRecord.getRelativeStart();
+        } while (vcfRecord.getRelativeStart() < 0 || variantStart < this.startPosition || variantStart > this.endPosition);
+        //Skip duplicated variant!
+        return vcfRecord;
+    }
 
     @Override
     public void close() {
@@ -102,8 +132,15 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         resultScanner.close();
     }
 
-    protected void setLimit(long limit) {
+    protected VariantHadoopArchiveDBIterator setLimit(long limit) {
         this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
+        return this;
+    }
+
+    public VariantHadoopArchiveDBIterator setRegion(Region region) {
+        this.startPosition = region.getStart();
+        this.endPosition = region.getEnd();
+        return this;
     }
 
 }

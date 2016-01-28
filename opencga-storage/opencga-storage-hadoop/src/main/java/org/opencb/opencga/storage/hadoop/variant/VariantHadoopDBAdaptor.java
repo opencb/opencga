@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -49,7 +50,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  * Created by mh719 on 16/06/15.
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
-    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
 
     private final Connection hbaseCon;
     private final String variantTable;
@@ -256,7 +257,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
 
-        if (query.getBoolean("archive", false)) {
+        if (options.getBoolean("archive", false)) {
             String study = query.getString(STUDIES.key());
             StudyConfiguration studyConfiguration;
             int studyId;
@@ -285,9 +286,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 region = Region.parseRegion(query.getString(REGION.key()));
             }
 
+            //Get the ArchiveHelper related with the requested file.
+            ArchiveHelper archiveHelper;
+            try {
+                archiveHelper = getArchiveHelper(studyId, fileId);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
             Scan scan = new Scan();
-            scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
-            addArchiveRegionFilter(scan, region);
+            scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
+            addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
             String tableName = ArchiveHelper.getTableName(studyId);
 
@@ -298,12 +307,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("MaxResultSize = " + scan.getMaxResultSize());
             logger.debug("region = " + region);
             logger.debug("Column name = " + fileId);
+            logger.debug("Chunk size = " + archiveHelper.getChunkSize());
 
             try {
-                ArchiveHelper archiveHelper = getArchiveHelper(studyId, fileId);
                 Table table = hbaseCon.getTable(TableName.valueOf(tableName));
                 ResultScanner resScan = table.getScanner(scan);
-                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options);
+                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -515,12 +524,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public void addArchiveRegionFilter(Scan scan, Region region) {
+    public void addArchiveRegionFilter(Scan scan, Region region, ArchiveHelper archiveHelper) {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+            scan.setStartRow(archiveHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            long endSlice = archiveHelper.getSlicePosition(region.getEnd()) + 1;
+            // +1 because the stop row is exclusive
+            scan.setStopRow(Bytes.toBytes(archiveHelper.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
         }
     }
 

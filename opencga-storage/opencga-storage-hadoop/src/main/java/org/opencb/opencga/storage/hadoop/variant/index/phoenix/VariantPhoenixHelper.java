@@ -91,7 +91,7 @@ public class VariantPhoenixHelper {
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
         String connectionUrl = QueryUtil.getConnectionUrl(new Properties(), conf);
-        System.out.println("connectionUrl = " + connectionUrl);
+        logger.debug("connectionUrl = " + connectionUrl);
         return DriverManager.getConnection(connectionUrl);
     }
 

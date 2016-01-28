@@ -52,7 +52,7 @@ public class GenomeHelper {
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
-    public static final int DEFAULT_CHUNK_SIZE = 100;
+    public static final int DEFAULT_CHUNK_SIZE = 1000;
 
     private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
     private final char separator;
