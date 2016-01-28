@@ -82,7 +82,7 @@ class WS:
         :return: list of results
         """
         # TODO: Add pagination
-        if "limit" not in options:
+        if data is None and "limit" not in options:
             options["limit"] = -1
 
         options_string = ""

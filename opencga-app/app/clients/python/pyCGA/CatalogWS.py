@@ -369,7 +369,6 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, data=data, **options)
 
-
     def search(self, studyId, **options):
         """
 
