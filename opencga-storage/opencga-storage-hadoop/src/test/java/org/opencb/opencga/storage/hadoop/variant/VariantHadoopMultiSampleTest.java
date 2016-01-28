@@ -80,15 +80,18 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         // TODO: Add more asserts
         /*                      s1  s2
-        1	10013	.	T	C   0/1 0/0
-        1	10014	.	A	T   0/1 0/2
-        1	10014	.	A	G   0/2 0/1
-        1	10030	.	T	G   0/0 0/1
-        1	10031	.	T	G   0/1 0/1
-        1	10032	.	A	G   0/1 0/0
+        1	10013	T	C   0/1 0/0
+        1	10014	A	T   0/1 0/2
+        1	10014	A	G   0/2 0/1
+        1	10030	T	G   0/0 0/1
+        1	10031	T	G   0/1 0/1
+        1	10032	A	G   0/1 0/0
+        1   11000   T   G   1/1 0/1
+        1   12000   T   G   1/1 0/0
+        1   13000   T   G   0/0 0/1
         */
 
-        assertEquals(6, variants.size());
+        assertEquals(9, variants.size());
         assertTrue(variants.containsKey("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
@@ -104,7 +107,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10030:T:G"));
-        assertEquals("0/0", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals(".", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/1", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10031:T:G"));
@@ -113,7 +116,19 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:10032:A:G"));
         assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals(".", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:11000:T:G"));
+        assertEquals("1/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:12000:T:G"));
+        assertEquals("1/1", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals(".", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+
+        assertTrue(variants.containsKey("1:13000:T:G"));
+        assertEquals(".", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
     }
 }
