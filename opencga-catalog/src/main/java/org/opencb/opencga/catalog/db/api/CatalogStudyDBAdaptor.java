@@ -36,7 +36,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
 
 
-    default Long studyExists(int studyId) {
+    default Long studyExists(int studyId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), studyId)).first();
     }
 
@@ -60,8 +60,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult renameStudy(int studyId, String newStudyName) throws CatalogDBException;
 
     void updateStudyLastActivity(int studyId) throws CatalogDBException;
 
@@ -113,51 +111,55 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         PROJECT_ID("projectId", TEXT_ARRAY, ""),
 
-        GROUP_ID("group.id", INTEGER_ARRAY, ""),
+        GROUP_ID("groups.id", INTEGER_ARRAY, ""),
 
-        EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
-        EXPERIMENT_NAME("experiment.name", TEXT_ARRAY, ""),
+        EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
+        EXPERIMENT_NAME("experiments.name", TEXT_ARRAY, ""),
         EXPERIMENT_TYPE("experiment.type", TEXT_ARRAY, ""),
-        EXPERIMENT_PLATFORM("experiment.platform", TEXT_ARRAY, ""),
-        EXPERIMENT_MANUFACTURER("experiment.manufacturer", TEXT_ARRAY, ""),
-        EXPERIMENT_DATE("experiment.date", TEXT_ARRAY, ""),
-        EXPERIMENT_LAB("experiment.lab", TEXT_ARRAY, ""),
-        EXPERIMENT_CENTER("experiment.center", TEXT_ARRAY, ""),
-        EXPERIMENT_RESPONSIBLE("experiment.responsible", TEXT_ARRAY, ""),
+        EXPERIMENT_PLATFORM("experiments.platform", TEXT_ARRAY, ""),
+        EXPERIMENT_MANUFACTURER("experiments.manufacturer", TEXT_ARRAY, ""),
+        EXPERIMENT_DATE("experiments.date", TEXT_ARRAY, ""),
+        EXPERIMENT_LAB("experiments.lab", TEXT_ARRAY, ""),
+        EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
+        EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
-        FILE_ID("file.id", INTEGER_ARRAY, ""),
-        FILE_NAME("file.name", TEXT_ARRAY, ""),
-        FILE_TYPE("file.type", TEXT_ARRAY, ""),
-        FILE_FORMAT("file.format", TEXT_ARRAY, ""),
-        FILE_BIOFORMAT("file.bioformat", TEXT_ARRAY, ""),
-        FILE_DISK_USAGE("file.diskUsage", INTEGER_ARRAY, ""),
+        FILE_ID("files.id", INTEGER_ARRAY, ""),
+        FILE_NAME("files.name", TEXT_ARRAY, ""),
+        FILE_TYPE("files.type", TEXT_ARRAY, ""),
+        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
+        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
+        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
 
-        JOB_ID("job.id", INTEGER_ARRAY, ""),
-        JOB_NAME("job.name", TEXT_ARRAY, ""),
-        JOB_USER_ID("job.userId", TEXT_ARRAY, ""),
-        JOB_TOOL_NAME("job.toolName", TEXT_ARRAY, ""),
-        JOB_DATE("job.date", TEXT_ARRAY, ""),
-        JOB_STATUS("job.status", TEXT_ARRAY, ""),
-        JOB_DISK_USAGE("job.diskUsage", DECIMAL, ""),
+        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
+        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
+        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
+        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
+        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
+        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
+        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
 
-        INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
-        INDIVIDUAL_NAME("individual.name", TEXT_ARRAY, ""),
-        INDIVIDUAL_FATHER_ID("individual.fatherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_MOTHER_ID("individual.motherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_FAMILY("individual.family", TEXT_ARRAY, ""),
-        INDIVIDUAL_RACE("individual.race", TEXT_ARRAY, ""),
+        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
+        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
+        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
+        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
+        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
+        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
 
-        SAMPLE_ID("sample.id", INTEGER_ARRAY, ""),
-        SAMPLE_NAME("sample.name", TEXT_ARRAY, ""),
-        SAMPLE_SOURCE("sample.source", TEXT_ARRAY, ""),
-        SAMPLE_INDIVIDUAL_ID("sample.individualId", INTEGER_ARRAY, ""),
+        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
+        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
+        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
+        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
 
-        DATASET_ID("dataset.id", INTEGER_ARRAY, ""),
-        DATASET_NAME("dataset.name", TEXT_ARRAY, ""),
+        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
+        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
 
-        COHORT_ID("cohort.id", INTEGER_ARRAY, ""),
-        COHORT_NAME("cohort.name", TEXT_ARRAY, ""),
-        COHORT_TYPE("cohort.type", TEXT_ARRAY, "");
+        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
+        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
+        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
+
+        VARIABLE_SET_ID("variableSets.id", INTEGER_ARRAY, ""),
+        VARIABLE_SET_NAME("variableSets.name", TEXT_ARRAY, ""),
+        VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
 
         private final String key;
         private Type type;

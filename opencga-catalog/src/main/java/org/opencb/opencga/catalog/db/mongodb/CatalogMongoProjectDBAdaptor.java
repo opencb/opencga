@@ -23,6 +23,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang.NotImplementedException;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -35,6 +36,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -528,12 +530,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        return null;
+        throw new NotImplementedException("Update project is not implemented");
     }
 
     @Override
     public QueryResult<Project> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        QueryResult<Long> update = update(new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id), parameters);
+        if (update.getNumTotalResults() != 1) {
+            throw new CatalogDBException("Could not update project with id " + id);
+        }
+        return endQuery("Update project", startTime, getProject(id, null));
     }
 
     @Override
@@ -570,7 +577,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public CatalogDBIterator<Project> iterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator, projectConverter);
     }
 
     @Override
@@ -582,52 +591,48 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
-        return null;
+        throw new NotImplementedException("Rank project is not implemented");
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
-        Bson bsonQuery = parseQuery(query);
-        return groupBy(userCollection, bsonQuery, field, "name", options);
+        throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
-        Bson bsonQuery = parseQuery(query);
-        return groupBy(userCollection, bsonQuery, fields, "name", options);
+        throw new NotImplementedException("GroupBy in project is not implemented");
     }
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
-
+        Objects.requireNonNull(action);
+        CatalogDBIterator<Project> catalogDBIterator = iterator(query, options);
+        while (catalogDBIterator.hasNext()) {
+            action.accept(catalogDBIterator.next());
+        }
+        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
-        // FIXME: Pedro. Check the mongodb names as well as integer createQueries.
-        // FIXME: Pedro. Check how the projects are inserted in the user collection.
-
-        addIntegerOrQuery("projects.id", QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("projects.name", QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("projects.alias", QueryParams.ALIAS.key(), query, andBsonList);
-        addStringOrQuery("projects.organization", QueryParams.ORGANIZATION.key(), query, andBsonList);
-        addStringOrQuery("projects.status", QueryParams.STATUS.key(), query, andBsonList);
-        addStringOrQuery("projects.lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
+        addIntegerOrQuery("projects." + QueryParams.ID.key(), QueryParams.ID.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ALIAS.key(), QueryParams.ALIAS.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.CREATION_DATE.key(), QueryParams.CREATION_DATE.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.DESCRIPTION.key(), QueryParams.DESCRIPTION.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ORGANIZATION.key(), QueryParams.ORGANIZATION.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.STATUS.key(), QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.LAST_ACTIVITY.key(), QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
+        addIntegerOrQuery("projects." + QueryParams.DISK_USAGE.key(), QueryParams.DISK_USAGE.key(), query, andBsonList);
 
-        addIntegerOrQuery("projects.studies.id", QueryParams.STUDY_ID.key(), query, andBsonList);
-        addStringOrQuery("projects.studies.name", QueryParams.STUDY_NAME.key(), query, andBsonList);
-        addStringOrQuery("projects.studies.alias", QueryParams.STUDY_ALIAS.key(), query, andBsonList);
-        addStringOrQuery("projects.studies.creatorId", QueryParams.STUDY_CREATOR_ID.key(), query, andBsonList);
-        addStringOrQuery("projects.studies.status", QueryParams.STUDY_STATUS.key(), query, andBsonList);
-        addStringOrQuery("projects.studies.lastActivity", QueryParams.STUDY_LAST_ACTIVITY.key(), query, andBsonList);
-
-        addStringOrQuery("projects.acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
-        addStringOrQuery("projects.acl.read", QueryParams.ACL_READ.key(), query, andBsonList);
-        addStringOrQuery("projects.acl.write", QueryParams.ACL_WRITE.key(), query, andBsonList);
-        addStringOrQuery("projects.acl.execute", QueryParams.ACL_EXECUTE.key(), query, andBsonList);
-        addStringOrQuery("projects.acl.delete", QueryParams.ACL_DELETE.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ACL_USER_ID.key(), QueryParams.ACL_USER_ID.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ACL_READ.key(), QueryParams.ACL_READ.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ACL_WRITE.key(), QueryParams.ACL_WRITE.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ACL_EXECUTE.key(), QueryParams.ACL_EXECUTE.key(), query, andBsonList);
+        addStringOrQuery("projects." + QueryParams.ACL_DELETE.key(), QueryParams.ACL_DELETE.key(), query, andBsonList);
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

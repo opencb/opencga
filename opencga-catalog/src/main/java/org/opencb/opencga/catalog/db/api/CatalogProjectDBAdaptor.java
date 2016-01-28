@@ -28,7 +28,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
-    default boolean projectExists(int projectId) {
+    default boolean projectExists(int projectId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), projectId)).first() > 0;
     }
 
@@ -69,9 +69,12 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
+        DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", INTEGER, ""),
 
         STUDY_ID("study.id", INTEGER_ARRAY, ""),
         STUDY_NAME("study.name", TEXT_ARRAY, ""),

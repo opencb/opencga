@@ -33,7 +33,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  */
 public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
 
-    default boolean individualExists(int sampleId) {
+    default boolean individualExists(int sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
     }
 
@@ -56,6 +56,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
     QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws
@@ -75,8 +76,14 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         FAMILY("family", TEXT_ARRAY, ""),
         GENDER("gender", TEXT_ARRAY, ""),
         RACE("race", TEXT_ARRAY, ""),
-        POPULATION_NAME("populationName", TEXT_ARRAY, ""),
-        POPULATION_SUBPOPULATION("populationSubpopulation", TEXT_ARRAY, ""),
+        SPECIES("species", TEXT_ARRAY, ""),
+        SPECIES_TAXONOMY_CODE("species.taxonomyCode", TEXT_ARRAY, ""),
+        SPECIES_SCIENTIFIC_NAME("species.scientificName", TEXT_ARRAY, ""),
+        SPECIES_COMMON_NAME("species.commonName", TEXT_ARRAY, ""),
+        POPULATION_NAME("population.name", TEXT_ARRAY, ""),
+        POPULATION_SUBPOPULATION("population.subpopulation", TEXT_ARRAY, ""),
+        POPULATION_DESCRIPTION("population.description", TEXT_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT_ARRAY, ""),
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
         // TOCHECK: Pedro. Should we be considering annotations?

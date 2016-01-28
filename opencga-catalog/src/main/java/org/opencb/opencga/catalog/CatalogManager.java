@@ -916,11 +916,12 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
-    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap updateParams, String sessionId) throws CatalogException {
-        return sampleManager.updateCohort(cohortId, updateParams, sessionId);
+    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap updateParams, QueryOptions options, String sessionId)
+            throws CatalogException {
+        return sampleManager.updateCohort(cohortId, updateParams, options, sessionId);
     }
 
-    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 

@@ -809,7 +809,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
         catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "",
-                Collections.singletonList(createResult.first().getId()), null));
+                Collections.singletonList(createResult.first().getId()), null), null);
 
         thrown.expect(CatalogDBException.class);
         QueryResult<Sample> deleteResult = catalogDBAdaptor.getCatalogSampleDBAdaptor().deleteSample(createResult.first().getId());
@@ -830,7 +830,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 threads.add(new Thread(() -> {
                     try {
                         catalogDBAdaptor.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
-                                "", "", Collections.emptyList(), null));
+                                "", "", Collections.emptyList(), null), null);
                     } catch (CatalogDBException ignore) {
                         numFailures.incrementAndGet();
                     }

@@ -33,7 +33,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
-    default boolean fileExists(int fileId) {
+    default boolean fileExists(int fileId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
     }
 
@@ -103,42 +103,45 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
     QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
+        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         TYPE("type", TEXT_ARRAY, ""),
         FORMAT("format", TEXT_ARRAY, ""),
         BIOFORMAT("bioformat", TEXT_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
-        DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
+        PATH("path", TEXT_ARRAY, ""),
         OWNER_ID("ownerId", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
-        JOB_ID("jobId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATS("stats", TEXT, ""),
-        NSTATS("nstats", DECIMAL, ""),
-        PATH("path", TEXT, ""),
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
-        INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_DATE("index.date", TEXT, ""),
-        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
-        INDEX_JOB_ID("index.jobId", TEXT, ""),
-        // Fixme: Index attributes
-
+        JOB_ID("jobId", INTEGER_ARRAY, ""),
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
         ACL_READ("acl.read", BOOLEAN, ""),
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, "");
+        ACL_DELETE("acl.delete", BOOLEAN, ""),
+
+        INDEX_USER_ID("index.userId", TEXT, ""),
+        INDEX_DATE("index.date", TEXT, ""),
+        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
+        INDEX_JOB_ID("index.jobId", TEXT, ""),
+
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+        STATS("stats", TEXT, ""),
+        NSTATS("nstats", DECIMAL, ""),
+        STUDY_ID("studyId", INTEGER_ARRAY, "");
+
+        // Fixme: Index attributes
+
 
         // TOCHECK: Pedro. Add annotation support?
 

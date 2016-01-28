@@ -50,8 +50,8 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
     QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                      Map<String, Object> attributes, String sessionId) throws CatalogException;
 
-    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, String sessionId) throws CatalogException;
+    QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException;
+    QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException;
 
 }

@@ -434,7 +434,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      */
 
     @Override
-    public QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException {
+    public QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
@@ -456,7 +456,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             throw CatalogDBException.alreadyExists("Cohort", "name", cohort.getName());
         }
 
-        return endQuery("createCohort", startTime, getCohort(newId));
+        return endQuery("createCohort", startTime, getCohort(newId, options));
     }
 
     private void checkCohortNameExists(int studyId, String cohortName) throws CatalogDBException {
@@ -473,7 +473,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException {
+    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
 //        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
@@ -483,7 +483,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Bson query = Filters.eq("cohorts.id", cohortId);
         Bson projection = Projections.elemMatch("cohorts", Filters.eq("id", cohortId));
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .find(query, projection, new QueryOptions());
+                .find(query, projection, options);
 
         List<Study> studies = parseStudies(queryResult);
         if (studies == null || studies.get(0).getCohorts().isEmpty()) {
@@ -536,7 +536,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Map<String, Object> cohortParams = new HashMap<>();
@@ -575,16 +575,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        return endQuery("Modify cohort", startTime, getCohort(cohortId));
+        return endQuery("Modify cohort", startTime, getCohort(cohortId, options));
     }
 
     @Override
-    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException {
+    public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
 //        checkCohortInUse(cohortId);
         int studyId = getStudyIdByCohortId(cohortId);
-        QueryResult<Cohort> cohort = getCohort(cohortId);
+        QueryResult<Cohort> cohort = getCohort(cohortId, queryOptions);
 
 //        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(PRIVATE_ID, studyId), new BasicDBObject("$pull", new
 //                BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
@@ -754,13 +754,36 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        return null;
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        Map<String, Object> sampleParameters = new HashMap<>();
+
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
+        filterStringParams(parameters, sampleParameters, acceptedParams);
+
+        final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
+        filterIntParams(parameters, sampleParameters, acceptedIntParams);
+
+        final String[] acceptedMapParams = {"attributes"};
+        filterMapParams(parameters, sampleParameters, acceptedMapParams);
+
+        if (!sampleParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
+                    new Document("$set", sampleParameters), null);
+            return endQuery("Update sample", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
+        return endQuery("Update sample", startTime, new QueryResult<>());
     }
 
     @Override
     public QueryResult<Sample> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
+        if (update.getNumTotalResults() != 1) {
+            throw new CatalogDBException("Could not update sample with id " + id);
+        }
+        return endQuery("Update sample", startTime, getSample(id, null));
     }
 
     @Override
@@ -790,7 +813,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         DeleteResult deleteResult = sampleCollection.remove(bson, null).getResult().get(0);
         if (deleteResult.getDeletedCount() == 0) {
             throw CatalogDBException.newInstance("Sample id '{}' not found", query.get(CatalogSampleDBAdaptor.QueryParams.ID.key()));
-//            throw CatalogDBException.idNotFound("Sample", query.get(CatalogUserDBAdaptor.QueryParams.ID.key()));
         } else {
             return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
         }
@@ -798,7 +820,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public CatalogDBIterator<Sample> iterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = sampleCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator, sampleConverter);
     }
 
     @Override
@@ -810,7 +834,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return rank(sampleCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
@@ -827,21 +852,28 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
-
+        Objects.requireNonNull(action);
+        CatalogDBIterator<Sample> catalogDBIterator = iterator(query, options);
+        while (catalogDBIterator.hasNext()) {
+            action.accept(catalogDBIterator.next());
+        }
+        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
+        addIntegerOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
         addIntegerOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("source", QueryParams.SOURCE.key(), query, andBsonList);
-        addIntegerOrQuery("individualId", QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.SOURCE.key(), QueryParams.SOURCE.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.INDIVIDUAL_ID.key(), QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.DESCRIPTION.key(), QueryParams.DESCRIPTION.key(), query, andBsonList);
 
         addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
         addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
 
-        addStringOrQuery("acl.userId", QueryParams.ACL_USER_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.ACL_USER_ID.key(), QueryParams.ACL_USER_ID.key(), query, andBsonList);
         // FIXME: Add boolean queries. ACL_READ, ACL_WRITE...
 
         if (andBsonList.size() > 0) {

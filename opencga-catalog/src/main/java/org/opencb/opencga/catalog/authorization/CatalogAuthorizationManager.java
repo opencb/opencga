@@ -697,7 +697,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkReadCohort(String userId, Cohort cohort) throws CatalogException {
         try {
             if (cohort.getSamples() == null) {
-                cohort = sampleDBAdaptor.getCohort(cohort.getId()).first();
+                cohort = sampleDBAdaptor.getCohort(cohort.getId(), new QueryOptions()).first();
             }
             for (Integer sampleId : cohort.getSamples()) {
                 checkSamplePermission(sampleId, userId, CatalogPermission.READ);

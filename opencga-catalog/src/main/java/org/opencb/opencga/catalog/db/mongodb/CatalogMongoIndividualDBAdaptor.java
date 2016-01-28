@@ -181,6 +181,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException {
 
@@ -428,27 +429,72 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult<Individual> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        checkIndividualId(id);
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Long> update = update(query, parameters);
+        if (update.getResult().isEmpty() || update.first() != 1) {
+            throw new CatalogDBException("Could not update individual " + id);
+        }
+        return endQuery("Update individual", startTime, get(query, null));
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        return null;
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        Map<String, Object> individualParameters = new HashMap<>();
+
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.RACE.key(), QueryParams.GENDER.key(),
+                QueryParams.SPECIES_TAXONOMY_CODE.key(), QueryParams.SPECIES_SCIENTIFIC_NAME.key(), QueryParams.SPECIES_COMMON_NAME.key(),
+                QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(), };
+        filterStringParams(parameters, individualParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.GENDER.key()), Individual.Gender.class);
+        filterEnumParams(parameters, individualParameters, acceptedEnums);
+
+        String[] acceptedIntParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
+        filterIntParams(parameters, individualParameters, acceptedIntParams);
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, individualParameters, acceptedMapParams);
+
+        if (!individualParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query), new Document("$set", individualParameters),
+                    null);
+            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
+        return endQuery("Update individual", startTime, new QueryResult<Long>());
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) {
-        return null;
+    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bson = parseQuery(query);
+        QueryResult<DeleteResult> remove = individualCollection.remove(bson, null);
+        return endQuery("Delete individual", startTime, Arrays.asList(remove.getNumTotalResults()));
     }
 
     @Override
     public QueryResult<Individual> delete(int id) throws CatalogDBException {
-        return null;
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Individual> individualQueryResult = get(query, null);
+        if (individualQueryResult.getResult().size() == 1) {
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Individual id '{}' has not been deleted", id);
+            }
+        } else {
+            throw CatalogDBException.idNotFound("Individual id '{}' does not exist (or there are too many)", id);
+        }
+        return individualQueryResult;
     }
 
     @Override
     public CatalogDBIterator<Individual> iterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator, individualConverter);
     }
 
     @Override
@@ -460,7 +506,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
@@ -477,7 +524,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
-
+        Objects.requireNonNull(action);
+        CatalogDBIterator<Individual> catalogDBIterator = iterator(query, options);
+        while (catalogDBIterator.hasNext()) {
+            action.accept(catalogDBIterator.next());
+        }
+        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) {
@@ -485,15 +537,19 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
+        addIntegerOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
         addIntegerOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("fatherId", QueryParams.FATHER_ID.key(), query, andBsonList);
-        addStringOrQuery("motherId", QueryParams.MOTHER_ID.key(), query, andBsonList);
-        addStringOrQuery("family", QueryParams.FAMILY.key(), query, andBsonList);
-        addStringOrQuery("gender", QueryParams.GENDER.key(), query, andBsonList);
-        addStringOrQuery("race", QueryParams.RACE.key(), query, andBsonList);
-        addStringOrQuery("populationName", QueryParams.POPULATION_NAME.key(), query, andBsonList);
-        addStringOrQuery("populationSubpopulation", QueryParams.POPULATION_SUBPOPULATION.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.FATHER_ID.key(), QueryParams.FATHER_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.MOTHER_ID.key(), QueryParams.MOTHER_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.FAMILY.key(), QueryParams.FAMILY.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.GENDER.key(), QueryParams.GENDER.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.RACE.key(), QueryParams.RACE.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.SPECIES.key(), QueryParams.SPECIES.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_NAME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_SUBPOPULATION.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.POPULATION_DESCRIPTION.key(), QueryParams.POPULATION_DESCRIPTION.key(), query, andBsonList);
+
         addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
         addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
 

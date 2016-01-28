@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.client.model.Accumulators;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.Query;
@@ -120,6 +121,66 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         }
     }
 
+
+    protected QueryResult rank(MongoDBCollection collection, Bson query, String groupByField, String idField, int numResults, boolean asc) {
+        if (groupByField == null || groupByField.isEmpty()) {
+            return new QueryResult();
+        }
+
+        if (groupByField.contains(",")) {
+            // call to multiple rank if commas are present
+            return rank(collection, query, Arrays.asList(groupByField.split(",")), idField, numResults, asc);
+        } else {
+            Bson match = Aggregates.match(query);
+            Bson project = Aggregates.project(Projections.include(groupByField, idField));
+            Bson group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
+            Bson sort;
+            if (asc) {
+                sort = Aggregates.sort(Sorts.ascending("count"));
+            } else {
+                sort = Aggregates.sort(Sorts.descending("count"));
+            }
+            Bson limit = Aggregates.limit(numResults);
+
+            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+        }
+    }
+
+    protected QueryResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
+                               boolean asc) {
+
+        if (groupByField == null || groupByField.isEmpty()) {
+            return new QueryResult();
+        }
+
+        if (groupByField.size() == 1) {
+            // if only one field then we call to simple rank
+            return rank(collection, query, groupByField.get(0), idField, numResults, asc);
+        } else {
+            Bson match = Aggregates.match(query);
+
+            // add all group-by fields to the projection together with the aggregation field name
+            List<String> groupByFields = new ArrayList<>(groupByField);
+            groupByFields.add(idField);
+            Bson project = Aggregates.project(Projections.include(groupByFields));
+
+            // _id document creation to have the multiple id
+            Document id = new Document();
+            for (String s : groupByField) {
+                id.append(s, "$" + s);
+            }
+            Bson group = Aggregates.group(id, Accumulators.sum("count", 1));
+            Bson sort;
+            if (asc) {
+                sort = Aggregates.sort(Sorts.ascending("count"));
+            } else {
+                sort = Aggregates.sort(Sorts.descending("count"));
+            }
+            Bson limit = Aggregates.limit(numResults);
+
+            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+        }
+    }
 
     protected QueryResult groupBy(MongoDBCollection collection, Bson query, String groupByField, String idField, QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {

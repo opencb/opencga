@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -343,12 +344,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Long> count(Query query) {
-        return null;
+        Bson bsonDocument = parseQuery(query);
+        return jobCollection.count(bsonDocument);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) {
-        return null;
+        Bson bsonDocument = parseQuery(query);
+        return jobCollection.distinct(field, bsonDocument);
     }
 
     @Override
@@ -417,13 +420,53 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        return null;
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        Map<String, Object> jobParameters = new HashMap<>();
+
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(), QueryParams.DATE.key()
+                , QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key(), QueryParams.STATUS.key()
+                , QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(), };
+        filterStringParams(parameters, jobParameters, acceptedParams);
+
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.STATUS.key()), Job.Status.class);
+        filterEnumParams(parameters, jobParameters, acceptedEnums);
+
+        String[] acceptedIntParams = {QueryParams.VISITS.key(), };
+        filterIntParams(parameters, jobParameters, acceptedIntParams);
+
+        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.DISK_USAGE.key()};
+        filterLongParams(parameters, jobParameters, acceptedLongParams);
+
+        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
+        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey(QueryParams.OUTPUT.key())) {
+            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
+//                checkFileExists(fileId, "Output File");
+                dbAdaptorFactory.getCatalogFileDBAdaptor().checkFileId(fileId);
+            }
+        }
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
+        filterMapParams(parameters, jobParameters, acceptedMapParams);
+
+        if (!jobParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
+            return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+        return endQuery("Update job", startTime, new QueryResult<Long>());
     }
 
     @Override
     public QueryResult<Job> update(int id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        checkJobId(id);
+        Query query = new Query(QueryParams.ID.key(), id);
+        QueryResult<Long> update = update(query, parameters);
+        if (update.getResult().isEmpty() || update.first() != 1) {
+            throw new CatalogDBException("Could not update job " + id);
+        }
+        return endQuery("Update user", startTime, get(query, null));
     }
 
     @Override
@@ -450,46 +493,72 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public CatalogDBIterator<Job> iterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator, jobConverter);
     }
 
     @Override
     public CatalogDBIterator nativeIterator(Query query, QueryOptions options) {
-        return null;
+        Bson bson = parseQuery(query);
+        MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
+        return new CatalogMongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(jobCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return groupBy(jobCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
-
+        Objects.requireNonNull(action);
+        CatalogDBIterator<Job> catalogDBIterator = iterator(query, options);
+        while (catalogDBIterator.hasNext()) {
+            action.accept(catalogDBIterator.next());
+        }
+        catalogDBIterator.close();
     }
 
     private Bson parseQuery(Query query) {
         List<Bson> andBsonList = new ArrayList<>();
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-
+        addIntegerOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
         addIntegerOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("userId", QueryParams.USER_ID.key(), query, andBsonList);
-        addStringOrQuery("toolName", QueryParams.TOOL_NAME.key(), query, andBsonList);
-        addStringOrQuery("date", QueryParams.DATE.key(), query, andBsonList);
-        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
-        addStringOrQuery("diskUsage", QueryParams.DISK_USAGE.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.USER_ID.key(), QueryParams.USER_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.TOOL_NAME.key(), QueryParams.TOOL_NAME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.DATE.key(), QueryParams.DATE.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.DESCRIPTION.key(), QueryParams.DESCRIPTION.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.START_TIME.key(), QueryParams.START_TIME.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.END_TIME.key(), QueryParams.END_TIME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.OUTPUT_ERROR.key(), QueryParams.OUTPUT_ERROR.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.EXECUTION.key(), QueryParams.EXECUTION.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.COMMAND_LINE.key(), QueryParams.COMMAND_LINE.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.VISITS.key(), QueryParams.VISITS.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.STATUS.key(), QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.DISK_USAGE.key(), QueryParams.DISK_USAGE.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.OUT_DIR_ID.key(), QueryParams.OUT_DIR_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.TMP_OUT_DIR_URI.key(), QueryParams.TMP_OUT_DIR_URI.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.INPUT.key(), QueryParams.INPUT.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.OUTPUT.key(), QueryParams.OUTPUT.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.TAGS.key(), QueryParams.TAGS.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.ERROR.key(), QueryParams.ERROR.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.ERROR_DESCRIPTION.key(), QueryParams.ERROR_DESCRIPTION.key(), query, andBsonList);
 
         addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
         addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);

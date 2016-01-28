@@ -33,9 +33,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
     /*
      * User methods
      */
-    boolean checkUserCredentials(String userId, String sessionId);
-
-    default boolean userExists(String userId) {
+    default boolean userExists(String userId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), userId)).getResult().get(0) > 0;
     }
 
@@ -48,9 +46,6 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
             throw CatalogDBException.newInstance("User id '{}' does not exist", userId);
         }
     }
-
-    QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
-            throws CatalogDBException;
 
     QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
 
@@ -98,23 +93,25 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         ORGANIZATION("organization", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        DISK_QUOTA("diskQuota", INTEGER_ARRAY, ""),
 
-        PROJECT_ID("project.id", INTEGER_ARRAY, ""),
-        PROJECT_NAME("project.name", TEXT_ARRAY, ""),
-        PROJECT_ALIAS("project.alias", TEXT_ARRAY, ""),
-        PROJECT_ORGANIZATION("project.organization", TEXT_ARRAY, ""),
-        PROJECT_STATUS("project.status", TEXT_ARRAY, ""),
-        PROJECT_LAST_ACTIVITY("project.lastActivity", TEXT_ARRAY, ""),
+        PROJECT_ID("projects.id", INTEGER_ARRAY, ""),
+        PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
+        PROJECT_ALIAS("projects.alias", TEXT_ARRAY, ""),
+        PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
+        PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
+        PROJECT_LAST_ACTIVITY("projects.lastActivity", TEXT_ARRAY, ""),
 
-        TOOL_ID("tool.id", INTEGER_ARRAY, ""),
-        TOOL_NAME("tool.name", TEXT_ARRAY, ""),
-        TOOL_ALIAS("tool.alias", TEXT_ARRAY, ""),
+        TOOL_ID("tools.id", INTEGER_ARRAY, ""),
+        TOOL_NAME("tools.name", TEXT_ARRAY, ""),
+        TOOL_ALIAS("tools.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check whether login, logout makes sense.
-        SESSION_ID("session.id", INTEGER_ARRAY, ""),
-        SESSION_IP("session.ip", TEXT_ARRAY, ""),
-        SESSION_LOGIN("session.login", TEXT_ARRAY, ""),
-        SESSION_LOGOUT("session.logout", INTEGER_ARRAY, "");
+        SESSION_ID("sessions.id", INTEGER_ARRAY, ""),
+        SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
+        SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),
+        SESSION_LOGOUT("sessions.logout", INTEGER_ARRAY, "");
 
 
         private final String key;

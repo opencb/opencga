@@ -35,7 +35,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
      * Samples methods
      */
 
-    default boolean sampleExists(int sampleId) {
+    default boolean sampleExists(int sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
     }
 
@@ -100,15 +100,15 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
      * Cohort methods
      */
 
-    QueryResult<Cohort> createCohort(int studyId, Cohort cohort) throws CatalogDBException;
+    QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> getCohort(int cohortId) throws CatalogDBException;
+    QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap queryOptions) throws CatalogDBException;
+    QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException;
 
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
@@ -117,6 +117,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         NAME("name", TEXT_ARRAY, ""),
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
+        DESCRIPTION("description", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 

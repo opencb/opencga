@@ -28,7 +28,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
-    default boolean jobExists(int jobId) {
+    default boolean jobExists(int jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
     }
 
@@ -97,8 +97,25 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
         DATE("date", TEXT_ARRAY, ""),
+        DESCRIPTION("description", TEXT_ARRAY, ""),
+        START_TIME("startTime", INTEGER_ARRAY, ""),
+        END_TIME("endTime", INTEGER_ARRAY, ""),
+        OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
+        EXECUTION("execution", TEXT_ARRAY, ""),
+        //PARAMS,
+        COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
+        VISITS("visits", INTEGER_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", DECIMAL, ""),
+        OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
+        TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
+        INPUT("input", INTEGER_ARRAY, ""),
+        OUTPUT("output", INTEGER_ARRAY, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT_ARRAY, ""),
+        RESOURCE_MANAGER_ATTRIBUTES("resourceManagerAttributes", TEXT_ARRAY, ""),
+        ERROR("error", TEXT_ARRAY, ""),
+        ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 

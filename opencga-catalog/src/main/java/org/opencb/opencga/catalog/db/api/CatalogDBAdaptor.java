@@ -33,18 +33,18 @@ import java.util.function.Consumer;
 public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
 
-    default QueryResult<Long> count() {
+    default QueryResult<Long> count() throws CatalogDBException {
         return count(new Query());
     }
 
-    QueryResult<Long> count(Query query);
+    QueryResult<Long> count(Query query) throws CatalogDBException;
 
 
-    default QueryResult distinct(String field) {
+    default QueryResult distinct(String field) throws CatalogDBException {
         return distinct(new Query(), field);
     }
 
-    QueryResult distinct(Query query, String field);
+    QueryResult distinct(Query query, String field) throws CatalogDBException;
 
 
     default QueryResult stats() {
@@ -65,9 +65,9 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
         return queryResults;
     }
 
-    QueryResult nativeGet(Query query, QueryOptions options);
+    QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
-    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) {
+    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
         List<QueryResult> queryResults = new ArrayList<>(queries.size());
         for (Query query : queries) {
@@ -89,30 +89,39 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     @Override
     default CatalogDBIterator<T> iterator() {
-        return iterator(new Query(), new QueryOptions());
+        try {
+            return iterator(new Query(), new QueryOptions());
+        } catch (CatalogDBException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    CatalogDBIterator<T> iterator(Query query, QueryOptions options);
+    CatalogDBIterator<T> iterator(Query query, QueryOptions options) throws CatalogDBException;
 
-    default CatalogDBIterator nativeIterator() {
+    default CatalogDBIterator nativeIterator() throws CatalogDBException {
         return nativeIterator(new Query(), new QueryOptions());
     }
 
-    CatalogDBIterator nativeIterator(Query query, QueryOptions options);
+    CatalogDBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
 
 
-    QueryResult rank(Query query, String field, int numResults, boolean asc);
+    QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options);
+    QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
 
     @Override
     default void forEach(Consumer action) {
-        forEach(new Query(), action, new QueryOptions());
+        try {
+            forEach(new Query(), action, new QueryOptions());
+        } catch (CatalogDBException e) {
+            e.printStackTrace();
+        }
     }
 
-    void forEach(Query query, Consumer<? super Object> action, QueryOptions options);
+    void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException;
 
 }

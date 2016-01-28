@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.BasicDBObjectBuilder;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
@@ -34,7 +32,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
@@ -70,24 +71,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
      */
 
     @Override
-    public boolean checkUserCredentials(String userId, String sessionId) {
-        return false;
-    }
-
-    @Override
-    public QueryResult<User> createUser(String userId, String userName, String email, String password,
-                                        String organization, QueryOptions options) throws CatalogDBException {
-        checkParameter(userId, "userId");
-        //long startTime = startQuery();
-
-        if (userExists(userId)) {
-            throw new CatalogDBException("User {id:\"" + userId + "\"} already exists");
-        }
-        return null;
-
-    }
-
-    @Override
     public QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException {
         checkParameter(user, "user");
         long startTime = startQuery();
@@ -98,19 +81,22 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
+
         user.setLastActivity(TimeUtils.getTimeMillis());
-//        DBObject userDBObject = getDbObject(user, "User " + user.getId());
-        Document userDBObject = getMongoDBDocument(user, "User " + user.getId());
-        userDBObject.append(PRIVATE_ID, user.getId());
+        Document userDocument = userConverter.convertToStorageType(user);
+        userDocument.append(PRIVATE_ID, user.getId());
 
         QueryResult insert;
         try {
-            insert = userCollection.insert(userDBObject, null);
+            insert = userCollection.insert(userDocument, null);
         } catch (DuplicateKeyException e) {
             throw new CatalogDBException("User {id:\"" + user.getId() + "\"} already exists");
         }
 
-        // TODO review this code. A project 'converter' could create Document objects easily
+        // Although using the converters we could be inserting the user directly, we could be inserting more than users and projects if
+        // the projects given contains the studies, files, samples... all in the same collection. For this reason, we make different calls
+        // to the createProject method that is able to control these things and will create the studies, files... in their corresponding
+        // collections.
         String errorMsg = insert.getErrorMsg() != null ? insert.getErrorMsg() : "";
         for (Project p : projects) {
             String projectErrorMsg = dbAdaptorFactory.getCatalogProjectDbAdaptor().createProject(user.getId(), p, options).getErrorMsg();
@@ -159,18 +145,13 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+        QueryResult<Long> countSessions = count(new Query(QueryParams.SESSION_ID.key(), session.getId()));
         if (countSessions.getResult().get(0) != 0) {
             throw new CatalogDBException("Already logged with this sessionId");
         } else {
-            BasicDBObject id = new BasicDBObject("id", userId);
-            BasicDBObject updates = new BasicDBObject(
-                    "$push", new BasicDBObject(
-                    "sessions", getDbObject(session, "Session")
-            )
-            );
-            userCollection.update(id, updates, null);
-
+            Bson query = new Document(QueryParams.ID.key(), userId);
+            Bson updates = Updates.push("sessions", getMongoDBDocument(session, "session"));
+            userCollection.update(query, updates, null);
             return endQuery("Login", startTime, Collections.singletonList(session));
         }
     }
@@ -184,11 +165,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             return endQuery("logout", startTime, null, "", "Session not found");
         }
         if (userIdBySessionId.equals(userId)) {
-            userCollection.update(
-                    new BasicDBObject("sessions.id", sessionId),
-                    new BasicDBObject("$set", new BasicDBObject("sessions.$.logout", TimeUtils.getTime())),
-                    null);
-
+            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
+            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
+            userCollection.update(query, updates, null);
         } else {
             throw new CatalogDBException("UserId mismatches with the sessionId");
         }
@@ -200,7 +179,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException {
         long startTime = startQuery();
 
-        QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
+        QueryResult<Long> countSessions = count(new Query(QueryParams.SESSION_ID.key(), session.getId()));
         if (countSessions.getResult().get(0) != 0) {
             throw new CatalogDBException("Error, sessionID already exists");
         }
@@ -329,15 +308,13 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public String getUserIdBySessionId(String sessionId) {
-        QueryResult id = userCollection.find(
-                new BasicDBObject("sessions", new BasicDBObject("$elemMatch", BasicDBObjectBuilder
-                        .start("id", sessionId)
-                        .append("logout", "").get())),
-                new BasicDBObject("id", true),
-                null);
+
+        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId).append("logout", "")));
+        Bson projection = Projections.include(QueryParams.ID.key());
+        QueryResult<Document> id = userCollection.find(query, projection, null);
 
         if (id.getNumResults() != 0) {
-            return (String) ((Document) id.getResult().get(0)).get("id");
+            return (String) (id.getResult().get(0)).get("id");
         } else {
             return "";
         }
@@ -479,7 +456,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
      */
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
-        checkParameter(QueryParams.ID.key(), query.getString(QueryParams.ID.key()));
+        checkParameter(query.getString(QueryParams.ID.key()), QueryParams.ID.key());
         long startTime = startQuery();
         Bson bson = parseQuery(query);
         QueryResult<DeleteResult> remove = userCollection.remove(bson, new QueryOptions());
@@ -506,7 +483,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
-        return null;
+        Bson bsonQuery = parseQuery(query);
+        return rank(userCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
@@ -536,14 +514,17 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // FIXME: Pedro. Check the mongodb names as well as integer createQueries
 
+        addStringOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
         addStringOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("name", QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("email", QueryParams.EMAIL.key(), query, andBsonList);
-        addStringOrQuery("password", QueryParams.PASSWORD.key(), query, andBsonList);
-        addStringOrQuery("organization", QueryParams.ORGANIZATION.key(), query, andBsonList);
-        addStringOrQuery("status", QueryParams.STATUS.key(), query, andBsonList);
-        addStringOrQuery("lastActivity", QueryParams.LAST_ACTIVITY.key(), query,
+        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.EMAIL.key(), QueryParams.EMAIL.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.PASSWORD.key(), QueryParams.PASSWORD.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.ORGANIZATION.key(), QueryParams.ORGANIZATION.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.STATUS.key(), QueryParams.STATUS.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.LAST_ACTIVITY.key(), QueryParams.LAST_ACTIVITY.key(), query,
                 MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
+        addIntegerOrQuery(QueryParams.DISK_USAGE.key(), QueryParams.DISK_USAGE.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.DISK_QUOTA.key(), QueryParams.DISK_QUOTA.key(), query, andBsonList);
 
         addIntegerOrQuery("projects.id", QueryParams.PROJECT_ID.key(), query, andBsonList);
         addStringOrQuery("projects.name", QueryParams.PROJECT_NAME.key(), query, andBsonList);

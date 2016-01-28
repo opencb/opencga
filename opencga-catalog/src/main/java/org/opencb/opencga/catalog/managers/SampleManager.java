@@ -270,7 +270,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.getCohort(cohortId);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.getCohort(cohortId, options);
         authorizationManager.checkReadCohort(userId, queryResult.first());
 
         return queryResult;
@@ -306,14 +306,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.createCohort(studyId, cohort);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.createCohort(studyId, cohort, null);
         auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
                 ObjectMap());
         return queryResult;
     }
 
     @Override
-    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, QueryOptions options, String sessionId)
+            throws CatalogException {
         ParamUtils.checkObj(params, "Update parameters");
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -334,13 +335,13 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.modifyCohort(cohortId, params);
+        QueryResult<Cohort> queryResult = sampleDBAdaptor.modifyCohort(cohortId, params, options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, params, null, null);
         return queryResult;
     }
 
     @Override
-    public QueryResult<Cohort> deleteCohort(int cohortId, ObjectMap options, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
         int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 

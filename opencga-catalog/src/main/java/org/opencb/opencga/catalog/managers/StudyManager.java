@@ -279,7 +279,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 
         //User can't write/modify the study
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
 
         // Both users must bu updated
@@ -287,9 +287,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         userDBAdaptor.updateUserLastActivity(studyOwnerId);
         //TODO get all shared users to updateUserLastActivity
 
-        QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
+        //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
-        return queryResult;
+        return new QueryResult();
 
     }
 
