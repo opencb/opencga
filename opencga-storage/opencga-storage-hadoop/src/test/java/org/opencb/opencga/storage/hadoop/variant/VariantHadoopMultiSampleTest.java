@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 
 import java.io.IOException;
 import java.net.URI;
@@ -37,6 +38,10 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
     public void loadSingleVcf() throws Exception {
         if (studyConfiguration == null) {
             clearDB(DB_NAME);
+
+            //Force HBaseConverter to fail if something goes wrong
+            HBaseToVariantConverter.setFailOnWrongVariants(true);
+
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
             source1 = loadFile(variantStorageManager, "s1.genome.vcf", 1);
@@ -107,7 +112,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10030:T:G"));
-        assertEquals(".", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/0", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/1", variants.get("1:10030:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10031:T:G"));
@@ -116,7 +121,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:10032:A:G"));
         assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals(".", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:11000:T:G"));
         assertEquals("1/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
@@ -124,10 +129,10 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:12000:T:G"));
         assertEquals("1/1", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals(".", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals("0/0", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:13000:T:G"));
-        assertEquals(".", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/0", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
     }

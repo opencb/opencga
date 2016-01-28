@@ -42,6 +42,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private List<String> returnedSamples = Collections.emptyList();
 
+    private static boolean failOnWrongVariants = false;
+
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
                 variantTableHelper.getConf(), new ObjectMap()));
@@ -65,7 +67,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 resultSet.getString(VariantPhoenixHelper.Columns.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.Columns.ALTERNATE.column())
         );
-        return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), annotationConverter.convert(resultSet));
+        try {
+            return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), annotationConverter.convert(resultSet));
+        } catch (RuntimeException e) {
+            logger.error("Fail to parse variant: " + variant);
+            throw e;
+        }
     }
 
     protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
@@ -122,7 +129,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row
                         .getHomRefCount();
-                logger.warn(message);
+                if (failOnWrongVariants) {
+                    throw new RuntimeException(message);
+                } else {
+                    logger.warn(message);
+                }
             }
 
             studyEntry.setSamplesData(samplesData);
@@ -161,4 +172,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         return returnedSamplesPosition.get(studyConfiguration.getStudyId());
     }
 
+
+    public static boolean isFailOnWrongVariants() {
+        return failOnWrongVariants;
+    }
+
+    public static void setFailOnWrongVariants(boolean b) {
+        failOnWrongVariants = b;
+    }
 }
