@@ -3,18 +3,20 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 
 /**
  * Created on 16/12/15.
@@ -27,10 +29,12 @@ public class VariantSqlQueryParser {
     private final GenomeHelper genomeHelper;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
+    private final VariantDBAdaptorUtils utils;
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable) {
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
+        this.utils = utils;
     }
 
     public String parse(Query query, QueryOptions options) {
@@ -131,13 +135,14 @@ public class VariantSqlQueryParser {
             }
         }
 
-        addStringQueryFilters(query, CHROMOSOME, Columns.CHROMOSOME, regionFilters);
+        addSimpleQueryFilter(query, CHROMOSOME, Columns.CHROMOSOME, regionFilters);
 
         if (isValidParam(query, ID)) {
             logger.warn("Unsupported filter " +  ID);
         }
 
         if (isValidParam(query, GENE)) {
+            // TODO: Ask cellbase for gene region?
             for (String gene : query.getAsStringList(GENE.key())) {
                 regionFilters.add("'" + gene + "' = ANY(" + Columns.GENES + ")");
             }
@@ -188,16 +193,25 @@ public class VariantSqlQueryParser {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        addStringQueryFilters(query, REFERENCE, Columns.REFERENCE, filters);
+        addSimpleQueryFilter(query, REFERENCE, Columns.REFERENCE, filters);
 
-        addStringQueryFilters(query, ALTERNATE, Columns.ALTERNATE, filters);
+        addSimpleQueryFilter(query, ALTERNATE, Columns.ALTERNATE, filters);
 
         if (isValidParam(query, TYPE)) {
             logger.warn("Unsupported filter " +  TYPE);
         }
 
+        final StudyConfiguration defaultStudyConfiguration;
         if (isValidParam(query, STUDIES)) {
+            List<Integer> studyIds = utils.getStudyIds(query.getAsList(STUDIES.key(), ",|;"), null);
+            if (studyIds.size() == 1) {
+                defaultStudyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), null).first();
+            } else {
+                defaultStudyConfiguration = null;
+            }
             logger.warn("Unsupported filter " +  STUDIES);
+        } else {
+            defaultStudyConfiguration = null;
         }
 
         if (isValidParam(query, FILES)) {
@@ -208,8 +222,65 @@ public class VariantSqlQueryParser {
             logger.warn("Unsupported filter " +  COHORTS);
         }
 
+        //
+        //
+        // NA12877_01 :  0/0  ;  NA12878_01 :  0/1  ,  1/1
         if (isValidParam(query, GENOTYPE)) {
-            logger.warn("Unsupported filter " +  GENOTYPE);
+            for (String sampleGenotype : query.getAsStringList(GENOTYPE.key(), ";")) {
+                //[<study>:]<sample>:<genotype>[,<genotype>]*
+                String[] split = sampleGenotype.split(":");
+                final List<String> genotypes;
+                int studyId;
+                int sampleId;
+                if (split.length == 2) {
+                    studyId = defaultStudyConfiguration.getStudyId();
+                    sampleId = utils.getSampleId(split[0], defaultStudyConfiguration);
+                    genotypes = Arrays.asList(split[1].split(","));
+                } else if (split.length == 3) {
+                    studyId = utils.getStudyId(split[0], null, false);
+                    sampleId = utils.getSampleId(split[1], defaultStudyConfiguration);
+                    genotypes = Arrays.asList(split[2].split(","));
+                } else {
+                    throw VariantQueryException.malformedParam(GENOTYPE, sampleGenotype);
+                }
+
+                List<String> gts = new ArrayList<>(genotypes.size());
+                for (String genotype : genotypes) {
+                    boolean negated = false;
+                    if (genotype.startsWith("!")) {
+                        genotype = genotype.substring(1);
+                        negated = true;
+                    }
+                    switch (genotype) {
+                        case HET_REF:
+                        case HOM_VAR:
+                        case NOCALL:
+//                        0 = any("1_.")
+                            gts.add((negated ? " NOT " : " ") + sampleId + " = ANY(\"" + buildColumnKey(studyId, genotype) + "\") ");
+                            break;
+                        case HOM_REF:
+                            if (negated) {
+                                gts.add(" ( " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
+                                        + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "
+                                        + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, NOCALL) + "\") "
+                                        + " OR " + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") "
+                                        + " ) "
+                                );
+                            } else {
+                                gts.add(" NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HET_REF) + "\") "
+                                        + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, HOM_VAR) + "\") "
+                                        + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, NOCALL) + "\") "
+                                        + "AND NOT " + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") "
+                                );
+                            }
+                            break;
+                        default:  //OTHER
+                            gts.add((negated ? " NOT " : " ") + sampleId + " = ANY(\"" + buildColumnKey(studyId, OTHER) + "\") ");
+                            break;
+                    }
+                }
+                filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
+            }
         }
 
         // Annotation filters:
@@ -234,11 +305,7 @@ public class VariantSqlQueryParser {
             logger.warn("Unsupported filter " +  ANNOT_XREF);
         }
 
-        if (isValidParam(query, ANNOT_BIOTYPE)) {
-            for (String biotype : query.getAsStringList(ANNOT_BIOTYPE.key())) {
-                filters.add("'" + biotype + "' = ANY(" + Columns.BIOTYPE + ")");
-            }
-        }
+        addSimpleQueryFilter(query, ANNOT_BIOTYPE, Columns.BIOTYPE, filters);
 
         if (isValidParam(query, POLYPHEN)) {
             logger.warn("Unsupported filter " + POLYPHEN);
@@ -303,11 +370,22 @@ public class VariantSqlQueryParser {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
-
-    public static void addStringQueryFilters(Query query, VariantQueryParams param, Columns columns, List<String> filters) {
+    public void addSimpleQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters) {
         if (isValidParam(query, param)) {
-            for (String value : query.getAsStringList(param.key())) {
-                filters.add(columns + " = '" + value + "'");
+            switch (column.getPDataType().getSqlTypeName()) {
+                case "VARCHAR":
+                    for (String value : query.getAsStringList(param.key())) {
+                        filters.add(column + " = '" + value + "'");
+                    }
+                    break;
+                case "VARCHAR ARRAY":
+                    for (String value : query.getAsStringList(param.key())) {
+                        filters.add("'" + value + "' = ANY(" + column + ")");
+                    }
+                    break;
+                default:
+                    logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
+                    break;
             }
         }
     }

@@ -64,7 +64,6 @@ public class ArchiveHelper extends GenomeHelper {
     public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
         super(helper);
         this.meta.set(meta);
-        System.out.println("meta = " + meta);
         column = Bytes.toBytes(getColumnName(meta.getVariantSource()));
     }
 
