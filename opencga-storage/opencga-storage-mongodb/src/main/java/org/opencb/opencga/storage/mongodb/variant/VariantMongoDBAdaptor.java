@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.QueryOperation;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.Logger;
@@ -52,6 +53,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -76,14 +79,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Deprecated
     private DataWriter dataWriter;
-
-    private enum QueryOperation {
-        AND, OR
-    }
-
-    public static final String OR = ",";
-    public static final String AND = ";";
-    public static final String IS = ":";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
@@ -1856,23 +1851,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             list = Arrays.asList(value.split(OR));
         }
         return list;
-    }
-
-    /**
-     * Checks that the option contains only one type of operations.
-     */
-    private QueryOperation checkOperator(String s) throws VariantQueryException {
-        boolean containsOr = s.contains(OR);
-        boolean containsAnd = s.contains(AND);
-        if (containsAnd && containsOr) {
-            throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
-        } else if (containsAnd && !containsOr) {
-            return QueryOperation.AND;
-        } else if (containsOr && !containsAnd) {
-            return QueryOperation.OR;
-        } else {    // !containsOr && !containsAnd
-            return null;
-        }
     }
 
     void createIndexes(QueryOptions options) {

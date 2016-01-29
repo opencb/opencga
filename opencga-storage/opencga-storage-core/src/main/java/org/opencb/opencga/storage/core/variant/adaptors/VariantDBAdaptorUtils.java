@@ -17,7 +17,26 @@ import java.util.List;
  */
 public class VariantDBAdaptorUtils {
 
+    public static final String OR = ",";
+    public static final String AND = ";";
+    public static final String IS = ":";
+
     private VariantDBAdaptor adaptor;
+
+    public enum QueryOperation {
+        AND(VariantDBAdaptorUtils.AND),
+        OR(VariantDBAdaptorUtils.OR);
+
+        private final String separator;
+
+        QueryOperation(String separator) {
+            this.separator = separator;
+        }
+
+        public String separator() {
+            return separator;
+        }
+    }
 
     public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
         adaptor = variantDBAdaptor;
@@ -92,6 +111,27 @@ public class VariantDBAdaptorUtils {
             }
         }
         return sampleId;
+    }
+
+    /**
+     * Checks that the filter value list contains only one type of operations.
+     *
+     * @param value List of values to check
+     * @return  The used operator. Null if no operator is used.
+     * @throws VariantQueryException if the list contains different operators.
+     */
+    public static QueryOperation checkOperator(String value) throws VariantQueryException {
+        boolean containsOr = value.contains(OR);
+        boolean containsAnd = value.contains(AND);
+        if (containsAnd && containsOr) {
+            throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
+        } else if (containsAnd && !containsOr) {
+            return QueryOperation.AND;
+        } else if (containsOr && !containsAnd) {
+            return QueryOperation.OR;
+        } else {    // !containsOr && !containsAnd
+            return null;
+        }
     }
 
 }

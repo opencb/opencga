@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.QueryOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns;
@@ -12,10 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
 
 /**
@@ -293,13 +298,19 @@ public class VariantSqlQueryParser {
         }
 
 
-        if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
-            for (String so : query.getAsStringList(ANNOT_CONSEQUENCE_TYPE.key())) {
-                //TODO: Catch number format exception
-                int soInt = Integer.parseInt(so.toUpperCase().replace("SO:", ""));
-                filters.add(soInt + " = ANY(" + Columns.SO + ")");
+        addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, Columns.SO, filters, so -> {
+            int soAccession;
+            if (so.startsWith("SO:") || StringUtils.isNumeric(so)) {
+                try {
+                    soAccession = Integer.parseInt(so.toUpperCase().replace("SO:", ""));
+                } catch (NumberFormatException e) {
+                    throw new VariantQueryException("Invalid SOAccession number", e);
+                }
+            } else {
+                soAccession = ConsequenceTypeMappings.termToAccession.get(so);
             }
-        }
+            return soAccession;
+        });
 
         if (isValidParam(query, ANNOT_XREF)) {
             logger.warn("Unsupported filter " +  ANNOT_XREF);
@@ -370,23 +381,58 @@ public class VariantSqlQueryParser {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
+
     public void addSimpleQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters) {
+        addQueryFilter(query, param, column, filters, null);
+    }
+
+    public void addQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters,
+                               Function<String, Object> parser) {
         if (isValidParam(query, param)) {
+            List<String> subFilters = new LinkedList<>();
+            QueryOperation operation = checkOperator(query.getString(param.key()));
+            if (operation == null) {
+                operation = QueryOperation.AND;
+            }
+
             switch (column.getPDataType().getSqlTypeName()) {
                 case "VARCHAR":
-                    for (String value : query.getAsStringList(param.key())) {
-                        filters.add(column + " = '" + value + "'");
+                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
+                        Object objValue;
+                        if (parser == null) {
+                            objValue = value;
+                        } else {
+                            objValue = parser.apply(value);
+                        }
+                        subFilters.add(objValue + " = '" + column + "'");
                     }
                     break;
                 case "VARCHAR ARRAY":
-                    for (String value : query.getAsStringList(param.key())) {
-                        filters.add("'" + value + "' = ANY(" + column + ")");
+                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
+                        Object objValue;
+                        if (parser == null) {
+                            objValue = value;
+                        } else {
+                            objValue = parser.apply(value);
+                        }
+                        subFilters.add("'" + objValue + "' = ANY(" + column + ")");
                     }
                     break;
+                case "INTEGER ARRAY":
+                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
+                        Object objValue;
+                        if (parser == null) {
+                            objValue = Integer.parseInt(value);
+                        } else {
+                            objValue = parser.apply(value);
+                        }
+                        subFilters.add(objValue + " = ANY(" + column + ")");
+                    }
                 default:
                     logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
                     break;
             }
+            filters.add(subFilters.stream().collect(Collectors.joining(" " + operation.name() + " ", " ( ", " ) ")));
         }
     }
 
