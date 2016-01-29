@@ -16,7 +16,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
-import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,7 +39,6 @@ public class VariantVcfExporter {
 
     private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
 
-    private static CellBaseClient cellbaseClient;
 
     private static final String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
             + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
@@ -51,13 +48,13 @@ public class VariantVcfExporter {
 
     private DecimalFormat df3 = new DecimalFormat("#.###");
 
-    static {
-        try {
-            cellbaseClient = new CellBaseClient("bioinfo.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }
+//    static {
+//        try {
+//            cellbaseClient = new CellBaseClient("bioinfo.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     /**
      * Uses a reader and a writer to dump a vcf.
