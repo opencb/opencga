@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -72,6 +73,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final ObjectMap configuration;
     private final StorageEngineConfiguration storageEngineConfiguration;
     private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
+    private final VariantDBAdaptorUtils utils;
 
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -102,6 +104,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
                 : this.storageEngineConfiguration.getVariant().getOptions();
+        this.utils = new VariantDBAdaptorUtils(this);
     }
 
 
@@ -555,9 +558,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
 
-        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+        List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
         if (studyIds.isEmpty()) {
-            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+            studyIds = utils.getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
         }
 
         List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
@@ -878,7 +881,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     }
                 });
 
-                List<Integer> studyIds = getStudyIds(Arrays.asList(value.split(",|;")), null);
+                List<Integer> studyIds = utils.getStudyIds(Arrays.asList(value.split(",|;")), null);
                 if (studyIds.size() == 1) {
                     defaultStudyConfiguration = studyConfigurationManager.getStudyConfiguration(studyIds.get(0), null).first();
                 } else {
@@ -1157,7 +1160,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
                 && projection.containsField(DBObjectToVariantConverter.STUDIES_FIELD)) {
-            List<Integer> studiesIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+            List<Integer> studiesIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
 //            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
             if (!studiesIds.isEmpty()) {
                 projection.put(
@@ -1178,34 +1181,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         logger.debug("Projection: {}", projection);
         return projection;
-    }
-
-    private List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
-        List<Integer> studiesIds;
-        if (studiesNames == null) {
-            return Collections.emptyList();
-        }
-        studiesIds = new ArrayList<>(studiesNames.size());
-        for (Object studyObj : studiesNames) {
-            if (studyObj instanceof Integer) {
-                studiesIds.add(((Integer) studyObj));
-            } else {
-                String studyName = studyObj.toString();
-                if (studyName.startsWith("!")) { //Skip negated studies
-                    continue;
-                }
-                try {
-                    studiesIds.add(Integer.parseInt(studyName));
-                } catch (NumberFormatException e) {
-                    QueryResult<StudyConfiguration> result = studyConfigurationManager.getStudyConfiguration(studyName, options);
-                    if (result.getResult().isEmpty()) {
-                        throw new IllegalStateException("Study " + studyName + " not found");
-                    }
-                    studiesIds.add(result.first().getStudyId());
-                }
-            }
-        }
-        return studiesIds;
     }
 
     /**
@@ -1445,7 +1420,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private DBObjectToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
         studyConfigurationManager.setDefaultQueryOptions(options);
-        List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
+        List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
 
         DBObjectToSamplesConverter samplesConverter;
         if (studyIds.isEmpty()) {
