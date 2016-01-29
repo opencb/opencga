@@ -59,9 +59,9 @@ public class VariantJsonWriter implements VariantWriter {
     private OutputStream fileStream;
 
     private long numVariantsWritten;
-    private boolean includeSrc;
+    private boolean includeSrc = false;
     private boolean includeStats;
-    private boolean includeSamples;
+    private boolean includeSamples = true;
 
     public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
