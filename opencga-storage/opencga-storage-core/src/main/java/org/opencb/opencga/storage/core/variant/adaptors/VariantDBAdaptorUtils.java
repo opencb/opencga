@@ -61,7 +61,7 @@ public class VariantDBAdaptorUtils {
                     QueryResult<StudyConfiguration> result = getStudyConfigurationManager()
                             .getStudyConfiguration(studyName, options);
                     if (result.getResult().isEmpty()) {
-                        throw new IllegalStateException("Study " + studyName + " not found");
+                        throw VariantQueryException.studyNotFound(studyName);
                     }
                     studyId = result.first().getStudyId();
                 }
@@ -81,15 +81,13 @@ public class VariantDBAdaptorUtils {
             } else {
                 if (defaultStudyConfiguration != null) {
                     if (!defaultStudyConfiguration.getSampleIds().containsKey(sampleStr)) {
-                        throw new IllegalArgumentException("Sample " + sampleStr + " not found in study "
-                                + defaultStudyConfiguration.getStudyName());
+                        throw VariantQueryException.sampleNotFound(sampleStr, defaultStudyConfiguration.getStudyName());
                     }
                     sampleId = defaultStudyConfiguration.getSampleIds().get(sampleStr);
                 } else {
                     //Unable to identify that sample!
                     List<String> studyNames = getStudyConfigurationManager().getStudyNames(null);
-                    throw new IllegalArgumentException("Unknown sample \"" + sampleStr + "\". Please, specify the study belonging."
-                            + (studyNames == null ? "" : " Available studies: " + studyNames));
+                    throw VariantQueryException.missingStudyForSample(sampleStr, studyNames);
                 }
             }
         }
