@@ -38,6 +38,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -604,7 +605,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
 
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
-                .nativeGet(new Query("cohorts.id", cohortId), new QueryOptions("include", "id"));
+                .nativeGet(new Query(CatalogStudyDBAdaptor.QueryParams.COHORT_ID.key(), cohortId),
+                        new QueryOptions(MongoDBCollection.INCLUDE, CatalogStudyDBAdaptor.QueryParams.ID.key()));
 
         if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsKey("id")) {
             throw CatalogDBException.idNotFound("Cohort", cohortId);

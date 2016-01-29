@@ -875,8 +875,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addIntegerOrQuery(PRIVATE_PROJECT_ID, PRIVATE_PROJECT_ID, query, andBsonList);
 
         addStringOrQuery(QueryParams.GROUP_ID.key(), QueryParams.GROUP_ID.key(), query, andBsonList);
+        addStringOrQuery(QueryParams.GROUP_USER_IDS.key(), QueryParams.GROUP_USER_IDS.key(), query, andBsonList);
 
-        addStringOrQuery(QueryParams.EXPERIMENT_ID.key(), QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.EXPERIMENT_ID.key(), QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.EXPERIMENT_NAME.key(), QueryParams.EXPERIMENT_NAME.key(), query, andBsonList);
         addStringOrQuery(QueryParams.EXPERIMENT_TYPE.key(), QueryParams.EXPERIMENT_TYPE.key(), query, andBsonList);
         addStringOrQuery(QueryParams.EXPERIMENT_PLATFORM.key(), QueryParams.EXPERIMENT_PLATFORM.key(), query, andBsonList);
@@ -901,22 +902,22 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         addStringOrQuery(QueryParams.JOB_STATUS.key(), QueryParams.JOB_STATUS.key(), query, andBsonList);
         addStringOrQuery(QueryParams.JOB_DISK_USAGE.key(), QueryParams.JOB_DISK_USAGE.key(), query, andBsonList);
 
-        addStringOrQuery(QueryParams.INDIVIDUAL_ID.key(), QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.INDIVIDUAL_ID.key(), QueryParams.INDIVIDUAL_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.INDIVIDUAL_NAME.key(), QueryParams.INDIVIDUAL_NAME.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.INDIVIDUAL_FATHER_ID.key(), QueryParams.INDIVIDUAL_FATHER_ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.INDIVIDUAL_MOTHER_ID.key(), QueryParams.INDIVIDUAL_MOTHER_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.INDIVIDUAL_FATHER_ID.key(), QueryParams.INDIVIDUAL_FATHER_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.INDIVIDUAL_MOTHER_ID.key(), QueryParams.INDIVIDUAL_MOTHER_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.INDIVIDUAL_FAMILY.key(), QueryParams.INDIVIDUAL_FAMILY.key(), query, andBsonList);
         addStringOrQuery(QueryParams.INDIVIDUAL_RACE.key(), QueryParams.INDIVIDUAL_RACE.key(), query, andBsonList);
 
-        addStringOrQuery(QueryParams.SAMPLE_ID.key(), QueryParams.SAMPLE_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.SAMPLE_ID.key(), QueryParams.SAMPLE_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.SAMPLE_NAME.key(), QueryParams.SAMPLE_NAME.key(), query, andBsonList);
         addStringOrQuery(QueryParams.SAMPLE_SOURCE.key(), QueryParams.SAMPLE_SOURCE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.SAMPLE_INDIVIDUAL_ID.key(), QueryParams.SAMPLE_INDIVIDUAL_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.SAMPLE_INDIVIDUAL_ID.key(), QueryParams.SAMPLE_INDIVIDUAL_ID.key(), query, andBsonList);
 
-        addStringOrQuery(QueryParams.DATASET_ID.key(), QueryParams.DATASET_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.DATASET_ID.key(), QueryParams.DATASET_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.DATASET_NAME.key(), QueryParams.DATASET_NAME.key(), query, andBsonList);
 
-        addStringOrQuery(QueryParams.COHORT_ID.key(), QueryParams.COHORT_ID.key(), query, andBsonList);
+        addIntegerOrQuery(QueryParams.COHORT_ID.key(), QueryParams.COHORT_ID.key(), query, andBsonList);
         addStringOrQuery(QueryParams.COHORT_NAME.key(), QueryParams.COHORT_NAME.key(), query, andBsonList);
         addStringOrQuery(QueryParams.COHORT_TYPE.key(), QueryParams.COHORT_TYPE.key(), query, andBsonList);
 

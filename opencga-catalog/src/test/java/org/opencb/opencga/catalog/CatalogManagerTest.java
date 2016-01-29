@@ -503,21 +503,22 @@ public class CatalogManagerTest extends GenericTest {
         int study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate",
                 "description", "Status", null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
-        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor
-                .StudyFilterOptions.groups.toString() + ".userIds", "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
+        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
+                .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
+
         catalogManager.addMemberToGroup(study_4, "admins", "user3", sessionIdUser);
-        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor
-                .StudyFilterOptions.groups.toString() + ".userIds", "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
+        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
+                .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager
-                .getAllStudies(new Query(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), null, sessionIdUser)
+                .getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser)
                 .getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager
                 .getAllStudies(new Query(), null, sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new
-                Query(CatalogStudyDBAdaptor.StudyFilterOptions.alias.toString(), "~^study"), null, sessionIdUser).getResult().stream()
+                Query(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), "~^study"), null, sessionIdUser).getResult().stream()
                 .map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(Collections.singleton("s1"), catalogManager.getAllStudies(new Query(), null, sessionIdUser2).getResult().stream()
                 .map(Study::getAlias).collect(Collectors.toSet()));
@@ -1776,8 +1777,12 @@ public class CatalogManagerTest extends GenericTest {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
-        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
-        assertEquals(-1, sample.getIndividualId());
+        // It will not modify anything as the individualId is already -1
+        thrown.expect(CatalogDBException.class);
+        catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+
+        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -2), sessionIdUser).first();
+        assertEquals(-2, sample.getIndividualId());
     }
 
     @Test
@@ -1792,9 +1797,9 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
     }
 
-    /**
+    /*
      * Cohort methods
-     * ***************************
+     *
      */
 
 
