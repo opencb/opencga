@@ -43,13 +43,13 @@ import static org.opencb.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface VariantDBAdaptor extends Iterable<Variant> {
 
     enum VariantQueryParams implements QueryParam {
-        ID("ids", TEXT_ARRAY, ""),
-        REGION("region", TEXT_ARRAY, ""),
-        CHROMOSOME("chromosome", TEXT_ARRAY, ""),
-        GENE("gene", TEXT_ARRAY, ""),
-        TYPE("type", TEXT_ARRAY, ""),
-        REFERENCE("reference", TEXT_ARRAY, ""),
-        ALTERNATE("alternate", TEXT_ARRAY, ""),
+        ID("ids", TEXT_ARRAY, "CSV list of variant ids"),
+        REGION("region", TEXT_ARRAY, "CSV list of regions: {chr}:{start}-{end}"),
+        CHROMOSOME("chromosome", TEXT_ARRAY, "CSV list of chromosomes"),
+        GENE("gene", TEXT_ARRAY, "CSV list of genes"),
+        TYPE("type", TEXT_ARRAY, "Variant type: [SNV, MNV, INDEL, SV, CNV]"),
+        REFERENCE("reference", TEXT_ARRAY, "Filter by reference"),
+        ALTERNATE("alternate", TEXT_ARRAY, "Filter by alternate"),
         //EFFECT ("TEXT_ARRAY", null, ""),
         STUDIES("studies", TEXT_ARRAY, ""),
         RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, "Specify a list of studies to be returned"),
@@ -58,11 +58,11 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
 
         COHORTS("cohorts", TEXT_ARRAY, "Select variants with calculated stats for the selected cohorts"),
-        STATS_MAF("maf", TEXT_ARRAY, ""),
-        STATS_MGF("mgf", TEXT_ARRAY, ""),
-        MISSING_ALLELES("missingAlleles", TEXT_ARRAY, ""),
-        MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, ""),
-        ANNOTATION_EXISTS("annotationExists", TEXT_ARRAY, ""),
+        STATS_MAF("maf", TEXT_ARRAY, "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        STATS_MGF("mgf", TEXT_ARRAY, "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        MISSING_ALLELES("missingAlleles", TEXT_ARRAY, "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        ANNOTATION_EXISTS("annotationExists", TEXT_ARRAY, "Specify if the variant annotation must exists."),
         //[<study>:]<sample>:<genotype>[,<genotype>]*
         GENOTYPE("genotype", TEXT_ARRAY, "Samples with a specific genotype:"
                 + " {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1"),
@@ -73,10 +73,11 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         SIFT("sift", TEXT_ARRAY, ""),
         @Deprecated
         PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY, ""),
-        CONSERVATION("conservation", TEXT_ARRAY, ""),
-        ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, ""),
-        REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, ""),
-        UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes.");
+        CONSERVATION("conservation", TEXT_ARRAY, "Conservation score: {conservation_score}[<|>|<=|>=]{number}"
+                + " e.g. phastCons>0.5,phylop<0.1"),
+        ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
 
         VariantQueryParams(String key, Type type, String description) {
             this.key = key;

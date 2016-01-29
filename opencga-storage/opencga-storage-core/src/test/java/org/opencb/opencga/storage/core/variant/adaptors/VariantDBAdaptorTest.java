@@ -394,7 +394,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     @Test
     public void testGetAllVariants_genotypes_wrong_values() {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), "WRONG_SAMPLE:1|1");
-        thrown.expect(IllegalArgumentException.class);
+        thrown.expect(VariantQueryException.class);
         queryResult = dbAdaptor.get(query, new QueryOptions());
     }
 
@@ -546,7 +546,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_cohorts_fail1() throws Exception {
-        thrown.expect(IllegalArgumentException.class);
+        thrown.expect(VariantQueryException.class);
         queryResult = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), 1)
                 .append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(), "!cohort5_dont_exists"), null);
     }

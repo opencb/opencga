@@ -44,8 +44,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
 
     private boolean includeStats;
-    private boolean includeSrc = true;
-    private boolean includeSamples;
+    private boolean includeSrc = false;
+    private boolean includeSamples = true;
 
     private DBObjectToVariantConverter variantConverter;
     private DBObjectToVariantStatsConverter statsConverter;

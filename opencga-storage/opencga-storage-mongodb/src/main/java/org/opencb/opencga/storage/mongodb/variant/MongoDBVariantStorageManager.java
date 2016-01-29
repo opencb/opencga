@@ -116,7 +116,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 //        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
 //        String filesCollection = options.getString(COLLECTION_FILES, "files");
 //        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
-        return new VariantMongoDBWriter(fileId, studyConfiguration, getDBAdaptor(dbName), false, false);
+        return new VariantMongoDBWriter(fileId, studyConfiguration, getDBAdaptor(dbName), true, false);
     }
 
     @Override
