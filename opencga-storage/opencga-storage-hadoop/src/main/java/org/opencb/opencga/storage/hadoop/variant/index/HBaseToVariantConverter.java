@@ -62,10 +62,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     }
 
     public Variant convert(ResultSet resultSet) throws SQLException {
-        Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.Columns.CHROMOSOME.column()),
-                resultSet.getInt(VariantPhoenixHelper.Columns.POSITION.column()),
-                resultSet.getString(VariantPhoenixHelper.Columns.REFERENCE.column()),
-                resultSet.getString(VariantPhoenixHelper.Columns.ALTERNATE.column())
+        Variant variant = new Variant(resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column()),
+                resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column()),
+                resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
+                resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
         );
         try {
             return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), annotationConverter.convert(resultSet));

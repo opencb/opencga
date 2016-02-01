@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
  * Created on 01/12/15.
@@ -85,18 +85,23 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
             }
         }
 
-//        for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-//            put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
-//                    PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
-//        }
+        if (variantAnnotation.getPopulationFrequencies() != null) {
+            for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
+                put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
+                        PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
+            }
+        }
 
         return put;
     }
 
     private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
-        return Bytes.toBytes(populationFrequency.getStudy()
-                + "_" + populationFrequency.getSuperPopulation()
-                + "_" + populationFrequency.getPopulation());
+        return Bytes.toBytes(getPopulationFrequencyColumnName(populationFrequency.getStudy(),
+                populationFrequency.getSuperPopulation(), populationFrequency.getSuperPopulation()));
+    }
+
+    private String getPopulationFrequencyColumnName(String study, String superPopulation, String population) {
+        return (study + ":" + superPopulation + (population == null || population.isEmpty() ? "" : (":" + population))).toUpperCase();
     }
 
     private byte[] getConservationColumnName(Score score) {

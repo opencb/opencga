@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.phoenix.schema.types.PFloat;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.datastore.core.Query;
@@ -11,7 +12,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.Qu
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Column;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,16 +60,14 @@ public class VariantSqlQueryParser {
 
         StringBuilder sb = new StringBuilder("SELECT ");
 
-        addProjectedColumns(sb, query, options);
-
-        sb.append(" FROM \"").append(variantTable).append("\"");
-
-
+        Set<Column> dynamicColumns = new HashSet<>();
         List<String> regionFilters = getRegionFilters(query);
-        List<String> filters = getOtherFilters(query);
+        List<String> filters = getOtherFilters(query, dynamicColumns);
 
-        // Add WHERE
-        addWhereStatement(sb, regionFilters, filters);
+
+        appendProjectedColumns(sb, query, options);
+        appendFromStatement(sb, dynamicColumns);
+        appendWhereStatement(sb, regionFilters, filters);
 
         if (options.getInt("limit") > 0) {
             sb.append(" LIMIT ").append(options.getInt("limit"));
@@ -91,7 +91,7 @@ public class VariantSqlQueryParser {
      * @param options   other options
      * @return String builder
      */
-    public StringBuilder addProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
+    public StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
@@ -100,10 +100,10 @@ public class VariantSqlQueryParser {
                 studyIds = utils.getStudyIds(options);
             }
 
-            sb.append(Columns.CHROMOSOME).append(',')
-                    .append(Columns.POSITION).append(',')
-                    .append(Columns.REFERENCE).append(',')
-                    .append(Columns.ALTERNATE);
+            sb.append(VariantColumn.CHROMOSOME).append(',')
+                    .append(VariantColumn.POSITION).append(',')
+                    .append(VariantColumn.REFERENCE).append(',')
+                    .append(VariantColumn.ALTERNATE);
 
             for (Integer studyId : studyIds) {
                 sb.append(",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF))
@@ -115,13 +115,25 @@ public class VariantSqlQueryParser {
                         .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.CALL_CNT)).append('"');
             }
 
-            sb.append(',').append(Columns.FULL_ANNOTATION);
+            sb.append(',').append(VariantColumn.FULL_ANNOTATION);
 
             return sb;
         }
     }
 
-    public StringBuilder addWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {
+    public void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
+        sb.append(" FROM \"").append(variantTable).append('"');
+
+        if (!dynamicColumns.isEmpty()) {
+            sb.append(dynamicColumns.stream()
+                    .map(column -> "\"" + column.column() + "\" " + column.sqlType())
+                    .collect(Collectors.joining(",", " ( ", " ) "))
+            );
+        }
+
+    }
+
+    public StringBuilder appendWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {
         if (!regionFilters.isEmpty() || !filters.isEmpty()) {
             sb.append(" WHERE");
         }
@@ -167,13 +179,13 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, REGION)) {
             List<Region> regions = Region.parseRegions(query.getString(REGION.key()));
             for (Region region : regions) {
-                regionFilters.add("( " + Columns.CHROMOSOME + " = '" + region.getChromosome() + "'"
-                        + " AND " + Columns.POSITION + " >= " + region.getStart()
-                        + " AND " + Columns.POSITION + " <= " + region.getEnd() + " )");
+                regionFilters.add("( " + VariantColumn.CHROMOSOME + " = '" + region.getChromosome() + "'"
+                        + " AND " + VariantColumn.POSITION + " >= " + region.getStart()
+                        + " AND " + VariantColumn.POSITION + " <= " + region.getEnd() + " )");
             }
         }
 
-        addSimpleQueryFilter(query, CHROMOSOME, Columns.CHROMOSOME, regionFilters);
+        addSimpleQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters);
 
         if (isValidParam(query, ID)) {
             logger.warn("Unsupported filter " +  ID);
@@ -182,7 +194,7 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, GENE)) {
             // TODO: Ask cellbase for gene region?
             for (String gene : query.getAsStringList(GENE.key())) {
-                regionFilters.add("'" + gene + "' = ANY(" + Columns.GENES + ")");
+                regionFilters.add("'" + gene + "' = ANY(" + VariantColumn.GENES + ")");
             }
         }
 
@@ -225,15 +237,16 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#MISSING_GENOTYPES}
      *
      * @param query Query to parse
+     * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
      * @return List of sql filters
      */
-    public List<String> getOtherFilters(Query query) {
+    public List<String> getOtherFilters(Query query, final Set<Column> dynamicColumns) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        addSimpleQueryFilter(query, REFERENCE, Columns.REFERENCE, filters);
+        addSimpleQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
-        addSimpleQueryFilter(query, ALTERNATE, Columns.ALTERNATE, filters);
+        addSimpleQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
 
         if (isValidParam(query, TYPE)) {
             logger.warn("Unsupported filter " +  TYPE);
@@ -324,14 +337,14 @@ public class VariantSqlQueryParser {
         // Annotation filters:
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (query.getBoolean(ANNOTATION_EXISTS.key())) {
-                filters.add(Columns.FULL_ANNOTATION + " IS NOT NULL");
+                filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
             } else {
-                filters.add(Columns.FULL_ANNOTATION + " IS NULL");
+                filters.add(VariantColumn.FULL_ANNOTATION + " IS NULL");
             }
         }
 
 
-        addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, Columns.SO, filters, so -> {
+        addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, VariantColumn.SO, filters, so -> {
             int soAccession;
             if (so.startsWith("SO:") || StringUtils.isNumeric(so)) {
                 try {
@@ -349,30 +362,34 @@ public class VariantSqlQueryParser {
             logger.warn("Unsupported filter " +  ANNOT_XREF);
         }
 
-        addSimpleQueryFilter(query, ANNOT_BIOTYPE, Columns.BIOTYPE, filters);
+        addSimpleQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
 
-        addSimpleQueryFilter(query, SIFT, Columns.SIFT, filters);
+        addSimpleQueryFilter(query, SIFT, VariantColumn.SIFT, filters);
 
-        addSimpleQueryFilter(query, POLYPHEN, Columns.POLYPHEN, filters);
+        addSimpleQueryFilter(query, POLYPHEN, VariantColumn.POLYPHEN, filters);
 
         addQueryFilter(query, CONSERVATION, (keyOpValue, rawValue) -> {
             String upperCaseValue = keyOpValue[0];
-            if (Columns.PHASTCONS.name().equalsIgnoreCase(upperCaseValue)) {
-                return Columns.PHASTCONS;
-            } else if (Columns.PHYLOP.name().equalsIgnoreCase(upperCaseValue)) {
-                return Columns.PHYLOP;
+            if (VariantColumn.PHASTCONS.name().equalsIgnoreCase(upperCaseValue)) {
+                return VariantColumn.PHASTCONS;
+            } else if (VariantColumn.PHYLOP.name().equalsIgnoreCase(upperCaseValue)) {
+                return VariantColumn.PHYLOP;
             } else {
                 throw VariantQueryException.malformedParam(CONSERVATION, rawValue, "Unknown conservation value.");
             }
         }, filters, null);
 
-        if (isValidParam(query, ALTERNATE_FREQUENCY)) {
-            logger.warn("Unsupported filter " + ALTERNATE_FREQUENCY);
-        }
+        addQueryFilter(query, ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
+            Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
+            dynamicColumns.add(column);
+            return column;
+        }, filters, null);
 
-        if (isValidParam(query, REFERENCE_FREQUENCY)) {
-            logger.warn("Unsupported filter " + REFERENCE_FREQUENCY);
-        }
+        addQueryFilter(query, REFERENCE_FREQUENCY, (keyOpValue, s) -> {
+            Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
+            dynamicColumns.add(column);
+            return column;
+        }, filters, s -> 1 - Double.parseDouble(s));
 
         // Stats filters:
 
@@ -418,16 +435,16 @@ public class VariantSqlQueryParser {
     }
 
 
-    public void addSimpleQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters) {
+    public void addSimpleQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters) {
         addQueryFilter(query, param, column, filters, null);
     }
 
-    public void addQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters,
+    public void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters,
                                Function<String, Object> parser) {
         addQueryFilter(query, param, (a, s) -> column, filters, parser);
     }
 
-    public void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Columns> columnParser,
+    public void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Column> columnParser,
                                List<String> filters, Function<String, Object> parser) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
@@ -439,33 +456,33 @@ public class VariantSqlQueryParser {
             for (String rawValue : query.getAsStringList(param.key(), operation.separator())) {
                 Object parsedValue;
                 String[] keyOpValue = splitOperator(rawValue);
-                Columns column = columnParser.apply(keyOpValue, rawValue);
+                Column column = columnParser.apply(keyOpValue, rawValue);
                 switch (column.sqlType()) {
                     case "VARCHAR":
                         parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add(column + " = '" + parsedValue + "'");
+                        subFilters.add("\"" + column + "\" = '" + parsedValue + "'");
                         break;
                     case "VARCHAR ARRAY":
                         parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add("'" + parsedValue + "' = ANY(" + column + ")");
+                        subFilters.add("'" + parsedValue + "' = ANY(\"" + column + "\")");
                         break;
                     case "INTEGER ARRAY":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(" + column + ")");
+                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(\"" + column + "\")");
                         break;
                     case "INTEGER":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(column + " " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        subFilters.add("\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
                         break;
                     case "FLOAT ARRAY":
                     case "DOUBLE ARRAY":
                         parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(" + column + ")");
+                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(\"" + column + "\")");
                         break;
                     case "FLOAT":
                     case "DOUBLE":
                         parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(column + " " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        subFilters.add("\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
                         break;
                     default:
                         logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);

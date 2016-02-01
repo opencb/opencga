@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Properties;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
  * Created on 15/12/15.
@@ -27,7 +27,49 @@ public class VariantPhoenixHelper {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
-    public enum Columns {
+    public interface Column {
+        String column();
+
+        byte[] bytes();
+
+        PDataType getPDataType();
+
+        String sqlType();
+
+        static Column build(String column, PDataType pDataType) {
+            return new Column() {
+
+                private byte[] bytes = Bytes.toBytes(column);
+
+                @Override
+                public String column() {
+                    return column;
+                }
+
+                @Override
+                public byte[] bytes() {
+                    return bytes;
+                }
+
+                @Override
+                public PDataType getPDataType() {
+                    return pDataType;
+                }
+
+                @Override
+                public String sqlType() {
+                    return pDataType.getSqlTypeName();
+                }
+
+                @Override
+                public String toString() {
+                    return column;
+                }
+            };
+        }
+    }
+
+    public enum VariantColumn implements Column {
         CHROMOSOME("CHROMOSOME", PVarchar.INSTANCE),
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
@@ -53,25 +95,29 @@ public class VariantPhoenixHelper {
         private PDataType pDataType;
         private final String sqlTypeName;
 
-        Columns(String columnName, PDataType pDataType) {
+        VariantColumn(String columnName, PDataType pDataType) {
             this.columnName = columnName;
             this.pDataType = pDataType;
             this.sqlTypeName = pDataType.getSqlTypeName();
             columnNameBytes = Bytes.toBytes(columnName);
         }
 
+        @Override
         public String column() {
             return columnName;
         }
 
+        @Override
         public byte[] bytes() {
             return columnNameBytes;
         }
 
+        @Override
         public PDataType getPDataType() {
             return pDataType;
         }
 
+        @Override
         public String sqlType() {
             return sqlTypeName;
         }
@@ -101,8 +147,8 @@ public class VariantPhoenixHelper {
     }
 
     public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
-        Columns[] annotColumns = new Columns[]{GENES, BIOTYPE, SO, POLYPHEN, SIFT, PHYLOP, PHASTCONS, FULL_ANNOTATION};
-        for (Columns column : annotColumns) {
+        VariantColumn[] annotColumns = new VariantColumn[]{GENES, BIOTYPE, SO, POLYPHEN, SIFT, PHYLOP, PHASTCONS, FULL_ANNOTATION};
+        for (VariantColumn column : annotColumns) {
             String sql = buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
             execute(con, sql);
         }

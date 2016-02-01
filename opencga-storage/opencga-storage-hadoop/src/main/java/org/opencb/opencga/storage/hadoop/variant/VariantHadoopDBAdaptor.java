@@ -44,8 +44,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.BIOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.GENES;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.BIOTYPE;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.GENES;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -231,7 +231,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         long startTime = System.currentTimeMillis();
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
-        System.out.println("sql = " + sql);
         try {
             Statement statement = phoenixCon.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
