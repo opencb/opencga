@@ -50,6 +50,9 @@ public class VariantDBAdaptorUtils {
         return adaptor.getStudyConfigurationManager();
     }
 
+    public List<Integer> getStudyIds(QueryOptions options) {
+        return getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+    }
     public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
         List<Integer> studiesIds;
         if (studiesNames == null) {

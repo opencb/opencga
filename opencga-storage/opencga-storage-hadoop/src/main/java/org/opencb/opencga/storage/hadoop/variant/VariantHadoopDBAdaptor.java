@@ -414,6 +414,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    /**
+     * Ensure that all the annotation fields exist are defined.
+     */
+    public void preUpdateAnnotations() throws IOException {
+        try {
+            phoenixHelper.updateAnnotationFields(phoenixCon, variantTable);
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
     public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();

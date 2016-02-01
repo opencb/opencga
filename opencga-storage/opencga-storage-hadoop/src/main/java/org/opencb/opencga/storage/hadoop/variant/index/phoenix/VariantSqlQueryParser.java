@@ -329,13 +329,9 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, ANNOT_BIOTYPE, Columns.BIOTYPE, filters);
 
-        if (isValidParam(query, POLYPHEN)) {
-            logger.warn("Unsupported filter " + POLYPHEN);
-        }
+        addSimpleQueryFilter(query, SIFT, Columns.SIFT, filters);
 
-        if (isValidParam(query, SIFT)) {
-            logger.warn("Unsupported filter " + SIFT);
-        }
+        addSimpleQueryFilter(query, POLYPHEN, Columns.POLYPHEN, filters);
 
         addQueryFilter(query, CONSERVATION, (keyOpValue, rawValue) -> {
             String upperCaseValue = keyOpValue[0];
@@ -433,7 +429,7 @@ public class VariantSqlQueryParser {
                         break;
                     case "INTEGER ARRAY":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + parseNumericOperator(keyOpValue[1]) + " ANY(" + column + ")");
+                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(" + column + ")");
                         break;
                     case "INTEGER":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
@@ -442,7 +438,7 @@ public class VariantSqlQueryParser {
                     case "FLOAT ARRAY":
                     case "DOUBLE ARRAY":
                         parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + parseNumericOperator(keyOpValue[1]) + " ANY(" + column + ")");
+                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(" + column + ")");
                         break;
                     case "FLOAT":
                     case "DOUBLE":
@@ -459,12 +455,38 @@ public class VariantSqlQueryParser {
         }
     }
 
+    /**
+     * Flip the operator to flip the order of the operands.
+     *
+     * ">" --> "<"
+     * "<" --> ">"
+     * ">=" --> "<="
+     * "<=" --> ">="
+     *
+     * @param op    Operation to flip
+     * @return      Operation flipped
+     */
+    public static String flipOperator(String op) {
+        StringBuilder sb = new StringBuilder(op.length());
+        for (int i = 0; i < op.length(); i++) {
+            char c = op.charAt(i);
+            if (c == '>') {
+                c = '<';
+            } else if (c == '<') {
+                c = '>';
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+//        return op.replace(">", "G").replace("<", ">").replace("G", "<");
+    }
+
     public static String parseOperator(String op) {
         return SQL_OPERATOR.getOrDefault(op, op);
     }
 
     public static String parseNumericOperator(String op) {
-        String parsedOp = SQL_OPERATOR.getOrDefault(op, op);
+        String parsedOp = parseOperator(op);
         if (parsedOp.equals("LIKE")) {
             throw new VariantQueryException("Unable to use REGEX operator (" + op + ") with numerical fields");
         }

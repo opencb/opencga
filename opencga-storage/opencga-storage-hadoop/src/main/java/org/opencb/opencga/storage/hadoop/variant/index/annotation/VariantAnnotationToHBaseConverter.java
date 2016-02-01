@@ -47,6 +47,8 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Set<String> transcript = new HashSet<>();
         Set<Integer> so = new HashSet<>();
         Set<String> biotype = new HashSet<>();
+        Set<Double> polyphen = new HashSet<>();
+        Set<Double> sift = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
             addNotNull(genes, consequenceType.getGeneName());
@@ -57,12 +59,25 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
                 String accession = sequenceOntologyTerm.getAccession();
                 addNotNull(so, Integer.parseInt(accession.substring(3)));
             }
+            if (consequenceType.getProteinVariantAnnotation() != null) {
+                if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                    for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                        if (score.getSource().equalsIgnoreCase("sift")) {
+                            addNotNull(sift, score.getScore());
+                        } else if (score.getSource().equalsIgnoreCase("polyphen")) {
+                            addNotNull(polyphen, score.getScore());
+                        }
+                    }
+                }
+            }
         }
 
         addVarcharArray(put, GENES.bytes(), genes);
         addVarcharArray(put, TRANSCRIPTS.bytes(), transcript);
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
+        addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
+        addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {

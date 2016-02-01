@@ -38,6 +38,11 @@ public class VariantPhoenixHelper {
         BIOTYPE("BIOTYPE", PVarcharArray.INSTANCE),
         TRANSCRIPTS("TRANSCRIPTS", PVarcharArray.INSTANCE),
 
+        //Protein substitution scores
+        POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),
+        SIFT("SIFT", PFloatArray.INSTANCE),
+
+        //Conservation Scores
         PHASTCONS("PHASTCONS", PFloat.INSTANCE),
         PHYLOP("PHYLOP", PFloat.INSTANCE),
 
@@ -95,6 +100,13 @@ public class VariantPhoenixHelper {
         return DriverManager.getConnection(connectionUrl);
     }
 
+    public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
+        Columns[] annotColumns = new Columns[]{GENES, BIOTYPE, SO, POLYPHEN, SIFT, PHYLOP, PHASTCONS, FULL_ANNOTATION};
+        for (Columns column : annotColumns) {
+            String sql = buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
+            execute(con, sql);
+        }
+    }
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
         execute(con, buildCreateView(table));
@@ -130,6 +142,8 @@ public class VariantPhoenixHelper {
                 + GENES + " " + GENES.sqlType() + " , "
                 + BIOTYPE + " " + BIOTYPE.sqlType() + " , "
                 + SO + " " + SO.sqlType() + " , "
+                + POLYPHEN + " " + POLYPHEN.sqlType() + " , "
+                + SIFT + " " + SIFT.sqlType() + " , "
                 + PHYLOP + " " + PHYLOP.sqlType() + " , "
                 + PHASTCONS + " " + PHASTCONS.sqlType() + " , "
                 + FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " "
