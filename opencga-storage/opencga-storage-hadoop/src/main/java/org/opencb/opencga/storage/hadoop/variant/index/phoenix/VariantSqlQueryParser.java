@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,16 @@ public class VariantSqlQueryParser {
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final VariantDBAdaptorUtils utils;
+
+    private static final Map<String, String> SQL_OPERATOR;
+
+    static {
+        SQL_OPERATOR = new HashMap<>();
+        SQL_OPERATOR.put("==", "=");
+        SQL_OPERATOR.put("=~", "LIKE");
+        SQL_OPERATOR.put("~", "LIKE");
+    }
+
 
     public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils) {
         this.genomeHelper = genomeHelper;
@@ -326,9 +337,16 @@ public class VariantSqlQueryParser {
             logger.warn("Unsupported filter " + SIFT);
         }
 
-        if (isValidParam(query, CONSERVATION)) {
-            logger.warn("Unsupported filter " + CONSERVATION);
-        }
+        addQueryFilter(query, CONSERVATION, (keyOpValue, rawValue) -> {
+            String upperCaseValue = keyOpValue[0];
+            if (Columns.PHASTCONS.name().equalsIgnoreCase(upperCaseValue)) {
+                return Columns.PHASTCONS;
+            } else if (Columns.PHYLOP.name().equalsIgnoreCase(upperCaseValue)) {
+                return Columns.PHYLOP;
+            } else {
+                throw VariantQueryException.malformedParam(CONSERVATION, rawValue, "Unknown conservation value.");
+            }
+        }, filters, null);
 
         if (isValidParam(query, ALTERNATE_FREQUENCY)) {
             logger.warn("Unsupported filter " + ALTERNATE_FREQUENCY);
@@ -388,6 +406,11 @@ public class VariantSqlQueryParser {
 
     public void addQueryFilter(Query query, VariantQueryParams param, Columns column, List<String> filters,
                                Function<String, Object> parser) {
+        addQueryFilter(query, param, (a, s) -> column, filters, parser);
+    }
+
+    public void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Columns> columnParser,
+                               List<String> filters, Function<String, Object> parser) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
             QueryOperation operation = checkOperator(query.getString(param.key()));
@@ -395,45 +418,57 @@ public class VariantSqlQueryParser {
                 operation = QueryOperation.AND;
             }
 
-            switch (column.getPDataType().getSqlTypeName()) {
-                case "VARCHAR":
-                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
-                        Object objValue;
-                        if (parser == null) {
-                            objValue = value;
-                        } else {
-                            objValue = parser.apply(value);
-                        }
-                        subFilters.add(objValue + " = '" + column + "'");
-                    }
-                    break;
-                case "VARCHAR ARRAY":
-                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
-                        Object objValue;
-                        if (parser == null) {
-                            objValue = value;
-                        } else {
-                            objValue = parser.apply(value);
-                        }
-                        subFilters.add("'" + objValue + "' = ANY(" + column + ")");
-                    }
-                    break;
-                case "INTEGER ARRAY":
-                    for (String value : query.getAsStringList(param.key(), operation.separator())) {
-                        Object objValue;
-                        if (parser == null) {
-                            objValue = Integer.parseInt(value);
-                        } else {
-                            objValue = parser.apply(value);
-                        }
-                        subFilters.add(objValue + " = ANY(" + column + ")");
-                    }
-                default:
-                    logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
-                    break;
+            for (String rawValue : query.getAsStringList(param.key(), operation.separator())) {
+                Object parsedValue;
+                String[] keyOpValue = splitOperator(rawValue);
+                Columns column = columnParser.apply(keyOpValue, rawValue);
+                switch (column.sqlType()) {
+                    case "VARCHAR":
+                        parsedValue = parser == null ? rawValue : parser.apply(rawValue);
+                        subFilters.add(column + " = '" + parsedValue + "'");
+                        break;
+                    case "VARCHAR ARRAY":
+                        parsedValue = parser == null ? rawValue : parser.apply(rawValue);
+                        subFilters.add("'" + parsedValue + "' = ANY(" + column + ")");
+                        break;
+                    case "INTEGER ARRAY":
+                        parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
+                        subFilters.add(parsedValue + " " + parseNumericOperator(keyOpValue[1]) + " ANY(" + column + ")");
+                        break;
+                    case "INTEGER":
+                        parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
+                        subFilters.add(column + " " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        break;
+                    case "FLOAT ARRAY":
+                    case "DOUBLE ARRAY":
+                        parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
+                        subFilters.add(parsedValue + " " + parseNumericOperator(keyOpValue[1]) + " ANY(" + column + ")");
+                        break;
+                    case "FLOAT":
+                    case "DOUBLE":
+                        parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
+                        subFilters.add(column + " " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        break;
+                    default:
+                        logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
+                        break;
+
+                }
             }
             filters.add(subFilters.stream().collect(Collectors.joining(" " + operation.name() + " ", " ( ", " ) ")));
         }
+    }
+
+    public static String parseOperator(String op) {
+        return SQL_OPERATOR.getOrDefault(op, op);
+    }
+
+    public static String parseNumericOperator(String op) {
+        String parsedOp = SQL_OPERATOR.getOrDefault(op, op);
+        if (parsedOp.equals("LIKE")) {
+            throw new VariantQueryException("Unable to use REGEX operator (" + op + ") with numerical fields");
+        }
+        return parsedOp;
     }
 
 }

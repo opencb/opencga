@@ -9,6 +9,8 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created on 29/01/16 .
@@ -16,6 +18,8 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantDBAdaptorUtils {
+
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static final String OR = ",";
     public static final String AND = ";";
@@ -132,6 +136,23 @@ public class VariantDBAdaptorUtils {
         } else {    // !containsOr && !containsAnd
             return null;
         }
+    }
+
+    public static String[] splitOperator(String value) {
+        Matcher matcher = OPERATION_PATTERN.matcher(value);
+        String key;
+        String operator;
+        String filter;
+
+        if (matcher.find()) {
+            key = matcher.group(1);
+            operator = matcher.group(2);
+            filter = matcher.group(3);
+        } else {
+            return new String[]{null, "=", value};
+        }
+
+        return new String[]{key.trim(), operator.trim(), filter.trim()};
     }
 
 }

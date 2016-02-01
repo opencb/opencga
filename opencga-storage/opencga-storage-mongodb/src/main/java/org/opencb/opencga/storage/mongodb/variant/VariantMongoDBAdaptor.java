@@ -1004,7 +1004,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             } catch (NumberFormatException ignore) {
                                 int indexOf = s.lastIndexOf(":");
                                 if (defaultStudyConfiguration == null && indexOf < 0) {
-                                    throw VariantQueryException.malformedParam(VariantQueryParams.COHORTS, s, "study:cohort");
+                                    throw VariantQueryException.malformedParam(VariantQueryParams.COHORTS, s, "Expected {study}:{cohort}");
                                 } else {
                                     String study;
                                     String cohort;
