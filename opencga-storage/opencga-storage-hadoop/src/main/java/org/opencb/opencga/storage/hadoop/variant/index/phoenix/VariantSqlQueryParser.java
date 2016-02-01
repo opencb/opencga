@@ -10,6 +10,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.QueryOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +95,29 @@ public class VariantSqlQueryParser {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
-            //TODO Fetch only FULL_ANNOTATION and genotypes data
-            return sb.append(" * ");
+            List<Integer> studyIds = utils.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
+            if (studyIds == null || studyIds.isEmpty()) {
+                studyIds = utils.getStudyIds(options);
+            }
+
+            sb.append(Columns.CHROMOSOME).append(',')
+                    .append(Columns.POSITION).append(',')
+                    .append(Columns.REFERENCE).append(',')
+                    .append(Columns.ALTERNATE);
+
+            for (Integer studyId : studyIds) {
+                sb.append(",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HET_REF))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_VAR))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.OTHER))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.NOCALL))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.PASS_CNT))
+                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.CALL_CNT)).append('"');
+            }
+
+            sb.append(',').append(Columns.FULL_ANNOTATION);
+
+            return sb;
         }
     }
 
