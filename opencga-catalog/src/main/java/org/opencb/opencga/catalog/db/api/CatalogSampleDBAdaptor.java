@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -121,14 +122,23 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
-        // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
         ACL_READ("acl.read", BOOLEAN, ""),
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, "");
-        // TOCHECK: Pedro. Add annotation and attributes support?
+        ACL_DELETE("acl.delete", BOOLEAN, ""),
 
+        ANNOTATION_SET_ID("annotationSets.id", TEXT, ""),
+        ANNOTATION_SET_VARIABLE_SET_ID("annotationSets.variableSetId", INTEGER, ""),
+        ANNOTATION_SET_ANNOTATIONS("annotationSets.annotations", TEXT, "");
+
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
 
         private final String key;
         private Type type;
@@ -153,6 +163,14 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

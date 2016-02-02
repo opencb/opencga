@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -52,10 +53,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
     @Override
     public Integer getStudyId(String studyId) throws CatalogException {
-        try {
+        if (StringUtils.isNumeric(studyId)) {
             return Integer.parseInt(studyId);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
         }
 
         String[] split = studyId.split("@");

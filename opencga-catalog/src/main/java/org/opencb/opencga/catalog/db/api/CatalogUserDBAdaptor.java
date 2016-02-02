@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
+
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
@@ -108,11 +111,18 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         TOOL_ALIAS("tools.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check whether login, logout makes sense.
-        SESSION_ID("sessions.id", INTEGER_ARRAY, ""),
+        SESSION_ID("sessions.id", TEXT_ARRAY, ""),
         SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),
-        SESSION_LOGOUT("sessions.logout", INTEGER_ARRAY, "");
+        SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, "");
 
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
 
         private final String key;
         private Type type;
@@ -137,6 +147,14 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

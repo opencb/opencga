@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.VariableSet;
+
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -109,9 +112,9 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
-        PROJECT_ID("projectId", TEXT_ARRAY, ""),
+        PROJECT_ID("projectId", INTEGER_ARRAY, ""),
 
-        GROUP_ID("groups.id", INTEGER_ARRAY, ""),
+        GROUP_ID("groups.id", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
@@ -162,6 +165,14 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         VARIABLE_SET_NAME("variableSets.name", TEXT_ARRAY, ""),
         VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
 
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
         private final String key;
         private Type type;
         private String description;
@@ -185,6 +196,14 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -138,10 +139,18 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
         NSTATS("nstats", DECIMAL, ""),
+
+        DIRECTORY("directory", TEXT, ""),
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
         // Fixme: Index attributes
-
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams param : QueryParams.values()) {
+                map.put(param.key(), param);
+            }
+        }
 
         // TOCHECK: Pedro. Add annotation support?
 
@@ -168,6 +177,14 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

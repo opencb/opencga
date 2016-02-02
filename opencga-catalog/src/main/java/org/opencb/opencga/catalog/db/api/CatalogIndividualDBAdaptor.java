@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -24,6 +25,8 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
@@ -88,6 +91,14 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
         // TOCHECK: Pedro. Should we be considering annotations?
 
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
         private final String key;
         private Type type;
         private String description;
@@ -111,6 +122,14 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

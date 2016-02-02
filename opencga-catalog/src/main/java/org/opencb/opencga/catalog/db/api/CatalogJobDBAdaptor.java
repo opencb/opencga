@@ -16,10 +16,13 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -119,6 +122,13 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
 
         private final String key;
         private Type type;
@@ -143,6 +153,14 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 

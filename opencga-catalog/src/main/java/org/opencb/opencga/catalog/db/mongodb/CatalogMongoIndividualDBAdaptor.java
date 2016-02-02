@@ -177,7 +177,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        Query query = new Query(PRIVATE_STUDY_ID, studyId);
+        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
@@ -383,13 +383,13 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return individualCollection.count(bson);
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) {
+    public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return individualCollection.distinct(field, bson);
     }
@@ -415,7 +415,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) {
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -491,39 +491,39 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public CatalogDBIterator<Individual> iterator(Query query, QueryOptions options) {
+    public CatalogDBIterator<Individual> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
         return new CatalogMongoDBIterator<>(iterator, individualConverter);
     }
 
     @Override
-    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) {
+    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = individualCollection.nativeQuery().find(bson, options).iterator();
         return new CatalogMongoDBIterator<>(iterator);
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+    public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(individualCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(individualCollection, bsonQuery, fields, "name", options);
     }
 
     @Override
-    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         CatalogDBIterator<Individual> catalogDBIterator = iterator(query, options);
         while (catalogDBIterator.hasNext()) {
@@ -532,26 +532,26 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) {
+    private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-
-        addIntegerOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
-        addIntegerOrQuery(PRIVATE_ID, QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.FATHER_ID.key(), QueryParams.FATHER_ID.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.MOTHER_ID.key(), QueryParams.MOTHER_ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.FAMILY.key(), QueryParams.FAMILY.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.GENDER.key(), QueryParams.GENDER.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.RACE.key(), QueryParams.RACE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.SPECIES.key(), QueryParams.SPECIES.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_NAME.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_SUBPOPULATION.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.POPULATION_DESCRIPTION.key(), QueryParams.POPULATION_DESCRIPTION.key(), query, andBsonList);
-
-        addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
-        addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            QueryParams queryParam = QueryParams.getParam(entry.getKey());
+            try {
+                switch (queryParam) {
+                    case ID:
+                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case STUDY_ID:
+                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                }
+            } catch (Exception e) {
+                throw new CatalogDBException(e);
+            }
+        }
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

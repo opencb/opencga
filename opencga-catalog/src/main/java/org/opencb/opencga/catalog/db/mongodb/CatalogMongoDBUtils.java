@@ -198,7 +198,6 @@ class CatalogMongoDBUtils {
             result.first().remove("_studyId");
 //            String s = result.first().toJson();
             String s = jsonObjectWriter.writeValueAsString(result.first());
-            System.out.println(">>>" + s);
 //            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
             return getObjectReader(tClass).readValue(restoreDotsInKeys(s));
         } catch (IOException e) {

@@ -46,6 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -742,49 +743,59 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void searchFileTest() throws CatalogException, IOException {
 
+
+    }
+
+    private void testAttributesSearch() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         Query query;
         QueryResult<File> result;
 
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~^data");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~^data");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
+        //Get all files in data
+        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^data/[^/]+/?")
+                .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(),"FILE");
+        result = catalogManager.searchFile(studyId, query, sessionIdUser);
+        assertEquals(3, result.getNumResults());
+
         //Folder "jobs" does not exist
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "jobs");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), "jobs");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(0, result.getNumResults());
 
         //Get all files in data
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "data/");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), "data/");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         //Get all files in data recursively
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.directory.toString(), "data/.*");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), "data/.*");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(5, result.getNumResults());
 
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         result.getResult().forEach(f -> assertEquals(File.Type.FILE, f.getType()));
         int numFiles = result.getNumResults();
         assertEquals(3, numFiles);
 
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FOLDER");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FOLDER");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         result.getResult().forEach(f -> assertEquals(File.Type.FOLDER, f.getType()));
         int numFolders = result.getNumResults();
         assertEquals(5, numFolders);
 
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(".", result.first().getName());
 
 
-        query = new Query(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE,FOLDER");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE,FOLDER");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(8, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
@@ -809,14 +820,26 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
-        CatalogFileDBAdaptor.FileFilterOption attributes = CatalogFileDBAdaptor.FileFilterOption.attributes;
-        CatalogFileDBAdaptor.FileFilterOption nattributes = CatalogFileDBAdaptor.FileFilterOption.nattributes;
+        String attributes = CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key();
+        String nattributes = CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key();
+        /*
 
+        interface Searcher {
+            QueryResult search(Integer id, Query query);
+        }
+
+        BiFunction<Integer, Query, QueryResult> searcher = (s, q) -> catalogManager.searchFile(s, q, sessionIdUser);
+
+        result = searcher.apply(studyId, new Query(attributes + ".nested.text", "~H"));
+        */
         result = catalogManager.searchFile(studyId, new Query(attributes + ".nested.text", "~H"), sessionIdUser);
         assertEquals(1, result.getNumResults());
         result = catalogManager.searchFile(studyId, new Query(nattributes + ".nested.num1", ">0"), sessionIdUser);
         assertEquals(1, result.getNumResults());
         result = catalogManager.searchFile(studyId, new Query(attributes + ".nested.num1", ">0"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(attributes + ".nested.num1", "notANumber"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new Query(attributes + ".field", "~val"), sessionIdUser);
@@ -847,6 +870,9 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(2, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new Query(nattributes + ".numValue", "==5.0"), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(nattributes + ".numValue", "=5.0"), sessionIdUser);
         assertEquals(2, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new Query(nattributes + ".numValue", "5.0"), sessionIdUser);
@@ -1589,32 +1615,34 @@ public class CatalogManagerTest extends GenericTest {
 //        assertEquals(1, annotationSetQueryResult.getNumResults());
 
         List<Sample> samples;
-        Query query = new Query(variableSetId.toString(), vs1.getId());
-        query.put(annotation.toString(), "nestedObject.stringList:li");
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_VARIABLE_SET_ID.key(), vs1.getId());
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:li");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:lo");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,li,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:lo,li,LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.object.string:my value");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.object.string:my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.string:my value");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(),
+                "nestedObject.stringList:lo,lu,LL;nestedObject.object.string:my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:7");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(),
+                "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:7");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
@@ -1644,40 +1672,41 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet variableSet = study.getVariableSets().get(0);
 
         List<Sample> samples;
-        Query annotation = new Query();
+        Query query = new Query();
 
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(9, samples.size());
 
-        annotation = new Query(variableSetId.toString(), variableSet.getId());
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query(variableSetId.toString(), variableSet.getId());
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(8, samples.size());
 
-        annotation = new Query(annotationSetId.toString(), "annot2");
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query(annotationSetId.toString(), "annot2");
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        annotation = new Query(annotationSetId.toString(), "noExist");
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query(annotationSetId.toString(), "noExist");
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        annotation = new Query("annotation", "NAME:s_1,s_2,s_3");
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query("annotation.NAME", "s_1,s_2,s_3");
+        query = new Query("annotation", "NAME:s_1,s_2,s_3");
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        annotation = new Query("annotation", "AGE:>30");
-        annotation.append(variableSetId.toString(), variableSet.getId());
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query("annotation", "AGE:>30");
+        query.append(variableSetId.toString(), variableSet.getId());
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        annotation = new Query("annotation", "AGE:>30");
-        annotation.append(variableSetId.toString(), variableSet.getId());
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query("annotation", "AGE:>30");
+        query.append(variableSetId.toString(), variableSet.getId());
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        annotation = new Query("annotation", Arrays.asList("AGE:>30", "ALIVE:true"));
-        annotation.append(variableSetId.toString(), variableSet.getId());
-        samples = catalogManager.getAllSamples(studyId, annotation, null, sessionIdUser).getResult();
+        query = new Query("annotation", Arrays.asList("AGE:>30", "ALIVE:true"));
+        query.append(variableSetId.toString(), variableSet.getId());
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
     }
 

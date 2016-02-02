@@ -33,11 +33,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
@@ -189,7 +185,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        Query query = new Query(CatalogMongoDBAdaptor.PRIVATE_ID, userId);
+        Query query = new Query(QueryParams.USER_ID.key(), userId);
         return endQuery("User projects list", startTime, get(query, options).getResult());
     }
 
@@ -464,13 +460,13 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.count(bson);
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) {
+    public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bson = parseQuery(query);
         return userCollection.distinct(field, bson);
     }
@@ -491,7 +487,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
         for (Project project : projectQueryResult.getResult()) {
-            Query studyQuery = new Query(PRIVATE_PROJECT_ID, project.getId());
+            Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
             try {
                 QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
                 project.setStudies(studyQueryResult.getResult());
@@ -504,7 +500,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options) {
+    public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         List<Bson> aggregates = new ArrayList<>();
 
         aggregates.add(Aggregates.match(parseQuery(query)));
@@ -515,7 +511,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         for (Document user : projectQueryResult.getResult()) {
             Document project = (Document) user.get("projects");
-            Query studyQuery = new Query(PRIVATE_PROJECT_ID, project.get("id"));
+            Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.get("id"));
             QueryResult studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, options);
             project.remove("studies");
             project.append("studies", studyQueryResult.getResult());
@@ -576,14 +572,14 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public CatalogDBIterator<Project> iterator(Query query, QueryOptions options) {
+    public CatalogDBIterator<Project> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
         return new CatalogMongoDBIterator<>(iterator, projectConverter);
     }
 
     @Override
-    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) {
+    public CatalogDBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
         return new CatalogMongoDBIterator<>(iterator);
@@ -605,7 +601,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) {
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(action);
         CatalogDBIterator<Project> catalogDBIterator = iterator(query, options);
         while (catalogDBIterator.hasNext()) {
@@ -614,26 +610,27 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) {
+    private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
-        addStringOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList); // User id
-        addIntegerOrQuery("projects." + QueryParams.ID.key(), QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ALIAS.key(), QueryParams.ALIAS.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.CREATION_DATE.key(), QueryParams.CREATION_DATE.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.DESCRIPTION.key(), QueryParams.DESCRIPTION.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ORGANIZATION.key(), QueryParams.ORGANIZATION.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.STATUS.key(), QueryParams.STATUS.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.LAST_ACTIVITY.key(), QueryParams.LAST_ACTIVITY.key(), query,
-                MongoDBQueryUtils.ComparisonOperator.NOT_EQUAL, andBsonList);
-        addIntegerOrQuery("projects." + QueryParams.DISK_USAGE.key(), QueryParams.DISK_USAGE.key(), query, andBsonList);
-
-        addStringOrQuery("projects." + QueryParams.ACL_USER_ID.key(), QueryParams.ACL_USER_ID.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ACL_READ.key(), QueryParams.ACL_READ.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ACL_WRITE.key(), QueryParams.ACL_WRITE.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ACL_EXECUTE.key(), QueryParams.ACL_EXECUTE.key(), query, andBsonList);
-        addStringOrQuery("projects." + QueryParams.ACL_DELETE.key(), QueryParams.ACL_DELETE.key(), query, andBsonList);
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            QueryParams queryParam = QueryParams.getParam(entry.getKey());
+            try {
+                switch (queryParam) {
+                    case ID:
+                        addOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case USER_ID:
+                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
+                        addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                }
+            } catch (Exception e) {
+                throw new CatalogDBException(e);
+            }
+        }
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

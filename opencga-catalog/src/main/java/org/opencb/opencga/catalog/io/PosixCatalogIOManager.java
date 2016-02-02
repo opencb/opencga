@@ -578,7 +578,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
             if (p.waitFor() != 0) {
                 //TODO: Handle error in checksum
-                System.out.println("checksum = " + checksum);
+                logger.info("checksum = " + checksum);
                 br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
                 throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }

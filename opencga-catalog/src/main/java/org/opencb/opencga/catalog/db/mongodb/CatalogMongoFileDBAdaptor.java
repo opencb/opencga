@@ -20,7 +20,10 @@ import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
@@ -101,7 +104,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public int getFileId(int studyId, String path) throws CatalogDBException {
-        Query query = new Query(PRIVATE_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
+        Query query = new Query(QueryParams.STUDY_ID.key(), studyId).append(QueryParams.PATH.key(), path);
         QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, "id");
         QueryResult<File> fileQueryResult = get(query, options);
         return fileQueryResult.getNumTotalResults() == 1 ? fileQueryResult.getResult().get(0).getId() : -1;
@@ -109,7 +112,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
-        Query query = new Query(PRIVATE_STUDY_ID, studyId);
+        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return get(query, options);
     }
 
@@ -124,7 +127,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
-        Query query = new Query(PRIVATE_ID, fileId);
+        Query query = new Query(QueryParams.ID.key(), fileId);
         return get(query, options);
     }
 
@@ -149,7 +152,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         Path path = Paths.get(filePath);
         String fileName = path.getFileName().toString();
 
-        Document fileDoc = (Document) nativeGet(new Query(PRIVATE_ID, fileId), null).getResult().get(0);
+        Document fileDoc = (Document) nativeGet(new Query(QueryParams.ID.key(), fileId), null).getResult().get(0);
         File file = fileConverter.convertToDataModelType(fileDoc);
 
         int studyId = (int) fileDoc.get(PRIVATE_STUDY_ID);
@@ -179,7 +182,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public int getStudyIdByFileId(int fileId) throws CatalogDBException {
-        QueryResult queryResult = nativeGet(new Query(PRIVATE_ID, fileId), null);
+        QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), fileId), null);
 
         if (!queryResult.getResult().isEmpty()) {
             return (int) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
@@ -199,7 +202,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
-        Query query = new Query(PRIVATE_ID, fileId);
+        Query query = new Query(QueryParams.ID.key(), fileId);
         Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
         QueryOptions options = new QueryOptions(MongoDBCollection.ELEM_MATCH, projection);
 /*
@@ -399,7 +402,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //                .append("datasets.name", dataset.getName())
 //                .get());
 
-        Query query = new Query(PRIVATE_ID, studyId)
+        Query query = new Query(QueryParams.ID.key(), studyId)
                 .append("datasets.name", dataset.getName());
         QueryResult<Long> count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query);
 
@@ -463,7 +466,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bson = parseQuery(query);
+        Bson bson;
+        try {
+            bson = parseQuery(query);
+        } catch (NumberFormatException e) {
+            throw new CatalogDBException("Get file: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
+        }
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -645,45 +653,43 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
-        // FIXME: Pedro. Check the mongodb names as well as integer createQueries
-        addIntegerOrQuery(PRIVATE_ID, PRIVATE_ID, query, andBsonList);
-        addIntegerOrQuery(QueryParams.ID.key(), QueryParams.ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.NAME.key(), QueryParams.NAME.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.TYPE.key(), QueryParams.TYPE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.FORMAT.key(), QueryParams.FORMAT.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.BIOFORMAT.key(), QueryParams.BIOFORMAT.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.URI.key(), QueryParams.URI.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.DELETE_DATE.key(), QueryParams.DELETE_DATE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.OWNER_ID.key(), QueryParams.OWNER_ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.CREATION_DATE.key(), QueryParams.CREATION_DATE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.MODIFICATION_DATE.key(), QueryParams.MODIFICATION_DATE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.DESCRIPTION.key(), QueryParams.DESCRIPTION.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.STATUS.key(), QueryParams.STATUS.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.DISK_USAGE.key(), QueryParams.DISK_USAGE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.EXPERIMENT_ID.key(), QueryParams.EXPERIMENT_ID.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.JOB_ID.key(), QueryParams.JOB_ID.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.SAMPLE_IDS.key(), QueryParams.SAMPLE_IDS.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.ATTRIBUTES.key(), QueryParams.ATTRIBUTES.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.ATTRIBUTES.key(), QueryParams.NATTRIBUTES.key(), query, andBsonList);
-        // Fixme: Battributes should be addBooleanOrQuery
-        addStringOrQuery(QueryParams.ATTRIBUTES.key(), QueryParams.BATTRIBUTES.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.STATS.key(), QueryParams.STATS.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.NSTATS.key(), QueryParams.NSTATS.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), query, andBsonList);
-
-        addStringOrQuery(QueryParams.ACL_USER_ID.key(), QueryParams.ACL_USER_ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.ACL_READ.key(), QueryParams.ACL_READ.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.ACL_WRITE.key(), QueryParams.ACL_WRITE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.ACL_EXECUTE.key(), QueryParams.ACL_EXECUTE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.ACL_DELETE.key(), QueryParams.ACL_DELETE.key(), query, andBsonList);
-
-        addStringOrQuery(QueryParams.INDEX_USER_ID.key(), QueryParams.INDEX_USER_ID.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.INDEX_DATE.key(), QueryParams.INDEX_DATE.key(), query, andBsonList);
-        addStringOrQuery(QueryParams.INDEX_STATUS.key(), QueryParams.INDEX_STATUS.key(), query, andBsonList);
-        addIntegerOrQuery(QueryParams.INDEX_JOB_ID.key(), QueryParams.INDEX_JOB_ID.key(), query, andBsonList);
-
-        addIntegerOrQuery(PRIVATE_STUDY_ID, PRIVATE_STUDY_ID, query, andBsonList);
-        addIntegerOrQuery(PRIVATE_STUDY_ID, QueryParams.STUDY_ID.key(), query, andBsonList);
+        for (Map.Entry<String, Object> entry : query.entrySet()) {
+            String key = entry.getKey().split("\\.")[0];
+            QueryParams queryParam = QueryParams.getParam(key);
+            try {
+                switch (queryParam) {
+                    case ID:
+                        addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case STUDY_ID:
+                        addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case DIRECTORY:
+                        // We add the regex in order to look for all the files under the given directory
+                        String value = (String) query.get(queryParam.key());
+                        String regExPath = "~^" + value + "[^/]+/?$";
+                        Query pathQuery = new Query(QueryParams.PATH.key(), regExPath);
+                        addAutoOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), pathQuery, QueryParams.PATH.type(), andBsonList);
+                        break;
+                    case ATTRIBUTES:
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case BATTRIBUTES:
+                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case NATTRIBUTES:
+                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                }
+            } catch (Exception e) {
+                throw new CatalogDBException(e);
+            }
+        }
 
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

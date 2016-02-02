@@ -24,6 +24,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
@@ -82,19 +83,55 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 //                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
 //    }
 
+    @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
+    @Deprecated
     protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, MongoDBQueryUtils.ComparisonOperator.EQUAL,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+    }
+
+
+    /**
+     * It will add a filter to andBsonList based on the query object. The operator will always be an EQUAL.
+     * @param mongoDbField The field used in the mongoDB.
+     * @param queryParam The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
+     *                   although it might be some exceptions.
+     * @param query The object containing the key:values of the query.
+     * @param paramType The type of the object to be looked up. See {@link QueryParam}.
+     * @param andBsonList The list where created filter will be added to.
+     */
+    protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUAL, MongoDBQueryUtils
+                .LogicalOperator.OR, andBsonList);
+    }
+
+    /**
+     * It will check for the proper comparator based on the query value and create the correct query filter.
+     * It could be a regular expression, >, < ... or a simple equals.
+     * @param mongoDbField The field used in the mongoDB.
+     * @param queryParam The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
+     *                   although it might be some exceptions.
+     * @param query The object containing the key:values of the query.
+     * @param paramType The type of the object to be looked up. See {@link QueryParam}.
+     * @param andBsonList The list where created filter will be added to.
+     */
+    protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
+        if (query != null && query.getString(queryParam) != null) {
+            Bson filter = MongoDBQueryUtils.createAutoFilter(mongoDbField, queryParam, query, paramType);
+            if (filter != null) {
+                andBsonList.add(filter);
+            }
+        }
     }
 
     protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator
             comparisonOperator, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.STRING, comparisonOperator,
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, comparisonOperator,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
@@ -110,7 +147,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 //        }
 //    }
 
-    protected void addQueryFilter(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ParamType paramType,
+    protected void addQueryFilter(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType,
                                   MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator,
                                   List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {

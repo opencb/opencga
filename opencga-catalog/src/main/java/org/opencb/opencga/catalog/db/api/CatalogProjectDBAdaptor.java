@@ -16,10 +16,13 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
+
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -75,6 +78,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         STATUS("status", TEXT_ARRAY, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER, ""),
+        USER_ID("userId", TEXT, ""),
 
         STUDY_ID("study.id", INTEGER_ARRAY, ""),
         STUDY_NAME("study.name", TEXT_ARRAY, ""),
@@ -89,6 +93,14 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         ACL_WRITE("acl.write", BOOLEAN, ""),
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
         ACL_DELETE("acl.delete", BOOLEAN, "");
+
+        private static Map<String, QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (QueryParams params : QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
 
         private final String key;
         private Type type;
@@ -113,6 +125,14 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         @Override
         public String description() {
             return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
         }
     }
 
