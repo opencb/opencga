@@ -31,6 +31,8 @@ import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -161,14 +163,12 @@ public class VariantTableDriver extends Configured implements Tool {
         conf.set(HBASE_MASTER, master);
     }
 
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, int fileId,
-                                              int... fileIds) {
+    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, List<Integer> fileIds) {
         StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
-                .append(outputTable).append(' ').append(studyId).append(' ').append(fileId);
+                .append(outputTable).append(' ').append(studyId).append(' ');
 
-        for (int otherFileId : fileIds) {
-            stringBuilder.append(',').append(otherFileId);
-        }
+        stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+
         return stringBuilder.toString();
     }
 

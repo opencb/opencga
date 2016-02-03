@@ -177,7 +177,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public URI preLoad(URI input, URI output) throws StorageManagerException {
+    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
         URI uri = super.preLoad(input, output);
 
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
