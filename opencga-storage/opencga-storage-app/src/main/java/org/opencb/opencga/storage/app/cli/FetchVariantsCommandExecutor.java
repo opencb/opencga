@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -37,8 +38,9 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceEntryJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -50,6 +52,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
  * Created by imedina on 25/05/15.
@@ -104,7 +108,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
          * Parse Variant parameters
          */
         if (queryVariantsCommandOptions.region != null && !queryVariantsCommandOptions.region.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryVariantsCommandOptions.region);
+            query.put(REGION.key(), queryVariantsCommandOptions.region);
         } else if (queryVariantsCommandOptions.regionFile != null && !queryVariantsCommandOptions.regionFile.isEmpty()) {
             Path gffPath = Paths.get(queryVariantsCommandOptions.regionFile);
             FileUtils.checkFile(gffPath);
@@ -112,67 +116,45 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 String[] array = line.split("\t");
                 return new String(array[0].replace("chr", "")+":"+array[3]+"-"+array[4]);
             }).collect(Collectors.joining(","));
-            query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), regionsFromFile);
+            query.put(REGION.key(), regionsFromFile);
         }
 
-        if (queryVariantsCommandOptions.id != null && !queryVariantsCommandOptions.id.isEmpty()) {   //csv
-            query.put(VariantDBAdaptor.VariantQueryParams.ID.key(), queryVariantsCommandOptions.id);
-        }
-
-        if (queryVariantsCommandOptions.gene != null && !queryVariantsCommandOptions.gene.isEmpty()) {   //csv
-            query.put(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryVariantsCommandOptions.gene);
-        }
-
-        if (queryVariantsCommandOptions.type != null && !queryVariantsCommandOptions.type.isEmpty()) {   //csv
-            query.put(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryVariantsCommandOptions.type);
-        }
+        addParam(query, ID, queryVariantsCommandOptions.id);
+        addParam(query, GENE, queryVariantsCommandOptions.gene);
+        addParam(query, TYPE, queryVariantsCommandOptions.type);
 
 
+        List<String> studies = new LinkedList<>();
         if (queryVariantsCommandOptions.study != null && !queryVariantsCommandOptions.study.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.study.split(",")));
+            query.put(STUDIES.key(), queryVariantsCommandOptions.study);
+            for (String study : queryVariantsCommandOptions.study.split(",|;")) {
+                if (!study.startsWith("!")) {
+                    studies.add(study);
+                }
+            }
         }
 
         // If the studies to be returned is empty then we return the studies being queried
         if (queryVariantsCommandOptions.returnStudy != null && !queryVariantsCommandOptions.returnStudy.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.returnStudy.split(",")));
+            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsCommandOptions.returnStudy.split(",")));
         } else {
-            if (query.containsKey(VariantDBAdaptor.VariantQueryParams.STUDIES.key())) {
-                query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), query.get(VariantDBAdaptor.VariantQueryParams.STUDIES.key()));
+            if (!studies.isEmpty()) {
+                query.put(RETURNED_STUDIES.key(), studies);
             }
         }
 
-        if (queryVariantsCommandOptions.file != null && !queryVariantsCommandOptions.file.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Arrays.asList(queryVariantsCommandOptions.file.split(",")));
-        }
-
-
-        if (queryVariantsCommandOptions.sampleGenotype != null && !queryVariantsCommandOptions.sampleGenotype.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryVariantsCommandOptions.sampleGenotype);
-        }
-
-        if (queryVariantsCommandOptions.returnSample != null && !queryVariantsCommandOptions.returnSample.isEmpty()) {
-            options.put(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryVariantsCommandOptions.returnSample);
-        }
-
+        addParam(query, FILES, queryVariantsCommandOptions.file);
+        addParam(query, GENOTYPE, queryVariantsCommandOptions.sampleGenotype);
+        addParam(query, RETURNED_SAMPLES, queryVariantsCommandOptions.returnSample);
+        addParam(query, UNKNOWN_GENOTYPE, queryVariantsCommandOptions.unknownGenotype);
 
         /**
          * Annotation parameters
          */
-        if (queryVariantsCommandOptions.consequenceType != null && !queryVariantsCommandOptions.consequenceType.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), queryVariantsCommandOptions.consequenceType);
-        }
-
-        if (queryVariantsCommandOptions.biotype != null && !queryVariantsCommandOptions.biotype.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(), queryVariantsCommandOptions.biotype);
-        }
-
-        if (queryVariantsCommandOptions.populationFreqs != null && !queryVariantsCommandOptions.populationFreqs.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.ALTERNATE_FREQUENCY.key(), queryVariantsCommandOptions.populationFreqs);
-        }
-
-        if (queryVariantsCommandOptions.conservation != null && !queryVariantsCommandOptions.conservation.isEmpty()) {
-            query.put(VariantDBAdaptor.VariantQueryParams.CONSERVATION.key(), queryVariantsCommandOptions.conservation);
-        }
+        addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsCommandOptions.consequenceType);
+        addParam(query, ANNOT_BIOTYPE, queryVariantsCommandOptions.biotype);
+        addParam(query, ALTERNATE_FREQUENCY, queryVariantsCommandOptions.populationFreqs);
+        addParam(query, CONSERVATION, queryVariantsCommandOptions.conservation);
 
         if (queryVariantsCommandOptions.proteinSubstitution != null && !queryVariantsCommandOptions.proteinSubstitution.isEmpty()) {
             String[] fields = queryVariantsCommandOptions.proteinSubstitution.split(",");
@@ -181,13 +163,13 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 if(arr != null && arr.length > 1) {
                     switch (arr[0]) {
                         case "sift":
-                            query.put(VariantDBAdaptor.VariantQueryParams.SIFT.key(), field.replaceAll("sift", ""));
+                            query.put(SIFT.key(), field.replaceAll("sift", ""));
                             break;
                         case "polyphen":
-                            query.put(VariantDBAdaptor.VariantQueryParams.POLYPHEN.key(), field.replaceAll("polyphen", ""));
+                            query.put(POLYPHEN.key(), field.replaceAll("polyphen", ""));
                             break;
                         default:
-                            query.put(VariantDBAdaptor.VariantQueryParams.PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
+                            query.put(PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
                             break;
                     }
                 }
@@ -199,10 +181,10 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
          * Stats parameters
          */
         if (queryVariantsCommandOptions.stats != null && !queryVariantsCommandOptions.stats.isEmpty()) {
-            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
-                    VariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
-                    VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
-                    VariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key()));
+            Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(STATS_MAF.key(),
+                    STATS_MGF.key(),
+                    MISSING_ALLELES.key(),
+                    MISSING_GENOTYPES.key()));
 
             for (String stat : queryVariantsCommandOptions.stats.split(",")) {
                 int index = stat.indexOf("<");
@@ -225,6 +207,11 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 logger.info("Parsed stat filter: {} {}", name, cond);
             }
         }
+
+        addParam(query, STATS_MAF, queryVariantsCommandOptions.maf);
+        addParam(query, STATS_MGF, queryVariantsCommandOptions.mgf);
+        addParam(query, MISSING_ALLELES, queryVariantsCommandOptions.missingAlleleCount);
+        addParam(query, MISSING_GENOTYPES, queryVariantsCommandOptions.missingGenotypeCount);
 
 
 
@@ -252,18 +239,20 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         }
 
         boolean returnVariants = !queryVariantsCommandOptions.count
-                                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
-                                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
+                && StringUtils.isEmpty(queryVariantsCommandOptions.groupBy)
+                && StringUtils.isEmpty(queryVariantsCommandOptions.rank);
 
         if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
-            int returnedStudiesSize = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()).size();
-            if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
+            int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
+            if (returnedStudiesSize == 0 && studies.size() == 1) {
+                query.put(RETURNED_STUDIES.key(), studies.get(0));
+            } else if (returnedStudiesSize == 0 && studyNames.size() != 1 //If there are no returned studies, and there are more than one study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
                 throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned study. " +
                         "Available studies: [ " + String.join(", ", studyNames) + " ]");
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
-                    query.put(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyNames.get(0));
+                    query.put(RETURNED_STUDIES.key(), studyNames.get(0));
                 }
             }
         }
@@ -327,11 +316,21 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
                 if (outputFormat.equalsIgnoreCase("vcf")) {
                     StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
                     QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
-                            queryVariantsCommandOptions.returnStudy, null);
+                            query.getAsStringList(RETURNED_STUDIES.key()).get(0), null);
                     if (studyConfigurationResult.getResult().size() >= 1) {
-                        VariantExporter.VcfHtsExport(iterator, studyConfigurationResult.getResult().get(0), outputStream, options);
+                        // Samples to be returned
+                        if (query.containsKey(RETURNED_SAMPLES.key())) {
+                            options.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
+                        }
+
+//                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
+                        if(queryVariantsCommandOptions.annotations != null) {
+                            options.add("annotations", queryVariantsCommandOptions.annotations);
+                        }
+                        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
+                        variantVcfExporter.export(iterator, studyConfigurationResult.first(), outputStream, options);
                     } else {
-                        logger.warn("no study found named " + queryVariantsCommandOptions.returnStudy);
+                        logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                     }
 //                    printVcfResult(iterator, studyConfigurationManager, printWriter);
                 } else {
@@ -341,6 +340,12 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
             }
         }
         outputStream.close();
+    }
+
+    private void addParam(ObjectMap objectMap, VariantQueryParams key, String value) {
+        if (value != null && !value.isEmpty()) {
+            objectMap.put(key.key(), value);
+        }
     }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor) throws JsonProcessingException {
@@ -363,16 +368,13 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
     }
 
     private void printJsonResult(VariantDBIterator variantDBIterator, OutputStream outputStream) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectWriter objectWriter = objectMapper.writer();
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
-            outputStream.write(objectWriter.writeValueAsBytes(variant));
+            outputStream.write(variant.toJson().getBytes());
         }
     }
 
     @Deprecated
-    @SuppressWarnings("deprecated")
     private void printVcfResult(VariantDBIterator variantDBIterator, StudyConfigurationManager studyConfigurationManager, PrintWriter printWriter) {
 
         Map<String, StudyConfiguration> studyConfigurationMap = null;

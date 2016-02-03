@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+from __future__ import print_function
+from pyCGA import OptionParsers
+from pyCGA.CLIMethods import *
+
+__author__ = 'antonior'
+
+
+def get_id(args):
+
+    if args.IdBatch:
+        for id in Methods.id_converter(args.studyID, args.inputIDType, args.outputIDType,IdBatch=args.IdBatch):
+            print("\t".join(id))
+
+    if args.Id:
+        for id in Methods.id_converter(args.studyID, args.inputIDType, args.outputIDType,Id=args.Id):
+            print("\t".join(id))
+
+
+def main():
+    # This execute all the methods
+    parser = OptionParsers.get_options_id_converter()
+    args = parser.parse_args()
+    get_id(args)
+
+
+
+if __name__ == '__main__':
+    main()
+

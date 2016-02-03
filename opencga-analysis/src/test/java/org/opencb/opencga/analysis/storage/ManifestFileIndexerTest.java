@@ -11,7 +11,6 @@ import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -29,11 +28,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil.runStorageJob;
-import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
 import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedAggregatedStats;
+import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.CohortFilterOption.name;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
@@ -107,33 +108,38 @@ public class ManifestFileIndexerTest {
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(0).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.NONE, getDefaultCohort().getStatus());
+        assertNotNull(catalogManager.getFile(files.get(0).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(1).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(1000, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.NONE, getDefaultCohort().getStatus());
+        assertNotNull(catalogManager.getFile(files.get(1).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(2).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(1500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions(name.toString(), DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
+        assertNotNull(catalogManager.getFile(files.get(2).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(3).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(2000, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.INVALID, getDefaultCohort().getStatus());
+        assertNotNull(catalogManager.getFile(files.get(3).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runStorageJob(catalogManager, analysisFileIndexer.index(files.get(4).getId(), outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(2504, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
+        assertNotNull(catalogManager.getFile(files.get(4).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
-        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions("name", DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
+        checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId, new QueryOptions(name.toString(), DEFAULT_COHORT), sessionId).first()), catalogManager, dbName, sessionId);
     }
     
 
     private Cohort getDefaultCohort() throws CatalogException {
-        return catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first();
+        return catalogManager.getAllCohorts(studyId, new QueryOptions(name.toString(), DEFAULT_COHORT), sessionId).first();
     }
 
     @Test
@@ -161,6 +167,8 @@ public class ManifestFileIndexerTest {
                 .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchOptions, sessionId).first();
         assertEquals(job.getId(), transformedFile.getJobId());
+        File file = catalogManager.getFile(files.get(0).getId(), sessionId).first();
+        assertNotNull(file.getStats().get(FileMetadataReader.VARIANT_STATS));
 
         //Create load index job
         queryOptions.append(AnalysisFileIndexer.TRANSFORM, false);
@@ -175,7 +183,7 @@ public class ManifestFileIndexerTest {
         assertEquals(Cohort.Status.READY, getDefaultCohort().getStatus());
         assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
         Cohort defaultCohort = catalogManager.getAllCohorts(studyId,
-                new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), DEFAULT_COHORT), sessionId).first();
+                new QueryOptions(name.toString(), DEFAULT_COHORT), sessionId).first();
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
     }
     

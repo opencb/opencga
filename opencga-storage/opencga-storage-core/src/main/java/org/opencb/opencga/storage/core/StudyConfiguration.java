@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -26,6 +27,7 @@ import org.opencb.datastore.core.ObjectMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -314,6 +316,12 @@ public class StudyConfiguration implements Cloneable {
         return inverseMap;
     }
 
+    /**
+     * Return a set of indexed samples in a study.
+     *
+     * @param studyConfiguration Selected study
+     * @return  Map between the indexed sample name and its identifier
+     */
     public static BiMap<String, Integer> getIndexedSamples(StudyConfiguration studyConfiguration) {
         BiMap<Integer, String> idSample = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
         BiMap<String, Integer> sampleIds = HashBiMap.create();
@@ -327,7 +335,15 @@ public class StudyConfiguration implements Cloneable {
         return sampleIds;
     }
 
-    public static BiMap<String, Integer> getSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
+    /**
+     * Return all the indexed samples of an study plus the samples from a set of files.
+     * Return a map between the sampleName and its position.
+     *
+     * @param studyConfiguration    Selected study
+     * @param fileIds               Additional files to include
+     * @return      Map between sampleName and position
+     */
+    public static BiMap<String, Integer> getIndexedSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
         BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
         int position = 0;
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();
@@ -340,6 +356,51 @@ public class StudyConfiguration implements Cloneable {
             for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
                 samplesPosition.putIfAbsent(idSamples.get(sampleId), position++);
             }
+        }
+        return samplesPosition;
+    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned
+     *
+     * @param studyConfiguration    Study configuration
+     * @param returnedSamples       List of samples to be returned
+     * @return
+     */
+    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
+            StudyConfiguration studyConfiguration,
+            LinkedHashSet<String> returnedSamples) {
+        return getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamplesPosition);
+    }
+
+    public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
+            StudyConfiguration studyConfiguration,
+            LinkedHashSet<String> returnedSamples,
+            Function<StudyConfiguration, BiMap<String, Integer>> getIndexedSamplesPosition) {
+        LinkedHashMap<String, Integer> samplesPosition;
+        if (returnedSamples == null || returnedSamples.isEmpty()) {
+            BiMap<Integer, String> unorderedSamplesPosition = getIndexedSamplesPosition(studyConfiguration).inverse();
+            samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
+            for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
+                samplesPosition.put(unorderedSamplesPosition.get(i), i);
+            }
+        } else {
+            samplesPosition = new LinkedHashMap<>(returnedSamples.size());
+            int index = 0;
+            BiMap<String, Integer> indexedSamplesId = getIndexedSamplesPosition.apply(studyConfiguration);
+            for (String returnedSample : returnedSamples) {
+                if (!returnedSample.isEmpty() && StringUtils.isNumeric(returnedSample)) {
+                    returnedSample = studyConfiguration.getSampleIds().inverse().get(Integer.parseInt(returnedSample));
+                }
+                if (!samplesPosition.containsKey(returnedSample)) {
+                    if (indexedSamplesId.containsKey(returnedSample)) {
+                        samplesPosition.put(returnedSample, index++);
+                    }
+                }
+            }
+//                for (String sample : indexedSamplesId.keySet()) {
+//                    samplesPosition.put(sample, index++);
+//                }
         }
         return samplesPosition;
     }

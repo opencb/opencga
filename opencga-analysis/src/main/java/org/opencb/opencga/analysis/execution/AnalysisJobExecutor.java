@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -46,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AnalysisJobExecutor {
 
@@ -188,7 +190,7 @@ public class AnalysisJobExecutor {
         validParams.addAll(manifest.getGlobalParams());
         validParams.add(new Option(execution.getOutput(), "Outdir", false));
         if (checkRequiredParams(params, validParams)) {
-            params = new HashMap<String, List<String>>(removeUnknownParams(params, validParams));
+            params = new HashMap<>(removeUnknownParams(params, validParams));
         } else {
             throw new AnalysisExecutionException("ERROR: missing some required params.");
         }
@@ -240,13 +242,45 @@ public class AnalysisJobExecutor {
         String commandLine = createCommandLine(executable, params);
         System.out.println(commandLine);
 
+        Map<String, String> plainParams = params.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().stream().collect(Collectors.joining(",")))
+        );
+
         return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, commandLine, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
+                randomString, temporalOutDirUri, executionName, plainParams, commandLine, false, false, new HashMap<>(), new HashMap<>());
+    }
+
+    @Deprecated
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Integer> inputFiles, final String sessionId,
+                                             String randomString, URI temporalOutDirUri, String commandLine,
+                                             boolean execute, boolean simulate, Map<String, Object> attributes,
+                                             Map<String, Object> resourceManagerAttributes)
+            throws AnalysisExecutionException, CatalogException {
+        String[] args = Commandline.translateCommandline(commandLine);
+        Map<String, String> params = new HashMap<>();
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].startsWith("-")) {
+                String key = args[i].replaceAll("^--?", "");
+                String value;
+                if (args.length == i + 1 || args[i + 1].startsWith("-")) {
+                    value = "";
+                } else {
+                    value = args[i + 1];
+                    i++;
+                }
+                params.put(key, value);
+            }
+        }
+        return createJob(catalogManager, studyId, jobName, toolName, description, outDir, inputFiles, sessionId,
+                randomString, temporalOutDirUri, "", params, commandLine, execute, simulate, attributes, resourceManagerAttributes);
     }
 
     public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
                                              File outDir, List<Integer> inputFiles, final String sessionId,
-                                             String randomString, URI temporalOutDirUri, String commandLine,
+                                             String randomString, URI temporalOutDirUri,
+                                             String executor, Map<String, String> params, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
                                              Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
@@ -267,7 +301,7 @@ public class AnalysisJobExecutor {
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
+                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
@@ -276,7 +310,7 @@ public class AnalysisJobExecutor {
             } else {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
+                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
             }
         }

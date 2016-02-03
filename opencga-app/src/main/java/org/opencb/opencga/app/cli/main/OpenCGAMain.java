@@ -435,19 +435,14 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        int studyId = catalogManager.getStudyId(c.id);
                         int outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = c.cOpt.getQueryOptions();
-                        if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
-//                            queryOptions.put(AnalysisJobExecutor.RECORD_OUTPUT, false);
-                        } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
-//                            queryOptions.add(AnalysisJobExecutor.RECORD_OUTPUT, true);
-                        }
+
+                        queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(fileId, outdirId, sessionId, queryOptions), null));
+                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
 
                         break;
                     }

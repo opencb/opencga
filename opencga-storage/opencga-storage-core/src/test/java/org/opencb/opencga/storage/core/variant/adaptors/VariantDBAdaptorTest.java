@@ -30,6 +30,8 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
@@ -66,7 +68,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), true);
+                    .append(VariantStorageManager.Options.ANNOTATE.key(), true)
+                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName());
             runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
@@ -159,17 +162,26 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_id() {
+        testGetAllVariants_rs(VariantDBAdaptor.VariantQueryParams.ID.key());
+    }
+    @Test
+    public void testGetAllVariants_xref() {
+        testGetAllVariants_rs(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key());
+    }
+
+    public void testGetAllVariants_rs(String key) {
         // This test queries a single ID with no more options
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005");
+        Query query = new Query(key, "rs1137005");
         queryResult = dbAdaptor.get(query, null);
         Variant variant = queryResult.first();
         assertEquals(1, queryResult.getNumResults());
         assertEquals(variant.getStart(), Integer.valueOf(1650807));
         assertTrue(variant.getIds().contains("rs1137005"));
 
-        query = new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), "rs1137005,rs150535390");
+        query = new Query(key, "rs1137005,rs150535390");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
+        queryResult.getResult().forEach(v -> assertTrue(v.getIds().contains("rs1137005") || v.getIds().contains("rs150535390")));
     }
 
     @Test
@@ -215,6 +227,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(64, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(115, queryResult.getNumResults());
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1");
+        queryResult = dbAdaptor.get(query, options);
+        assertEquals(115, queryResult.getNumResults());
 
         options.put("sort", true);
         query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:14000000-160000000");

@@ -496,7 +496,7 @@ public class OptionsParser {
         @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
         class AnnotationCommand extends BaseStudyCommand {
 
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
             String outdir = "";
 
             @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)

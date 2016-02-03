@@ -216,7 +216,7 @@ public class VariantStorage {
                 attributes, new HashMap<>());
     }
 
-    public QueryResult<Job> annotateVariants(int indexedFileId, Integer outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> annotateVariants(int studyId, int outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -224,19 +224,7 @@ public class VariantStorage {
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         final long start = System.currentTimeMillis();
 
-        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
-        int studyId = catalogManager.getStudyIdByFileId(indexedFile.getId());
-        if (indexedFile.getType() != File.Type.FILE || indexedFile.getBioformat() != File.Bioformat.VARIANT) {
-            throw new AnalysisExecutionException("Expected file with {type: FILE, bioformat: VARIANT}. " +
-                    "Got {type: " + indexedFile.getType() + ", bioformat: " + indexedFile.getBioformat() + "}");
-        }
-
-        File outDir;
-        if (outDirId == null || outDirId <= 0) {
-            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
-        } else {
-            outDir = catalogManager.getFile(outDirId, null, sessionId).first();
-        }
+        File outDir = catalogManager.getFile(outDirId, null, sessionId).first();
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
@@ -249,7 +237,7 @@ public class VariantStorage {
 
         /** create command line **/
         String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(indexedFile.getId()), indexedFile.getBioformat(), sessionId);
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)

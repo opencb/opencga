@@ -89,6 +89,8 @@ public interface AuthorizationManager {
 
     void filterJobs(String userId, List<Job> jobs) throws CatalogException;
 
+    void filterJobs(String userId, List<Job> jobs, Integer studyId) throws CatalogException;
+
     void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException;
 
     void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException;

@@ -28,6 +28,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CatalogIndividualDBAdaptor individualDBAdaptor;
     private final AuditManager auditManager;
 
+    private final static QueryOptions FILE_INCLUDE_QUERY_OPTIONS = new QueryOptions("include",
+            Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
+
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
         this.auditManager = auditManager;
         userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
@@ -56,6 +59,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public User.Role getUserRole(String userId) throws CatalogException {
         return userDBAdaptor.getUser(userId, new QueryOptions("include", Arrays.asList("role")), null).first().getRole();
     }
+
+    /*
+     * Check permission methods
+     */
 
     @Override
     public void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException {
@@ -122,6 +129,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException {
+        checkFilePermission(fileId, userId, permission, null);
+    }
+
+    private void checkFilePermission(int fileId, String userId, CatalogPermission permission,
+                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (isAdmin(userId)) {
             return;
         }
@@ -130,25 +142,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        AclEntry fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId), new StudyAuthenticationContext(studyId));
-
-
-        final boolean auth;
-        switch (permission) {
-            case READ:
-                auth = fileAcl.isRead();
-                break;
-            case WRITE:
-                auth = fileAcl.isWrite();
-                break;
-            case DELETE:
-                auth = fileAcl.isDelete();
-                break;
-            default:
-                auth = false;
-                break;
+        if (studyAuthenticationContext == null) {
+            studyAuthenticationContext = new StudyAuthenticationContext(studyId);
         }
-        if (!auth) {
+        AclEntry fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId), studyAuthenticationContext);
+
+
+        if (!isAuth(permission, fileAcl)) {
             throw CatalogAuthorizationException.denny(userId, permission.toString(), "File", fileId, null);
         }
 
@@ -163,22 +163,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         AclEntry sampleAcl = resolveSampleAcl(sampleId, userId, getGroupBelonging(studyId, userId));
 
-        final boolean auth;
-        switch (permission) {
-            case READ:
-                auth = sampleAcl.isRead();
-                break;
-            case WRITE:
-                auth = sampleAcl.isWrite();
-                break;
-            case DELETE:
-                auth = sampleAcl.isDelete();
-                break;
-            default:
-                auth = false;
-                break;
-        }
-        if (!auth) {
+        if (!isAuth(permission, sampleAcl)) {
             throw CatalogAuthorizationException.denny(userId, permission.toString(), "Sample", sampleId, null);
         }
 
@@ -214,7 +199,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
+    /**
+     * This method don't check if the user {@link #isAdmin(String)} or {@link #isStudyOwner(int, String)}
+     */
     private AclEntry resolveFileAcl(int fileId, String userId, int studyId, Group group, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
+        return resolveFileAcl(fileDBAdaptor.getFile(fileId, FILE_INCLUDE_QUERY_OPTIONS).first(), userId, studyId, group, studyAuthenticationContext);
+    }
+
+    /**
+     * Resolves the permissions between a sample and a user.
+     * This method don't check if the user {@link #isAdmin(String)} or {@link #isStudyOwner(int, String)}
+     *
+     * @param file  Must contain id, acl and path. Get file with with {@link #FILE_INCLUDE_QUERY_OPTIONS}
+     */
+    private AclEntry resolveFileAcl(File file, String userId, int studyId, Group group, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (group == null) {
             return new AclEntry(userId, false, false, false, false);
         }
@@ -223,7 +221,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         AclEntry studyAcl = getStudyACL(userId, group);
         AclEntry fileAcl = null;
 
-        File file = fileDBAdaptor.getFile(fileId, fileIncludeQueryOptions).first();
         List<String> paths = FileManager.getParentPaths(file.getPath());
         Map<String, Map<String, AclEntry>> pathAclMap = getFileAclEntries(studyAuthenticationContext, userId, studyId, groupId, file);
 
@@ -251,16 +248,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return fileAcl;
     }
 
-    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId, int studyId, String groupId, File file) throws CatalogDBException {
+    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext,
+                                                                 String userId, int studyId, String groupId, File file)
+            throws CatalogDBException {
         return getFileAclEntries(studyAuthenticationContext, userId, studyId, groupId, FileManager.getParentPaths(file.getPath()));
     }
 
-    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId, int studyId, String groupId, List<String> paths) throws CatalogDBException {
-//        AuthContext authContext = authContextMap.get(studyId);
-//        if (authContext == null) {
-//            authContext = new AuthContext();
-//            authContextMap.put(studyId, authContext);
-//        }
+    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext,
+                                                                 String userId, Group group, List<File> files)
+            throws CatalogDBException {
+        Set<String> paths = new HashSet<>();
+        for (File file : files) {
+            paths.addAll(FileManager.getParentPaths(file.getPath()));
+        }
+//        System.out.println("Querying for " + paths.size() + " paths to the authContext");
+        return getFileAclEntries(studyAuthenticationContext, userId, studyAuthenticationContext.studyId, "@" + group.getId(), new ArrayList<>(paths));
+    }
+
+    /**
+     * Returns the AclEntries for the user, group and {@link AclEntry#USER_OTHERS_ID}
+     *
+     * @param studyAuthenticationContext    Context with already fetched elements. Will avoid fetch extra data
+     * @param userId                        User id
+     * @param studyId                       Study identifier
+     * @param groupId                       User belonging group
+     * @param paths                         List of paths to check
+     * @return                              Map (Path -> Map (UserId -> AclEntry) )
+     * @throws CatalogDBException
+     */
+    private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext,
+                                                                 String userId, int studyId, String groupId, List<String> paths)
+            throws CatalogDBException {
         for (Iterator<String> iterator = paths.iterator(); iterator.hasNext(); ) {
             String path = iterator.next();
             if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
@@ -290,9 +308,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
                 }
             }
-            for (Map.Entry<String, Map<String, AclEntry>> entry : map.entrySet()) {
-
-            }
         }
 
         return studyAuthenticationContext.pathUserAclMap;
@@ -302,6 +317,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * Resolves the permissions between a sample and a user.
      * Returns the most specific matching ACL following the next sequence:
      * user > group > others > study
+     * This method don't check if the user {@link #isAdmin(String)} or {@link #isStudyOwner(int, String)}
      *
      * @param group     User belonging group.
      * @throws CatalogException
@@ -323,6 +339,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * Resolves the permissions between a sample and a user.
      * Returns the most specific matching ACL following the next sequence:
      * user > group > others > study
+     * This method don't check if the user {@link #isAdmin(String)} or {@link #isStudyOwner(int, String)}
      *
      * @param group     User belonging group.
      * @throws CatalogException
@@ -359,6 +376,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return new AclEntry(userId, group.getPermissions().isRead(), group.getPermissions().isWrite(), false, group.getPermissions().isDelete());
         }
     }
+
+    /*
+     * ACL Management methods
+     */
 
     @Override
     public QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException {
@@ -409,6 +430,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("adl", queryResult.first()), null, "unsetAcl", null);
         return queryResult;
     }
+
+    /*
+     * Filter methods.
+     * Given a list of elements, remove those that the user can't read
+     */
 
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
@@ -472,17 +498,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        Set<String> paths = new HashSet<>();
-        for (File file : files) {
-            paths.addAll(FileManager.getParentPaths(file.getPath()));
-        }
-//        System.out.println("Querying for " + paths.size() + " paths to the authContext");
-        getFileAclEntries(studyAuthenticationContext, userId, studyId, "@" + group.getId(), new ArrayList<>(paths));
+        getFileAclEntries(studyAuthenticationContext, userId, group, files);
 
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {
             File file = fileIt.next();
-            if (!resolveFileAcl(file.getId(), userId, studyId, group, studyAuthenticationContext).isRead()) {
+            if (!resolveFileAcl(file, userId, studyId, group, studyAuthenticationContext).isRead()) {
                 fileIt.remove();
             }
         }
@@ -513,7 +534,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterJobs(String userId, List<Job> jobs) throws CatalogException {
-        filterJobs(userId, jobs, null);
+        filterJobs(userId, jobs, (StudyAuthenticationContext) null);
+    }
+
+    @Override
+    public void filterJobs(String userId, List<Job> jobs, Integer studyId) throws CatalogException {
+        filterJobs(userId, jobs, studyId == null? null : new StudyAuthenticationContext(studyId));
     }
 
     public void filterJobs(String userId, List<Job> jobs, StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
@@ -523,36 +549,55 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isAdmin(userId)) {
             return;
         }
+        if (studyAuthenticationContext != null) {
+            if (isStudyOwner(studyAuthenticationContext.studyId, userId)) {
+                return;
+            }
+        }
         Map<Integer, StudyAuthenticationContext> studyAuthContextMap = new HashMap<>();
         if (studyAuthenticationContext != null) {
             studyAuthContextMap.put(studyAuthenticationContext.studyId, studyAuthenticationContext);
         }
 
-        job_loop: for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
+        for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext(); ) {
             Job job = iterator.next();
             int studyId;
             StudyAuthenticationContext specificStudyAuthenticationContext;
             if (studyAuthenticationContext == null) {
                 studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
                 specificStudyAuthenticationContext = studyAuthContextMap.getOrDefault(studyId, new StudyAuthenticationContext(studyId));
+                if (isStudyOwner(studyId, userId)) {
+                    continue;
+                }
             } else {
                 specificStudyAuthenticationContext = studyAuthenticationContext;
                 studyId = studyAuthenticationContext.studyId;
             }
             Group group = getGroupBelonging(studyId, userId);
             if (job.getOutput() == null || job.getInput() == null) {
-                job = readJob(job.getId());
+                job = fetchJob(job.getId());
             }
+            List<File> result = fetchJobFiles(job);
+            if (result.isEmpty()) {
+                continue;
+            }
+            getFileAclEntries(specificStudyAuthenticationContext, userId, group, result);
+            Map<Integer, File> fileIdMap = result.stream().collect(Collectors.toMap(File::getId, f -> f));
+
+            boolean removed = false;
             for (Integer fileId : job.getOutput()) {
-                if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
+                if (!resolveFileAcl(fileIdMap.get(fileId), userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
-                    continue job_loop;
+                    removed = true;
+                    break;
                 }
             }
-            for (Integer fileId : job.getInput()) {
-                if (!resolveFileAcl(fileId, userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
-                    iterator.remove();
-                    continue job_loop;
+            if (!removed) {
+                for (Integer fileId : job.getInput()) {
+                    if (!resolveFileAcl(fileIdMap.get(fileId), userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
+                        iterator.remove();
+                        break;
+                    }
                 }
             }
         }
@@ -607,52 +652,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    /**
-     * Read job information needed to check if can be read or not.
-     *
-     * @return Job : { id, input, output, outDirId }
-     */
-    private Job readJob(int jobId) throws CatalogDBException {
-        return jobDBAdaptor.getJob(jobId, new QueryOptions("include",
-                Arrays.asList("projects.studies.jobs.id",
-                        "projects.studies.jobs.status",
-                        "projects.studies.jobs.input",
-                        "projects.studies.jobs.output",
-                        "projects.studies.jobs.outDirId")
-                )
-        ).first();
-    }
-
     @Override
     public void checkReadJob(String userId, int jobId) throws CatalogException {
-        _checkReadJob(userId, readJob(jobId));
+        _checkReadJob(userId, fetchJob(jobId));
     }
 
     @Override
     public void checkReadJob(String userId, Job job) throws CatalogException {
             //If the given job does not contain the required fields, query Catalog
             //Only non READY or ERROR jobs can have null output files
-            if ((job.getOutput() == null && (job.getStatus() == null || !job.getStatus().equals(Job.Status.READY) || !job.getStatus().equals(Job.Status.ERROR)))
+            if ((job.getOutput() == null
+                    && (job.getStatus() == null || !job.getStatus().equals(Job.Status.READY) || !job.getStatus().equals(Job.Status.ERROR)))
                     || job.getInput() == null) {
-                job = readJob(job.getId());
+                job = fetchJob(job.getId());
             }
             _checkReadJob(userId, job);
     }
 
     private void _checkReadJob(String userId, Job job) throws CatalogException {
+        int studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+        StudyAuthenticationContext context = new StudyAuthenticationContext(studyId);
+
+        //Make all the required queries once
+        List<File> files = fetchJobFiles(job);
+
+        getFileAclEntries(context, userId, getGroupBelonging(studyId, userId), files);
         try {
             if (job.getOutput() != null) {
                 for (Integer fileId : job.getOutput()) {
-                    checkFilePermission(fileId, userId, CatalogPermission.READ);
+                    checkFilePermission(fileId, userId, CatalogPermission.READ, context);
                 }
             }
             for (Integer fileId : job.getInput()) {
-                checkFilePermission(fileId, userId, CatalogPermission.READ);
+                checkFilePermission(fileId, userId, CatalogPermission.READ, context);
             }
         } catch (CatalogAuthorizationException e) {
             throw CatalogAuthorizationException.cantRead(userId, "Job", job.getId(), job.getName());
         }
     }
+
 
     @Override
     public void checkReadCohort(String userId, Cohort cohort) throws CatalogException {
@@ -667,6 +705,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw CatalogAuthorizationException.cantRead(userId, "Cohort", cohort.getId(), cohort.getName());
         }
     }
+
+    /*
+     * Group management methods
+     */
 
     @Override
     public Group getGroupBelonging(int studyId, String userId) throws CatalogException {
@@ -709,19 +751,68 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
 
-    /**
-     * Use StudyACL for all files.
+    /*
+     * Helper methods
      */
 
+    //TODO: Cache this?
     private boolean isStudyOwner(int studyId, String userId) throws CatalogDBException {
         return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
     }
 
+    //TODO: Cache this?
     private boolean isAdmin(String userId) throws CatalogException {
         return getUserRole(userId).equals(User.Role.ADMIN);
     }
 
-    //TODO: Check folder ACLs
-    private final QueryOptions fileIncludeQueryOptions = new QueryOptions("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.path", "projects.studies.files.acls"));
+    private boolean isAuth(CatalogPermission permission, AclEntry acl) {
+        final boolean auth;
+        switch (permission) {
+            case READ:
+                auth = acl.isRead();
+                break;
+            case WRITE:
+                auth = acl.isWrite();
+                break;
+            case DELETE:
+                auth = acl.isDelete();
+                break;
+            default:
+                auth = false;
+                break;
+        }
+        return auth;
+    }
 
+    public List<Integer> getFileIds(Job job) {
+        List<Integer> fileIds = new ArrayList<>(job.getOutput().size() + job.getInput().size());
+        fileIds.addAll(job.getOutput());
+        fileIds.addAll(job.getInput());
+        return fileIds;
+    }
+
+    /**
+     * Read job information needed to check if can be read or not.
+     *
+     * @return Job : { id, input, output, outDirId }
+     */
+    private Job fetchJob(int jobId) throws CatalogDBException {
+        return jobDBAdaptor.getJob(jobId, new QueryOptions("include",
+                        Arrays.asList("projects.studies.jobs.id",
+                                "projects.studies.jobs.status",
+                                "projects.studies.jobs.input",
+                                "projects.studies.jobs.output",
+                                "projects.studies.jobs.outDirId")
+                )
+        ).first();
+    }
+
+    private List<File> fetchJobFiles(Job job) throws CatalogDBException {
+        List<Integer> fileIds = getFileIds(job);
+        if (fileIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        QueryOptions fileQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.id.toString(), fileIds);
+        return fileDBAdaptor.getAllFiles(fileQuery, FILE_INCLUDE_QUERY_OPTIONS).getResult();
+    }
 }

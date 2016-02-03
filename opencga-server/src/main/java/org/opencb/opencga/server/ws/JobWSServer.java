@@ -90,6 +90,8 @@ public class JobWSServer extends OpenCGAWSServer {
         @ApiModelProperty(required = true) 
         public String toolName;
         public String description;
+        public String execution;
+        public Map<String, String> params;
         public long startTime;
         public long endTime;
         @ApiModelProperty(required = true)
@@ -113,7 +115,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
-                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
+                    job.execution, job.params, job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
                     job.resourceManagerAttributes, Job.Status.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

@@ -78,7 +78,9 @@ public interface CatalogIndividualDBAdaptor {
 
     QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet) throws CatalogDBException;
+    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
 
     QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
