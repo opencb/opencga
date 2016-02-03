@@ -46,7 +46,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -743,10 +742,6 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void searchFileTest() throws CatalogException, IOException {
 
-
-    }
-
-    private void testAttributesSearch() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         Query query;
@@ -822,6 +817,7 @@ public class CatalogManagerTest extends GenericTest {
 
         String attributes = CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key();
         String nattributes = CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key();
+        String battributes = CatalogFileDBAdaptor.QueryParams.BATTRIBUTES.key();
         /*
 
         interface Searcher {
@@ -905,6 +901,28 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, new Query(nattributes + ".numValue", "=10"), sessionIdUser);
         assertEquals(0, result.getNumResults());
 
+        result = catalogManager.searchFile(studyId, new Query(attributes + ".boolean", "true"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(attributes + ".boolean", "=true"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(attributes + ".boolean", "=1"), sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "true"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "=true"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        // This has to return not only the ones with the attribute boolean = false, but also all the files that does not contain
+        // that attribute at all.
+        result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "!=true"), sessionIdUser);
+        assertEquals(7, result.getNumResults());
+
+        result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "=false"), sessionIdUser);
+        assertEquals(1, result.getNumResults());
 
         query = new Query();
         query.append(attributes + ".name", "fileTest1k");

@@ -25,8 +25,8 @@ import org.opencb.opencga.catalog.models.User;
 
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -98,6 +98,9 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         DISK_QUOTA("diskQuota", INTEGER_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         PROJECT_ID("projects.id", INTEGER_ARRAY, ""),
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),

@@ -119,6 +119,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         SOURCE("source", TEXT_ARRAY, ""),
         INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 

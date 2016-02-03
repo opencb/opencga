@@ -79,6 +79,9 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER, ""),
         USER_ID("userId", TEXT, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY_ID("study.id", INTEGER_ARRAY, ""),
         STUDY_NAME("study.name", TEXT_ARRAY, ""),

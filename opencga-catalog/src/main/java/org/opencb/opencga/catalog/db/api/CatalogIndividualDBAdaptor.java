@@ -28,8 +28,8 @@ import org.opencb.opencga.catalog.models.Individual;
 
 import java.util.Map;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
+import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -86,7 +86,9 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_NAME("population.name", TEXT_ARRAY, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT_ARRAY, ""),
         POPULATION_DESCRIPTION("population.description", TEXT_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT_ARRAY, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
         // TOCHECK: Pedro. Should we be considering annotations?

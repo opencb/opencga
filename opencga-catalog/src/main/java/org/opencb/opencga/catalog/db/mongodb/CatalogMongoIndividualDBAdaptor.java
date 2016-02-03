@@ -535,7 +535,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         for (Map.Entry<String, Object> entry : query.entrySet()) {
-            QueryParams queryParam = QueryParams.getParam(entry.getKey());
+            String key = entry.getKey().split("\\.")[0];
+            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+                    : QueryParams.getParam(key);
             try {
                 switch (queryParam) {
                     case ID:
@@ -543,6 +545,17 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                         break;
                     case STUDY_ID:
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case ATTRIBUTES:
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case BATTRIBUTES:
+                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case NATTRIBUTES:
+                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

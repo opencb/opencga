@@ -614,7 +614,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
-            QueryParams queryParam = QueryParams.getParam(entry.getKey());
+            String key = entry.getKey().split("\\.")[0];
+            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+                    : QueryParams.getParam(key);
             try {
                 switch (queryParam) {
                     case ID:
@@ -622,6 +624,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
                         break;
                     case USER_ID:
                         addOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    case ATTRIBUTES:
+                        addAutoOrQuery("projects." + entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case BATTRIBUTES:
+                        String mongoKey = "projects." + entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case NATTRIBUTES:
+                        mongoKey = "projects." + entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
+                        addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     default:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
