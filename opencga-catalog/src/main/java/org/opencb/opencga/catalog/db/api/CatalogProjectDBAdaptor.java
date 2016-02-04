@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -58,6 +59,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
     int getProjectId(String userId, String projectAlias) throws CatalogDBException;
@@ -97,9 +99,8 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
         ACL_DELETE("acl.delete", BOOLEAN, "");
 
-        private static Map<String, QueryParams> map;
+        private static Map<String, QueryParams> map = new HashMap<>();
         static {
-            map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);
             }

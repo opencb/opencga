@@ -240,6 +240,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("rename project alias", startTime, result);
     }
 
+    @Deprecated
     @Override
     public QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();

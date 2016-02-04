@@ -60,28 +60,6 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }
 
-    //    protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-//        if (query != null && query.containsKey(queryParam)) {
-//            addIntegerOrQuery(mongoDbField, query.getAsIntegerList(queryParam), andBsonList);
-//        }
-//    }
-//
-//    protected void addIntegerOrQuery(String mongoDbField, List<Integer> queryValues, List<Bson> andBsonList) {
-//        if (queryValues.size() == 1) {
-//            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
-//        } else {
-//            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
-//            for (Integer queryItem : queryValues) {
-//                orBsonList.add(Filters.eq(mongoDbField, queryItem));
-//            }
-//            andBsonList.add(Filters.or(orBsonList));
-//        }
-//    }
-
-//    protected void addBooleanOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-//        addQueryFilter(mongoDbField, queryParam, query, MongoDBQueryUtils.ParamType.BOOLEAN, MongoDBQueryUtils.ComparisonOperator.EQUAL,
-//                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
-//    }
 
     @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
@@ -96,6 +74,13 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
     }
 
 
+    @Deprecated
+    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator
+            comparisonOperator, List<Bson> andBsonList) {
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, comparisonOperator,
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+    }
+
     /**
      * It will add a filter to andBsonList based on the query object. The operator will always be an EQUAL.
      * @param mongoDbField The field used in the mongoDB.
@@ -106,8 +91,8 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
      * @param andBsonList The list where created filter will be added to.
      */
     protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUAL, MongoDBQueryUtils
-                .LogicalOperator.OR, andBsonList);
+        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
     /**
@@ -128,24 +113,6 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
             }
         }
     }
-
-    protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, MongoDBQueryUtils.ComparisonOperator
-            comparisonOperator, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, comparisonOperator,
-                MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
-    }
-
-//    protected void addStringOrQuery(String mongoDbField, List<String> queryValues, List<Bson> andBsonList) {
-//        if (queryValues.size() == 1) {
-//            andBsonList.add(Filters.eq(mongoDbField, queryValues.get(0)));
-//        } else {
-//            List<Bson> orBsonList = new ArrayList<>(queryValues.size());
-//            for (String queryItem : queryValues) {
-//                orBsonList.add(Filters.eq(mongoDbField, queryItem));
-//            }
-//            andBsonList.add(Filters.or(orBsonList));
-//        }
-//    }
 
     protected void addQueryFilter(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType,
                                   MongoDBQueryUtils.ComparisonOperator comparisonOperator, MongoDBQueryUtils.LogicalOperator operator,
