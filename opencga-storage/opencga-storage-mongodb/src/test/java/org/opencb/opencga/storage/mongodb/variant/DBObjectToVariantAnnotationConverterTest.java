@@ -29,7 +29,7 @@ public class DBObjectToVariantAnnotationConverterTest {
         // 19:45411941:T:C
         // curl 'http://${CELLBASE_HOST}/cellbase/webservices/rest/v3/hsapiens/genomic/variant/19:45411941:T:C/full_annotation?exclude
         // =expression'
-        String variantJson = "{\"chromosome\":\"19\",\"start\":45411941,\"end\":0,\"reference\":\"T\",\"alternate\":\"C\"," +
+        String variantJson = "{\"chromosome\":\"19\",\"start\":45411941,\"reference\":\"T\",\"alternate\":\"C\"," +
                 "\"id\":\"rs429358\",\"consequenceTypes\":[{\"geneName\":\"TOMM40\",\"ensemblGeneId\":\"ENSG00000130204\"," +
                 "\"ensemblTranscriptId\":\"ENST00000252487\",\"strand\":\"+\",\"biotype\":\"protein_coding\"," +
                 "\"sequenceOntologyTerms\":[{\"accession\":\"SO:0001632\",\"name\":\"downstream_gene_variant\"}]}," +
@@ -69,36 +69,36 @@ public class DBObjectToVariantAnnotationConverterTest {
                 "\"sequenceOntologyTerms\":[{\"accession\":\"SO:0001583\",\"name\":\"missense_variant\"}],\"cdnaPosition\":653}," +
                 "{\"sequenceOntologyTerms\":[{\"accession\":\"\",\"name\":\"regulatory_region_variant\"}]}]," +
                 "\"populationFrequencies\":[{\"study\":\"ESP_6500\",\"population\":\"European_American\"," +
-                "\"superPopulation\":\"European_American\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.88312," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.88312," +
                 "\"altAlleleFreq\":0.11688,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0}," +
-                "{\"study\":\"ESP_6500\",\"population\":\"African_American\",\"superPopulation\":\"African_American\"," +
+                "{\"study\":\"ESP_6500\",\"population\":\"African_American\"," +
                 "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.81068,\"altAlleleFreq\":0.18932,\"refHomGenotypeFreq\":0.0," +
                 "\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000GENOMES_phase_1\",\"population\":\"AFR\"," +
-                "\"superPopulation\":\"AFR\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.74,\"altAlleleFreq\":0.26," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.74,\"altAlleleFreq\":0.26," +
                 "\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000GENOMES_phase_1\"," +
-                "\"population\":\"AMR\",\"superPopulation\":\"AMR\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.89," +
+                "\"population\":\"AMR\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.89," +
                 "\"altAlleleFreq\":0.11,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0}," +
-                "{\"study\":\"1000GENOMES_phase_1\",\"population\":\"ASN\",\"superPopulation\":\"ASN\",\"refAllele\":\"T\"," +
+                "{\"study\":\"1000GENOMES_phase_1\",\"population\":\"ASN\",\"refAllele\":\"T\"," +
                 "\"altAllele\":\"C\",\"refAlleleFreq\":0.91,\"altAlleleFreq\":0.09,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0," +
-                "\"altHomGenotypeFreq\":0.0},{\"study\":\"1000GENOMES_phase_1\",\"population\":\"EUR\",\"superPopulation\":\"EUR\"," +
+                "\"altHomGenotypeFreq\":0.0},{\"study\":\"1000GENOMES_phase_1\",\"population\":\"EUR\"," +
                 "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.86,\"altAlleleFreq\":0.14,\"refHomGenotypeFreq\":0.0," +
                 "\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000GENOMES_phase_1\",\"population\":\"ALL\"," +
-                "\"superPopulation\":\"ALL\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.85,\"altAlleleFreq\":0.15," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.85,\"altAlleleFreq\":0.15," +
                 "\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000G_PHASE_3\"," +
-                "\"population\":\"1000G_PHASE_3_ALL\",\"superPopulation\":\"1000G_PHASE_3_ALL\",\"refAllele\":\"T\",\"altAllele\":\"C\"," +
+                "\"population\":\"1000G_PHASE_3_ALL\",\"refAllele\":\"T\",\"altAllele\":\"C\"," +
                 "\"refAlleleFreq\":0.84944,\"altAlleleFreq\":0.15056,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0," +
                 "\"altHomGenotypeFreq\":0.0},{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_SAS\"," +
-                "\"superPopulation\":\"1000G_PHASE_3_SAS\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.91309," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.91309," +
                 "\"altAlleleFreq\":0.08691,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0}," +
-                "{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_EAS\",\"superPopulation\":\"1000G_PHASE_3_EAS\"," +
+                "{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_EAS\"," +
                 "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.91369,\"altAlleleFreq\":0.08631,\"refHomGenotypeFreq\":0.0," +
                 "\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_AMR\"," +
-                "\"superPopulation\":\"1000G_PHASE_3_AMR\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.89625," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.89625," +
                 "\"altAlleleFreq\":0.10375,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0}," +
-                "{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_AFR\",\"superPopulation\":\"1000G_PHASE_3_AFR\"," +
+                "{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_AFR\"," +
                 "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.73222,\"altAlleleFreq\":0.26778,\"refHomGenotypeFreq\":0.0," +
                 "\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0},{\"study\":\"1000G_PHASE_3\",\"population\":\"1000G_PHASE_3_EUR\"," +
-                "\"superPopulation\":\"1000G_PHASE_3_EUR\",\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.84493," +
+                "\"refAllele\":\"T\",\"altAllele\":\"C\",\"refAlleleFreq\":0.84493," +
                 "\"altAlleleFreq\":0.15507,\"refHomGenotypeFreq\":0.0,\"hetGenotypeFreq\":0.0,\"altHomGenotypeFreq\":0.0}]," +
                 "\"conservation\":[{\"score\":0.11100000143051147,\"source\":\"phastCons\"},{\"score\":0.5609999895095825," +
                 "\"source\":\"phylop\"}],\"geneDrugInteraction\":[]," +
