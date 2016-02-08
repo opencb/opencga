@@ -1,13 +1,29 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.collect.BiMap;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converter.Converter;
+import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -20,10 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
+import com.google.common.collect.BiMap;
 
 /**
  * Created on 20/11/15.
@@ -84,6 +97,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         }
 
         for (VariantTableStudyRow row : rows) {
+            Map<String, String> annotMap = new HashMap<String, String>();
             Integer studyId = row.getStudyId();
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
@@ -96,27 +110,55 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             studyEntry.setSamplesPosition(returnedSamplesPosition);
 
             Integer nSamples = returnedSamplesPosition.size();
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
-            List<List<String>> samplesData = Arrays.asList(samplesDataArray);
+            annotMap.put("PASS", row.getPassCount().toString());
+            annotMap.put("CALL", row.getCallCount().toString());
 
             double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
             double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
             double opr = passrate * callrate;
             annotation.getAdditionalAttributes().put(studyId + "_PR", passrate);
             annotation.getAdditionalAttributes().put(studyId + "_CR", callrate);
-            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL pass rate
+            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL
+                                                                             // pass
+                                                                             // rate
 
+            BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
-                String returnedGenotype = genotype.equals(VariantTableStudyRow.OTHER) ? "." : genotype;
+                if (genotype.equals(VariantTableStudyRow.OTHER)) {
+                    continue; // skip OTHER -> see Complex type
+                }
+                String returnedGenotype = genotype;
                 for (Integer sampleId : row.getSampleIds(genotype)) {
-                    ArrayList<String> data = new ArrayList<>(1);
-                    data.add(returnedGenotype);
-                    String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                    samplesDataArray[returnedSamplesPosition.get(sampleName)] = data;
+                    String sampleName = mapSampleIds.get(sampleId);
+                    samplesDataArray[returnedSamplesPosition.get(sampleName)] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
                 }
             }
-
+            // Load Secondary Index
+            List<VariantProto.AlternateCoordinate> s2cgt = row.getComplexVariant().getSecondaryAlternatesList();
+            int secondaryAlternatesCount = row.getComplexVariant().getSecondaryAlternatesCount();
+            List<AlternateCoordinate> secAltArr = new ArrayList<AlternateCoordinate>(secondaryAlternatesCount);
+            if (secondaryAlternatesCount > 0) {
+                for (VariantProto.AlternateCoordinate altcoord : s2cgt) {
+                    VariantType vart = VariantType.valueOf(altcoord.getType().name());
+                    String chr = StringUtils.isEmpty(altcoord.getChromosome()) ? null : altcoord.getChromosome();
+                    Integer start = altcoord.getStart() == 0 ? null : altcoord.getStart();
+                    Integer end = altcoord.getEnd() == 0 ? null : altcoord.getEnd();
+                    String reference = StringUtils.isEmpty(altcoord.getReference()) ? null : altcoord.getReference();
+                    String alternate = StringUtils.isEmpty(altcoord.getAlternate()) ? null : altcoord.getAlternate();
+                    AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, vart);
+                    secAltArr.add(alt);
+                }
+            }
+            // Load complex genotypes
+            for (Entry<Integer, VariantProto.Genotype> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
+                String sampleName = mapSampleIds.get(entry.getKey());
+                VariantProto.Genotype xgt = entry.getValue();
+                String returnedGenotype = new Genotype(xgt).toGenotypeString();
+                samplesDataArray[returnedSamplesPosition.get(sampleName)] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
+            }
+            // Fill gaps (with HOM_REF)
             int homRef = 0;
             for (int i = 0; i < samplesDataArray.length; i++) {
                 if (samplesDataArray[i] == null) {
@@ -127,23 +169,22 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             if (homRef != row.getHomRefCount()) {
-                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect " + row
-                        .getHomRefCount();
+                String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
+                        + row.getHomRefCount();
                 if (failOnWrongVariants) {
                     throw new RuntimeException(message);
                 } else {
                     logger.warn(message);
                 }
             }
-
+            List<List<String>> samplesData = Arrays.asList(samplesDataArray);
             studyEntry.setSamplesData(samplesData);
-            studyEntry.setFormat(Collections.singletonList("GT"));
-            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", Collections.emptyMap())));
-
+            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.PASS_KEY));
+            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
+            studyEntry.setSecondaryAlternates(secAltArr);
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
-
         return variant;
     }
 

@@ -55,8 +55,11 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
+        </dependency>
+        <dependency>
+            <artifactId>hbase-server</artifactId>
+            <groupId>org.apache.hbase</groupId>
             <scope>provided</scope>
-            <version>2.6.3</version>
         </dependency>
         <dependency>
             <groupId>org.opencb.hpg</groupId>
@@ -64,10 +67,12 @@
             <version>${hpg-bigdata.version}</version>
             <exclusions>
                 <exclusion>
-                    <artifactId>
-                        hadoop-mapreduce-client-core
-                    </artifactId>
+                    <artifactId>hadoop-mapreduce-client-core</artifactId>
                     <groupId>org.apache.hadoop</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>hbase-server</artifactId>
+                    <groupId>org.apache.hbase</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -97,6 +102,10 @@
                     </artifactId>
                     <groupId>org.apache.hadoop</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>hbase-server</artifactId>
+                    <groupId>org.apache.hbase</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -118,9 +127,6 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-testing-util</artifactId>
-            <version>${hbase.version}</version>
-            <scope>test</scope>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
@@ -128,6 +134,12 @@
             <version>${hbase.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hbase-server</artifactId>
+                    <groupId>org.apache.hbase</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>
