@@ -88,13 +88,17 @@ public class StorageMain {
                     if (commandExecutor != null) {
                         try {
                             commandExecutor.loadStorageConfiguration();
-                            commandExecutor.execute();
                         } catch (IOException ex) {
                             if (commandExecutor.getLogger() == null) {
                                 ex.printStackTrace();
                             } else {
                                 commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
                             }
+                        }
+                        try {
+                            commandExecutor.execute();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
                             return 1;
                         } catch (Exception e) {
                             e.printStackTrace();

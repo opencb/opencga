@@ -76,6 +76,10 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
+        if (!hBaseManager.act(connection, tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+            return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 0, 0, "", "",
+                    Collections.emptyList());
+        }
         HBaseManager.HBaseTableFunction<Result> resultHBaseTableFunction = table -> table.get(get);
         Result result = hBaseManager.act(connection, tableName, resultHBaseTableFunction);
         logger.debug("Get VcfMeta from : {}", fileIds);
@@ -101,7 +105,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public void updateVcfMetaData(VariantSource variantSource) throws IOException {
-        if (hBaseManager.createTableIfNeeded(connection, tableName, genomeHelper.getColumnFamily())) {
+        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = new Put(genomeHelper.getMetaRowKey());

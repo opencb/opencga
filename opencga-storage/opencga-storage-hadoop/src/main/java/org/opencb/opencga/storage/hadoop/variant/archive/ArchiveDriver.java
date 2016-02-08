@@ -12,7 +12,10 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -23,7 +26,6 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
-import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.slf4j.Logger;
@@ -60,8 +62,14 @@ public class ArchiveDriver extends Configured implements Tool {
         String tableName = conf.get(GenomeHelper.CONFIG_ARCHIVE_TABLE);
         int studyId = conf.getInt(GenomeHelper.OPENCGA_STORAGE_HADOOP_STUDY_ID, -1);
         int fileId = conf.getInt(GenomeHelper.CONFIG_FILE_ID, -1);
+        GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
+        if (createArchiveTableIfNeeded(genomeHelper, tableName)) {
+            logger.info(String.format("Create table '%s' in hbase!", tableName));
+        } else {
+            logger.info(String.format("Table '%s' exists in hbase!", tableName));
+        }
 
         // add metadata config as string
         VcfMeta meta = readMetaData(conf, inputMetaFile);
@@ -71,10 +79,9 @@ public class ArchiveDriver extends Configured implements Tool {
         storeMetaData(meta, tableName, conf);
 
         GenomeHelper.setChunkSize(conf, 1000);
-        ArchiveHelper archiveHelper = new ArchiveHelper(conf, meta);
 
         /* JOB setup */
-        Job job = Job.getInstance(conf, "Genome Variant to HBase");
+        final Job job = Job.getInstance(conf, "opencga: Load file [" + fileId + "] to ArchiveTable '" + tableName + "'");
         job.setJarByClass(getClass());
         conf = job.getConfiguration();
         conf.set("mapreduce.job.user.classpath.first", "true");
@@ -95,13 +102,35 @@ public class ArchiveDriver extends Configured implements Tool {
         TableMapReduceUtil.initTableReducerJob(tableName, null, job, null, null, null, null, conf.getBoolean("addDependencyJars", true));
         job.setMapOutputValueClass(Put.class);
 
-        if (HBaseUtils.createTableIfNeeded(tableName, archiveHelper.getColumnFamily(), job.getConfiguration())) {
-            logger.info(String.format("Create table '%s' in hbase!", tableName));
-        } else {
-            logger.info(String.format("Table '%s' exists in hbase!", tableName));
-        }
+
+        Thread hook = new Thread(() -> {
+            try {
+                if (!job.isComplete()) {
+                    job.killJob();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
+        boolean succeed = job.waitForCompletion(true);
+        Runtime.getRuntime().removeShutdownHook(hook);
+
         // TODO: Update list of indexed files
-        return job.waitForCompletion(true) ? 0 : 1;
+
+
+        return succeed ? 0 : 1;
+    }
+
+    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
+            return createArchiveTableIfNeeded(genomeHelper, tableName, con);
+        }
+    }
+
+    public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+        return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+                Compression.Algorithm.GZ);
     }
 
     private void storeMetaData(VcfMeta meta, String tablename, Configuration conf) throws IOException {
