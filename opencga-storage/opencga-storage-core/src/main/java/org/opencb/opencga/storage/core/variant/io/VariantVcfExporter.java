@@ -391,7 +391,7 @@ public class VariantVcfExporter {
                         break;
                     case "populationFrequency":
                         stringBuilder.append(variant.getAnnotation().getPopulationFrequencies().stream()
-                                .map(t -> t.getSuperPopulation() + ":" + t.getPopulation() + ":" + t.getAltAlleleFreq())
+                                .map(t -> t.getPopulation() + ":" + t.getAltAlleleFreq())
                                 .collect(Collectors.joining(",")));
                         break;
                     case "cDnaPosition":
