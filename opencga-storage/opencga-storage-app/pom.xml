@@ -218,7 +218,7 @@
                         <targetPath>${basedir}/build/conf</targetPath>
                     </resource>
                     <resource>
-                        <directory>../opencga-storage-hadoop/target</directory>
+                        <directory>${basedir}/opencga-storage-hadoop/target</directory>
                         <includes>
                           <include>**/*-dependencies.jar</include>
                         </includes>

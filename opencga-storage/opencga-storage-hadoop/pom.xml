@@ -59,7 +59,6 @@
         <dependency>
             <artifactId>hbase-server</artifactId>
             <groupId>org.apache.hbase</groupId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.opencb.hpg</groupId>
@@ -152,6 +151,10 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+<!--                     <descriptor> -->
+<!--                       <moduleSets> -->
+<!--                       </moduleSets> -->
+<!--                     </descriptor> -->
                 </configuration>
                 <executions>
                     <execution>

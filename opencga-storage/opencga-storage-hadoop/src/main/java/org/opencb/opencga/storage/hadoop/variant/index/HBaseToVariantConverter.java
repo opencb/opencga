@@ -55,7 +55,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private List<String> returnedSamples = Collections.emptyList();
 
-    private static boolean failOnWrongVariants = false;
+    private static boolean failOnWrongVariants = false; //FIXME
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -95,20 +95,24 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         if (annotation.getAdditionalAttributes() == null) {
             annotation.setAdditionalAttributes(new HashMap<String, Object>());
         }
-
+        if (rows.isEmpty()) {
+            throw new IllegalStateException("No Row columns supplied for row " + variant);
+        }
         for (VariantTableStudyRow row : rows) {
             Map<String, String> annotMap = new HashMap<String, String>();
             Integer studyId = row.getStudyId();
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
-                continue;
+                throw new IllegalStateException("No study found for study ID: " + studyId);
             }
             StudyConfiguration studyConfiguration = queryResult.first();
-            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
 
-            LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
-            studyEntry.setSamplesPosition(returnedSamplesPosition);
+            // Make copy!!!
+            Map<String, Integer> returnedSamplesPosition = new HashMap<>(getReturnedSamplesPosition(studyConfiguration));
 
+            if (returnedSamplesPosition.isEmpty()) {
+                throw new IllegalStateException("No samples found for study!!!");
+            }
             Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
@@ -132,7 +136,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 String returnedGenotype = genotype;
                 for (Integer sampleId : row.getSampleIds(genotype)) {
                     String sampleName = mapSampleIds.get(sampleId);
-                    samplesDataArray[returnedSamplesPosition.get(sampleName)] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
+                    Integer integer = returnedSamplesPosition.get(sampleName);
+                    List<String> lst = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
+                    samplesDataArray[integer] = lst;
                 }
             }
             // Load Secondary Index
@@ -178,6 +184,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
+
+            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+            studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.PASS_KEY));
             studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
@@ -185,10 +194,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
+        if (variant.getStudiesMap().isEmpty()) {
+            throw new IllegalStateException("No Studies registered for variant!!! " + variant);
+        }
         return variant;
     }
 
-    private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
+    private Map<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             if (returnedSamples.isEmpty()) {

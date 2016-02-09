@@ -39,21 +39,23 @@ public class ArchiveResultToVariantConverter {
         this.metaIdx = new HashMap<Integer, VcfMeta>(metaIdx);
     }
 
-    public List<Variant> convert(Result value, Integer start, Integer end, boolean resolveConflict) throws InvalidProtocolBufferException {
+    public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws InvalidProtocolBufferException {
         return filter(convert(value, resolveConflict), start, end);
     }
 
-    private List<Variant> filter(List<Variant> variantList, Integer start, Integer end) {
+    private List<Variant> filter(List<Variant> variantList, Long start, Long end) {
         return variantList.stream() // only keep variants in
                 // overlapping this region
                 .filter(v -> variantCoveringRegion(v, start, end, true)).collect(Collectors.toList());
     }
 
-    public static boolean variantCoveringRegion(Variant v, Integer start, Integer end, boolean inclusive) {
+    public static boolean variantCoveringRegion(Variant v, Long start, Long end, boolean inclusive) {
+        int iStart = start.intValue();
+        int iEnd = end.intValue();
         if (inclusive) {
-            return end >= v.getStart() && start <= v.getEnd();
+            return iEnd >= v.getStart() && iStart <= v.getEnd();
         } else {
-            return end > v.getStart() && start < v.getEnd();
+            return iEnd > v.getStart() && iStart < v.getEnd();
         }
     }
 

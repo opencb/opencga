@@ -245,6 +245,9 @@ public class VariantTableStudyRow {
                 .filter(integer -> integer != null)
                 .collect(Collectors.toSet());
 
+        if (studyIds.isEmpty()) {
+            throw new IllegalStateException("No studies found!!!");
+        }
         List<VariantTableStudyRow> rows = new ArrayList<>(studyIds.size());
         for (Integer studyId : studyIds) {
             Variant variant = helper.extractVariantFromVariantRowKey(result.getRow());
@@ -382,7 +385,7 @@ public class VariantTableStudyRow {
         if (StringUtils.isNumeric(study)) {
             return Integer.parseInt(study);
         } else {
-            return null;
+            throw new IllegalStateException(String.format("Integer expected for study ID: extracted %s from %s ", study, columnKey));
         }
     }
 
@@ -397,11 +400,12 @@ public class VariantTableStudyRow {
         Set<Integer> homref = new HashSet<Integer>();
         VariantTableStudyRow row = new VariantTableStudyRow(studyId, variant);
         StudyEntry se = variant.getStudy(studyId.toString());
-        if (null != se.getAllAttributes()) { // SET PASS / CALL counts
-            String passStr = se.getAllAttributes().getOrDefault(PASS_KEY, "0");
+        if (null == se) {
+            throw new IllegalStateException("Study Entry of variant is null: " + variant);
+        }
+        if (null != se.getAllAttributes()) { // SET PASS counts
+            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(PASS_KEY, "0");
             row.setPassCount(Integer.valueOf(passStr));
-            //            String callStr = se.getAllAttributes().getOrDefault(CALL_KEY, "0");
-//            row.setCallCount(Integer.valueOf(callStr));
         }
         Set<String> sampleSet = se.getSamplesName();
         // Create Secondary index
@@ -429,6 +433,7 @@ public class VariantTableStudyRow {
             Genotype gt = new Genotype(gtStr);
             int[] alleleIdx = gt.getAllelesIdx();
             if (Arrays.equals(alleleIdx, homRef)) {
+                row.addCallCount(1);
                 if (!homref.add(sid)) {
                     throw new IllegalStateException("Sample already exists as hom_ref " + sample);
                 }

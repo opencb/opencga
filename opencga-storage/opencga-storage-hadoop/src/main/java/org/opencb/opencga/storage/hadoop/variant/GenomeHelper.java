@@ -316,6 +316,18 @@ public class GenomeHelper {
         return rk;
     }
 
+    public byte[] generateVariantPositionPrefix(String chrom, Long position) {
+        int pos = position.intValue();
+        int size = PVarchar.INSTANCE.estimateByteSizeFromLength(chrom.length()) + QueryConstants.SEPARATOR_BYTE_ARRAY.length
+                + PUnsignedInt.INSTANCE.estimateByteSize(pos);
+        byte[] rk = new byte[size];
+        int offset = 0;
+        offset += PVarchar.INSTANCE.toBytes(chrom, rk, offset);
+        rk[offset++] = QueryConstants.SEPARATOR_BYTE;
+        offset += PUnsignedInt.INSTANCE.toBytes(pos, rk, offset);
+        return rk;
+    }
+
     public Variant extractVariantFromVariantRowKey(byte[] variantRowKey) {
 //        String[] strings = splitVariantRowkey(variantRowKey);
 //        return new Variant(extractChromosomeFromVariantRowKey(strings),

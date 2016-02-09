@@ -126,10 +126,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             VariantTableHelper h = getHelper();
             String chr = h.extractChromosomeFromBlockId(sliceKey);
             Long sliceReg = h.extractSliceFromBlockId(sliceKey);
-            int startPos = (int) h.getStartPositionFromSlice(sliceReg);
-            int nextStartPos = (int) h.getStartPositionFromSlice(sliceReg + 1);
-            byte[] varStartKey = h.generateVariantRowKey(chr, startPos);
-            byte[] varEndKey = h.generateVariantRowKey(chr, nextStartPos);
+            long startPos = h.getStartPositionFromSlice(sliceReg);
+            long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
             Set<String> fileIds = extractFileIds(value);
             getLog().info("Results contain file IDs : " + StringUtils.join(fileIds, ','));
@@ -137,15 +135,23 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             getLog().info("Processing slice " + sliceKey);
 
             // Archive: unpack Archive data (selection only
-            List<Variant> archiveVar = getResultConverter().convert(value, startPos, nextStartPos, true);
+            List<Variant> archiveVar = getResultConverter().convert(value, startPos,  nextStartPos, true);
             times.put(System.currentTimeMillis(), "Filter slice");
             // Variants of target type
             List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
+            if (!archiveTarget.isEmpty()) {
+                Variant tmpVar = archiveTarget.get(0);
+                getLog().info("Loaded variant from archive table: " + tmpVar.toJson());
+            }
             times.put(System.currentTimeMillis(), "Load Analysis");
 
             // Analysis: Load variants for region (study specific)
-            List<Variant> analysisVar = loadCurrentVariantsRegion(context, varStartKey, varEndKey);
+            List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
             getLog().info(String.format("Loaded %s variants ... ", analysisVar.size()));
+            if (!analysisVar.isEmpty()) {
+                Variant tmpVar = analysisVar.get(0);
+                getLog().info("Loaded variant from analysi table: " + tmpVar.toJson());
+            }
             times.put(System.currentTimeMillis(), "Check consistency");
 
             // Check if Archive covers all bases in Analysis
@@ -183,11 +189,12 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 this.variantMerger.merge(var, archiveVar);
             }
             // (1) Merge NEW into Analysis table
-            analysisVar.addAll(analysisNew);
+//            analysisVar.addAll(analysisNew);
 
             times.put(System.currentTimeMillis(), "Store analysis");
 
             // fetchCurrentValues(context, summary.keySet());
+            updateOutputTable(context, analysisNew);
             updateOutputTable(context, analysisVar);
 
             times.put(System.currentTimeMillis(), "Done");
@@ -238,8 +245,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @param archiveVar
      * @param analysisVar
      */
-    private void checkArchiveConsistency(Context context, int startPos,
-            int nextStartPos, List<Variant> archiveVar, List<Variant> analysisVar) {
+    private void checkArchiveConsistency(Context context, long startPos,
+            long nextStartPos, List<Variant> archiveVar, List<Variant> analysisVar) {
         // Report Missing regions in ARCHIVE table, which are seen in VAR table
         Set<Integer> archPosMissing = generateCoveredPositions(analysisVar.stream(), startPos, nextStartPos);
         archPosMissing.removeAll(generateCoveredPositions(archiveVar.stream(), startPos, nextStartPos));
@@ -262,26 +269,25 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
 
     private void addTimes(SortedMap<Long, String> times) {
-        boolean init = timeSum.isEmpty();
         long prev = -1;
         String id = "";
         for (Entry<Long, String> e : times.entrySet()) {
             if (prev > 0) {
+                long curr = timeSum.getOrDefault(id, 0L);
                 long diff = e.getKey() - prev;
-                if (init) {
-                    timeSum.put(id, diff);
-                } else {
-                    timeSum.put(id, timeSum.get(id) + diff);
+                if (prev < 0) {
+                    diff = 0;
                 }
+                timeSum.put(id, curr + diff);
             }
             prev = e.getKey();
             id = e.getValue();
         }
     }
 
-    protected Set<Integer> generateCoveredPositions(Stream<Variant> variants, int startPos, int nextStartPos) {
-        final int sPos = startPos;
-        final int ePos = nextStartPos - 1;
+    protected Set<Integer> generateCoveredPositions(Stream<Variant> variants, long startPos, long nextStartPos) {
+        final int sPos = (int) startPos;
+        final int ePos = (int) (nextStartPos - 1);
         // limit to max start position end min end position (only slice region)
         // hope this works
         return variants.map(v -> generateRegion(Math.max(v.getStart(), sPos), Math.min(v.getEnd(), ePos))).flatMap(l -> l.stream())
@@ -308,35 +314,56 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
     /**
      * Fetch already loaded variants in the Variant Table.
-     *
-     * @param context
-     *            MapReduce Context
-     * @param startKey
-     *            StartKey from the VariantTable
-     * @param endKey
-     *            EndKey from the VariantTable
-     * @return Map{Start, Map{RowKey, Variant} }
-     * @throws IOException
-     *             If any IO problem occurs
+     * @param context {@link org.apache.hadoop.mapreduce.Mapper.Context}
+     * @param chr Chromosome
+     * @param start Start (inclusive) position
+     * @param end End (exclusive) position
+     * @return L
+     * @throws IOException If any IO issue occurs
      */
-    protected List<Variant> loadCurrentVariantsRegion(Context context, byte[] startKey, byte[] endKey)
+    protected List<Variant> loadCurrentVariantsRegion(Context context, String chr, Long start, Long end)
             throws IOException {
+        String colPrefix = getHelper().getStudyId() + "_";
+        byte[] startKey = getHelper().generateVariantPositionPrefix(chr, start);
+        byte[] endKey = getHelper().generateVariantPositionPrefix(chr, end);
         List<Variant> analysisVariants = new ArrayList<Variant>();
+//        boolean foundScan = false; // FIXME clean up
         try (Table table = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));) {
             context.getCounter("OPENCGA.HBASE", "VCF_TABLE_SCAN-query").increment(1);
-            String colPrefix = getHelper().getStudyId() + "_";
             getLog().info(
-                    String.format("Scan from %s to %s with column prefix %s",
-                            Arrays.toString(startKey), Arrays.toString(endKey), colPrefix));
+                    String.format("Scan chr %s from %s to %s with column prefix %s", chr, start, end, colPrefix));
 
             Scan scan = new Scan(startKey, endKey);
             scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(colPrefix))); // Limit to current study
             ResultScanner rs = table.getScanner(scan);
             for (Result r : rs) {
+//                foundScan = true;
                 Variant var = this.hbaseToVariantConverter.convert(r);
+                if (var.getStudiesMap().isEmpty()) {
+                    throw new IllegalStateException("No Studies registered for variant!!! " + var);
+                }
                 analysisVariants.add(var);
+                if (!r.containsColumn(this.getHelper().getColumnFamily(), Bytes.toBytes(colPrefix + "0/0"))) {
+                    throw new IllegalStateException("Hom-ref column not found for prefix: " + var);
+                }
             }
         }
+//        if (!foundScan) {
+//            throw new IllegalStateException(String.format("No result returned after scan using prefix %s", colPrefix));
+//        }
+//        if (analysisVariants.isEmpty()) {
+//            throw new IllegalStateException(String.format("No Variants found using prefix %s", colPrefix));
+//        }
+//        Set<String> maplst = analysisVariants.stream().flatMap(v -> v.getStudiesMap().keySet().stream()).collect(Collectors.toSet());
+//        if (maplst.isEmpty()) {
+//            throw new IllegalStateException("No study data loaded at all for " + colPrefix + "; ");
+//        }
+//        List<Variant> noStudy = analysisVariants.stream().filter(v -> v.getStudy(Integer.toString(getHelper().getStudyId())) == null)
+//                .collect(Collectors.toList());
+//        if (!noStudy.isEmpty()) {
+//            throw new IllegalStateException("Loaded variants with no Study id!!! using prefix  " + colPrefix + "; " + noStudy.size() + ";"
+//                    + Strings.join(maplst, ","));
+//        }
         return analysisVariants;
     }
 
