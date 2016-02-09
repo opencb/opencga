@@ -102,6 +102,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
         addParam(query, ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
+        addParam(query, POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
         addParam(query, CONSERVATION, queryVariantsOptions.conservation);
 
         if (queryVariantsOptions.proteinSubstitution != null && !queryVariantsOptions.proteinSubstitution.isEmpty()) {

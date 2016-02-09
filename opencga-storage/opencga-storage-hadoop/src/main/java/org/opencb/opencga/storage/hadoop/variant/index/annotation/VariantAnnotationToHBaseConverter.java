@@ -81,7 +81,6 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
     private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
         return Bytes.toBytes(populationFrequency.getStudy()
-                + "_" + populationFrequency.getSuperPopulation()
                 + "_" + populationFrequency.getPopulation());
     }
 

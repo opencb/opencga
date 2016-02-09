@@ -77,6 +77,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
                 + " e.g. phastCons>0.5,phylop<0.1"),
         ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
         REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        POPULATION_MINOR_ALLELE_FREQUENCY ("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
+                + "{study}:{population}[<|>|<=|>=]{number}"),
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
 
         VariantQueryParams(String key, Type type, String description) {
