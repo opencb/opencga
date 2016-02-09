@@ -366,8 +366,12 @@ public class CliOptionsParser extends OptionsParser {
         public String biotype;
 
         @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: " +
-                "{study}:{population}[<|>|<=|>=]{number}\"", required = false, arity = 1)
+                "{study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String populationFreqs;
+
+        @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
+        public String populationMaf;
 
         @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
                 "phastCons>0.5,phylop<0.1", required = false, arity = 1)
