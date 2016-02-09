@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.BiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.mongodb.*;
@@ -50,6 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -842,6 +842,50 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder); // Same method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field (reference/alternate) where to check the frequency
             }
 
+            if (query.containsKey(VariantQueryParams.POPULATION_MINOR_ALLELE_FREQUENCY.key())) {
+                String value = query.getString(VariantQueryParams.POPULATION_MINOR_ALLELE_FREQUENCY.key());
+                addFrequencyFilter(DBObjectToVariantConverter.ANNOTATION_FIELD + "." +
+                                DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
+                        value, builder, (v, queryBuilder) -> {
+                            String op = getOperator(v);
+                            String obj = v.replaceFirst(op, "");
+
+                            double aDouble = Double.parseDouble(obj);
+                            switch(op) {
+                                case "<":
+                                    queryBuilder.or(
+                                            QueryBuilder.start(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).lessThan(aDouble).get(),
+                                            QueryBuilder.start(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).lessThan(aDouble).get()
+                                    );
+                                    break;
+                                case "<=":
+                                    queryBuilder.or(
+                                            QueryBuilder.start(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).lessThanEquals(aDouble).get(),
+                                            QueryBuilder.start(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).lessThanEquals(aDouble).get()
+                                    );
+                                    break;
+                                case ">":
+                                    queryBuilder.and(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).greaterThan(aDouble)
+                                            .and(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).greaterThan(aDouble);
+                                    break;
+                                case ">=":
+                                    queryBuilder.and(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD).greaterThanEquals(aDouble)
+                                            .and(DBObjectToVariantAnnotationConverter.
+                                                    POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD).greaterThanEquals(aDouble);
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("Unsupported operator '" + op + "'");
+                            }
+                        });
+            }
+
             /** STUDIES **/
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration;
@@ -1555,8 +1599,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder) {
-        String op = value.substring(0, 2);
-        op = op.replaceFirst("[0-9]", "");
+        String op = getOperator(value);
         String obj = value.replaceFirst(op, "");
 
         switch(op) {
@@ -1584,6 +1627,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 break;
         }
         return builder;
+    }
+
+    private String getOperator(String value) {
+        String op = value.substring(0, 2);
+        op = op.replaceFirst("[0-9]", "");
+        return op;
     }
 
     /**
@@ -1633,6 +1682,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @return                      QueryBuilder
      */
     private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, String value, QueryBuilder builder) {
+        return addFrequencyFilter(key, value, builder, (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb));
+    }
+
+    /**
+     * Accepts a list of filters separated with "," or ";" with the expression:
+     *      {STUDY}:{POPULATION}{OPERATION}{VALUE}
+     *
+     * @param key                   PopulationFrequency schema field
+     * @param value                 Value to parse
+     * @param builder               QueryBuilder
+     * @param addFilter             For complex filter
+     * @return                      QueryBuilder
+     */
+    private QueryBuilder addFrequencyFilter(String key, String value, QueryBuilder builder, BiConsumer<String, QueryBuilder> addFilter) {
 
         final List<String> list;
         QueryOperation operation = checkOperator(value);
@@ -1654,7 +1717,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder frequencyBuilder = new QueryBuilder();
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(populationFrequency[0]);
-            addCompQueryFilter(alleleFrequencyField, populationFrequency[1], frequencyBuilder);
+            addFilter.accept(populationFrequency[1], frequencyBuilder);
             dbObjects.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get())));
         }
         if (!dbObjects.isEmpty()) {
