@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -201,6 +202,18 @@ public class HBaseManager extends Configured {
     }
 
     /**
+     * Checks if the required table exists.
+     *
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @return boolean True if the table exists
+     * @throws IOException throws {@link IOException}
+     **/
+    public boolean tableExists(Connection con, String tableName) throws IOException {
+        return act(con, tableName, (table, admin) -> admin.tableExists(table.getName()));
+    }
+
+    /**
      * Create default HBase table layout with one column family.
      *
      * @param con HBase connection object
@@ -210,11 +223,30 @@ public class HBaseManager extends Configured {
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
     public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
+        return createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.SNAPPY);
+    }
+
+    /**
+     * Create default HBase table layout with one column family.
+     *
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @param columnFamily Column Family
+     * @param compressionType Compression Algorithm
+     * @return boolean True if a new table was created
+     * @throws IOException throws {@link IOException} from creating a connection / table
+     **/
+    public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
+            throws IOException {
         TableName tName = TableName.valueOf(tableName);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);
-                descr.addFamily(new HColumnDescriptor(columnFamily));
+                HColumnDescriptor family = new HColumnDescriptor(columnFamily);
+                if (compressionType != null) {
+                    family.setCompressionType(compressionType);
+                }
+                descr.addFamily(family);
                 admin.createTable(descr);
                 return true;
             }

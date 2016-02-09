@@ -446,7 +446,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
     }
 
     @Override
-    public URI preLoad(URI input, URI output) throws StorageManagerException {
+    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -643,16 +643,17 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         String dbName = options.getString(Options.DB_NAME.key, null);
-        int fileId = options.getInt(Options.FILE_ID.key);
+        List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key);
         boolean annotate = options.getBoolean(Options.ANNOTATE.key, Options.ANNOTATE.defaultValue());
 
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        studyConfiguration.getIndexedFiles().add(fileId);
+        studyConfiguration.getIndexedFiles().addAll(fileIds);
         getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-
-        checkLoadedVariants(input, fileId, studyConfiguration, options);
+        for (Integer fileId : fileIds) {
+            checkLoadedVariants(input, fileId, studyConfiguration, options);
+        }
 
         if (annotate) {
 
@@ -675,7 +676,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             annotationQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
                     Collections.singletonList(studyConfiguration.getStudyId()));    // annotate just the indexed variants
             // annotate just the indexed variants
-            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), Collections.singletonList(fileId));
+            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
@@ -691,7 +692,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 logger.debug("about to calculate stats");
                 VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
                 VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
-                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileId) + "." + TimeUtils.getTime());
+                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
+                        + "." + TimeUtils.getTime());
 
                 String defaultCohortName = StudyEntry.DEFAULT_COHORT;
                 Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);

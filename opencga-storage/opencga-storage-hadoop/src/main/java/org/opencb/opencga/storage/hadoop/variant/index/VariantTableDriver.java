@@ -7,9 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
@@ -20,7 +19,6 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
@@ -31,6 +29,8 @@ import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -92,8 +92,7 @@ public class VariantTableDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // Validate input CHECK
-        HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin));
-        if (!gh.getHBaseManager().act(inTable, func)) {
+        if (!gh.getHBaseManager().act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
         }
 
@@ -104,7 +103,7 @@ public class VariantTableDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // JOB setup
-        Job job = Job.getInstance(conf, "Genome Variant Transform from & to HBase");
+        Job job = Job.getInstance(conf, "opencga: Load file " + Arrays.toString(fileArr) + " to VariantTable '" + outTable + "'");
         job.setJarByClass(VariantTableMapper.class);    // class that contains mapper
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
 
@@ -136,11 +135,33 @@ public class VariantTableDriver extends Configured implements Tool {
                 conf.getBoolean("addDependencyJars", true));
         job.setNumReduceTasks(0);
 
-        boolean b = job.waitForCompletion(true);
-        if (!b) {
+        Thread hook = new Thread(() -> {
+            try {
+                if (!job.isComplete()) {
+                    job.killJob();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
+        boolean succeed = job.waitForCompletion(true);
+        Runtime.getRuntime().removeShutdownHook(hook);
+        if (!succeed) {
             LOG.error("error with job!");
         }
-        return b ? 0 : 1;
+        return succeed ? 0 : 1;
+    }
+
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
+            return createVariantTableIfNeeded(genomeHelper, tableName, con);
+        }
+    }
+
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+        return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+                Compression.Algorithm.SNAPPY);
     }
 
     private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
@@ -161,14 +182,12 @@ public class VariantTableDriver extends Configured implements Tool {
         conf.set(HBASE_MASTER, master);
     }
 
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, int fileId,
-                                              int... fileIds) {
+    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, List<Integer> fileIds) {
         StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
-                .append(outputTable).append(' ').append(studyId).append(' ').append(fileId);
+                .append(outputTable).append(' ').append(studyId).append(' ');
 
-        for (int otherFileId : fileIds) {
-            stringBuilder.append(',').append(otherFileId);
-        }
+        stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
+
         return stringBuilder.toString();
     }
 

@@ -5,8 +5,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -17,6 +15,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 
 import java.io.IOException;
 import java.util.*;
@@ -173,7 +172,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
-            createTableIfMissing();
+            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, getConnection());
             try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
@@ -185,19 +184,6 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private boolean createTableIfMissing() throws IOException {
-        return hBaseManager.act(getConnection(), tableName, (table, admin) -> {
-            if (admin.tableExists(table.getName())) {
-                return true;
-            } else {
-                HTableDescriptor hTableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
-                hTableDescriptor.addFamily(new HColumnDescriptor(genomeHelper.getColumnFamily()));
-                admin.createTable(hTableDescriptor);
-                return false;
-            }
-        });
     }
 
     public Connection getConnection() throws IOException {
