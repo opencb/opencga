@@ -97,11 +97,11 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
     private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
         return Bytes.toBytes(getPopulationFrequencyColumnName(populationFrequency.getStudy(),
-                populationFrequency.getSuperPopulation(), populationFrequency.getSuperPopulation()));
+                populationFrequency.getPopulation()));
     }
 
-    private String getPopulationFrequencyColumnName(String study, String superPopulation, String population) {
-        return (study + ":" + superPopulation + (population == null || population.isEmpty() ? "" : (":" + population))).toUpperCase();
+    private String getPopulationFrequencyColumnName(String study, String population) {
+        return (study + ":" + population).toUpperCase();
     }
 
     private byte[] getConservationColumnName(Score score) {
