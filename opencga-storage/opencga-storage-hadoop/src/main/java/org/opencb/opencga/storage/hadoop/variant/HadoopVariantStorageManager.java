@@ -12,7 +12,6 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
@@ -36,6 +35,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -130,11 +130,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             boolean missingFilesDetected = false;
 
             ArchiveFileMetadataManager fileMetadataManager = buildArchiveFileMetaManager(archiveTable, options);
-            QueryResult<VcfMeta> allVcfMetas = fileMetadataManager.getAllVcfMetas(options);
+            Set<Integer> files = fileMetadataManager.getLoadedFiles();
             StudyConfiguration studyConfiguration = getStudyConfiguration(options);
             List<Integer> pendingFiles = new LinkedList<>();
 
-            for (VcfMeta meta : allVcfMetas.getResult()) {
+            for (Integer loadedFileId : files) {
+                VcfMeta meta = fileMetadataManager.getVcfMeta(loadedFileId, options).first();
+
                 VariantSource source = meta.getVariantSource();
                 Integer fileId1 = Integer.parseInt(source.getFileId());
                 if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {

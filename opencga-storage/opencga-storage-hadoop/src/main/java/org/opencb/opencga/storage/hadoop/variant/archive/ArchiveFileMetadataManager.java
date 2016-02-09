@@ -116,8 +116,46 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         });
     }
 
+    public void updateLoadedFilesSummary(List<Integer> newLoadedFiles) throws IOException {
+        Set<Integer> files;
+        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
+            logger.info("Create table '{}' in hbase!", tableName);
+            files = new HashSet<>();
+        } else {
+            files = getLoadedFiles();
+        }
+
+        files.addAll(newLoadedFiles);
+
+        Put put = new Put(genomeHelper.getMetaRowKey());
+        put.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
+                objectMapper.writeValueAsBytes(files));
+        hBaseManager.act(connection, tableName, table -> {
+            table.put(put);
+        });
+    }
+
     @Override
     public void close() throws IOException {
         connection.close();
+    }
+
+    public Set<Integer> getLoadedFiles() throws IOException {
+        if (!hBaseManager.tableExists(connection, tableName)) {
+            return new HashSet<>();
+        } else {
+            return hBaseManager.act(connection, tableName, table -> {
+                Get get = new Get(genomeHelper.getMetaRowKey());
+                get.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
+                byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
+                Set<Integer> set;
+                if (value != null) {
+                    set = ((Set<Integer>) objectMapper.readValue(value, Set.class));
+                } else {
+                    set = new HashSet<Integer>();
+                }
+                return set;
+            });
+        }
     }
 }

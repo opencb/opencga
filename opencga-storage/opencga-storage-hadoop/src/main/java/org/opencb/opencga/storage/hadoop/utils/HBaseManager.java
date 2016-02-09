@@ -202,6 +202,18 @@ public class HBaseManager extends Configured {
     }
 
     /**
+     * Checks if the required table exists.
+     *
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @return boolean True if the table exists
+     * @throws IOException throws {@link IOException}
+     **/
+    public boolean tableExists(Connection con, String tableName) throws IOException {
+        return act(con, tableName, (table, admin) -> admin.tableExists(table.getName()));
+    }
+
+    /**
      * Create default HBase table layout with one column family.
      *
      * @param con HBase connection object

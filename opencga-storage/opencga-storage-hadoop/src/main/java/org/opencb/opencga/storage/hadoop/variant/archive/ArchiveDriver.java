@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
 
@@ -116,8 +117,9 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        // TODO: Update list of indexed files
-
+        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf, null)) {
+            manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
+        }
 
         return succeed ? 0 : 1;
     }
@@ -133,8 +135,8 @@ public class ArchiveDriver extends Configured implements Tool {
                 Compression.Algorithm.GZ);
     }
 
-    private void storeMetaData(VcfMeta meta, String tablename, Configuration conf) throws IOException {
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tablename, conf, null)) {
+    private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {
+        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf, null)) {
             manager.updateVcfMetaData(meta);
         }
     }
