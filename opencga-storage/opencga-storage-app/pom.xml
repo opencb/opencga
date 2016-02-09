@@ -213,11 +213,6 @@
             <build>
                 <resources>
                     <resource>
-                        <directory>../opencga-storage-hadoop/src/main/resources</directory>
-                        <filtering>true</filtering>
-                        <targetPath>${basedir}/build/conf</targetPath>
-                    </resource>
-                    <resource>
                         <directory>../opencga-storage-hadoop/target</directory>
                         <includes>
                           <include>**/*-dependencies.jar</include>
