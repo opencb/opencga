@@ -56,6 +56,9 @@ public class VariantTableStudyRow {
     public static final String PASS_CNT = "P";
     public static final String CALL_CNT = "C";
 
+    public static final List<String> STUDY_COLUMNS = Collections.unmodifiableList(
+            Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT));
+
     public static final char COLUMN_KEY_SEPARATOR = '_';
 
     private Integer studyId;
@@ -241,7 +244,7 @@ public class VariantTableStudyRow {
         NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
         Set<Integer> studyIds = familyMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
-                .map(entry -> extractStudyId(Bytes.toString(entry.getKey())))
+                .map(entry -> extractStudyId(Bytes.toString(entry.getKey()), true))
                 .filter(integer -> integer != null)
                 .collect(Collectors.toSet());
 
@@ -319,7 +322,7 @@ public class VariantTableStudyRow {
         for (int i = 0; i < metaData.getColumnCount(); i++) {
             String columnName = metaData.getColumnName(i + 1);
             if (columnName != null && !columnName.isEmpty()) {
-                Integer studyId = extractStudyId(columnName);
+                Integer studyId = extractStudyId(columnName, false);
                 if (studyId != null) {
                     studyIds.add(studyId);
                 }
@@ -380,12 +383,16 @@ public class VariantTableStudyRow {
         return String.valueOf(sid) + COLUMN_KEY_SEPARATOR + gt;
     }
 
-    public static Integer extractStudyId(String columnKey) {
+    public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
         String study = StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0];
         if (StringUtils.isNumeric(study)) {
             return Integer.parseInt(study);
         } else {
-            throw new IllegalStateException(String.format("Integer expected for study ID: extracted %s from %s ", study, columnKey));
+            if (failOnMissing) {
+                throw new IllegalStateException(String.format("Integer expected for study ID: extracted %s from %s ", study, columnKey));
+            } else {
+                return null;
+            }
         }
     }
 

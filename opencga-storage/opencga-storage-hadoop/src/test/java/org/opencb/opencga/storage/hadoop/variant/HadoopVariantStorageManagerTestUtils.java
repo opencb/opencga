@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.log4j.ConsoleAppender;
@@ -56,6 +57,8 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
             utility.set(new HBaseTestingUtility());
             utility.get().startMiniCluster(1);
             configuration.set(utility.get().getConfiguration());
+            configuration.get().setBoolean("addDependencyJars", false);
+            configuration.get().setBoolean("opencga.storage.hbase.table_compress", false);
 
 //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
 //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
@@ -115,18 +118,20 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        configuration.get().setBoolean("addDependencyJars", false);
-        configuration.get().forEach(entry -> options.put(entry.getKey(), entry.getValue()));
+        //Make a copy of the configuration
+        Configuration conf = new Configuration(false);
+        HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
+        conf.forEach(entry -> options.put(entry.getKey(), entry.getValue()));
 
-        FileSystem fs = FileSystem.get(configuration.get());
+        FileSystem fs = FileSystem.get(HadoopVariantStorageManagerTestUtils.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
         System.out.println(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
         options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
-        variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
+        variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageManagerTestUtils.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        manager.mrExecutor = new TestMRExecutor(configuration.get());
-        manager.conf = configuration.get();
+        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
+        manager.conf = conf;
         return manager;
     }
 

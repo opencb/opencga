@@ -40,12 +40,12 @@ import static org.junit.Assert.assertEquals;
 public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUtils {
 
     private VariantHadoopDBAdaptor dbAdaptor;
-    private VariantSource source;
-    private StudyConfiguration studyConfiguration;
-    private ETLResult etlResult = null;
+    private static StudyConfiguration studyConfiguration;
+    private static VariantSource source;
+    private static ETLResult etlResult = null;
 
     @Before
-    public void loadSingleVcf() throws Exception {
+    public void before() throws Exception {
         if (etlResult == null) {
             clearDB(DB_NAME);
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
@@ -61,20 +61,23 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
             );
 
-            dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
             source = variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
             VariantGlobalStats stats = source.getStats();
             Assert.assertNotNull(stats);
         }
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
     }
 
     @Test
     public void queryVariantTable() {
         System.out.println("Query from Variant table");
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()),
-                new QueryOptions()); iterator.hasNext(); ) {
+        VariantDBIterator iterator = dbAdaptor.iterator(
+                new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()),
+                new QueryOptions());
+        while (iterator.hasNext()) {
             Variant variant = iterator.next();
             System.out.println("Phoenix variant = " + variant);
         }

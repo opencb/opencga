@@ -106,13 +106,9 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.ALTERNATE);
 
             for (Integer studyId : studyIds) {
-                sb.append(",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HET_REF))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_VAR))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.OTHER))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.NOCALL))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.PASS_CNT))
-                        .append("\",\"").append(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.CALL_CNT)).append('"');
+                for (String studyColumn : STUDY_COLUMNS) {
+                    sb.append(",\"").append(VariantTableStudyRow.buildColumnKey(studyId, studyColumn)).append('"');
+                }
             }
 
             sb.append(',').append(VariantColumn.FULL_ANNOTATION);
@@ -227,6 +223,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#POLYPHEN}
      * {@link VariantQueryParams#SIFT}
      * {@link VariantQueryParams#CONSERVATION}
+     * {@link VariantQueryParams#POPULATION_MINOR_ALLELE_FREQUENCY}
      * {@link VariantQueryParams#ALTERNATE_FREQUENCY}
      * {@link VariantQueryParams#REFERENCE_FREQUENCY}
      *
@@ -378,6 +375,10 @@ public class VariantSqlQueryParser {
                 throw VariantQueryException.malformedParam(CONSERVATION, rawValue, "Unknown conservation value.");
             }
         }, filters, null);
+
+        if (isValidParam(query, POPULATION_MINOR_ALLELE_FREQUENCY)) {
+            logger.warn("Unsupported filter " +  POPULATION_MINOR_ALLELE_FREQUENCY);
+        }
 
         addQueryFilter(query, ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
             Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);

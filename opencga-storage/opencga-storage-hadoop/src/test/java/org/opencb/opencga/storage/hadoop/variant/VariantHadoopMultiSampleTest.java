@@ -42,17 +42,17 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
             //Force HBaseConverter to fail if something goes wrong
             HBaseToVariantConverter.setFailOnWrongVariants(true);
 
-            HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
-            source1 = loadFile(variantStorageManager, "s1.genome.vcf", 1);
-            source2 = loadFile(variantStorageManager, "s2.genome.vcf", 2);
+            source1 = loadFile("s1.genome.vcf", 1);
+            source2 = loadFile("s2.genome.vcf", 2);
 
-            dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+            dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
         }
     }
 
-    public VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String resourceName, int fileId) throws IOException, URISyntaxException, FileFormatException, StorageManagerException {
+    public VariantSource loadFile(String resourceName, int fileId) throws Exception {
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
         if (studyConfiguration == null) {
             studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
@@ -81,7 +81,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
             System.out.println(variant.toJson());
             variant.setAnnotation(a);
         }
-        String studyName = studyConfiguration.getStudyName();
+        String studyName = Integer.toString(studyConfiguration.getStudyId());
 
         // TODO: Add more asserts
         /*                      s1  s2
@@ -103,12 +103,10 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:10014:A:T"));
         assertEquals("0/1", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s1", "GT"));
-//        assertEquals("0/2", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
-        assertEquals(".", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals("0/2", variants.get("1:10014:A:T").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10014:A:G"));
-//        assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-        assertEquals(".", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("0/2", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/1", variants.get("1:10014:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10030:T:G"));

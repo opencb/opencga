@@ -22,6 +22,7 @@ import java.io.IOException;
  */
 public class HBaseManager extends Configured {
 
+    private final boolean allowCompressions;
 
     @FunctionalInterface
     public interface HBaseTableConsumer {
@@ -41,10 +42,7 @@ public class HBaseManager extends Configured {
 
     public HBaseManager(Configuration configuration) {
         super(configuration);
-    }
-
-    public HBaseManager() {
-        super(new Configuration());
+        allowCompressions = configuration.getBoolean("opencga.storage.hbase.table_compress", true);
     }
 
     /**
@@ -243,7 +241,7 @@ public class HBaseManager extends Configured {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);
                 HColumnDescriptor family = new HColumnDescriptor(columnFamily);
-                if (compressionType != null) {
+                if (compressionType != null && allowCompressions) {
                     family.setCompressionType(compressionType);
                 }
                 descr.addFamily(family);

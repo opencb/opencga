@@ -89,6 +89,9 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         } else {
             List<VcfMeta> metas = new ArrayList<>(result.size());
             for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
+                if (Arrays.equals(entry.getKey(), genomeHelper.getMetaRowKey())) {
+                    continue;
+                }
                 VariantSource variantSource = objectMapper.readValue(entry.getValue(), VariantSource.class);
                 logger.debug("Got VcfMeta from : {}, [{}]", variantSource.getFileName(), variantSource.getFileId());
                 VcfMeta vcfMeta = new VcfMeta(variantSource);
