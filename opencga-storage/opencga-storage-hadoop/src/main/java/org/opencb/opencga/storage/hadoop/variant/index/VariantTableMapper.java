@@ -56,7 +56,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
  */
 public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put> {
 
-    private static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] { VariantType.SNV, VariantType.SNP };
+    public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] { VariantType.SNV, VariantType.SNP };
 
     private final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 

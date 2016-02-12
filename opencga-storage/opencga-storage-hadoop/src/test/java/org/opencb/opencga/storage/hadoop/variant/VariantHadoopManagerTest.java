@@ -24,11 +24,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -89,6 +88,15 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
         long totalCount = dbAdaptor.count(new Query()).first();
         long partialCount1 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:1-15030")).first();
         long partialCount2 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:15030-60000")).first();
+
+        List<VariantType> variantTypes = Arrays.asList(VariantTableMapper.TARGET_VARIANT_TYPE);
+        long count = source.getStats().getVariantTypeCounts().entrySet()
+                .stream()
+                .filter(e -> variantTypes.contains(VariantType.valueOf(e.getKey())))
+                .map(Map.Entry::getValue)
+                .reduce((i, i2) -> i + i2).orElse(0).longValue();
+
+        assertEquals(count, totalCount);
         assertEquals(totalCount, partialCount1 + partialCount2);
     }
 
@@ -129,16 +137,19 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
     @Test
     public void queryArchiveTable() {
         final int[] numVariants = {0};
+        Map<String, Integer> variantCounts = new HashMap<>();
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
-                new Query("archive", true)
+                new Query()
                         .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
                         .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), FILE_ID),
-                new QueryOptions()).forEachRemaining(variant -> {
+                new QueryOptions("archive", true)).forEachRemaining(variant -> {
             System.out.println("Variant from archive = " + variant);
             numVariants[0]++;
+            variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
         });
         System.out.println("End query from Archive table");
+        source.getStats().getVariantTypeCounts().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
         assertEquals(source.getStats().getNumRecords(), numVariants[0]);
     }
 

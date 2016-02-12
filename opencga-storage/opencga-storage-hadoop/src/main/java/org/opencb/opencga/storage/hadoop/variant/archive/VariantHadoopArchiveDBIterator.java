@@ -138,6 +138,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     }
 
     public VariantHadoopArchiveDBIterator setRegion(Region region) {
+        if (region == null) {
+            return this;
+        }
         this.startPosition = region.getStart();
         this.endPosition = region.getEnd();
         return this;
