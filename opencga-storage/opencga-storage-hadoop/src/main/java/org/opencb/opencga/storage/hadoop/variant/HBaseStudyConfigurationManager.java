@@ -54,8 +54,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         connection = null; // lazy load
         objectMapper = new ObjectMapper();
         hBaseManager = new HBaseManager(configuration);
-        studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
-        studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
+        studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
+        studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
     }
 
     @Override

@@ -104,7 +104,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws IOException {
-        VcfMeta vcfMeta = getVcfMeta(ArchiveHelper.getTableName(studyId), fileId, null).first();
+        VcfMeta vcfMeta = getVcfMeta(HadoopVariantStorageManager.getTableName(studyId), fileId, null).first();
         if (vcfMeta == null) {
             throw new IOException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
@@ -119,7 +119,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * @param tableName Use {@link ArchiveHelper#getTableName(int)} to get the table
+     * @param tableName Use {@link HadoopVariantStorageManager#getTableName(int)} to get the table
      * @param options   Extra options
      * @return A valid ArchiveFileMetadataManager object
      * @throws IOException If any IO problem occurs
@@ -300,7 +300,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
             addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = ArchiveHelper.getTableName(studyId);
+            String tableName = HadoopVariantStorageManager.getTableName(studyId);
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);

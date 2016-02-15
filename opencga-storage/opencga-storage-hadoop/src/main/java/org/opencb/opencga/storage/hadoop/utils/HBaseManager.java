@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
@@ -13,6 +14,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Created on 13/11/15.
@@ -22,7 +24,7 @@ import java.io.IOException;
  */
 public class HBaseManager extends Configured {
 
-    private final boolean allowCompressions;
+
 
     @FunctionalInterface
     public interface HBaseTableConsumer {
@@ -42,7 +44,6 @@ public class HBaseManager extends Configured {
 
     public HBaseManager(Configuration configuration) {
         super(configuration);
-        allowCompressions = configuration.getBoolean("opencga.storage.hbase.table_compress", true);
     }
 
     /**
@@ -241,7 +242,7 @@ public class HBaseManager extends Configured {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);
                 HColumnDescriptor family = new HColumnDescriptor(columnFamily);
-                if (compressionType != null && allowCompressions) {
+                if (compressionType != null) {
                     family.setCompressionType(compressionType);
                 }
                 descr.addFamily(family);
@@ -252,4 +253,12 @@ public class HBaseManager extends Configured {
         });
     }
 
+    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException {
+        String[] hostPort = hostPortString.split(":");
+        String server = hostPort[0];
+        String port = hostPort.length > 0 ? hostPort[1] : "60000";
+        String master = String.join(":", server, port);
+//        conf.set(HBASE_MASTER, master);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, master);
+    }
 }

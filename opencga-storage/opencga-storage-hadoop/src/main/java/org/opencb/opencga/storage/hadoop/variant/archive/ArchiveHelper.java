@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,20 +33,15 @@ public class ArchiveHelper extends GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(ArchiveHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
     private final byte[] column;
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
 
-    public Logger getLogger() {
-        return logger;
-    }
-
     public ArchiveHelper(Configuration conf) throws IOException {
         super(conf);
-        int fileId = conf.getInt(CONFIG_FILE_ID, 0);
-        String archiveTable = conf.get(CONFIG_ARCHIVE_TABLE);
+        int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
+        String archiveTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
         try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf, new ObjectMap())) {
             VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
             this.meta.set(meta);
@@ -81,16 +75,6 @@ public class ArchiveHelper extends GenomeHelper {
     }
 
     /**
-     * Get the archive table name given a StudyId.
-     *
-     * @param studyId Numerical study identifier
-     * @return Table name
-     */
-    public static String getTableName(int studyId) {
-        return ARCHIVE_TABLE_PREFIX + Integer.toString(studyId);
-    }
-
-    /**
      * Get the archive column name for a file given a FileId.
      *
      * @param fileId Numerical file identifier
@@ -118,11 +102,6 @@ public class ArchiveHelper extends GenomeHelper {
      */
     public static String getColumnName(VariantSource variantSource) {
         return variantSource.getFileId();
-    }
-
-    @Deprecated
-    public static void setMetaProtoFile(Configuration conf, URI filePath) {
-        conf.set(CONFIG_VCF_META_PROTO_FILE, filePath.toString());
     }
 
     public VcfMeta getMeta() {
@@ -158,9 +137,9 @@ public class ArchiveHelper extends GenomeHelper {
         try {
             Collections.sort(vcfRecordLst, getVcfComparator());
         } catch (IllegalArgumentException e) {
-            getLogger().error("Issue with comparator: ");
+            logger.error("Issue with comparator: ");
             for (VcfRecord r : vcfRecordLst) {
-                getLogger().error(r.toString());
+                logger.error(r.toString());
             }
             throw e;
         }

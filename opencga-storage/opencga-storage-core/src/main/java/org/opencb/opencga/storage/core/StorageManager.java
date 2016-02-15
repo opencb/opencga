@@ -111,7 +111,9 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
      * - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
      */
     @Deprecated
-    public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;
+    public DBWRITER getDBWriter(String dbName) throws StorageManagerException {
+        throw new UnsupportedOperationException();
+    }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 

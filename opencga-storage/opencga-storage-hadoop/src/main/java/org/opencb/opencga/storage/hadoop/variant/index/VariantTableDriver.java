@@ -6,7 +6,6 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -19,17 +18,19 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -38,11 +39,9 @@ import java.util.stream.Collectors;
 public class VariantTableDriver extends Configured implements Tool {
     private static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
-    public static final String OPENCGA_VARIANT_TRANSFORM_FILE_ARR = "opencga.variant.transform.file_arr";
-    public static final String OPENCGA_VARIANT_TRANSFORM_STUDY = "opencga.variant.transform.study";
-    public static final String OPENCGA_VARIANT_TRANSFORM_OUTPUT = "opencga.variant.transform.output";
-    public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
-    public static final String HBASE_MASTER = "hbase.master";
+    public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
+    public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
+    public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
 
     public VariantTableDriver() { /* nothing */}
 
@@ -53,20 +52,20 @@ public class VariantTableDriver extends Configured implements Tool {
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
-        String inTablePrefix = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
-        String outTable = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT, StringUtils.EMPTY);
-        String[] fileArr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, new String[0]);
-        Integer studyId = conf.getInt(OPENCGA_VARIANT_TRANSFORM_STUDY, -1);
+        String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
+        String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
+        String[] fileArr = conf.getStrings(CONFIG_VARIANT_FILE_IDS, new String[0]);
+        Integer studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, -1);
 
         /* -------------------------------*/
         // Validate parameters CHECK
-        if (StringUtils.isEmpty(inTablePrefix)) {
+        if (StringUtils.isEmpty(inTable)) {
             throw new IllegalArgumentException("No input hbase table basename specified!!!");
         }
         if (StringUtils.isEmpty(outTable)) {
             throw new IllegalArgumentException("No output hbase table specified!!!");
         }
-        if (inTablePrefix.equals(outTable)) {
+        if (inTable.equals(outTable)) {
             throw new IllegalArgumentException("Input and Output tables must be different");
         }
         if (studyId < 0) {
@@ -77,13 +76,9 @@ public class VariantTableDriver extends Configured implements Tool {
             throw new IllegalArgumentException("No files specified");
         }
 
-//        String inTable = GenomeHelper.getArchiveTableName(inTablePrefix, studyId);
-//        String inTable = ArchiveHelper.getTableName(studyId);
-        String inTable = inTablePrefix;
         LOG.info(String.format("Use table %s as input", inTable));
 
         GenomeHelper.setStudyId(conf, studyId);
-        GenomeHelper.setChunkSize(conf, 1000);
         VariantTableHelper.setOutputTableName(conf, outTable);
         VariantTableHelper.setInputTableName(conf, inTable);
 
@@ -126,13 +121,13 @@ public class VariantTableDriver extends Configured implements Tool {
                 null,             // mapper output key
                 null,             // mapper output value
                 job,
-                conf.getBoolean("addDependencyJars", true));
+                conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
         TableMapReduceUtil.initTableReducerJob(
                 outTable,      // output table
                 null,             // reducer class
                 job,
                 null, null, null, null,
-                conf.getBoolean("addDependencyJars", true));
+                conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
         job.setNumReduceTasks(0);
 
         Thread hook = new Thread(() -> {
@@ -161,7 +156,8 @@ public class VariantTableDriver extends Configured implements Tool {
 
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                Compression.Algorithm.SNAPPY);
+                Compression.getCompressionAlgorithmByName(
+                        genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
     }
 
     private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
@@ -173,21 +169,20 @@ public class VariantTableDriver extends Configured implements Tool {
         return res.first();
     }
 
-    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException {
-        String[] hostPort = hostPortString.split(":");
-        String server = hostPort[0];
-        String port = hostPort.length > 0 ? hostPort[1] : "60000";
-        String master = String.join(":", server, port);
-        conf.set(HConstants.ZOOKEEPER_QUORUM, server);
-        conf.set(HBASE_MASTER, master);
-    }
-
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, List<Integer> fileIds) {
+    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId,
+                                              List<Integer> fileIds, Map<String, Object> other) {
         StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
                 .append(outputTable).append(' ').append(studyId).append(' ');
 
         stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-
+        for (Map.Entry<String, Object> entry : other.entrySet()) {
+            Object value = entry.getValue();
+            if (value != null && (value instanceof Number
+                    || value instanceof Boolean
+                    || value instanceof String && !((String) value).contains(" "))) {
+                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
+            }
+        }
         return stringBuilder.toString();
     }
 
@@ -206,20 +201,24 @@ public class VariantTableDriver extends Configured implements Tool {
         //get the args w/o generic hadoop args
         String[] toolArgs = parser.getRemainingArgs();
 
-        if (toolArgs.length != 5) {
-            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <studyId> <fileIds>\n",
+        int fixedSizeArgs = 5;
+        if (toolArgs.length < fixedSizeArgs || (toolArgs.length - fixedSizeArgs) % 2 != 0) {
+            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <studyId> <fileIds>"
+                    + " [<key> <value>]*\n",
                     VariantTableDriver.class.getSimpleName());
             System.err.println("Found " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             return -1;
         }
 
-        addHBaseSettings(conf, toolArgs[0]);
-        /** FIXME : Should we get the input table from the studyId with {@link ArchiveHelper#getTableName(int)} ? */
-        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_STUDY, toolArgs[3]);
-        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, toolArgs[4].split(","));
+        HBaseManager.addHBaseSettings(conf, toolArgs[0]);
+        conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
+        conf.set(CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
+        conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[3]);
+        conf.setStrings(CONFIG_VARIANT_FILE_IDS, toolArgs[4].split(","));
+        for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
+            conf.set(toolArgs[i], toolArgs[i + 1]);
+        }
 
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);

@@ -74,33 +74,6 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class VariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
 
-//    public static final String INCLUDE_STATS = "include.stats";              //Include existing stats on the original file.
-//    public static final String INCLUDE_GENOTYPES = "include.genotypes";      //Include sample information (genotypes)
-//    public static final String INCLUDE_SRC = "include.src";                  //Include original source file on the transformed file and
-// the final db
-//    public static final String COMPRESS_GENOTYPES = "compressGenotypes";    //Stores sample information as compressed genotypes
-//    public static final String STUDY_CONFIGURATION = "studyConfiguration";      //
-//    public static final String STUDY_CONFIGURATION_MANAGER_CLASS_NAME         = "studyConfigurationManagerClassName";
-//    public static final String AGGREGATED_TYPE = "aggregatedType";
-//    public static final String STUDY_NAME = "studyName";
-//    public static final String STUDY_ID = "studyId";
-//    public static final String FILE_ID = "fileId";
-//    public static final String STUDY_TYPE = "studyType";
-//    public static final String SAMPLE_IDS = "sampleIds";
-//    public static final String COMPRESS_METHOD = "compressMethod";
-//
-//    public static final String CALCULATE_STATS = "calculateStats";          //Calculate stats on the postLoad step
-//    public static final String OVERWRITE_STATS = "overwriteStats";          //Overwrite stats already present
-//    public static final String AGGREGATION_MAPPING_PROPERTIES = "aggregationMappingFile";
-//
-//    public static final String DB_NAME = "database.name";
-//
-//    public static final String TRANSFORM_BATCH_SIZE = "transform.batch.size";
-//    public static final String LOAD_BATCH_SIZE = "load.batch.size";
-//    public static final String TRANSFORM_THREADS = "transform.threads";
-//    public static final String LOAD_THREADS = "load.threads";
-//    public static final String ANNOTATE = "annotate";
-
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
 //        @Deprecated

@@ -3,14 +3,10 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.query.QueryConstants;
@@ -18,43 +14,30 @@ import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class GenomeHelper {
-    private final Logger log = LoggerFactory.getLogger(GenomeHelper.class);
+    private final Logger logger = LoggerFactory.getLogger(GenomeHelper.class);
 
-    @Deprecated
-    public static final String CONFIG_VCF_META_PROTO_FILE = "opencga.storage.hadoop.vcf.meta.proto.file";
-    @Deprecated
-    public static final String CONFIG_VCF_META_PROTO_STRING = "opencga.storage.hadoop.vcf.meta.proto.string";
+    public static final String CONFIG_STUDY_ID = "opencga.study.id";
 
-    public static final String CONFIG_FILE_ID = "opencga.storage.hadoop.file_id";
-    public static final String OPENCGA_STORAGE_HADOOP_STUDY_ID = "opencga.storage.hadoop.study.id";
-    public static final String CONFIG_ARCHIVE_TABLE = "opencga.storage.hadoop.archive_table";
-
-    public static final String CONFIG_GENOME_VARIANT_CHUNK_SIZE = "opencga.storage.hadoop.vcf.chunk_size";
-    public static final String CONFIG_GENOME_VARIANT_COLUMN_FAMILY = "opencga.storage.hadoop.vcf.column_family";
-    public static final String CONFIG_GENOME_VARIANT_ROW_KEY_SEP = "opencga.storage.hadoop.vcf.row_key_sep";
-    public static final String CONFIG_META_ROW_KEY = "opencga.storage.hadoop.vcf.meta.key";
+    //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
+    public static final String CONFIG_HBASE_ADD_DEPENDENCY_JARS = "opencga.hbase.addDependencyJars";
+    public static final String CONFIG_HBASE_COLUMN_FAMILY = "opencga.hbase.column_family";
 
     public static final String METADATA_PREFIX = "_";
-    public static final String DEFAULT_META_ROW_KEY = "_METADATA";
+    public static final String DEFAULT_METADATA_ROW_KEY = "_METADATA";
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
-    public static final int DEFAULT_CHUNK_SIZE = 1000;
-
-    private final AtomicInteger chunkSize = new AtomicInteger(DEFAULT_CHUNK_SIZE);
+    private final AtomicInteger chunkSize = new AtomicInteger(ArchiveDriver.DEFAULT_CHUNK_SIZE);
     private final char separator;
     private final byte[] columnFamily;
     private final byte[] metaRowKey;
@@ -65,30 +48,22 @@ public class GenomeHelper {
     protected final HBaseManager hBaseManager;
     private int studyId;
 
-    public interface MetadataAction<T> {
-        T parse(InputStream is) throws IOException;
-    }
-
     public GenomeHelper(Configuration conf) {
         this.conf = conf;
-        this.separator = conf.get(CONFIG_GENOME_VARIANT_ROW_KEY_SEP, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
+        this.separator = conf.get(ArchiveDriver.CONFIG_ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
-        this.columnFamily = Bytes.toBytes(conf.get(CONFIG_GENOME_VARIANT_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
-        this.metaRowKeyString = conf.get(CONFIG_META_ROW_KEY, DEFAULT_META_ROW_KEY);
+        this.columnFamily = Bytes.toBytes(conf.get(CONFIG_HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
+        this.metaRowKeyString = DEFAULT_METADATA_ROW_KEY;
         this.metaRowKey = Bytes.toBytes(metaRowKeyString);
-        this.chunkSize.set(conf.getInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, DEFAULT_CHUNK_SIZE));
-        this.studyId = conf.getInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, -1);
+        this.chunkSize.set(conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
+        this.studyId = conf.getInt(CONFIG_STUDY_ID, -1);
         this.hBaseManager = new HBaseManager(conf);
     }
 
     public GenomeHelper(GenomeHelper other) {
         this(other.getConf());
-    }
-
-    public Logger getLogger() {
-        return log;
     }
 
     public Configuration getConf() {
@@ -122,19 +97,11 @@ public class GenomeHelper {
     }
 
     public static void setChunkSize(Configuration conf, Integer size) {
-        conf.setInt(CONFIG_GENOME_VARIANT_CHUNK_SIZE, size);
-    }
-
-    public static void setMetaRowKey(Configuration conf, String rowkey) {
-        conf.set(CONFIG_META_ROW_KEY, rowkey);
-    }
-
-    public static void setMetaProtoString(Configuration conf, String utfString) {
-        conf.set(CONFIG_VCF_META_PROTO_STRING, utfString);
+        conf.setInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, size);
     }
 
     public static void setStudyId(Configuration conf, Integer studyId) {
-        conf.setInt(OPENCGA_STORAGE_HADOOP_STUDY_ID, studyId);
+        conf.setInt(CONFIG_STUDY_ID, studyId);
     }
 
     public int getStudyId() {
@@ -147,32 +114,6 @@ public class GenomeHelper {
 
     public byte[] getColumnFamily() {
         return columnFamily;
-    }
-
-    public <T> T loadMetaData(Configuration conf, MetadataAction<T> action) throws IOException {
-        try {
-            // try first from String
-            String protoString = conf.get(CONFIG_VCF_META_PROTO_STRING, StringUtils.EMPTY);
-            if (StringUtils.isNotEmpty(protoString)) {
-                getLogger().info("Load Meta from PROTO string ...");
-                T obj = action.parse(new ByteArrayInputStream(ByteString.copyFromUtf8(protoString).toByteArray()));
-                return obj;
-            }
-            // Else from file
-            String filePath = conf.get(CONFIG_VCF_META_PROTO_FILE, StringUtils.EMPTY);
-            if (StringUtils.isNotEmpty(filePath)) {
-                getLogger().info(String.format("Load Meta from file %s ...", filePath));
-                Path path = new Path(URI.create(filePath));
-                FileSystem fs = FileSystem.get(conf);
-                try (FSDataInputStream instream = fs.open(path)) {
-                    return action.parse(instream);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-        throw new IllegalStateException("VCFMeta configuration missing");
     }
 
     public int getChunkSize() {

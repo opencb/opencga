@@ -8,7 +8,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.datastore.core.ObjectMap;
@@ -21,7 +20,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
@@ -52,6 +50,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
+
+    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
@@ -126,7 +126,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
             int studyId = options.getInt(Options.STUDY_ID.key());
             int fileId = options.getInt(Options.FILE_ID.key());
-            HadoopCredentials archiveTable = buildCredentials(ArchiveHelper.getTableName(studyId));
+            HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
             boolean missingFilesDetected = false;
 
             ArchiveFileMetadataManager fileMetadataManager = buildArchiveFileMetaManager(archiveTable, options);
@@ -219,7 +219,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         int studyId = options.getInt(Options.STUDY_ID.key());
         int fileId = options.getInt(Options.FILE_ID.key());
-        HadoopCredentials archiveTable = buildCredentials(ArchiveHelper.getTableName(studyId));
+        HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
         HadoopCredentials variantsTable = getDbCredentials();
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
@@ -236,7 +236,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             Class execClass = ArchiveDriver.class;
             String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
             String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta, archiveTable.getHostAndPort(),
-                    archiveTable.getTable(), studyId, fileId);
+                    archiveTable.getTable(), studyId, fileId, options);
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");
@@ -257,7 +257,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
             Class execClass = VariantTableDriver.class;
             String args = VariantTableDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable.getTable(),
-                    variantsTable.getTable(), studyId, pendingFiles);
+                    variantsTable.getTable(), studyId, pendingFiles, options);
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
             long startTime = System.currentTimeMillis();
@@ -367,13 +367,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-        return input; // TODO
-    }
-
-    @Override
-    @Deprecated
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
-        return null;
+        return super.postTransform(input);
     }
 
     public static Logger getLogger() {
@@ -424,4 +418,15 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 .forEach(entry -> conf.set(entry.getKey(), options.getString(entry.getKey())));
         return conf;
     }
+
+    /**
+     * Get the archive table name given a StudyId.
+     *
+     * @param studyId Numerical study identifier
+     * @return Table name
+     */
+    public static String getTableName(int studyId) {
+        return ARCHIVE_TABLE_PREFIX + Integer.toString(studyId);
+    }
+
 }
