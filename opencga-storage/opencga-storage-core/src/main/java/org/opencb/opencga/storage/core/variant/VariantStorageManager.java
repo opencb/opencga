@@ -176,7 +176,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
             }
 
-            checkNewFile(studyConfiguration, fileId, fileName);
+            fileId = checkNewFile(studyConfiguration, fileId, fileName);
+            variantOptions.put(Options.FILE_ID.key(), fileId);
         }
         variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
 
@@ -471,10 +472,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     }
                 }
             }
-            options.put(Options.FILE_ID.key(), fileId);
         }
 
-        checkNewFile(studyConfiguration, fileId, fileName);
+        fileId = checkNewFile(studyConfiguration, fileId, fileName);
+        options.put(Options.FILE_ID.key(), fileId);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
         studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
@@ -871,35 +872,49 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         return new FileStudyConfigurationManager(options);
     }
 
-    /*
+    /**
      * Check if the file(name,id) can be added to the StudyConfiguration.
+     *
      * Will fail if:
      * fileName was already in the studyConfiguration.fileIds with a different fileId
      * fileId was already in the studyConfiguration.fileIds with a different fileName
      * fileId was already in the studyConfiguration.indexedFiles
+     *
+     * @param studyConfiguration Study Configuration
+     * @param fileId    FileId to add. If negative, will generate a new one
+     * @param fileName  File name
+     * @return fileId related to that file.
+     * @throws StorageManagerException if the file is not valid for being loaded
      */
-    protected void checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
+    protected int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
         Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
 
         if (fileId < 0) {
-            throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
+            if (studyConfiguration.getFileIds().containsKey(fileName)) {
+                fileId = studyConfiguration.getFileIds().get(fileName);
+            } else {
+                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+            }
+            //throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
                 throw new StorageManagerException("FileName " + fileName + " have a different fileId in the StudyConfiguration: "
-                        + "(" + fileName + ":" + studyConfiguration.getFileIds().get(fileName) + ")");
+                        + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
             }
         }
         if (idFiles.containsKey(fileId)) {
             if (!idFiles.get(fileId).equals(fileName)) {
                 throw new StorageManagerException("FileId " + fileId + " has a different fileName in the StudyConfiguration: "
-                        + "(" + idFiles.containsKey(fileId) + ":" + fileId + ")");
+                        + idFiles.containsKey(fileId) + " (" + fileId + ")");
             }
         }
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw new StorageManagerException("File (" + fileName + ":" + fileId + ")" + " was already already loaded ");
+            throw new StorageManagerException("File " + fileName + " (" + fileId + ")" + " was already already loaded ");
         }
+
+        return fileId;
     }
 
     /**

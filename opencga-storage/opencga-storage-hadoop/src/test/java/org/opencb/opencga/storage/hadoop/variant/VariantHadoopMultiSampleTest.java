@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 
@@ -42,22 +43,34 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         return loadFile(resourceName, fileId, studyConfiguration, null);
     }
 
+    public VariantSource loadFile(String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
+        return loadFile(resourceName, -1, studyConfiguration, otherParams);
+    }
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
 
         ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
+                .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageManager.Options.DB_NAME.key(), DB_NAME)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantAnnotationManager.SPECIES, "hsapiens")
+                .append(VariantAnnotationManager.ASSEMBLY, "GRc37")
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageManager.Options.FILE_ID.key(), fileId)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true);
         if (otherParams != null) {
             params.putAll(otherParams);
         }
-        ETLResult etlResult = VariantStorageManagerTestUtils.runDefaultETL(fileInputUri, variantStorageManager, studyConfiguration,
-                params
-        );
+
+        if (fileId > 0) {
+            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
+        }
+
+        ETLResult etlResult = runETL(variantStorageManager, fileInputUri, outputUri, params, params, params,
+                params, params, params, params, true, true, true);
+
         return variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
     }
 
@@ -65,8 +78,8 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
     public void testTwoFiles() throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
-        VariantSource source1 = loadFile("s1.genome.vcf", 1, studyConfiguration);
-        VariantSource source2 = loadFile("s2.genome.vcf", 2, studyConfiguration);
+        VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
 
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
