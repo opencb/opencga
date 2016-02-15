@@ -228,7 +228,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) {
-
+        if (query == null) {
+            query = new Query();
+        }
         long startTime = System.currentTimeMillis();
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
         try {

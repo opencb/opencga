@@ -3,35 +3,12 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import com.google.common.collect.BiMap;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -48,8 +25,23 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataMana
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.BiMap;
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -147,10 +139,11 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
             // Analysis: Load variants for region (study specific)
             List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
+            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
             getLog().info(String.format("Loaded %s variants ... ", analysisVar.size()));
             if (!analysisVar.isEmpty()) {
                 Variant tmpVar = analysisVar.get(0);
-                getLog().info("Loaded variant from analysi table: " + tmpVar.toJson());
+                getLog().info("Loaded variant from analysis table: " + tmpVar.toJson());
             }
             times.put(System.currentTimeMillis(), "Check consistency");
 
@@ -160,11 +153,12 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             /* ******** Update Analysis Variants ************** */
             // (1) NEW variants (only create the position, no filling yet)
             times.put(System.currentTimeMillis(), "Merge NEW variants");
-            List<Variant> analysisNew = new ArrayList<Variant>();
+            Set<Variant> analysisNew = new HashSet<>();
             for (Variant tar : archiveTarget) {
-                Optional<Variant> any = analysisVar.stream().filter(v -> VariantMerger.isSameVariant(v, tar)).findAny();
+                // Get all the archive target variants that are not in the analysis variants.
+//                Optional<Variant> any = analysisVar.stream().filter(v -> VariantMerger.isSameVariant(v, tar)).findAny();
                 // is new Variant?
-                if (!any.isPresent()) {
+                if (!analysisVarSet.contains(tar)) {
                     // Empty variant with no Sample information
                     // Filled with Sample information later (see 2)
                     Variant tarNew = this.variantMerger.createFromTemplate(tar);
@@ -376,7 +370,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @throws IOException
      * @throws InterruptedException
      */
-    private void updateOutputTable(Context context, List<Variant> analysisVar)
+    private void updateOutputTable(Context context, Collection<Variant> analysisVar)
             throws IOException, InterruptedException {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
