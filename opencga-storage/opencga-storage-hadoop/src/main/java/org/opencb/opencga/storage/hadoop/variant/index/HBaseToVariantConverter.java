@@ -1,17 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
@@ -36,7 +25,11 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.BiMap;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Created on 20/11/15.
@@ -107,8 +100,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             StudyConfiguration studyConfiguration = queryResult.first();
 
-            // Make copy!!!
-            Map<String, Integer> returnedSamplesPosition = new HashMap<>(getReturnedSamplesPosition(studyConfiguration));
+            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
 
             if (returnedSamplesPosition.isEmpty()) {
                 throw new IllegalStateException("No samples found for study!!!");
@@ -136,9 +128,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 String returnedGenotype = genotype;
                 for (Integer sampleId : row.getSampleIds(genotype)) {
                     String sampleName = mapSampleIds.get(sampleId);
-                    Integer integer = returnedSamplesPosition.get(sampleName);
+                    Integer sampleIdx = returnedSamplesPosition.get(sampleName);
+                    if (sampleIdx == null) {
+                        continue;   //Sample may not be required. Ignore this sample.
+                    }
                     List<String> lst = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
-                    samplesDataArray[integer] = lst;
+                    samplesDataArray[sampleIdx] = lst;
                 }
             }
             // Load Secondary Index
@@ -160,9 +155,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             // Load complex genotypes
             for (Entry<Integer, VariantProto.Genotype> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
                 String sampleName = mapSampleIds.get(entry.getKey());
+                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                if (samplePosition == null) {
+                    continue;   //Sample may not be required. Ignore this sample.
+                }
                 VariantProto.Genotype xgt = entry.getValue();
                 String returnedGenotype = new Genotype(xgt).toGenotypeString();
-                samplesDataArray[returnedSamplesPosition.get(sampleName)] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
+                samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
             }
             // Fill gaps (with HOM_REF)
             int homRef = 0;
@@ -204,7 +203,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         return variant;
     }
 
-    private Map<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
+    /**
+     * Creates a SORTED MAP with the required samples position.
+     *
+     * @param studyConfiguration Study Configuration
+     * @return Sorted linked hash map
+     */
+    private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             if (returnedSamples.isEmpty()) {

@@ -161,24 +161,14 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
-            Set<String> variants = checkLoadedVariants(studyConfiguration, dbAdaptor, source);
+            Set<String> variants = checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source);
             sources.add(source);
             expectedVariants.addAll(variants);
+            assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
         }
 
 
-
-        long count = dbAdaptor.count(null).first();
-        assertEquals(expectedVariants.size(), count);
-        System.out.println("count = " + count);
-        System.out.println("expectedVariants = " + expectedVariants.size());
-        count = 0;
-        for (Variant variant : dbAdaptor) {
-            count++;
-            assertTrue(expectedVariants.contains(variant.toString()));
-            //System.out.println("variant " + i + " = " + variant);
-        }
-        assertEquals(expectedVariants.size(), count);
+        checkLoadedVariants(expectedVariants, dbAdaptor);
 
     }
 
@@ -191,18 +181,31 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
         int fileId;
+        String pending = "";
         for (fileId = 12877; fileId < 12893; fileId++) {
             VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                     new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false));
             sources.add(source);
-            expectedVariants.addAll(checkLoadedVariants(studyConfiguration, dbAdaptor, source));
+            expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
+            pending += fileId + ",";
+            assertFalse(studyConfiguration.getIndexedFiles().contains(fileId));
         }
+        pending += fileId + ",";
         VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
-                new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true));
+                new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, pending)
+        );
         sources.add(source);
-        expectedVariants.addAll(checkLoadedVariants(studyConfiguration, dbAdaptor, source));
+        expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
 
+        for (fileId = 12877; fileId <= 12893; fileId++) {
+            assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
+        }
 
+        checkLoadedVariants(expectedVariants, dbAdaptor);
+    }
+
+    public void checkLoadedVariants(Set<String> expectedVariants, VariantHadoopDBAdaptor dbAdaptor) {
         long count = dbAdaptor.count(null).first();
         System.out.println("count = " + count);
         System.out.println("expectedVariants = " + expectedVariants.size());
@@ -211,12 +214,11 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         for (Variant variant : dbAdaptor) {
             count++;
             assertTrue(expectedVariants.contains(variant.toString()));
-            //System.out.println("variant " + i + " = " + variant);
         }
         assertEquals(expectedVariants.size(), count);
     }
 
-    public Set<String> checkLoadedVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, VariantSource source) {
+    public Set<String> checkArchiveTableLoadedVariants(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, VariantSource source) {
         int fileId = Integer.valueOf(source.getFileId());
         Set<String> variants = getVariants(dbAdaptor, studyConfiguration, fileId);
         assertEquals(source.getStats().getVariantTypeCounts().entrySet().stream()
