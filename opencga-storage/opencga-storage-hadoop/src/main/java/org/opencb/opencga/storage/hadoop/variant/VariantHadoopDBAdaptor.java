@@ -543,7 +543,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             addDefaultRegionFilter(scan);
         } else {
             scan.setStartRow(archiveHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            long endSlice = archiveHelper.getSlicePosition(region.getEnd()) + 1;
+            long endSlice = archiveHelper.getSliceId(region.getEnd()) + 1;
             // +1 because the stop row is exclusive
             scan.setStopRow(Bytes.toBytes(archiveHelper.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
         }

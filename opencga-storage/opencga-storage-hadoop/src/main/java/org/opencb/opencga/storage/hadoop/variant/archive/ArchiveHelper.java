@@ -112,12 +112,12 @@ public class ArchiveHelper extends GenomeHelper {
         return column;
     }
 
-    public VcfSlice join(byte[] key, Iterable<Put> input) throws InvalidProtocolBufferException {
+    @Deprecated
+    public VcfSlice join(byte[] key, Iterable<VcfSlice> input) throws InvalidProtocolBufferException {
         Builder sliceBuilder = VcfSlice.newBuilder();
         boolean isFirst = true;
         List<VcfRecord> vcfRecordLst = new ArrayList<VcfRecord>();
-        for (Put p : input) {
-            VcfSlice slice = extractSlice(p);
+        for (VcfSlice slice : input) {
 
             byte[] skey = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
             // Consistency check

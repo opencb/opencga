@@ -4,7 +4,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
@@ -43,7 +45,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
         this.fileIdBytes = archiveHelper.getColumn();
-        converter = new VcfRecordToVariantConverter(archiveHelper.getMeta());
+        VariantSource variantSource = archiveHelper.getMeta().getVariantSource();
+        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+                variantSource.getStudyId(), variantSource.getFileId());
         setLimit(options.getLong("limit"));
     }
 
@@ -52,7 +56,9 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = columnFamily;
         this.fileIdBytes = fileIdBytes;
-        converter = new VcfRecordToVariantConverter(meta);
+        VariantSource variantSource = meta.getVariantSource();
+        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+                variantSource.getStudyId(), variantSource.getFileId());
     }
 
     @Override
@@ -114,6 +120,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
                     byte[] value = result.getValue(columnFamily, fileIdBytes);
                     vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
                     vcfRecordIterator = vcfSlice.getRecordsList().iterator();
+                    converter.setFields(vcfSlice.getFields());
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }

@@ -14,7 +14,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
@@ -28,6 +27,10 @@ import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceWritable;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSlicerReducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,9 +106,11 @@ public class ArchiveDriver extends Configured implements Tool {
         job.setCombinerClass(VcfSliceCombiner.class);
 
 
-        TableMapReduceUtil.initTableReducerJob(tableName, null, job, null, null, null, null,
+        TableMapReduceUtil.initTableReducerJob(tableName, VcfSlicerReducer.class, job, null, null, null, null,
                 conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
-        job.setMapOutputValueClass(Put.class);
+        job.setMapOutputValueClass(VcfSliceWritable.class);
+
+
 
 
         Thread hook = new Thread(() -> {

@@ -77,7 +77,7 @@ public class ArchiveResultToVariantConverter {
     private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
         int fileId = ArchiveHelper.getFileIdFromColumnName(key);
         VcfSliceToVariantListConverter converter = loadConverter(fileId);
-        VcfSlice vcfSlice = asSlice(value);
+        VcfSlice vcfSlice = VcfSlice.parseFrom(value);
         return converter.convert(vcfSlice);
     }
 
@@ -88,10 +88,6 @@ public class ArchiveResultToVariantConverter {
             fileidToConverter.put(fileId, converter);
         }
         return converter;
-    }
-
-    private VcfSlice asSlice(byte[] data) throws InvalidProtocolBufferException {
-        return VcfSlice.parseFrom(data);
     }
 
     public static List<Variant> resolveConflicts(List<Variant> variants) {

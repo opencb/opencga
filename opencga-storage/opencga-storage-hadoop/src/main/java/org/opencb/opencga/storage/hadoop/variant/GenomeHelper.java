@@ -120,8 +120,10 @@ public class GenomeHelper {
         return chunkSize.get();
     }
 
-    public long getSlicePosition(long position) {
-        return getChunkSize() > 0 ? position / (long) getChunkSize() : position;
+    public long getSliceId(long position) {
+        return getChunkSize() > 0
+                ? position / (long) getChunkSize()
+                : position;
     }
 
     public long getStartPositionFromSlice(long slice) {
@@ -142,7 +144,7 @@ public class GenomeHelper {
      * <ul>
      * <li>Using {@link #standardChromosome(String)} to get standard chromosome
      * name
-     * <li>Using {@link #getSlicePosition(long)} to return slice position
+     * <li>Using {@link #getSliceId(long)} to return slice position
      * </ul>
      * e.g. using chunk size 100, separator _ with chr2 and 1234 would result in
      * 2_12
@@ -152,7 +154,7 @@ public class GenomeHelper {
      * @return {@link String} Row key string
      */
     public String generateBlockId(String chrom, long position) {
-        return generateBlockIdFromSlice(chrom, getSlicePosition(position));
+        return generateBlockIdFromSlice(chrom, getSliceId(position));
     }
 
     public String generateBlockIdFromSlice(String chrom, long slice) {
