@@ -57,8 +57,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
+    //@Deprecated
+    //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
 
     QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
 

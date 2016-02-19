@@ -19,14 +19,15 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -486,7 +487,69 @@ class CatalogMongoDBUtils {
         }
     }
 
+    public static void addAnnotationQueryFilter(String optionKey, Query query, Map<String, Variable> variableMap,
+                                                List<Bson> annotationSetFilter)
+            throws CatalogDBException {
+        // Annotation Filter
+        final String sepOr = ",";
 
+        String annotation_key = optionKey.replaceFirst("annotation.", "");
+        String annotation_value = query.getString(optionKey);
+
+        final String variableId;
+        final String route;
+        if (annotation_key.contains(".")) {
+            String[] variableIdRoute = annotation_key.split("\\.", 2);
+            variableId = variableIdRoute[0];
+            route = "." + variableIdRoute[1];
+        } else {
+            variableId = annotation_key;
+            route = "";
+        }
+        String[] values = annotation_value.split(sepOr);
+
+        QueryParam.Type type = QueryParam.Type.TEXT;
+
+        if (variableMap != null) {
+            Variable variable = variableMap.get(variableId);
+            Variable.VariableType variableType = variable.getType();
+            if (variable.getType() == Variable.VariableType.OBJECT) {
+                String[] routes = route.split("\\.");
+                for (String r : routes) {
+                    if (variable.getType() != Variable.VariableType.OBJECT) {
+                        throw new CatalogDBException("Unable to query variable " + annotation_key);
+                    }
+                    if (variable.getVariableSet() != null) {
+                        Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
+                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                        if (subVariableMap.containsKey(r)) {
+                            variable = subVariableMap.get(r);
+                            variableType = variable.getType();
+                        }
+                    } else {
+                        variableType = Variable.VariableType.TEXT;
+                        break;
+                    }
+                }
+            }
+            if (variableType == Variable.VariableType.BOOLEAN) {
+                type = QueryParam.Type.BOOLEAN;
+
+            } else if (variableType == Variable.VariableType.NUMERIC) {
+                type = QueryParam.Type.DECIMAL;
+            }
+        }
+
+        List<Bson> valueList = addCompQueryFilter(type, "value", Arrays.asList(values), new ArrayList<>());
+        annotationSetFilter.add(
+                Filters.elemMatch("annotations", Filters.and(
+                        Filters.eq("id", variableId),
+                        valueList.get(0)
+                ))
+        );
+    }
+
+    @Deprecated
     public static void addAnnotationQueryFilter(String optionKey, QueryOptions options, List<DBObject> annotationSetFilter, Map<String,
             Variable> variableMap) throws CatalogDBException {
         // Annotation Filters
@@ -553,20 +616,19 @@ class CatalogMongoDBUtils {
         }
     }
 
-    static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption option, String optionKey, String queryKey, ObjectMap
-            options,
-                                             List<Document> andQuery) throws CatalogDBException {
+    static List<Bson> addCompQueryFilter(QueryParam option, String optionKey, String queryKey, ObjectMap
+            options, List<Bson> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";
         }
-        return addCompQueryFilter(option.getType(), queryKey, optionsList, andQuery);
+        return addCompQueryFilter(option.type(), queryKey, optionsList, andQuery);
     }
 
-    private static List<Document> addCompQueryFilter(AbstractCatalogDBAdaptor.FilterOption.Type type, String queryKey,
-                                                     List<String> optionsList, List<Document> andQuery) throws CatalogDBException {
+    private static List<Bson> addCompQueryFilter(QueryParam.Type type, String queryKey, List<String> optionsList,
+                                                     List<Bson> andQuery) throws CatalogDBException {
 
-        ArrayList<Document> or = new ArrayList<>(optionsList.size());
+        ArrayList<Bson> or = new ArrayList<>(optionsList.size());
         for (String option : optionsList) {
             Matcher matcher = OPERATION_PATTERN.matcher(option);
             String operator;
@@ -591,16 +653,16 @@ class CatalogMongoDBUtils {
                 throw new CatalogDBException("Unknown filter operation: " + option + " . Missing key");
             }
             switch (type) {
-                case NUMERICAL:
+                case DECIMAL:
                     try {
                         double doubleValue = Double.parseDouble(filter);
-                        or.add(addNumberOperationQueryFilter(key, operator, doubleValue, new Document()));
+                        or.add(addNumberOperationQueryFilter(key, operator, doubleValue));
                     } catch (NumberFormatException e) {
                         throw new CatalogDBException(e);
                     }
                     break;
                 case TEXT:
-                    or.add(addStringOperationQueryFilter(key, operator, filter, new Document()));
+                    or.add(addStringOperationQueryFilter(key, operator, filter));
                     break;
                 case BOOLEAN:
                     or.add(addBooleanOperationQueryFilter(key, operator, Boolean.parseBoolean(filter), new Document()));
@@ -614,7 +676,7 @@ class CatalogMongoDBUtils {
         } else if (or.size() == 1) {
             andQuery.add(or.get(0));
         } else {
-            andQuery.add(new Document("$or", or));
+            andQuery.add(Filters.or(or));
         }
 
         return andQuery;
@@ -722,31 +784,32 @@ class CatalogMongoDBUtils {
         return query;
     }
 
-    static Document addStringOperationQueryFilter(String queryKey, String op, String filter, Document query) throws CatalogDBException {
+    static Bson addStringOperationQueryFilter(String queryKey, String op, String filter) throws CatalogDBException {
+        Bson query;
         switch (op) {
             case "<":
-                query.put(queryKey, new Document("$lt", filter));
+                query = new Document(queryKey, new Document("$lt", filter));
                 break;
             case "<=":
-                query.put(queryKey, new Document("$lte", filter));
+                query = new Document(queryKey, new Document("$lte", filter));
                 break;
             case ">":
-                query.put(queryKey, new Document("$gt", filter));
+                query = new Document(queryKey, new Document("$gt", filter));
                 break;
             case ">=":
-                query.put(queryKey, new Document("$gte", filter));
+                query = new Document(queryKey, new Document("$gte", filter));
                 break;
             case "!=":
-                query.put(queryKey, new Document("$ne", filter));
+                query = new Document(queryKey, new Document("$ne", filter));
                 break;
             case "":
             case "=":
             case "==":
-                query.put(queryKey, filter);
+                query = new Document(queryKey, filter);
                 break;
             case "~":
             case "=~":
-                query.put(queryKey, new Document("$regex", filter));
+                query = new Document(queryKey, new Document("$regex", filter));
                 break;
             default:
                 throw new CatalogDBException("Unknown numerical query operation " + op);
@@ -783,27 +846,28 @@ class CatalogMongoDBUtils {
         return query;
     }
 
-    static Document addNumberOperationQueryFilter(String queryKey, String op, Number filter, Document query) throws CatalogDBException {
+    static Bson addNumberOperationQueryFilter(String queryKey, String op, Number filter) throws CatalogDBException {
+        Bson query;
         switch (op) {
             case "<":
-                query.put(queryKey, new Document("$lt", filter));
+                query = new Document(queryKey, new Document("$lt", filter));
                 break;
             case "<=":
-                query.put(queryKey, new Document("$lte", filter));
+                query = new Document(queryKey, new Document("$lte", filter));
                 break;
             case ">":
-                query.put(queryKey, new Document("$gt", filter));
+                query = new Document(queryKey, new Document("$gt", filter));
                 break;
             case ">=":
-                query.put(queryKey, new Document("$gte", filter));
+                query = new Document(queryKey, new Document("$gte", filter));
                 break;
             case "!=":
-                query.put(queryKey, new Document("$ne", filter));
+                query = new Document(queryKey, new Document("$ne", filter));
                 break;
             case "":
             case "=":
             case "==":
-                query.put(queryKey, filter);
+                query = new Document(queryKey, filter);
                 break;
             default:
                 throw new CatalogDBException("Unknown string query operation " + op);

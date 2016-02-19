@@ -23,10 +23,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
@@ -167,6 +164,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
+  /*
     @Deprecated
     public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
@@ -211,7 +209,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         return endQuery("getAllStudies", startTime, studies);
     }
-
+*/
     @Override
     public void updateStudyLastActivity(int studyId) throws CatalogDBException {
         update(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
@@ -487,7 +485,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         long startTime = startQuery();
 
-        List<Document> mongoQueryList = new LinkedList<>();
+        List<Bson> mongoQueryList = new LinkedList<>();
 
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -495,13 +493,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
-                CatalogSampleDBAdaptor.VariableSetFilterOption option = CatalogSampleDBAdaptor.VariableSetFilterOption.valueOf(key);
+                CatalogSampleDBAdaptor.QueryParams option = CatalogSampleDBAdaptor.QueryParams.getParam(entry.getKey()) != null
+                        ? CatalogSampleDBAdaptor.QueryParams.getParam(entry.getKey())
+                        : CatalogSampleDBAdaptor.QueryParams.getParam(key);
                 switch (option) {
-                    case studyId:
+                    case STUDY_ID:
                         addCompQueryFilter(option, option.name(), PRIVATE_ID, options, mongoQueryList);
                         break;
                     default:
-                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.getKey());
+                        String optionsKey = "variableSets." + entry.getKey().replaceFirst(option.name(), option.key());
                         addCompQueryFilter(option, entry.getKey(), optionsKey, options, mongoQueryList);
                         break;
                 }
@@ -523,7 +523,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
         aggregation.add(Aggregates.project(Projections.include("variableSets")));
         aggregation.add(Aggregates.unwind("$variableSets"));
-        aggregation.add(Aggregates.match(new Document("$and", mongoQueryList)));
+        aggregation.add(Aggregates.match(Filters.and(mongoQueryList)));
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation,
                 filterOptions(options, FILTER_ROUTE_STUDIES));

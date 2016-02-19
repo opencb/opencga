@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;

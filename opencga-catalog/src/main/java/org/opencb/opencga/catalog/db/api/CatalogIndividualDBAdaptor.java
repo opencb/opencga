@@ -89,9 +89,11 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STUDY_ID("studyId", INTEGER_ARRAY, "");
 
-        // TOCHECK: Pedro. Should we be considering annotations?
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
+        ANNOTATION_SET_ID("annotationSetId", INTEGER, ""),
+        ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
         static {
