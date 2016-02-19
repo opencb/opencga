@@ -132,7 +132,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         ACL_DELETE("acl.delete", BOOLEAN, ""),
 
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ID("annotationSetId", INTEGER, ""),
+        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
@@ -177,6 +177,60 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
     }
 
+    enum VariableSetParams implements QueryParam {
+        ID("id", DECIMAL, ""),
+        NAME("name", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+        ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        STUDY_ID("studyId", DECIMAL, "");
+
+        private static Map<String, VariableSetParams> map;
+        static {
+            map = new LinkedMap();
+            for (VariableSetParams params : VariableSetParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        VariableSetParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, VariableSetParams> getMap() {
+            return map;
+        }
+
+        public static VariableSetParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    // TODO: Implement enum for cohorts
+
+    @Deprecated
     enum SampleFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         annotationSetId(Type.TEXT, ""),
@@ -228,6 +282,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
     }
 
+    @Deprecated
     enum CohortFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
 
@@ -281,6 +336,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
     }
 
+    @Deprecated
     enum VariableSetFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
 

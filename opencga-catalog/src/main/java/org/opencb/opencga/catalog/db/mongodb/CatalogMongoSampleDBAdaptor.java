@@ -928,8 +928,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     case ANNOTATION:
                         if (variableMap == null) {
                             int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
-                            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                            if (variableSetId > 0) {
+                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+                                        .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                            }
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;

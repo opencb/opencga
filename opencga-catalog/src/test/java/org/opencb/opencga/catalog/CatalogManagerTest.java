@@ -1335,20 +1335,20 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
 
         int numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name
-                .toString(), "vs1"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+                , "vs1"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name
-                .toString(), "vs1,vs2"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+                , "vs1,vs2"), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.name
-                .toString(), "VS1"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+                , "VS1"), sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetFilterOption.id
-                .toString(), vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.ID.key()
+                , vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
     }
@@ -1715,21 +1715,20 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(0, samples.size());
 
         query = new Query("annotation.NAME", "s_1,s_2,s_3");
-        query = new Query("annotation", "NAME:s_1,s_2,s_3");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        query = new Query("annotation", "AGE:>30");
+        query = new Query("annotation.AGE", ">30");
         query.append(variableSetId.toString(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        query = new Query("annotation", "AGE:>30");
+        query = new Query("annotation.AGE", ">30");
         query.append(variableSetId.toString(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        query = new Query("annotation", Arrays.asList("AGE:>30", "ALIVE:true"));
+        query = new Query("annotation.AGE", ">30").append("annotation.ALIVE", "true");
         query.append(variableSetId.toString(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
