@@ -114,20 +114,23 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 //        studyId = 2;
 //        variableSetId = 7;
 
-        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
+//        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
+        Query query = new Query("variableSetId", variableSetId).append("annotation.family", "GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
         System.out.println(catalogManager.getAllSamples(studyId, query, options, sessionId));
 
-        query.put("annotation", "sex:2;Population:ITU");
+        query.put("annotation.sex", "2");
+        query.put("annotation.Population","ITU");
         QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(femaleIta);
 
-        query.put("annotation", "sex:1;Population:ITU");
+        query.put("annotation.sex", "1");
+        query.put("annotation.Population", "ITU");
         QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(maleIta);
 
-        query.put("annotation", "Population:ITU");
+        query.remove("annotation.sex");
         QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(ita);
 
