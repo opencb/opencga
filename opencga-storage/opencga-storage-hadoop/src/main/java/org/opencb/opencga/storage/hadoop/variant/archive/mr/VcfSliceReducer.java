@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -18,7 +19,7 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VcfSlicerReducer extends TableReducer<ImmutableBytesWritable, VcfSliceWritable, ImmutableBytesWritable> {
+public class VcfSliceReducer extends TableReducer<ImmutableBytesWritable, VcfSliceWritable, ImmutableBytesWritable> {
 
     private ArchiveHelper helper;
 
@@ -39,20 +40,27 @@ public class VcfSlicerReducer extends TableReducer<ImmutableBytesWritable, VcfSl
     protected void reduce(ImmutableBytesWritable key, Iterable<VcfSliceWritable> values, Context context)
             throws IOException, InterruptedException {
 
+        List<VcfSlice> slices = new LinkedList<>();
 
-        List<Variant> variants = new ArrayList<>();
-        int slicePosition = 0;
-        int numSlices = 0;
         for (VcfSliceWritable vcfSlice : values) {
-            variants.addAll(converterFromSlice.convert(vcfSlice.get()));
-            slicePosition = vcfSlice.get().getPosition(); //All the positions should be the same
-            numSlices++;
+            slices.add(vcfSlice.get());
         }
 
+        VcfSlice joinedSlice;
+        if (slices.size() == 1) {
+            joinedSlice = slices.get(0);
+        } else {
+            List<Variant> variants = new ArrayList<>();
+            int slicePosition = 0;
+            for (VcfSlice vcfSlice : slices) {
+                variants.addAll(converterFromSlice.convert(vcfSlice));
+                slicePosition = vcfSlice.getPosition(); //All the positions should be the same
+            }
+            joinedSlice = converterToSlice.convert(variants, slicePosition);
+        }
 
         context.getCounter("OPENCGA.HBASE", "VCF_REDUCE_COUNT").increment(1);
-        context.getCounter("OPENCGA.HBASE", "VCF_REDUCE_COUNT_" + numSlices).increment(1);
-        VcfSlice joinedSlice = converterToSlice.convert(variants, slicePosition);
+        context.getCounter("OPENCGA.HBASE", "VCF_REDUCE_COUNT_" + slices.size()).increment(1);
 
         Put put = helper.wrap(joinedSlice);
 

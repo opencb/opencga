@@ -100,7 +100,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
             System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
             variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(),
-                    vcfRecord.getReference(), vcfRecord.getAlternate(0));
+                    vcfRecord.getReference(), vcfRecord.getAlternate());
             logger.debug("variant: {}", variant.toString());
         }
         return variant;

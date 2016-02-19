@@ -27,16 +27,15 @@ public class VcfRecordComparatorTest {
      */
     @Before
     public void setUp() throws Exception {
-        a1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).addAlternate("a").build();
-        a2 = VcfRecord.newBuilder().setRelativeStart(2).setRelativeEnd(2).addAlternate("a").build();
-        b1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(3).addAlternate("b").build();
-        b2 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).addAlternate("b").build();
+        a1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).setAlternate("a").build();
+        a2 = VcfRecord.newBuilder().setRelativeStart(2).setRelativeEnd(2).setAlternate("a").build();
+        b1 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(3).setAlternate("b").build();
+        b2 = VcfRecord.newBuilder().setRelativeStart(1).setRelativeEnd(2).setAlternate("b").build();
         vcfRecordComparator = new VcfRecordComparator();
     }
 
     /**
-     * Test method for {@link org.opencb.opencga.storage.hadoop.variant.archive.VcfRecordComparator#compare(org.opencb.biodata.models
-     * .variant.protobuf.VcfSliceProtos.VcfRecord, org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord)}.
+     * Test method for {@link VcfRecordComparator#compare(VcfRecord, VcfRecord)}.
      */
     @Test
     public void testStart() {

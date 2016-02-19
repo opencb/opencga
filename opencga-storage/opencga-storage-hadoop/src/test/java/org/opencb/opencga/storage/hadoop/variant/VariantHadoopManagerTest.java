@@ -10,7 +10,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -21,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 
 import java.net.URI;
@@ -141,7 +144,7 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
                         .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
                         .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), FILE_ID),
                 new QueryOptions("archive", true)).forEachRemaining(variant -> {
-            System.out.println("Variant from archive = " + variant);
+            System.out.println("Variant from archive = " + variant.toJson());
             numVariants[0]++;
             variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
         });
@@ -178,10 +181,23 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        ArchiveHelper archiveHelper = dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), FILE_ID);
+        VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getMeta());
         hm.act(tableName, table -> {
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
                 System.out.println("VcfSlice = " + Bytes.toString(result.getRow()));
+                if (Arrays.equals(result.getRow(), archiveHelper.getMetaRowKey())) {
+                    continue;
+                }
+                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getColumn());
+                VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
+                        value);
+                System.out.println(vcfSlice);
+                List<Variant> variants = converter.convert(vcfSlice);
+                for (Variant variant : variants) {
+                    System.out.println(variant.toJson());
+                }
             }
             resultScanner.close();
             return null;

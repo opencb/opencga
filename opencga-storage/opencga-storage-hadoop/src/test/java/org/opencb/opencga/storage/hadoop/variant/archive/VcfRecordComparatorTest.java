@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSample;
 
@@ -15,26 +16,26 @@ import static org.junit.Assert.*;
 public class VcfRecordComparatorTest {
     private VcfRecord sampleA = VcfRecord.newBuilder()
             .setRelativeStart(1).setRelativeEnd(2)
-            .addAlternate("G").setReference("A")
+            .setAlternate("G").setReference("A")
             .addSamples(VcfSample.newBuilder().addSampleValues("Sample-1").build())
             .build();
 
     private VcfRecord sampleB = VcfRecord.newBuilder()
             .setRelativeStart(1).setRelativeEnd(3)
-            .addAlternate("G").setReference("A")
+            .setAlternate("G").setReference("A")
             .addSamples(VcfSample.newBuilder().addSampleValues("Sample-1").build())
             .build();
 
 
     private VcfRecord sampleC = VcfRecord.newBuilder()
             .setRelativeStart(2).setRelativeEnd(3)
-            .addAlternate("G").setReference("A")
+            .setAlternate("G").setReference("A")
             .addSamples(VcfSample.newBuilder().addSampleValues("Sample-1").build())
             .build();
 
     private VcfRecord sampleD = VcfRecord.newBuilder()
             .setRelativeStart(2).setRelativeEnd(3)
-            .setReference("A").addAlternate("G").addAlternate("T")
+            .setReference("A").setAlternate("G").addSecondaryAlternates(VariantProto.AlternateCoordinate.newBuilder().setAlternate("T").build())
             .addSamples(VcfSample.newBuilder().addSampleValues("Sample-1").build())
             .build();
 
