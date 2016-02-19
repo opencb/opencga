@@ -1633,50 +1633,57 @@ public class CatalogManagerTest extends GenericTest {
 //        assertEquals(1, annotationSetQueryResult.getNumResults());
 
         List<Sample> samples;
-        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_VARIABLE_SET_ID.key(), vs1.getId());
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:li");
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), vs1.getId());
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "li");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:lo");
+        //query = new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), vs1.getId());
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.stringList:lo,li,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,li,LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(), "nestedObject.object.string:my value");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(),
-                "nestedObject.stringList:lo,lu,LL;nestedObject.object.string:my value");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ANNOTATIONS.key(),
-                "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:7");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList" , "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "7");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:3");
-        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
-        assertEquals(2, samples.size());
-
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:5");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "3");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:2,5");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList" , "5");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "stringValue");
+        samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+        assertEquals(1, samples.size());
+
+        query.remove(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "2,5");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
-        query.put(annotation.toString(), "nestedObject.stringList:lo,lu,LL;nestedObject.object.numberList:0");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "0");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 

@@ -131,9 +131,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         ACL_EXECUTE("acl.execute", BOOLEAN, ""),
         ACL_DELETE("acl.delete", BOOLEAN, ""),
 
-        ANNOTATION_SET_ID("annotationSets.id", TEXT, ""),
-        ANNOTATION_SET_VARIABLE_SET_ID("annotationSets.variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ANNOTATIONS("annotationSets.annotations", TEXT, "");
+        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
+        ANNOTATION_SET_ID("annotationSetId", INTEGER, ""),
+        ANNOTATION("annotation", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
         static {

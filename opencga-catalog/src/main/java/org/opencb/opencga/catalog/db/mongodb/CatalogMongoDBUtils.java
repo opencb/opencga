@@ -19,12 +19,9 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
-import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -493,20 +490,20 @@ class CatalogMongoDBUtils {
         // Annotation Filter
         final String sepOr = ",";
 
-        String annotation_key = optionKey.replaceFirst("annotation.", "");
-        String annotation_value = query.getString(optionKey);
+        String annotationKey = optionKey.replaceFirst("annotation.", "");
+        String annotationValue = query.getString(optionKey);
 
         final String variableId;
         final String route;
-        if (annotation_key.contains(".")) {
-            String[] variableIdRoute = annotation_key.split("\\.", 2);
+        if (annotationKey.contains(".")) {
+            String[] variableIdRoute = annotationKey.split("\\.", 2);
             variableId = variableIdRoute[0];
             route = "." + variableIdRoute[1];
         } else {
-            variableId = annotation_key;
+            variableId = annotationKey;
             route = "";
         }
-        String[] values = annotation_value.split(sepOr);
+        String[] values = annotationValue.split(sepOr);
 
         QueryParam.Type type = QueryParam.Type.TEXT;
 
@@ -517,7 +514,7 @@ class CatalogMongoDBUtils {
                 String[] routes = route.split("\\.");
                 for (String r : routes) {
                     if (variable.getType() != Variable.VariableType.OBJECT) {
-                        throw new CatalogDBException("Unable to query variable " + annotation_key);
+                        throw new CatalogDBException("Unable to query variable " + annotationKey);
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
@@ -540,7 +537,7 @@ class CatalogMongoDBUtils {
             }
         }
 
-        List<Bson> valueList = addCompQueryFilter(type, "value", Arrays.asList(values), new ArrayList<>());
+        List<Bson> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
         annotationSetFilter.add(
                 Filters.elemMatch("annotations", Filters.and(
                         Filters.eq("id", variableId),
