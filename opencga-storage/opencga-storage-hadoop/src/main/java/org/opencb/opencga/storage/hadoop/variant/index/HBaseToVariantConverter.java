@@ -102,9 +102,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
 
-            if (returnedSamplesPosition.isEmpty()) {
-                throw new IllegalStateException("No samples found for study!!!");
-            }
+//            Do not throw any exception. It may happen that the study is not loaded yet or no samples are required!
+//            if (returnedSamplesPosition.isEmpty()) {
+//                throw new IllegalStateException("No samples found for study!!!");
+//            }
+
             Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];

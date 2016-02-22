@@ -24,6 +24,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.base.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -421,11 +422,11 @@ public class VariantTableStudyRow {
             arr = new ArrayList<>(se.getSecondaryAlternates().size());
             for (org.opencb.biodata.models.variant.avro.AlternateCoordinate altCoord : se.getSecondaryAlternates()) {
                 VariantProto.AlternateCoordinate.Builder ac = AlternateCoordinate.newBuilder();
-                ac.setChromosome(altCoord.getChromosome())
-                    .setStart(altCoord.getStart())
-                    .setEnd(altCoord.getEnd())
-                    .setReference(altCoord.getReference())
-                    .setAlternate(altCoord.getAlternate());
+                ac.setChromosome(Objects.firstNonNull(altCoord.getChromosome(), ""))
+                    .setStart(Objects.firstNonNull(altCoord.getStart(), 0))
+                    .setEnd(Objects.firstNonNull(altCoord.getEnd(), 0))
+                    .setReference(Objects.firstNonNull(altCoord.getReference(), ""))
+                    .setAlternate(Objects.firstNonNull(altCoord.getAlternate(), ""));
                 VariantType vt = VariantType.valueOf(altCoord.getType().name());
                 ac.setType(vt);
                 arr.add(ac.build());
