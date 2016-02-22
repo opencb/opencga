@@ -4,7 +4,6 @@ from pip.req import parse_requirements
 import os
 install_reqs = parse_requirements(os.path.join(os.path.dirname(__file__), "requirements.txt"), session=uuid.uuid1())
 reqs = [str(ir.req) for ir in install_reqs if ir.req is not None]
-print os.path.join(os.path.dirname(__file__), 'pyCGA')
 setup(
     name='pyCGA',
     packages=['pyCGA', 'pyCGA.Utils'],
