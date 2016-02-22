@@ -43,6 +43,11 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -127,6 +132,15 @@ public class VariantAnnotationManager {
             numThreads = options.getInt(VariantAnnotationManager.NUM_THREADS, numThreads);
         }
 
+        final long[] totalVariantsLong = {-1};
+
+        new Thread(() -> {
+            totalVariantsLong[0] = dbAdaptor.count(query).first();
+        }).start();
+        int logBatchSize = 1000;
+
+        final AtomicLong numAnnotations = new AtomicLong(0);
+
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
 
@@ -139,6 +153,16 @@ public class VariantAnnotationManager {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                long numAnnotationsPrev = numAnnotations.getAndAdd(variantList.size());
+                if (numAnnotationsPrev / logBatchSize != (numAnnotationsPrev + variantList.size()) / logBatchSize) {
+                    long batchPos = (numAnnotationsPrev + variantList.size()) / logBatchSize * logBatchSize;
+                    String percent = "?";
+                    if (totalVariantsLong[0] > 0) {
+                        percent = String.format("%d, %.2f%%", totalVariantsLong[0], (((float) batchPos) / totalVariantsLong[0]) * 100);
+                    }
+                    logger.info("Annotated variants: {}/{}", batchPos, percent);
+                }
+
                 logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(), (System.currentTimeMillis() - start) / 1000.0);
                 return variantAnnotationList;
             };
