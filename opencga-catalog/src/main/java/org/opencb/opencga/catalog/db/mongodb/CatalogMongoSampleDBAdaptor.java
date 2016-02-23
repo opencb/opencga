@@ -269,7 +269,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
         DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
 */
-        Bson match = Aggregates.match(Filters.eq("PRIVATE_ID", sampleId));
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
         Bson unwind = Aggregates.unwind("$acl");
         Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
 //        Bson project = Projections.include("id", "acl");
