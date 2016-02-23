@@ -23,9 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.cellbase.core.db.DBAdaptorFactory;
-import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
-import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
+//import org.opencb.cellbase.core.db.DBAdaptorFactory;
+//import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
+//import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
@@ -45,10 +45,10 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 
 
     private final JsonFactory factory;
-    private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor;
-    private VariationDBAdaptor variationDBAdaptor;
-    private DBAdaptorFactory dbAdaptorFactory;
-    private CellBaseClient cellBaseClient;
+//    private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = null;
+//    private VariationDBAdaptor variationDBAdaptor = null;
+//    private DBAdaptorFactory dbAdaptorFactory = null;
+    private CellBaseClient cellBaseClient = null;
     private ObjectMapper jsonObjectMapper;
 
 //    public static final String CELLBASE_VERSION = "CELLBASE.VERSION";
@@ -75,8 +75,6 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(factory);
-        this.dbAdaptorFactory = null;
-        this.cellBaseClient = null;
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 

@@ -51,7 +51,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(null);
+        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
     @Test
@@ -104,7 +104,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         StudyConfiguration studyConfiguration;
 
         /** Create first cohort **/
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
         HashSet<String> cohort1 = new HashSet<>();
         cohort1.add(iterator.next());
         cohort1.add(iterator.next());
@@ -125,7 +125,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         checkCohorts(dbAdaptor, studyConfiguration);
 
         /** Create second cohort **/
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
         HashSet<String> cohort2 = new HashSet<>();
         cohort2.add(iterator.next());
         cohort2.add(iterator.next());
@@ -144,7 +144,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
         checkCohorts(dbAdaptor, studyConfiguration);
 
         //Try to recalculate stats for cohort2. Will fail
-        studyConfiguration = variantStorageManager.getStudyConfigurationManager(options).getStudyConfiguration(studyName, null).first();
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
         thrown.expect(IOException.class);
         stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
