@@ -400,7 +400,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .MANAGE_STUDY);
 
         QueryResult<AclEntry> queryResult = fileDBAdaptor.unsetFileAcl(fileId, userId);
-        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl", queryResult.first()), null, "unsetAcl", null);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl",
+                queryResult.first()), null, "unsetAcl", null);
 
         return queryResult;
     }
@@ -428,7 +429,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         QueryResult<AclEntry> queryResult = sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
 
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl", queryResult.first()), null, "unsetAcl", null);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
+                queryResult.first()), null, "unsetAcl", null);
 
         return queryResult;
     }
