@@ -23,16 +23,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
-//import org.opencb.cellbase.core.db.DBAdaptorFactory;
-//import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
-//import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
-import org.opencb.datastore.core.*;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -188,7 +186,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
-        QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
+        org.opencb.commons.datastore.core.QueryResponse<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResponse;
 //        List<String> genomicVariantStringList = new ArrayList<>(variants.size());
 //        for (GenomicVariant genomicVariant : variants) {
 //            genomicVariantStringList.add(genomicVariant.toString());
@@ -201,7 +199,11 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
                     CellBaseClient.SubCategory.variant.toString(),
                     variants.stream().map(Object::toString).collect(Collectors.joining(",")),
                     "full_annotation",
-                    new QueryOptions("post", true), VariantAnnotation.class);
+//                    new QueryOptions("post", true),
+                    new org.opencb.commons.datastore.core.QueryOptions("post", true),
+                    VariantAnnotation.class
+            );
+
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
                 queryError = true;
@@ -238,7 +240,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
             return variantAnnotationList;
         }
 
-        Collection<QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
+        Collection<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
 
         QueryResult<VariantAnnotation>[] queryResults = response.toArray(new QueryResult[1]);
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
