@@ -17,9 +17,9 @@
 package org.opencb.opencga.analysis;
 
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -171,7 +171,7 @@ public class AnalysisOutputRecorder {
                     if (queryResult.getNumResults() != 0) {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();
-                        catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                        catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), new QueryOptions(), sessionId);
                     }
                 }
                 break;
@@ -179,7 +179,7 @@ public class AnalysisOutputRecorder {
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
                 ObjectMap updateParams = new ObjectMap("status", jobFailed? Cohort.Status.INVALID : Cohort.Status.READY);
                 for (Integer cohortId : cohortIds) {
-                    catalogManager.modifyCohort(cohortId, updateParams, sessionId);
+                    catalogManager.modifyCohort(cohortId, updateParams, new QueryOptions(), sessionId);
                 }
                 break;
             case ANALYSIS:

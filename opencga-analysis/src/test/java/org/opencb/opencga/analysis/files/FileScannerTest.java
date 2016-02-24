@@ -3,7 +3,8 @@ package org.opencb.opencga.analysis.files;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -142,7 +143,7 @@ public class FileScannerTest extends TestCase {
 
         URI studyUri = catalogManager.getStudyUri(study.getId());
         CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
-        File root = catalogManager.searchFile(study.getId(), new QueryOptions("name", "."), sessionIdUser).first();
+        File root = catalogManager.searchFile(study.getId(), new Query("name", "."), sessionIdUser).first();
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());

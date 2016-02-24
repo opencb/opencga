@@ -19,9 +19,10 @@ package org.opencb.opencga.analysis.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -80,8 +81,10 @@ public class CatalogStudyConfigurationFactory {
     public StudyConfiguration getStudyConfiguration(int studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
         StudyConfiguration studyConfiguration = null;
+        org.opencb.datastore.core.QueryOptions qOpts = new org.opencb.datastore.core.QueryOptions(options);
+
         if (studyConfigurationManager != null) {
-            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, qOpts).first();
         }
         studyConfiguration = fillStudyConfiguration(studyConfiguration, study, sessionId);
 
@@ -158,7 +161,7 @@ public class CatalogStudyConfigurationFactory {
         }
 
         logger.debug("Get Samples");
-        QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, SAMPLES_QUERY_OPTIONS, sessionId);
+        QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, new Query(), SAMPLES_QUERY_OPTIONS, sessionId);
 
         for (Sample sample : samples.getResult()) {
             studyConfiguration.getSampleIds().forcePut(sample.getName(), sample.getId());
@@ -202,13 +205,13 @@ public class CatalogStudyConfigurationFactory {
             studyConfiguration.setCohorts(new HashMap<>());
         }
         if (studyConfiguration.getAttributes() == null) {
-            studyConfiguration.setAttributes(new ObjectMap());
+            studyConfiguration.setAttributes(new org.opencb.datastore.core.ObjectMap());
         }
     }
 
     public void updateStudyConfigurationFromCatalog(int studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
-        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new org.opencb.datastore.core.QueryOptions());
     }
 
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {
@@ -223,7 +226,7 @@ public class CatalogStudyConfigurationFactory {
                     new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), sessionId);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), new QueryOptions(), sessionId);
                 }
             }
         }
@@ -234,7 +237,7 @@ public class CatalogStudyConfigurationFactory {
                     new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getInvalidStats())), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.INVALID)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), sessionId);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), new QueryOptions(), sessionId);
                 }
             }
         }

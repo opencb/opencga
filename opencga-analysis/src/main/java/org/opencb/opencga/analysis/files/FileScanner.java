@@ -1,15 +1,15 @@
 package org.opencb.opencga.analysis.files;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class FileScanner {
             throws CatalogException, IOException {
         int studyId = study.getId();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
-        QueryOptions query = new QueryOptions();
+        Query query = new Query();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
         query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
@@ -128,7 +128,7 @@ public class FileScanner {
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
                 QueryResult<File> searchFile = catalogManager.searchFile(studyId,
-                        new QueryOptions("path", filePath),
+                        new Query("path", filePath),
                         new QueryOptions("include", "projects.studies.files.id"), sessionId);
                 if (searchFile.getResult().isEmpty()) {
                     untrackedFiles.put(filePath, uri);
@@ -187,7 +187,7 @@ public class FileScanner {
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
 
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId, new QueryOptions("path", filePath), sessionId);
+            QueryResult<File> searchFile = catalogManager.searchFile(studyId, new Query("path", filePath), sessionId);
 
             File file = null;
             boolean returnFile = false;

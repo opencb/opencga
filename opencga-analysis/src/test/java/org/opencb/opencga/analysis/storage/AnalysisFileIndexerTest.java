@@ -4,7 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;

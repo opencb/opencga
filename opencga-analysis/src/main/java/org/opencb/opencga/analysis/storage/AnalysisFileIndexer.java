@@ -17,9 +17,10 @@
 package org.opencb.opencga.analysis.storage;
 
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
@@ -210,7 +211,7 @@ public class AnalysisFileIndexer {
                 throw new AnalysisExecutionException(e);
             }
         } else {
-            sampleList = catalogManager.getAllSamples(study.getId(), new QueryOptions("id", originalFile.getSampleIds()), sessionId).getResult();
+            sampleList = catalogManager.getAllSamples(study.getId(), new Query("id", originalFile.getSampleIds()), new QueryOptions(), sessionId).getResult();
         }
         if (!simulate) {
             Cohort defaultCohort = null;
@@ -226,7 +227,7 @@ public class AnalysisFileIndexer {
             samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-                catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), sessionId);
+                catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), new QueryOptions(), sessionId);
             }
         }
 

@@ -7,9 +7,9 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
@@ -251,10 +251,11 @@ public class VariantStorageTest {
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.modifyCohort(coh1, new ObjectMap("description", "NewDescription"), sessionId);
+        catalogManager.modifyCohort(coh1, new ObjectMap("description", "NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.Status.READY, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
 
-        catalogManager.modifyCohort(coh1, new ObjectMap("samples", catalogManager.getCohort(coh1, null, sessionId).first().getSamples().subList(0, 100)), sessionId);
+        catalogManager.modifyCohort(coh1, new ObjectMap("samples", catalogManager.getCohort(coh1, null, sessionId).first()
+                .getSamples().subList(0, 100)), new QueryOptions(), sessionId);
         assertEquals(Cohort.Status.INVALID, catalogManager.getCohort(coh1, null, sessionId).first().getStatus());
 
         job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first();

@@ -4,9 +4,10 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -290,8 +291,8 @@ public class FileMetadataReader {
 
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
-            sampleQueryOptions.add("name", sortedSampleNames);
-            sampleList = catalogManager.getAllSamples(study.getId(), sampleQueryOptions, sessionId).getResult();
+            Query sampleQuery = new Query("name", sortedSampleNames);
+            sampleList = catalogManager.getAllSamples(study.getId(), sampleQuery, sampleQueryOptions, sessionId).getResult();
 
             //check if all file samples exists on Catalog
             if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
@@ -309,9 +310,9 @@ public class FileMetadataReader {
                             try {
                                 sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
                             } catch (CatalogException e) {
-                                QueryOptions queryOptions = new QueryOptions("name", sampleName);
-                                queryOptions.add("include", includeSampleNameId);
-                                if (catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult().isEmpty()) {
+                                Query query = new Query("name", sampleName);
+                                QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
+                                if (catalogManager.getAllSamples(study.getId(), query, queryOptions, sessionId).getResult().isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
                                     logger.debug("Do not create the sample \"" + sampleName + "\". It has magically appeared");
@@ -334,9 +335,8 @@ public class FileMetadataReader {
 
         } else {
             //Get samples from file.sampleIds
-            QueryOptions queryOptions = new QueryOptions(options);
-            queryOptions.add("id", file.getSampleIds());
-            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
+            Query query = new Query("id", file.getSampleIds());
+            sampleList = catalogManager.getAllSamples(study.getId(), query, options, sessionId).getResult();
         }
 
         List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());

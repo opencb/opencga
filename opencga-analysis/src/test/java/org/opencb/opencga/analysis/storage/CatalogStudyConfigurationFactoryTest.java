@@ -3,12 +3,11 @@ package org.opencb.opencga.analysis.storage;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -97,13 +96,13 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
-            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new org.opencb.datastore.core.ObjectMap()) {
+            protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {return null;}
+            protected org.opencb.datastore.core.QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.datastore.core.QueryOptions options) {return null;}
+            protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {
                 StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
-                return new QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
+                return new org.opencb.datastore.core.QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
             }
 
         }, new QueryOptions(), sessionId);
@@ -126,13 +125,13 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new ObjectMap()) {
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options) {return null;}
-            protected QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new org.opencb.datastore.core.ObjectMap()) {
+            protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {return null;}
+            protected org.opencb.datastore.core.QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.datastore.core.QueryOptions options) {return null;}
+            protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {
                 StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
-                return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new org.opencb.datastore.core.QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
 
         }, new QueryOptions(), sessionId);

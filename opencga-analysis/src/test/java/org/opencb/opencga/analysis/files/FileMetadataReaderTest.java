@@ -3,24 +3,27 @@ package org.opencb.opencga.analysis.files;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +33,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.*;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.SampleFilterOption;
 
 public class FileMetadataReaderTest extends TestCase {
 
@@ -156,7 +159,8 @@ public class FileMetadataReaderTest extends TestCase {
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get("variantSource")).get("samples"));
-        List<Sample> samples = catalogManager.getAllSamples(study.getId(), new QueryOptions(SampleFilterOption.id.toString(), file.getSampleIds()), sessionIdUser).getResult();
+        List<Sample> samples = catalogManager.getAllSamples(study.getId(), new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds()),
+                new QueryOptions(), sessionIdUser).getResult();
         Map<Integer, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
         assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSampleIds().get(0)).getName());
         assertEquals(expectedSampleNames.get(1), sampleMap.get(file.getSampleIds().get(1)).getName());

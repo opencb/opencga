@@ -17,9 +17,10 @@
 package org.opencb.opencga.analysis.storage.variant;
 
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -89,7 +90,7 @@ public class VariantStorage {
                     break;
                 case READY:
                     if (updateStats) {
-                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.INVALID), sessionId);
+                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.INVALID), new QueryOptions(), sessionId);
                         break;
                     }
                 case CALCULATING:
@@ -97,7 +98,7 @@ public class VariantStorage {
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
                             " with status \"" + cohort.getStatus() + "\"");
             }
-            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("id", cohort.getSamples()), sessionId);
+            QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("id", cohort.getSamples()), new QueryOptions(), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());
             cohortMap.put(cohortId, cohort);
         }
@@ -108,7 +109,7 @@ public class VariantStorage {
             outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
-            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), sessionId);
+            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), new QueryOptions(), sessionId);
 
         }
 
