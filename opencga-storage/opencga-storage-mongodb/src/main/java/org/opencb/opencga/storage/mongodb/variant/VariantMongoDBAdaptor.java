@@ -768,7 +768,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
-                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
+                addQueryFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND, s -> {
+                    VariantType type = VariantType.valueOf(s);
+                    Set<VariantType> subTypes = Variant.subTypes(type);
+                    List<String> types = new ArrayList<>(subTypes.size() + 1);
+                    types.add(s);
+                    subTypes.forEach(subType -> types.add(subType.toString()));
+                    return types;
+                });
+//                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
 
@@ -1518,32 +1526,57 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (operation == null) {
             if (value.startsWith("!")) {
-                _builder.and(key).notEquals(map.apply(value.substring(1)));
+                T mapped = map.apply(value.substring(1));
+                if (mapped instanceof Collection) {
+                    _builder.and(key).notIn(mapped);
+                } else {
+                    _builder.and(key).notEquals(mapped);
+                }
             } else {
-                _builder.and(key).is(map.apply(value));
+                T mapped = map.apply(value);
+                if (mapped instanceof Collection) {
+                    _builder.and(key).in(mapped);
+                } else {
+                    _builder.and(key).is(mapped);
+                }
             }
         } else if (operation == QueryOperation.OR) {
             String[] array = value.split(OR);
-            List<T> list = new ArrayList<>(array.length);
+            List list = new ArrayList(array.length);
             for (String elem : array) {
                 if (elem.startsWith("!")) {
                     throw new IllegalArgumentException("Unable to use negate (!) operator in OR sequences (<it_1>(,<it_n>)*)");
                 } else {
-                    list.add(map.apply(elem));
+                    T mapped = map.apply(elem);
+                    if (mapped instanceof Collection) {
+                        list.addAll(((Collection) mapped));
+                    } else {
+                        list.add(mapped);
+                    }
                 }
             }
             _builder.and(key).in(list);
         } else {
             //Split in two lists: positive and negative
             String[] array = value.split(AND);
-            List<T> listIs = new ArrayList<>(array.length);
-            List<T> listNotIs = new ArrayList<>(array.length);
+            List listIs = new ArrayList(array.length);
+            List listNotIs = new ArrayList(array.length);
 
             for (String elem : array) {
                 if (elem.startsWith("!")) {
-                    listNotIs.add(map.apply(elem.substring(1)));
+                    T mapped = map.apply(elem.substring(1));
+                    if (mapped instanceof Collection) {
+                        listNotIs.addAll(((Collection) mapped));
+                    } else {
+                        listNotIs.add(mapped);
+                    }
                 } else {
-                    listIs.add(map.apply(elem));
+                    T mapped = map.apply(elem);
+                    if (mapped instanceof Collection) {
+                        listIs.addAll(((Collection) mapped));
+                    } else {
+                        listIs.add(mapped);
+                    }
                 }
             }
 
