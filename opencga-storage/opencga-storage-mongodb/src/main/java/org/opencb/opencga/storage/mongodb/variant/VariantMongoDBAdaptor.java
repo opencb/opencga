@@ -1684,14 +1684,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         List<DBObject> dbObjects = new ArrayList<>();
         for (String elem : list) {
-            String[] populationFrequency = splitKeyValue(elem);
-            if (populationFrequency.length != 2) {
+            String[] score = splitKeyValue(elem);
+            if (score.length != 2) {
                 logger.error("Bad score filter: " + elem);
                 throw new IllegalArgumentException("Bad score filter: " + elem);
             }
             QueryBuilder scoreBuilder = new QueryBuilder();
-            scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(populationFrequency[0]);
-            addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, populationFrequency[1], scoreBuilder);
+            scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(score[0]);
+            addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, score[1], scoreBuilder);
             dbObjects.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
         }
         if (!dbObjects.isEmpty()) {
@@ -1750,8 +1750,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder frequencyBuilder = new QueryBuilder();
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(populationFrequency[0]);
+            DBObject studyPopFilter = new BasicDBObject(frequencyBuilder.get().toMap());
             addFilter.accept(populationFrequency[1], frequencyBuilder);
-            dbObjects.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get())));
+            BasicDBObject elemMatch = new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get()));
+            if (populationFrequency[1].startsWith("<")) {
+                BasicDBObject orNotExistsAnyPopulation = new BasicDBObject(key, new BasicDBObject("$exists", false));
+                BasicDBObject orNotExistsPopulation = new BasicDBObject(key, new BasicDBObject("$not", new BasicDBObject("$elemMatch", studyPopFilter)));
+                dbObjects.add(new BasicDBObject("$or", Arrays.asList(orNotExistsAnyPopulation, orNotExistsPopulation, elemMatch)));
+            } else {
+                dbObjects.add(elemMatch);
+            }
         }
         if (!dbObjects.isEmpty()) {
             if (operation == null || operation == QueryOperation.AND) {
