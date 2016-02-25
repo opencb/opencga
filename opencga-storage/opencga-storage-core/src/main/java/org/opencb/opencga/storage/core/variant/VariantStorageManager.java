@@ -207,6 +207,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+        boolean includeSrc = false;
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", "htsjdk");
 
@@ -330,7 +331,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
                     VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                     taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile,
-                            statsCalculator);
+                            statsCalculator, includeSrc);
                 } catch (IOException e) {
                     throw new StorageManagerException("Unable to read VCFHeader", e);
                 }
@@ -339,8 +340,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator);
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
             }
+
+            logger.info("Generating output file {}", outputVariantsFile);
 
             ParallelTaskRunner<String, ByteBuffer> ptr;
             try {
@@ -375,20 +378,43 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             final VariantSource finalSource = source;
             final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
+
+            Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
+            if (parser.equalsIgnoreCase("htsjdk")) {
+                logger.info("Using HTSJDK to read variants.");
+                try (InputStream fileInputStream = input.toString().endsWith("gz")
+                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                        : new FileInputStream(input.toFile())) {
+                    FullVcfCodec codec = new FullVcfCodec();
+                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
+                    taskSupplier = () -> new VariantJsonTransformTask(header, headerVersion, finalSource,
+                            finalOutputFileJsonFile, statsCalculator, includeSrc);
+                } catch (IOException e) {
+                    throw new StorageManagerException("Unable to read VCFHeader", e);
+                }
+            } else {
+                logger.info("Using Biodata to read variants.");
+                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
+            }
+
+            logger.info("Generating output file {}", outputVariantsFile);
+
             try {
-                VariantJsonTransformTask variantJsonTransformTask =
-                        new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
-//                variantJsonTransformTask.setIncludeSrc(includeSrc);
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
-                        variantJsonTransformTask,
+                        taskSupplier,
                         dataWriter,
                         new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
                 );
             } catch (Exception e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
             }
+
             logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
             start = System.currentTimeMillis();
             try {
