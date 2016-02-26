@@ -81,6 +81,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         }
     }
 
+    public Variant convert(VariantTableStudyRow row) {
+        return convert(new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt()),
+                Collections.singletonList(row), null);
+
+    }
+
     protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();

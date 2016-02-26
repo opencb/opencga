@@ -3,12 +3,8 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.stream.Collectors;
 
 import org.apache.hadoop.hbase.client.Result;
@@ -18,6 +14,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,13 +59,18 @@ public class ArchiveResultToVariantConverter {
     public List<Variant> convert(Result value, boolean resolveConflict) throws InvalidProtocolBufferException {
         List<Variant> variantList = new ArrayList<>();
         NavigableMap<byte[], byte[]> fm = value.getFamilyMap(columnFamily);
-        for (Entry<byte[], byte[]> x : fm.entrySet()) {
+        for (Entry<byte[], byte[]> entry : fm.entrySet()) {
+            if (Arrays.equals(entry.getKey(), GenomeHelper.VARIANT_COLUMN_B)) {
+                //Ignore Variants column. It does not contain any VcfSlice information
+                continue;
+            }
             // for each FILE (column in HBase
-            List<Variant> varList = archiveCellToVariants(x.getKey(), x.getValue());
+            List<Variant> varList = archiveCellToVariants(entry.getKey(), entry.getValue());
             if (resolveConflict) {
                 varList = resolveConflicts(varList);
             }
-            LOG.info(String.format("For Column %s found %s entries", ArchiveHelper.getFileIdFromColumnName(x.getKey()), varList.size()));
+            LOG.info(String.format("For Column %s found %s entries",
+                    ArchiveHelper.getFileIdFromColumnName(entry.getKey()), varList.size()));
             variantList.addAll(varList);
         }
         return variantList;

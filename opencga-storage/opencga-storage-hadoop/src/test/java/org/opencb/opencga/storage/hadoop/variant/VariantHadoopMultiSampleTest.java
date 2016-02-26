@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.hadoop.hbase.client.Result;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
@@ -16,6 +17,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.net.URI;
 import java.util.*;
@@ -80,6 +82,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        printVariantsFromArchiveTable(studyConfiguration);
 
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
@@ -148,6 +151,26 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
     }
 
+    public VariantHadoopDBAdaptor printVariantsFromArchiveTable(StudyConfiguration studyConfiguration) throws Exception {
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+        GenomeHelper helper = dbAdaptor.getGenomeHelper();
+        helper.getHBaseManager().act(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), table -> {
+            for (Result result : table.getScanner(helper.getColumnFamily())) {
+                try {
+                    byte[] value = result.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+                    if (value != null) {
+                        System.out.println(VariantTableStudyRowsProto.parseFrom(value));
+                    }
+                } catch (Exception e) {
+                    System.out.println("e.getMessage() = " + e.getMessage());
+                }
+            }
+            return 0;
+        });
+        return dbAdaptor;
+    }
+
 
     @Test
     public void testPlatinumFilesOneByOne() throws Exception {
@@ -169,6 +192,13 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
 
         checkLoadedVariants(expectedVariants, dbAdaptor);
+
+        printVariantsFromArchiveTable(studyConfiguration);
+
+        for (Variant variant : dbAdaptor) {
+            System.out.println("variant = " + variant);
+        }
+
 
     }
 

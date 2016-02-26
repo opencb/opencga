@@ -37,6 +37,9 @@ public class GenomeHelper {
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
+    public static final String VARIANT_COLUMN = "_V";
+    public static final byte[] VARIANT_COLUMN_B = Bytes.toBytes(VARIANT_COLUMN);
+
     private final AtomicInteger chunkSize = new AtomicInteger(ArchiveDriver.DEFAULT_CHUNK_SIZE);
     private final char separator;
     private final byte[] columnFamily;

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package org.opencb.opencga.storage.hadoop.variant.models.protobuf;
+
+option java_outer_classname = "VariantHBase";
+option java_generate_equals_and_hash = true;
+option java_multiple_files = true;
+
+message Alternate {
+    string chromosome = 1;
+    int32 start = 2;
+    int32 end = 3;
+    string reference = 4;
+    string alternate = 5;
+//    VariantType type = 6;
+}
+
+message SampleList {
+    repeated uint32 sampleIds = 1 [packed = true];
+}
+
+
+message VariantTableStudyRowProto {
+
+    uint32 start = 1;
+    string reference = 2;
+    string alternate = 3;
+
+
+    uint32 homRefCount = 5;                         // 0/0
+    repeated uint32 het = 6 [packed = true];        // 0/1
+    repeated uint32 homVar = 7 [packed = true];     // 1/1
+    repeated uint32 nocall = 8 [packed = true];     // .
+    repeated uint32 other = 9 [packed = true];      // ?  ->  1/2, ./1, ...
+
+    map<string, SampleList> otherGt = 10;
+
+    repeated Alternate secondaryAlternate = 11;
+
+    uint32 passCount = 12;
+    uint32 callCount = 13;
+
+}
+
+message VariantTableStudyRowsProto  {
+    repeated VariantTableStudyRowProto rows = 1;
+}

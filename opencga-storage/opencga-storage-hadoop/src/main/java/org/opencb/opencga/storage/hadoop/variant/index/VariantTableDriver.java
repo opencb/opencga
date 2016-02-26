@@ -8,6 +8,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
@@ -112,6 +113,7 @@ public class VariantTableDriver extends Configured implements Tool {
             int id = Integer.parseInt(fileIdStr);
             scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
         }
+        scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
 
         // set other scan attrs
         TableMapReduceUtil.initTableMapperJob(
@@ -129,6 +131,7 @@ public class VariantTableDriver extends Configured implements Tool {
                 null, null, null, null,
                 conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
         job.setNumReduceTasks(0);
+        job.setOutputFormatClass(MultiTableOutputFormat.class);
 
         Thread hook = new Thread(() -> {
             try {

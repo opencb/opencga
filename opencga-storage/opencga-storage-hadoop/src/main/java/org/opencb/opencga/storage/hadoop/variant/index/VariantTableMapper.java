@@ -13,7 +13,6 @@ import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
@@ -21,26 +20,17 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,7 +57,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
 
     @Override
-    protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
+    protected void setup(Context context) throws IOException,
             InterruptedException {
         getLog().debug("Setup configuration");
         // Setup configuration
@@ -86,7 +76,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
 
     @Override
-    protected void cleanup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
+    protected void cleanup(Context context) throws IOException,
             InterruptedException {
         for (Entry<String, Long> entry : this.timeSum.entrySet()) {
             context.getCounter("OPENCGA.HBASE", "VCF_TIMER_" + entry.getKey()).increment(entry.getValue());
@@ -97,8 +87,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
     }
 
     @Override
-    protected void map(ImmutableBytesWritable key, Result value,
-            Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException, InterruptedException {
+    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         if (value.isEmpty()) {
             context.getCounter("OPENCGA.HBASE", "VCF_RESULT_EMPTY").increment(1);
             return; // TODO search backwards?
@@ -139,8 +128,11 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             times.put(System.currentTimeMillis(), "Load Analysis");
 
             // Analysis: Load variants for region (study specific)
-            List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
-            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
+//            List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
+            List<Variant> analysisVar = parseCurrentVariantsRegion(value, chr);
+
+//            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
+            Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
             getLog().info(String.format("Loaded %s variants ... ", analysisVar.size()));
             if (!analysisVar.isEmpty()) {
                 Variant tmpVar = analysisVar.get(0);
@@ -159,7 +151,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 // Get all the archive target variants that are not in the analysis variants.
 //                Optional<Variant> any = analysisVar.stream().filter(v -> VariantMerger.isSameVariant(v, tar)).findAny();
                 // is new Variant?
-                if (!analysisVarSet.contains(tar)) {
+                if (!analysisVarSet.contains(tar.toString())) {
                     // Empty variant with no Sample information
                     // Filled with Sample information later (see 2)
                     Variant tarNew = this.variantMerger.createFromTemplate(tar);
@@ -189,13 +181,39 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             times.put(System.currentTimeMillis(), "Store analysis");
 
             // fetchCurrentValues(context, summary.keySet());
-            updateOutputTable(context, analysisNew);
-            updateOutputTable(context, analysisVar);
+            List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
+            updateOutputTable(context, analysisNew, rows);
+            updateOutputTable(context, analysisVar, rows);
+
+            updateArchiveTable(key, context, rows);
 
             times.put(System.currentTimeMillis(), "Done");
             addTimes(times);
         } catch (InvalidProtocolBufferException e) {
             throw new IOException(e);
+        }
+    }
+
+    private List<Variant> parseCurrentVariantsRegion(Result value, String chr)
+            throws InvalidProtocolBufferException {
+
+        List<VariantTableStudyRow> tableStudyRows;
+        byte[] protoData = value.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+        if (protoData != null && protoData.length > 0) {
+            VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
+            tableStudyRows = new ArrayList<>(variantTableStudyRowsProto.getRowsCount());
+            for (VariantTableStudyRowProto variantTableStudyRowProto : variantTableStudyRowsProto.getRowsList()) {
+                tableStudyRows.add(new VariantTableStudyRow(variantTableStudyRowProto, chr, studyConfiguration.getStudyId()));
+            }
+
+            List<Variant> variants = new ArrayList<>(tableStudyRows.size());
+            for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
+                variants.add(hbaseToVariantConverter.convert(tableStudyRow));
+            }
+            return variants;
+
+        } else {
+            return Collections.emptyList();
         }
     }
 
@@ -309,13 +327,15 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
     /**
      * Fetch already loaded variants in the Variant Table.
-     * @param context {@link org.apache.hadoop.mapreduce.Mapper.Context}
+     * @param context {@link Context}
      * @param chr Chromosome
      * @param start Start (inclusive) position
      * @param end End (exclusive) position
      * @return L
      * @throws IOException If any IO issue occurs
+     * @deprecated Do not read from VariantTable anymore! Use {@link #parseCurrentVariantsRegion} instead
      */
+    @Deprecated
     protected List<Variant> loadCurrentVariantsRegion(Context context, String chr, Long start, Long end)
             throws IOException {
         String colPrefix = getHelper().getStudyId() + "_";
@@ -368,19 +388,30 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      *
      * @param context
      * @param analysisVar
+     * @param rows
      * @throws IOException
      * @throws InterruptedException
      */
-    private void updateOutputTable(Context context, Collection<Variant> analysisVar)
+    private List<VariantTableStudyRow> updateOutputTable(Context context, Collection<Variant> analysisVar, List<VariantTableStudyRow> rows)
             throws IOException, InterruptedException {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : analysisVar) {
             VariantTableStudyRow row = VariantTableStudyRow.build(variant, studyId, idMapping);
+            rows.add(row);
             Put put = row.createPut(getHelper());
-            context.write(new ImmutableBytesWritable(put.getRow()), put);
+            context.write(new ImmutableBytesWritable(helper.getOutputTable()), put);
             context.getCounter("OPENCGA.HBASE", "VCF_ROW-put").increment(1);
         }
+        return rows;
+    }
+
+    private void updateArchiveTable(ImmutableBytesWritable key, Context context, List<VariantTableStudyRow> tableStudyRows)
+            throws IOException, InterruptedException {
+        Put put = new Put(key.get());
+        put.addColumn(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B,
+                VariantTableStudyRow.toProto(tableStudyRows).toByteArray());
+        context.write(new ImmutableBytesWritable(helper.getIntputTable()), put);
     }
 
     public VariantTableHelper getHelper() {

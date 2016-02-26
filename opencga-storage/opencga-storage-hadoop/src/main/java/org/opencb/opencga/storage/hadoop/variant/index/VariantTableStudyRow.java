@@ -3,28 +3,8 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
-import static org.opencb.biodata.tools.variant.merge.VariantMerger.PASS_KEY;
-
-import java.io.IOException;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.google.common.base.Objects;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -41,8 +21,22 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.Alternate;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
+import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
+import static org.opencb.biodata.tools.variant.merge.VariantMerger.PASS_KEY;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -90,6 +84,42 @@ public class VariantTableStudyRow {
         this.callMap.putAll(row.callMap.entrySet().stream().collect(Collectors.toMap(p -> p.getKey(), p -> new HashSet<>(p.getValue()))));
         this.secAlternate.addAll(row.secAlternate != null ? row.secAlternate : Collections.emptyList());
         this.sampleToGenotype.putAll(row.sampleToGenotype != null ? row.sampleToGenotype : Collections.emptyMap());
+    }
+
+    public VariantTableStudyRow(VariantTableStudyRowProto proto, String chromosome, Integer studyId) {
+        this.studyId = studyId;
+//        this.chromosome = proto.getChromosome();
+        this.chromosome = chromosome;
+        this.pos = proto.getStart();
+        this.ref = proto.getReference();
+        this.alt = proto.getAlternate();
+        this.callCount = proto.getCallCount();
+        this.passCount = proto.getPassCount();
+        this.homRefCount = proto.getHomRefCount();
+        this.callMap = new HashMap<>(4);
+        callMap.put(HOM_VAR, new HashSet<>(proto.getHomVarList()));
+        callMap.put(HET_REF, new HashSet<>(proto.getHetList()));
+        callMap.put(NOCALL, new HashSet<>(proto.getNocallList()));
+        callMap.put(OTHER, new HashSet<>(proto.getOtherList()));
+        for (Map.Entry<String, SampleList> entry : proto.getOtherGt().entrySet()) {
+            Genotype gt = new Genotype(entry.getKey());
+            VariantProto.Genotype gtProto = gt.toProtobuf();
+            for (Integer sid : entry.getValue().getSampleIdsList()) {
+                sampleToGenotype.put(sid, gtProto);
+            }
+        }
+        this.secAlternate = new ArrayList<>(proto.getSecondaryAlternateCount());
+        for (Alternate alternate : proto.getSecondaryAlternateList()) {
+            secAlternate.add(
+                    AlternateCoordinate.newBuilder()
+                            .setChromosome(chromosome)
+                            .setAlternate(alternate.getAlternate())
+                            .setReference(alternate.getReference())
+                            .setStart(alternate.getStart())
+                            .setEnd(alternate.getEnd() == 0 ? alternate.getStart() : alternate.getEnd())
+                            .setType(VariantType.SNV)
+                            .build());
+        }
     }
 
     /**
@@ -212,6 +242,43 @@ public class VariantTableStudyRow {
         this.homRefCount = homRefCount;
     }
 
+    public String getAlt() {
+        return alt;
+    }
+
+    public VariantTableStudyRow setAlt(String alt) {
+        this.alt = alt;
+        return this;
+    }
+
+    public String getRef() {
+        return ref;
+    }
+
+    public VariantTableStudyRow setRef(String ref) {
+        this.ref = ref;
+        return this;
+    }
+
+    public VariantTableStudyRow setPos(int pos) {
+        this.pos = pos;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public VariantTableStudyRow setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public VariantTableStudyRow setStudyId(Integer studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
     public Put createPut(VariantTableHelper helper) {
         byte[] generateRowKey = generateRowKey(helper);
         if (this.callMap.containsKey(HOM_REF)) {
@@ -239,6 +306,47 @@ public class VariantTableStudyRow {
             }
         }
         return put;
+    }
+
+    public static VariantTableStudyRowsProto toProto(List<VariantTableStudyRow> rows) {
+        return VariantTableStudyRowsProto.newBuilder()
+                .addAllRows(rows.stream().map(VariantTableStudyRow::toProto).collect(Collectors.toList()))
+                .build();
+    }
+
+    public VariantTableStudyRowProto toProto() {
+        Map<String, List<Integer>> otherGt = new HashMap<>();
+        for (Entry<Integer, VariantProto.Genotype> entry : sampleToGenotype.entrySet()) {
+            String gt = entry.getValue().getAllelesIdxList().stream().map(Object::toString)
+                    .collect(Collectors.joining(entry.getValue().getPhased() ? "|" : "/"));
+            List<Integer> samples = otherGt.get(gt);
+            if (samples == null) {
+                samples = new LinkedList<>();
+                otherGt.put(gt, samples);
+            }
+            samples.add(entry.getKey());
+        }
+        return VariantTableStudyRowProto.newBuilder()
+                .setStart(pos)
+                .setReference(ref)
+                .setAlternate(alt)
+                .setCallCount(callCount)
+                .setPassCount(passCount)
+                .setHomRefCount(homRefCount)
+                .addAllHomVar(callMap.getOrDefault(HOM_VAR, Collections.emptySet()))
+                .addAllHet(callMap.getOrDefault(HET_REF, Collections.emptySet()))
+                .addAllNocall(callMap.getOrDefault(NOCALL, Collections.emptySet()))
+                .addAllOther(callMap.getOrDefault(OTHER, Collections.emptySet()))
+                .addAllSecondaryAlternate(secAlternate.stream().map(a -> Alternate.newBuilder()
+                        .setStart(a.getStart())
+                        .setAlternate(a.getAlternate())
+                        .setReference(a.getReference()).build()
+                ).collect(Collectors.toList()))
+                .putAllOtherGt(otherGt.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Entry::getKey,
+                                entry -> SampleList.newBuilder().addAllSampleIds(entry.getValue()).build())))
+                .build();
     }
 
     public static List<VariantTableStudyRow> parse(Result result, GenomeHelper helper) {

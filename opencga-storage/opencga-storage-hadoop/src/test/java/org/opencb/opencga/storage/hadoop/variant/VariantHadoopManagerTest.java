@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.net.URI;
 import java.util.*;
@@ -198,6 +199,11 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
                 for (Variant variant : variants) {
                     System.out.println(variant.toJson());
                 }
+
+                value = result.getValue(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+                System.out.println(GenomeHelper.VARIANT_COLUMN + " == " + VariantTableStudyRowsProto.parseFrom(value));
+
+
             }
             resultScanner.close();
             return null;
