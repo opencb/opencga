@@ -4,7 +4,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
-import static org.opencb.biodata.tools.variant.merge.VariantMerger.PASS_KEY;
 
 import java.io.IOException;
 import java.sql.Array;
@@ -410,8 +409,9 @@ public class VariantTableStudyRow {
         if (null == se) {
             throw new IllegalStateException("Study Entry of variant is null: " + variant);
         }
-        if (null != se.getAllAttributes()) { // SET PASS counts
-            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(PASS_KEY, "0");
+        if(se.getFiles() != null && !se.getFiles().isEmpty() && se.getFiles().get(0) != null 
+                && se.getFiles().get(0).getAttributes() != null && ! se.getFiles().get(0).getAttributes().isEmpty()){
+            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(VariantMerger.VCF_FILTER, "0");
             row.setPassCount(Integer.valueOf(passStr));
         }
         Set<String> sampleSet = se.getSamplesName();
@@ -459,7 +459,7 @@ public class VariantTableStudyRow {
             }
             // Work out PASS / CALL count
             // Samples from Archive table have PASS/etc set. From Analysis table, the flag is empty (already counted)
-            if (StringUtils.equals("PASS", se.getSampleData(sample, VariantMerger.PASS_KEY))) {
+            if (StringUtils.equals("PASS", se.getSampleData(sample,VariantMerger.VCF_FILTER))) {
                 row.addPassCount(1);
             }
         }
