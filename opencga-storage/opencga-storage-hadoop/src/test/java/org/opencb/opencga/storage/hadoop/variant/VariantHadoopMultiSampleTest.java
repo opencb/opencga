@@ -135,6 +135,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:10032:A:G"));
         assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals("1", variants.get("1:10032:A:G").getStudy(studyName).getAttributes().get("FILTER"));
         assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:11000:T:G"));
