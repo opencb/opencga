@@ -52,7 +52,7 @@ public class JobWSServerTest {
 
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -78,7 +78,7 @@ public class JobWSServerTest {
 
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -106,7 +106,7 @@ public class JobWSServerTest {
 
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";

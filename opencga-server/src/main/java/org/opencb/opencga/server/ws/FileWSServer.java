@@ -892,7 +892,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 if (path.endsWith("/")) {
                     filePath = path + Paths.get(uri.getPath()).getFileName().toString();
                 } else {
-                    int folders = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), path + "/"), sessionId).getNumResults();
+                    int folders = catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), path + "/"), sessionId).getNumResults();
                     if (folders != 0) {
                         filePath = path + "/" + Paths.get(uri.getPath()).getFileName().toString();
                     } else {

@@ -539,8 +539,8 @@ public class CatalogManagerTest extends GenericTest {
         int projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
         int studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
 
-        Set<String> paths = catalogManager.getAllFiles(studyId, new QueryOptions("type", File.Type.FOLDER),
-                sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
+        Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.FOLDER), new QueryOptions(), sessionIdUser2)
+                .getResult().stream().map(File::getPath).collect(Collectors.toSet());
         assertEquals(3, paths.size());
         assertTrue(paths.contains(""));             //root
         assertTrue(paths.contains("data/"));        //data
@@ -549,8 +549,8 @@ public class CatalogManagerTest extends GenericTest {
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = catalogManager.createFolder(studyId, folderPath, true, null, sessionIdUser2).first();
 
-        paths = catalogManager.getAllFiles(studyId, new QueryOptions("type", File.Type.FOLDER),
-                sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
+        paths = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FOLDER),
+                new QueryOptions(), sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
         assertEquals(5, paths.size());
         assertTrue(paths.contains("data/new/"));
         assertTrue(paths.contains("data/new/folder/"));
@@ -699,7 +699,7 @@ public class CatalogManagerTest extends GenericTest {
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
 
         catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/nested/"), "nested2", sessionIdUser);
-        Set<String> paths = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult()
+        Set<String> paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
         assertTrue(paths.contains("data/nested2/"));
@@ -709,7 +709,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(paths.contains("data/file.txt"));
 
         catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "Data", sessionIdUser);
-        paths = catalogManager.getAllFiles(studyId, null, sessionIdUser).getResult()
+        paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
         assertTrue(paths.contains("Data/"));
@@ -1072,22 +1072,26 @@ public class CatalogManagerTest extends GenericTest {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         int studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
-        List<File> result = catalogManager.getAllFiles(studyId, new QueryOptions("type", "FILE"), sessionIdUser).getResult();
+        List<File> result = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
+                new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
             catalogManager.deleteFile(file.getId(), sessionIdUser);
         }
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
-        catalogManager.getAllFiles(studyId, new QueryOptions("type", "FILE"), sessionIdUser).getResult().forEach(f -> {
+        catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
+                sessionIdUser).getResult().forEach(f -> {
             assertEquals(f.getStatus(), File.Status.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
         int studyId2 = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).getResult().get(1).getId();
-        result = catalogManager.getAllFiles(studyId2, new QueryOptions("type", "FILE"), sessionIdUser).getResult();
+        result = catalogManager.getAllFiles(studyId2, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
+                sessionIdUser).getResult();
         for (File file : result) {
             catalogManager.deleteFile(file.getId(), sessionIdUser);
         }
-        catalogManager.getAllFiles(studyId, new QueryOptions("type", "FILE"), sessionIdUser).getResult().forEach(f -> {
+        catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
+                sessionIdUser).getResult().forEach(f -> {
             assertEquals(f.getStatus(), File.Status.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });

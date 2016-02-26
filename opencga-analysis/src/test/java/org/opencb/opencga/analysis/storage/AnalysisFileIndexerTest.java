@@ -4,6 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -163,9 +164,9 @@ public class AnalysisFileIndexerTest {
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
         //Get transformed file
-        QueryOptions searchOptions = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getOutput())
-                .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~variants.(json|avro)");
-        File transformedFile = catalogManager.getAllFiles(studyId, searchOptions, sessionId).first();
+        Query searchQuery = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
+        File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
         assertEquals(job.getId(), transformedFile.getJobId());
         File file = catalogManager.getFile(files.get(0).getId(), sessionId).first();
         assertNotNull(file.getStats().get(FileMetadataReader.VARIANT_STATS));

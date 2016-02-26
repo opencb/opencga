@@ -186,7 +186,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getAllFiles(studyId, , queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -300,7 +300,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         try {
             int studyId = 4;
             int sampleId = 33;
-            File file = catalogManager.getAllFiles(studyId, new QueryOptions()
+            File file = catalogManager.getAllFiles(studyId, , new QueryOptions()
                     .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.ALIGNMENT)
                     .append(CatalogFileDBAdaptor.FileFilterOption.sampleIds.toString(), sampleId)
                     .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY), sessionId).first();
@@ -400,7 +400,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, , new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 

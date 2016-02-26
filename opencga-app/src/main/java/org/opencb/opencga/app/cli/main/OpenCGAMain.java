@@ -397,7 +397,7 @@ public class OpenCGAMain {
                         int maxUntracked = relativeUrisMap.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
                         /** Get missing files **/
-                        List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+                        List<File> missingFiles = catalogManager.getAllFiles(studyId, , new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
                         int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
 

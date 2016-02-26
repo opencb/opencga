@@ -52,12 +52,10 @@ public class FileScanner {
      * @return found and lost files
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CatalogFileDBAdaptor.FileFilterOption.status.toString(), Arrays.asList(
+        Query query = new Query();
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), Arrays.asList(
                 File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
-        QueryResult<File> files = catalogManager.getAllFiles(study.getId(),
-                queryOptions,
-                sessionId);
+        QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
@@ -111,9 +109,9 @@ public class FileScanner {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
-        QueryOptions query = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        catalogManager.getAllFiles(studyId, query, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
+        QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
+        catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
         for (Map.Entry<String, URI> entry : linkedFolders.entrySet()) {

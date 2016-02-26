@@ -173,7 +173,8 @@ public class FileMetadataReader {
             }
         }
 //        start = System.currentTimeMillis();
-        /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+        /*List<Sample> fileSamples = */
+        getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
 //        logger.trace("FileSamples = " + (System.currentTimeMillis() - start) / 1000.0);
 
 //        start = System.currentTimeMillis();
@@ -406,19 +407,19 @@ public class FileMetadataReader {
      */
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
         int studyId = catalogManager.getStudyIdByJobId(job.getId());
-        QueryOptions queryOptions = new QueryOptions()
-                .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getInput())
-                .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.VARIANT);
-        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getInput())
+                .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
         if (fileQueryResult.getResult().isEmpty()) {
             return;
         }
         File inputFile = fileQueryResult.first();
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-            queryOptions = new QueryOptions()
-                    .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getOutput())
-                    .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~" + inputFile.getName() + ".variants");
-            fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+            query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+            fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
             if (fileQueryResult.getResult().isEmpty()) {
                 return;
             }

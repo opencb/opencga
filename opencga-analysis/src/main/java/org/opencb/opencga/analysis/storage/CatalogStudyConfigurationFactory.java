@@ -43,12 +43,14 @@ import java.util.*;
 public class CatalogStudyConfigurationFactory {
 
     public static final QueryOptions ALL_FILES_QUERY_OPTIONS = new QueryOptions()
-            .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT))
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path",
                     "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
+    public static final Query ALL_FILES_QUERY = new Query()
+            .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
-            .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY)
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
+    public static final Query INDEXED_FILES_QUERY = new Query()
+            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS.key(), Index.Status.READY);
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
@@ -130,13 +132,13 @@ public class CatalogStudyConfigurationFactory {
         // This field will never be modified from catalog to storage
         // *** Except if it is a new StudyConfiguration...
         if (newStudyConfiguration) {
-            for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
+            for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
                 studyConfiguration.getIndexedFiles().add(file.getId());
             }
         }
 
         logger.debug("Get Files");
-        QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY_OPTIONS, sessionId);
+        QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY, ALL_FILES_QUERY_OPTIONS, sessionId);
         for (File file : files.getResult()) {
 
             studyConfiguration.getFileIds().forcePut(file.getName(), file.getId());
@@ -244,7 +246,8 @@ public class CatalogStudyConfigurationFactory {
 
         if (!studyConfiguration.getIndexedFiles().isEmpty()) {
             for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
-                    new QueryOptions("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), sessionId).getResult()) {
+                    new Query("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), new QueryOptions(), sessionId)
+                    .getResult()) {
                 if (file.getIndex() == null || !file.getIndex().getStatus().equals(Index.Status.READY)) {
                     final Index index;
                     index = file.getIndex() == null ? new Index() : file.getIndex();

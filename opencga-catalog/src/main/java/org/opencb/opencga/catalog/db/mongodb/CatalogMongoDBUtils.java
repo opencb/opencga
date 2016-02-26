@@ -396,9 +396,9 @@ class CatalogMongoDBUtils {
                     map = new ObjectMap(parameters.getString(s));
                 }
                 try {
-                    DBObject dbObject = getDbObject(map, s);
+                    Document document = getMongoDBDocument(map, s);
                     for (Map.Entry<String, Object> entry : map.entrySet()) {
-                        filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
+                        filteredParams.put(s + "." + entry.getKey(), document.get(entry.getKey()));
                     }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
@@ -410,10 +410,10 @@ class CatalogMongoDBUtils {
     static void filterObjectParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
-                DBObject dbObject = null;
+                Document document = null;
                 try {
-                    dbObject = getDbObject(parameters.get(s), s);
-                    filteredParams.put(s, dbObject);
+                    document = getMongoDBDocument(parameters.get(s), s);
+                    filteredParams.put(s, document);
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
                 }

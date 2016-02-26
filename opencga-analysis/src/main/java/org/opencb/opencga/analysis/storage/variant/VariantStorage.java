@@ -124,7 +124,8 @@ public class VariantStorage {
         File outDir;
         if (outDirId == null || outDirId <= 0) {
 //            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
-            outDir = catalogManager.getAllFiles(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), ""), sessionId).first();
+            outDir = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), new QueryOptions(),
+                    sessionId).first();
         } else {
             outDir = catalogManager.getFile(outDirId, null, sessionId).first();
         }

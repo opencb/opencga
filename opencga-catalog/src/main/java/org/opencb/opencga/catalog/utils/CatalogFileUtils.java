@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -358,9 +359,8 @@ public class CatalogFileUtils {
                             .toString()));
 
             //Search if there is any existing file in the folder with the path to use.
-            QueryOptions pathsQuery = new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
-                    new LinkedList<>(uriPathMap.values()));
-            List<File> existingFiles = catalogManager.getAllFiles(studyId, pathsQuery, sessionId).getResult();
+            Query pathsQuery = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
+            List<File> existingFiles = catalogManager.getAllFiles(studyId, pathsQuery, new QueryOptions(), sessionId).getResult();
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
@@ -414,9 +414,8 @@ public class CatalogFileUtils {
         }
         int studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (file.getType().equals(File.Type.FOLDER)) {
-            List<File> files = catalogManager.getAllFiles(studyId,
-                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
-                            "~" + file.getPath() + "..*"), sessionId).getResult();
+            List<File> files = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                    "~" + file.getPath() + "..*"), new QueryOptions(), sessionId).getResult();
             for (File f : files) {
                 if (f.getStatus() != File.Status.TRASHED && f.getStatus() != File.Status.DELETED) {
                     throw new CatalogIOException("Only trashed files can be deleted");

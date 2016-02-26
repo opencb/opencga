@@ -21,11 +21,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
@@ -197,7 +199,8 @@ public class CatalogFileUtilsTest {
         for (java.io.File createdFile : createdFiles) {
             assertTrue(createdFile.exists());
         }
-        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+                new QueryOptions(), userSessionId).getResult()) {
             assertEquals(File.Status.READY, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
@@ -212,7 +215,8 @@ public class CatalogFileUtilsTest {
 //        for (java.io.File createdFile : createdFiles) {
 //            assertTrue(createdFile.exists());
 //        }
-        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+                new QueryOptions(), userSessionId).getResult()) {
             assertEquals(File.Status.TRASHED, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
@@ -226,7 +230,8 @@ public class CatalogFileUtilsTest {
             assertTrue(!createdFile.exists());
         }
         assertEquals(0, catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).size());
-        for (File f : catalogManager.getAllFiles(studyId, new QueryOptions("path", "~" + folder.getPath()), userSessionId).getResult()) {
+        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+                new QueryOptions(), userSessionId).getResult()) {
             assertEquals(File.Status.DELETED, f.getStatus());
             if (f.getType() != File.Type.FOLDER) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
