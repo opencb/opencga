@@ -68,11 +68,6 @@ class CatalogMongoDBUtils {
     }
 
     @Deprecated
-    static int getNewAutoIncrementId(MongoDBCollection metaCollection) {
-        return getNewAutoIncrementId("idCounter", metaCollection);
-    }
-
-    @Deprecated
     static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 //        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
 //                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
@@ -91,22 +86,6 @@ class CatalogMongoDBUtils {
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
         return result.getResult().get(0).getInteger(field);
     }
-
-
-    @Deprecated
-    static void checkUserExist(String userId, MongoDBCollection userCollection) throws CatalogDBException {
-        if (userId == null) {
-            throw new CatalogDBException("userId param is null");
-        }
-        if (userId.equals("")) {
-            throw new CatalogDBException("userId is empty");
-        }
-        if (userCollection.count(new Document(PRIVATE_ID, userId)).first().equals(Long.valueOf(0))) {
-            throw CatalogDBException.idNotFound("User", userId);
-        }
-
-    }
-
 
     /*
     * Helper methods
@@ -147,10 +126,6 @@ class CatalogMongoDBUtils {
         return parseObjects(result, Study.class);
     }
 
-    static File parseFile(QueryResult<Document> result) throws CatalogDBException {
-        return parseObject(result, File.class);
-    }
-
     static List<File> parseFiles(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, File.class);
     }
@@ -165,10 +140,6 @@ class CatalogMongoDBUtils {
 
     static List<Sample> parseSamples(QueryResult<Document> result) throws CatalogDBException {
         return parseObjects(result, Sample.class);
-    }
-
-    static Sample parseSample(QueryResult<Document> result) throws CatalogDBException {
-        return parseObject(result, Sample.class);
     }
 
     static <T> List<T> parseObjects(QueryResult<Document> result, Class<T> tClass) throws CatalogDBException {
@@ -206,15 +177,6 @@ class CatalogMongoDBUtils {
     static <T> T parseObject(Document result, Class<T> tClass) throws CatalogDBException {
         try {
             return getObjectReader(tClass).readValue(restoreDotsInKeys(result).toJson());
-        } catch (IOException e) {
-            throw new CatalogDBException("Error parsing " + tClass.getName(), e);
-        }
-    }
-
-    @Deprecated
-    static <T> T parseObject(DBObject result, Class<T> tClass) throws CatalogDBException {
-        try {
-            return getObjectReader(tClass).readValue(restoreDotsInKeys(result).toString());
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
         }
@@ -443,45 +405,12 @@ class CatalogMongoDBUtils {
         }
     }
 
-    /*  */
-
     static boolean isDataStoreOption(String key) {
         return DATASTORE_OPTIONS.contains(key);
     }
 
     static boolean isOtherKnownOption(String key) {
         return OTHER_OPTIONS.contains(key);
-    }
-
-
-    static void addQueryStringListFilter(String key, QueryOptions options, DBObject query) {
-        addQueryStringListFilter(key, options, key, query);
-    }
-
-    static void addQueryStringListFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) {
-        if (options.containsKey(optionKey)) {
-            List<String> stringList = options.getAsStringList(optionKey);
-            if (stringList.size() > 1) {
-                query.put(queryKey, new BasicDBObject("$in", stringList));
-            } else if (stringList.size() == 1) {
-                query.put(queryKey, stringList.get(0));
-            }
-        }
-    }
-
-    static void addQueryIntegerListFilter(String key, QueryOptions options, DBObject query) {
-        addQueryIntegerListFilter(key, options, key, query);
-    }
-
-    static void addQueryIntegerListFilter(String optionKey, QueryOptions options, String queryKey, DBObject query) {
-        if (options.containsKey(optionKey)) {
-            List<Integer> integerList = options.getAsIntegerList(optionKey);
-            if (integerList.size() > 1) {
-                query.put(queryKey, new BasicDBObject("$in", integerList));
-            } else if (integerList.size() == 1) {
-                query.put(queryKey, integerList.get(0));
-            }
-        }
     }
 
     public static void addAnnotationQueryFilter(String optionKey, Query query, Map<String, Variable> variableMap,
@@ -651,6 +580,7 @@ class CatalogMongoDBUtils {
             }
             switch (type) {
                 case DECIMAL:
+                case DECIMAL_ARRAY:
                     try {
                         double doubleValue = Double.parseDouble(filter);
                         or.add(addNumberOperationQueryFilter(key, operator, doubleValue));
@@ -659,6 +589,7 @@ class CatalogMongoDBUtils {
                     }
                     break;
                 case TEXT:
+                case TEXT_ARRAY:
                     or.add(addStringOperationQueryFilter(key, operator, filter));
                     break;
                 case BOOLEAN:
@@ -901,45 +832,6 @@ class CatalogMongoDBUtils {
                 break;
             default:
                 throw new CatalogDBException("Unknown boolean query operation " + op);
-        }
-        return query;
-    }
-
-    @Deprecated
-    static DBObject addCompQueryFilter(String queryKey, String op, String filter, DBObject query) throws CatalogDBException {
-        try {
-            switch (op) {
-                case "<":
-                    query.put(queryKey, new BasicDBObject("$lt", Double.parseDouble(filter)));
-                    break;
-                case "<=":
-                    query.put(queryKey, new BasicDBObject("$lte", Double.parseDouble(filter)));
-                    break;
-                case ">":
-                    query.put(queryKey, new BasicDBObject("$gt", Double.parseDouble(filter)));
-                    break;
-                case ">=":
-                    query.put(queryKey, new BasicDBObject("$gte", Double.parseDouble(filter)));
-                    break;
-                case "==":
-                    query.put(queryKey, new BasicDBObject("$eq", Double.parseDouble(filter)));
-                    break;
-                case "!=":
-                    query.put(queryKey, new BasicDBObject("$ne", Double.parseDouble(filter)));
-                    break;
-                case "!~":
-                case "!=~":
-                    query.put(queryKey, new BasicDBObject("$not", new BasicDBObject("$regex", filter)));
-                    break;
-                case "~":
-                case "=~":
-                    query.put(queryKey, new BasicDBObject("$regex", filter));
-                    break;
-                default:
-                    break;
-            }
-        } catch (NumberFormatException e) {
-            throw new CatalogDBException(e);
         }
         return query;
     }

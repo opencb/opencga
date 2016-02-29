@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
@@ -118,21 +119,20 @@ public class CatalogMongoIndividualDBAdaptorTest {
                 null, new Individual.Population(), Collections.emptyList(), null), null);
 
         QueryResult<Individual> result;
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.name
-                .toString(), "~ind_[1-3]").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.NAME.key(),
+                "~ind_[1-3]").append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.gender
-                .toString(), Individual.Gender.FEMALE).append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(),
-                studyId));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(),
+                Individual.Gender.FEMALE).append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.family
-                .toString(), "Family2").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), "Family2")
+                .append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new QueryOptions(CatalogIndividualDBAdaptor.IndividualFilterOption.fatherId
-                .toString(), ">0").append(CatalogIndividualDBAdaptor.IndividualFilterOption.studyId.toString(), studyId));
+        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), ">0")
+                .append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(1, result.getNumResults());
     }
 

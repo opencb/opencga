@@ -54,8 +54,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
@@ -72,28 +71,28 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
     int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
-        ID("id", INTEGER_ARRAY, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        FATHER_ID("fatherId", INTEGER_ARRAY, ""),
-        MOTHER_ID("motherId", INTEGER_ARRAY, ""),
-        FAMILY("family", TEXT_ARRAY, ""),
-        GENDER("gender", TEXT_ARRAY, ""),
-        RACE("race", TEXT_ARRAY, ""),
-        SPECIES("species", TEXT_ARRAY, ""),
-        SPECIES_TAXONOMY_CODE("species.taxonomyCode", TEXT_ARRAY, ""),
-        SPECIES_SCIENTIFIC_NAME("species.scientificName", TEXT_ARRAY, ""),
-        SPECIES_COMMON_NAME("species.commonName", TEXT_ARRAY, ""),
-        POPULATION_NAME("population.name", TEXT_ARRAY, ""),
-        POPULATION_SUBPOPULATION("population.subpopulation", TEXT_ARRAY, ""),
-        POPULATION_DESCRIPTION("population.description", TEXT_ARRAY, ""),
+        ID("id", DECIMAL, ""),
+        NAME("name", TEXT, ""),
+        FATHER_ID("fatherId", DECIMAL, ""),
+        MOTHER_ID("motherId", DECIMAL, ""),
+        FAMILY("family", TEXT, ""),
+        GENDER("gender", TEXT, ""),
+        RACE("race", TEXT, ""),
+        SPECIES("species", TEXT, ""),
+        SPECIES_TAXONOMY_CODE("species.taxonomyCode", TEXT, ""),
+        SPECIES_SCIENTIFIC_NAME("species.scientificName", TEXT, ""),
+        SPECIES_COMMON_NAME("species.commonName", TEXT, ""),
+        POPULATION_NAME("population.name", TEXT, ""),
+        POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
+        POPULATION_DESCRIPTION("population.description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
-        STUDY_ID("studyId", INTEGER_ARRAY, ""),
-        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
-        ANNOTATION("annotation", TEXT_ARRAY, "");
+        STUDY_ID("studyId", DECIMAL, ""),
+        VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
+        ANNOTATION_SET_ID("annotationSetId", TEXT, ""),
+        ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
         static {
