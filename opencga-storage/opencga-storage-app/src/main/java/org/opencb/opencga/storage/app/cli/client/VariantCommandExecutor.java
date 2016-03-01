@@ -24,6 +24,7 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
@@ -50,7 +51,6 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
-import org.opencb.opencga.storage.server.grpc.VariantProto;
 import org.opencb.opencga.storage.server.grpc.VariantServiceGrpc;
 
 import java.io.*;

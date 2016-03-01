@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.server.grpc;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
@@ -27,11 +29,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
-import org.opencb.opencga.storage.server.grpc.VariantProto.Variant;
 
 import java.util.Iterator;
 
-import static org.opencb.opencga.storage.server.grpc.GenericServiceModel.*;
 import static org.opencb.opencga.storage.server.grpc.VariantServiceGrpc.VariantService;
 
 /**
@@ -50,7 +50,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
 
 
     @Override
-    public void count(Request request, StreamObserver<LongResponse> responseObserver) {
+    public void count(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
         try {
             // Creating the datastore Query object from the gRPC request Map of Strings
             Query query = createQuery(request);
@@ -58,7 +58,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
             checkAuthorizedHosts(query, request.getIp());
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
             QueryResult<Long> queryResult = variantDBAdaptor.count(query);
-            responseObserver.onNext(LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
+            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
         } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException e) {
@@ -68,13 +68,15 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         }
     }
 
+
     @Override
-    public void distinct(Request request, StreamObserver<StringArrayResponse> responseObserver) {
+    public void distinct(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.StringArrayResponse> responseObserver) {
 
     }
 
+
     @Override
-    public void get(Request request, StreamObserver<Variant> responseObserver) {
+    public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
             // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
             Query query = createQuery(request);
@@ -86,7 +88,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
             Iterator iterator = variantDBAdaptor.iterator(query, queryOptions);
             while (iterator.hasNext()) {
                 org.opencb.biodata.models.variant.Variant next = (org.opencb.biodata.models.variant.Variant) iterator.next();
-                Variant convert = convert(next);
+                VariantProto.Variant convert = convert(next);
                 responseObserver.onNext(convert);
             }
             responseObserver.onCompleted();
@@ -100,18 +102,14 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         }
     }
 
+
     @Override
-    public void getJson(Request request, StreamObserver<StringResponse> responseObserver) {
+    public void groupBy(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
 
     }
 
-    @Override
-    public void groupBy(Request request, StreamObserver<GroupResponse> responseObserver) {
-
-    }
-
-    private Variant convert(org.opencb.biodata.models.variant.Variant var) {
-        Variant build = Variant.newBuilder()
+    private VariantProto.Variant convert(org.opencb.biodata.models.variant.Variant var) {
+        VariantProto.Variant build = VariantProto.Variant.newBuilder()
                 .setChromosome(var.getChromosome())
                 .setStart(var.getStart())
                 .setEnd(var.getEnd())
@@ -124,7 +122,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         return build;
     }
 
-    private VariantDBAdaptor getVariantDBAdaptor(Request request)
+    private VariantDBAdaptor getVariantDBAdaptor(GenericServiceModel.Request request)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
         String storageEngine = defaultStorageEngine;

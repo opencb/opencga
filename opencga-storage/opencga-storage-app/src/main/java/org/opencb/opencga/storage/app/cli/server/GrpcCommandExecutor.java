@@ -19,11 +19,12 @@ package org.opencb.opencga.storage.app.cli.server;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
-import org.opencb.opencga.storage.server.grpc.GrpcStorageServer;
+import org.opencb.opencga.storage.server.grpc.StorageGrpcServer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -105,7 +106,7 @@ public class GrpcCommandExecutor extends CommandExecutor {
         }
 
         // Server crated and started
-        GrpcStorageServer server = new GrpcStorageServer(storageConfiguration);
+        StorageGrpcServer server = new StorageGrpcServer(storageConfiguration);
         server.start();
         server.blockUntilShutdown();
         logger.info("Shutting down gRPC server");
@@ -136,7 +137,7 @@ public class GrpcCommandExecutor extends CommandExecutor {
 
         // We use a blocking stub to execute the query to gRPC
         AdminServiceGrpc.AdminServiceBlockingStub adminServiceBlockingStub = AdminServiceGrpc.newBlockingStub(channel);
-        GenericServiceModel.MapResponse stop = adminServiceBlockingStub.stop(request);
+        ServiceTypesModel.MapResponse stop = adminServiceBlockingStub.stop(request);
         Map<String, String> values = stop.getValues();
         System.out.println(values);
         channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);

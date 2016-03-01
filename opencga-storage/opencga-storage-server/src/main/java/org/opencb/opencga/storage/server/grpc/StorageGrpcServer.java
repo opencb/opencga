@@ -25,23 +25,23 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by imedina on 02/01/16.
  */
-public class GrpcStorageServer extends AbstractStorageServer {
+public class StorageGrpcServer extends AbstractStorageServer {
 
     private Server server;
 
-    public GrpcStorageServer() {
+    public StorageGrpcServer() {
         this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public GrpcStorageServer(int port, String defaultStorageEngine) {
+    public StorageGrpcServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public GrpcStorageServer(StorageConfiguration storageConfiguration) {
+    public StorageGrpcServer(StorageConfiguration storageConfiguration) {
         super(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
-        GrpcStorageServer.storageConfiguration = storageConfiguration;
+        StorageGrpcServer.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(this.getClass());
     }
@@ -49,7 +49,6 @@ public class GrpcStorageServer extends AbstractStorageServer {
     @Override
     public void start() throws Exception {
         server = ServerBuilder.forPort(port)
-//                .addService(GeneServiceGrpc.bindService(new GeneGrpcServer()))
                 .addService(AdminServiceGrpc.bindService(new AdminGrpcService(storageConfiguration, this)))
                 .addService(VariantServiceGrpc.bindService(new VariantGrpcService(storageConfiguration)))
                 .build()
@@ -61,7 +60,7 @@ public class GrpcStorageServer extends AbstractStorageServer {
             @Override
             public void run() {
                 System.err.println("*** shutting down gRPC server since JVM is shutting down");
-                GrpcStorageServer.this.stop();
+                StorageGrpcServer.this.stop();
                 System.err.println("*** server shut down");
             }
         });

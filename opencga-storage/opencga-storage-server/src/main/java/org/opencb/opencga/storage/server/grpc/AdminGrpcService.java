@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.server.grpc;
 
 import io.grpc.stub.StreamObserver;
+import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc.AdminService;
 
@@ -25,23 +26,24 @@ import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc.AdminService;
  */
 public class AdminGrpcService extends GenericGrpcService implements AdminService {
 
-    private GrpcStorageServer grpcServer;
+    private StorageGrpcServer grpcServer;
 
 
-    public AdminGrpcService(StorageConfiguration storageConfiguration, GrpcStorageServer grpcServer) {
+    public AdminGrpcService(StorageConfiguration storageConfiguration, StorageGrpcServer grpcServer) {
         super(storageConfiguration);
+
         this.grpcServer = grpcServer;
     }
 
     @Override
-    public void status(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.MapResponse> responseObserver) {
+    public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
 
     }
 
     @Override
-    public void stop(GenericServiceModel.Request request, StreamObserver<GenericServiceModel.MapResponse> responseObserver) {
+    public void stop(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
 
-        responseObserver.onNext(GenericServiceModel.MapResponse.getDefaultInstance());
+        responseObserver.onNext(ServiceTypesModel.MapResponse.getDefaultInstance());
         responseObserver.onCompleted();
 
         grpcServer.stop();
