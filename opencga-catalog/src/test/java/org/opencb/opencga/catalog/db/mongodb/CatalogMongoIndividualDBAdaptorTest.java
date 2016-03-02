@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -142,9 +143,9 @@ public class CatalogMongoIndividualDBAdaptorTest {
         int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
-        QueryOptions params = new QueryOptions("family", "new Family");
-        params.add("gender", "MALE");
-        catalogIndividualDBAdaptor.modifyIndividual(individualId, params);
+        ObjectMap params = new ObjectMap("family", "new Family");
+        params.append("gender", "MALE");
+        catalogIndividualDBAdaptor.update(individualId, params);
         Individual individual = catalogIndividualDBAdaptor.getIndividual(individualId, null).first();
         assertEquals("new Family", individual.getFamily());
         assertEquals(Individual.Gender.MALE, individual.getGender());
@@ -158,7 +159,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("gender", "bad gender"));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("gender", "bad gender"));
     }
 
     @Test
@@ -168,7 +169,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", 4000));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", 4000));
     }
 
     @Test
@@ -177,7 +178,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
         int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
-        Individual individual = catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", -1)).first();
+        Individual individual = catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", -1)).first();
         assertEquals(-1, individual.getFatherId());
     }
 
@@ -190,7 +191,7 @@ public class CatalogMongoIndividualDBAdaptorTest {
                 null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("name", "in2"));
+        catalogIndividualDBAdaptor.update(individualId, new ObjectMap("name", "in2"));
     }
 
     @Test

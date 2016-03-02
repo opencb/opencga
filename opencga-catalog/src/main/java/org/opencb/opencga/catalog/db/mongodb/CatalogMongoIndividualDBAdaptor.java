@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
@@ -184,7 +183,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Deprecated
     @Override
     public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException {
-
+        throw new UnsupportedOperationException("Deprecated method. Use update instead");
+/*
         long startTime = startQuery();
         Map<String, Object> individualParameters = new HashMap<>();
 
@@ -234,6 +234,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
 
         return endQuery("Modify individual", startTime, getIndividual(individualId, parameters));
+        */
     }
 
     @Override
@@ -457,6 +458,32 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
+
+        // Obtain all the possible individual Ids that satisfies the query
+        QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
+
+        for (Individual individual : myResults.getResult()) {
+            //Check existing name
+            if (individualParameters.containsKey("name")) {
+                String name = individualParameters.get("name").toString();
+                Query subquery = new Query(QueryParams.NAME.key(), name)
+                        .append(QueryParams.STUDY_ID.key(), getStudyIdByIndividualId(individual.getId()));
+                if (!getAllIndividuals(subquery, new QueryOptions()).getResult().isEmpty()) {
+                    throw CatalogDBException.alreadyExists("Individual", "name", name);
+                }
+            }
+        }
+
+        //Check individualIds exists
+        String[] individualIdParams = {"fatherId", "motherId"};
+        for (String individualIdParam : individualIdParams) {
+            if (individualParameters.containsKey(individualIdParam)) {
+                Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
+                if (individualId1 > 0 && !individualExists(individualId1)) {
+                    throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
+                }
+            }
+        }
 
         if (!individualParameters.isEmpty()) {
             QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query), new Document("$set", individualParameters),
