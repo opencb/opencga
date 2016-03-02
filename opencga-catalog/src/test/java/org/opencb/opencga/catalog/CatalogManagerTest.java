@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.SampleFilterOption.*;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.*;
 
 public class CatalogManagerTest extends GenericTest {
 
@@ -945,23 +945,22 @@ public class CatalogManagerTest extends GenericTest {
 
         Query query;
         QueryResult<File> result;
-        CatalogFileDBAdaptor.FileFilterOption battributes = CatalogFileDBAdaptor.FileFilterOption.battributes;
+        CatalogFileDBAdaptor.QueryParams battributes = CatalogFileDBAdaptor.QueryParams.BATTRIBUTES;
 
-
-        query = new Query(battributes + ".boolean", "true");       //boolean in [true]
+        query = new Query(battributes.key() + ".boolean", "true");       //boolean in [true]
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        query = new Query(battributes + ".boolean", "false");      //boolean in [false]
+        query = new Query(battributes.key() + ".boolean", "false");      //boolean in [false]
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        query = new Query(battributes + ".boolean", "!=false");    //boolean in [null, true]
+        query = new Query(battributes.key() + ".boolean", "!=false");    //boolean in [null, true]
         query.put("type", "FILE");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
-        query = new Query(battributes + ".boolean", "!=true");     //boolean in [null, false]
+        query = new Query(battributes.key() + ".boolean", "!=true");     //boolean in [null, false]
         query.put("type", "FILE");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(2, result.getNumResults());
@@ -971,7 +970,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testSearchFileFail1() throws CatalogException {
         int studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogDBException.class);
-        catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.FileFilterOption.nattributes.toString() + ".numValue",
+        catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key() + ".numValue",
                 "==NotANumber"), sessionIdUser);
     }
 
@@ -1706,15 +1705,15 @@ public class CatalogManagerTest extends GenericTest {
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(9, samples.size());
 
-        query = new Query(variableSetId.toString(), variableSet.getId());
+        query = new Query(VARIABLE_SET_ID.key(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(8, samples.size());
 
-        query = new Query(annotationSetId.toString(), "annot2");
+        query = new Query(ANNOTATION_SET_ID.key(), "annot2");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        query = new Query(annotationSetId.toString(), "noExist");
+        query = new Query(ANNOTATION_SET_ID.key(), "noExist");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
@@ -1723,17 +1722,17 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(3, samples.size());
 
         query = new Query("annotation.AGE", ">30");
-        query.append(variableSetId.toString(), variableSet.getId());
+        query.append(VARIABLE_SET_ID.key(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query("annotation.AGE", ">30");
-        query.append(variableSetId.toString(), variableSet.getId());
+        query.append(VARIABLE_SET_ID.key(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
         query = new Query("annotation.AGE", ">30").append("annotation.ALIVE", "true");
-        query.append(variableSetId.toString(), variableSet.getId());
+        query.append(VARIABLE_SET_ID.key(), variableSet.getId());
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
     }
@@ -2035,22 +2034,22 @@ public class CatalogManagerTest extends GenericTest {
                 ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
 
         List<String> individuals;
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.IndividualFilterOption
-                .variableSetId.toString(), variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".NAME", "~^INDIVIDUAL_"),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.IndividualFilterOption
-                .variableSetId.toString(), variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".AGE", ">10"),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.IndividualFilterOption
-                .variableSetId.toString(), variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".AGE", ">10")
-                .append(CatalogIndividualDBAdaptor.IndividualFilterOption.annotation.toString() + ".PHEN", "CASE"),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                variableSet.getId())
+                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10")
+                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
 

@@ -120,19 +120,19 @@ public class CatalogMongoIndividualDBAdaptorTest {
                 null, new Individual.Population(), Collections.emptyList(), null), null);
 
         QueryResult<Individual> result;
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.NAME.key(),
+        result = catalogIndividualDBAdaptor.get(new Query(CatalogIndividualDBAdaptor.QueryParams.NAME.key(),
                 "~ind_[1-3]").append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(),
+        result = catalogIndividualDBAdaptor.get(new Query(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(),
                 Individual.Gender.FEMALE).append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), "Family2")
+        result = catalogIndividualDBAdaptor.get(new Query(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), "Family2")
                 .append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(3, result.getNumResults());
 
-        result = catalogIndividualDBAdaptor.getAllIndividuals(new Query(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), ">0")
+        result = catalogIndividualDBAdaptor.get(new Query(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), ">0")
                 .append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         assertEquals(1, result.getNumResults());
     }

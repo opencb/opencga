@@ -54,6 +54,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
@@ -136,6 +137,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         }
     }
 
+    @Deprecated
     enum IndividualFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         id(Type.NUMERICAL, ""),

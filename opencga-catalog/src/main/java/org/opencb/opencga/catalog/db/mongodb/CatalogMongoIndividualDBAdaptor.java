@@ -73,7 +73,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startQuery = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
-        if (!getAllIndividuals(new Query(QueryParams.NAME.key(), individual.getName())
+        if (!get(new Query(QueryParams.NAME.key(), individual.getName())
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions()).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
@@ -110,6 +110,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException {
         int variableSetId = query.getInt(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
@@ -338,7 +339,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     public void checkInUse(int individualId) throws CatalogDBException {
         int studyId = getStudyIdByIndividualId(individualId);
-        QueryResult<Individual> individuals = getAllIndividuals(new Query(QueryParams.FATHER_ID.key(), individualId)
+        QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_ID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
@@ -348,7 +349,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        individuals = getAllIndividuals(new Query(QueryParams.MOTHER_ID.key(), individualId)
+        individuals = get(new Query(QueryParams.MOTHER_ID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
@@ -468,7 +469,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 String name = individualParameters.get("name").toString();
                 Query subquery = new Query(QueryParams.NAME.key(), name)
                         .append(QueryParams.STUDY_ID.key(), getStudyIdByIndividualId(individual.getId()));
-                if (!getAllIndividuals(subquery, new QueryOptions()).getResult().isEmpty()) {
+                if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
                     throw CatalogDBException.alreadyExists("Individual", "name", name);
                 }
             }

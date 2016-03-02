@@ -214,8 +214,8 @@ public class FileManager extends AbstractManager implements IFileManager {
     private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
         List<String> paths = getParentPaths(filePath);
 
-        Query query = new Query(CatalogFileDBAdaptor.FileFilterOption.path.toString(), paths);
-        query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), paths);
+        query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult<File> result = fileDBAdaptor.get(query, options);
         result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
@@ -444,7 +444,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         } else {
             authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-            query.put(CatalogFileDBAdaptor.FileFilterOption.studyId.toString(), studyId);
+            query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options);
         authorizationManager.filterFiles(userId, studyId, queryResult.getResult());

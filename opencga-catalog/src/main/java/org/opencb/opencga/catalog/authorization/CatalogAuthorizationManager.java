@@ -818,7 +818,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (fileIds.isEmpty()) {
             return Collections.emptyList();
         }
-        Query fileQuery = new Query(CatalogFileDBAdaptor.FileFilterOption.id.toString(), fileIds);
+        Query fileQuery = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds);
         return fileDBAdaptor.get(fileQuery, FILE_INCLUDE_QUERY_OPTIONS).getResult();
     }
 

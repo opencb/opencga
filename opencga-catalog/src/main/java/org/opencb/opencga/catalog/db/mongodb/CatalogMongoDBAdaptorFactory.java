@@ -185,14 +185,6 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         collections.put(JOB_COLLECTION, jobCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
 
-        /*
-        userDBAdaptor = new CatalogMongoUserDBAdaptor(this, metaCollection, userCollection);
-        studyDBAdaptor = new CatalogMongoStudyDBAdaptor(this, metaCollection, studyCollection, fileCollection);
-        individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(this, metaCollection, individualCollection);
-        sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(this, metaCollection, sampleCollection, studyCollection);
-        auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
-        */
-
         fileDBAdaptor = new CatalogMongoFileDBAdaptor(fileCollection, this);
         individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(individualCollection, this);
         jobDBAdaptor = new CatalogMongoJobDBAdaptor(jobCollection, this);

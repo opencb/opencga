@@ -563,7 +563,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividuals(
+        QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";

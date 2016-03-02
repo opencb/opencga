@@ -731,7 +731,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
 
-        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
+        queryOptions = new QueryOptions(CohortParams.SAMPLES.key(), sampleId)
                 .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
         QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
         if (cohortQueryResult.getNumResults() != 0) {
