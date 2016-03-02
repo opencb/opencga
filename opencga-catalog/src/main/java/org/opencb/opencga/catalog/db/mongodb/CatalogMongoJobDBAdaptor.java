@@ -1,7 +1,5 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -116,7 +114,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //        BasicDBObject query = new BasicDBObject(PRIVATE_ID, jobId);
         Bson query = Filters.eq(PRIVATE_ID, jobId);
 //        Job job = parseJob(jobCollection.<DBObject>find(query, new BasicDBObject("visits", true), null));
-        Job job = parseJob(jobCollection.<DBObject>find(query, Projections.include("visits"), null));
+
+        Job job = getJob(jobId, new QueryOptions(MongoDBCollection.INCLUDE, "visits")).first();
+        //Job job = parseJob(jobCollection.<DBObject>find(query, Projections.include("visits"), null));
         int visits;
         if (job != null) {
             visits = job.getVisits() + 1;
@@ -129,8 +129,11 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         return endQuery("Inc visits", startTime, Collections.singletonList(new ObjectMap("visits", visits)));
     }
 
+    @Deprecated
     @Override
     public QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException {
+        throw new UnsupportedOperationException("Deprecated method. Use update instead.");
+        /*
         long startTime = startQuery();
         Map<String, Object> jobParameters = new HashMap<>();
 
@@ -169,6 +172,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             }
         }
         return endQuery("Modify job", startTime, getJob(jobId, null));
+        */
     }
 
     @Override
@@ -188,6 +192,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Deprecated
     @Override
     public QueryResult<Job> getAllJobs(Query query, QueryOptions options) throws CatalogDBException {
+        throw new UnsupportedOperationException("Deprecated method. Use get instead.");
+        /*
         long startTime = startQuery();
 
         Document mongoQuery = new Document();
@@ -214,6 +220,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         QueryResult<Document> queryResult = jobCollection.find(mongoQuery, null);
         List<Job> jobs = parseJobs(queryResult);
         return endQuery("Search job", startTime, jobs);
+        */
     }
 
     @Override

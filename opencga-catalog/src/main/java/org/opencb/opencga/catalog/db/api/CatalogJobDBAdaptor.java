@@ -70,6 +70,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Job> modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
 
     int getStudyIdByJobId(int jobId) throws CatalogDBException;

@@ -302,6 +302,8 @@ class CatalogMongoDBUtils {
                 for (String s : list) {
                     if (s.startsWith(route)) {
                         filteredList.add(s.substring(length));
+                    } else {
+                        filteredList.add(s);
                     }
                 }
                 if (listName.equals("include")) {

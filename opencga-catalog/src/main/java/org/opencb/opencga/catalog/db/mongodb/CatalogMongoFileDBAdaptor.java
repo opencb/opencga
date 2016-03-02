@@ -1,6 +1,5 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
@@ -304,7 +303,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public int getStudyIdByDatasetId(int datasetId) throws CatalogDBException {
-        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
+        Document query = new Document("datasets.id", datasetId);
 //        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", 1), null);
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
                 .nativeGet(new Query("datasets.id", datasetId), new QueryOptions("include", "id"));
@@ -415,7 +414,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         Document datasetObject = getMongoDBDocument(dataset, "Dataset");
         QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .update(Filters.eq(PRIVATE_ID, studyId), new BasicDBObject("$push", new BasicDBObject("datasets", datasetObject)), null);
+                .update(Filters.eq(PRIVATE_ID, studyId), new Document("$push", new Document("datasets", datasetObject)), null);
 
         if (update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("Study", studyId);

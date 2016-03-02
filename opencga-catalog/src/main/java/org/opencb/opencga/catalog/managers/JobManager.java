@@ -189,7 +189,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
         }
-        QueryResult<Job> queryResult = jobDBAdaptor.modifyJob(jobId, parameters);
+        QueryResult<Job> queryResult = jobDBAdaptor.update(jobId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
         return queryResult;
     }
