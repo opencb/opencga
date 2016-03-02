@@ -606,7 +606,7 @@ class CatalogMongoDBUtils {
         } else if (or.size() == 1) {
             andQuery.add(or.get(0));
         } else {
-            andQuery.add(Filters.or(or));
+            andQuery.add(new Document("$or", or));
         }
 
         return andQuery;
@@ -714,8 +714,8 @@ class CatalogMongoDBUtils {
         return query;
     }
 
-    static Bson addStringOperationQueryFilter(String queryKey, String op, String filter) throws CatalogDBException {
-        Bson query;
+    static Document addStringOperationQueryFilter(String queryKey, String op, String filter) throws CatalogDBException {
+        Document query;
         switch (op) {
             case "<":
                 query = new Document(queryKey, new Document("$lt", filter));
@@ -776,8 +776,8 @@ class CatalogMongoDBUtils {
         return query;
     }
 
-    static Bson addNumberOperationQueryFilter(String queryKey, String op, Number filter) throws CatalogDBException {
-        Bson query;
+    static Document addNumberOperationQueryFilter(String queryKey, String op, Number filter) throws CatalogDBException {
+        Document query;
         switch (op) {
             case "<":
                 query = new Document(queryKey, new Document("$lt", filter));

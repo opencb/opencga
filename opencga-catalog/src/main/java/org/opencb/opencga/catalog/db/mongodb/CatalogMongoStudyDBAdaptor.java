@@ -553,8 +553,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
-        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamples(new QueryOptions(CatalogSampleDBAdaptor
-                .SampleFilterOption.variableSetId.toString(), variableSetId));
+        QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
+                new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
         if (samples.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
             for (Sample sample : samples.getResult()) {

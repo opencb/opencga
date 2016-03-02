@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -64,7 +63,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public boolean projectExists(int projectId) {
-        QueryResult<Long> count = userCollection.count(new BasicDBObject("projects.id", projectId));
+        QueryResult<Long> count = userCollection.count(new Document("projects.id", projectId));
         return count.getResult().get(0) != 0;
     }
 
@@ -101,9 +100,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
-        Document projectDBObject = getMongoDBDocument(project, "Project");
+        Document projectDocument = getMongoDBDocument(project, "Project");
 //        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
-        Bson update = Updates.push("projects", projectDBObject);
+        Bson update = Updates.push("projects", projectDocument);
 
         //Update object
 //        QueryResult<WriteResult> queryResult = userCollection.update(query, update, null);

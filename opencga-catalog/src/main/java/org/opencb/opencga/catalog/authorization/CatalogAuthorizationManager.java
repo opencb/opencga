@@ -176,8 +176,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             switch (permission) {
                 case READ:
-                    List<Sample> samples = sampleDBAdaptor.getAllSamples(new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption
-                            .individualId.toString(), individualId)).getResult();
+                    List<Sample> samples = sampleDBAdaptor.get(new Query(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
+                            individualId), new QueryOptions()).getResult();
                     filterSamples(userId, studyId, samples, group);
                     auth = !samples.isEmpty();
                     break;

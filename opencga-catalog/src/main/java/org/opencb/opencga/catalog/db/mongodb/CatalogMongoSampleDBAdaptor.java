@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -121,17 +119,22 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
+        throw new UnsupportedOperationException("Deprecated method. Use get instead");
+        /*
         int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
         Map<String, Variable> variableMap = null;
         if (variableSetId > 0) {
             variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                     .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
         }
-        return getAllSamples(variableMap, options);
+        return getAllSamples(variableMap, options);*/
     }
 
+    @Deprecated
     @Override
     public QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException {
+        throw new UnsupportedOperationException("Deprecated method. Use get instead");
+        /*
         long startTime = startQuery();
         String warning = "";
 
@@ -190,6 +193,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
         result.setNumTotalResults(queryResult.getNumTotalResults());
         return result;
+        */
     }
 
     @Override
@@ -451,8 +455,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         Document cohortObject = getMongoDBDocument(cohort, "Cohort");
         QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection().update(
-                new BasicDBObject(PRIVATE_ID, studyId).append("cohorts.name", new BasicDBObject("$ne", cohort.getName())),
-                new BasicDBObject("$push", new BasicDBObject("cohorts", cohortObject)), null);
+                new Document(PRIVATE_ID, studyId).append("cohorts.name", new Document("$ne", cohort.getName())),
+                new Document("$push", new Document("cohorts", cohortObject)), null);
 
         if (update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.alreadyExists("Cohort", "name", cohort.getName());
@@ -499,22 +503,22 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
-        options.put(CohortFilterOption.studyId.toString(), studyId);
+        List<Bson> mongoQueryList = new LinkedList<>();
+        options.put(CohortParams.STUDY_ID.key(), studyId);
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
                 if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
-                CohortFilterOption option = CohortFilterOption.valueOf(key);
+                CohortParams option = CohortParams.getParam(key);
                 switch (option) {
-                    case studyId:
-                        addCompQueryFilter(option, option.name(), options, PRIVATE_ID, mongoQueryList);
+                    case STUDY_ID:
+                        addCompQueryFilter(option, option.key(), PRIVATE_ID, options, mongoQueryList);
                         break;
                     default:
-                        String optionsKey = "cohorts." + entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
+                        String optionsKey = "cohorts." + entry.getKey().replaceFirst(option.name(), option.key());
+                        addCompQueryFilter(option, entry.getKey(), optionsKey, options, mongoQueryList);
                         break;
                 }
             } catch (IllegalArgumentException e) {
@@ -522,13 +526,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        // TODO change to MongoDB 3.x
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
                 .aggregate(Arrays.<Bson>asList(
-                        new BasicDBObject("$match", new BasicDBObject(PRIVATE_ID, studyId)),
-                        new BasicDBObject("$project", new BasicDBObject("cohorts", 1)),
-                        new BasicDBObject("$unwind", "$cohorts"),
-                        new BasicDBObject("$match", new BasicDBObject("$and", mongoQueryList))
+                        new Document("$match", new Document(PRIVATE_ID, studyId)),
+                        new Document("$project", new Document("cohorts", 1)),
+                        new Document("$unwind", "$cohorts"),
+                        new Document("$match", new Document("$and", mongoQueryList))
                 ), filterOptions(options, FILTER_ROUTE_STUDIES));
 
         List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0))
@@ -536,6 +539,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         return endQuery("getAllCohorts", startTime, cohorts);
     }
+
+
 
     @Override
     public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
@@ -571,7 +576,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                 studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
             }
             QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                    .update(new BasicDBObject("cohorts.id", cohortId), new BasicDBObject("$set", studyRelativeCohortParameters), null);
+                    .update(new Document("cohorts.id", cohortId), new Document("$set", studyRelativeCohortParameters), null);
             if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
                 throw CatalogDBException.idNotFound("Cohort", cohortId);
             }
@@ -650,7 +655,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         if (overwrite) {
             ((Document) query).put("annotationSets.id", annotationSet.getId());
         } else {
-            ((Document) query).put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+            ((Document) query).put("annotationSets.id", new Document("$ne", annotationSet.getId()));
         }
 
         /*

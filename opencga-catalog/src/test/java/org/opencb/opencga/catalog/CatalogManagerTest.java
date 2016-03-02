@@ -1892,15 +1892,15 @@ public class CatalogManagerTest extends GenericTest {
                 sampleId3, sampleId4), null, sessionIdUser).first();
         Cohort myCohort3 = catalogManager.createCohort(studyId, "MyCohort3", Cohort.Type.CASE_CONTROL, "", Arrays.asList(sampleId3,
                 sampleId4), null, sessionIdUser).first();
-        Cohort myCohort4 = catalogManager.createCohort(studyId, "MyCohort4", Cohort.Type.TRIO, "", Arrays.asList(sampleId5, sampleId3),
+        catalogManager.createCohort(studyId, "MyCohort4", Cohort.Type.TRIO, "", Arrays.asList(sampleId5, sampleId3),
                 null, sessionIdUser).first();
 
         int numResults;
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.SAMPLES.key(),
                 sampleId1), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.samples.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.SAMPLES.key(),
                 sampleId1 + "," + sampleId5), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
 
@@ -1908,23 +1908,23 @@ public class CatalogManagerTest extends GenericTest {
 // (), sampleId3 + "," + sampleId4), sessionIdUser).getNumResults();
 //        assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.NAME.key(),
                 "MyCohort2"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.NAME.key(),
                 "~MyCohort."), sessionIdUser).getNumResults();
         assertEquals(4, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.type.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.TYPE.key(),
                 Cohort.Type.FAMILY), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.type.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.TYPE.key(),
                 "CASE_CONTROL"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(),
+        numResults = catalogManager.getAllCohorts(studyId, new QueryOptions(CatalogSampleDBAdaptor.CohortParams.ID.key(),
                 myCohort1.getId() + "," + myCohort2.getId() + "," + myCohort3.getId()), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
     }

@@ -57,6 +57,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> getAllSamplesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
@@ -224,6 +225,68 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
 
         public static VariableSetParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum CohortParams implements QueryParam {
+        ID("id", DECIMAL, ""),
+        NAME("name", TEXT, ""),
+        TYPE("type", TEXT, ""),
+        STATUS("status", TEXT, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+
+        SAMPLES("samples", DECIMAL, ""),
+
+        ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+
+        STATS("stats", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        NSTATS("nstats", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+
+        STUDY_ID("studyId", DECIMAL, "");
+
+        private static Map<String, CohortParams> map;
+        static {
+            map = new LinkedMap();
+            for (CohortParams params : CohortParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        CohortParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, CohortParams> getMap() {
+            return map;
+        }
+
+        public static CohortParams getParam(String key) {
             return map.get(key);
         }
     }
