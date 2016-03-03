@@ -151,11 +151,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (secondaryAlternatesCount > 0) {
                 for (VariantProto.AlternateCoordinate altcoord : s2cgt) {
                     VariantType vart = VariantType.valueOf(altcoord.getType().name());
-                    String chr = StringUtils.isEmpty(altcoord.getChromosome()) ? null : altcoord.getChromosome();
-                    Integer start = altcoord.getStart() == 0 ? null : altcoord.getStart();
-                    Integer end = altcoord.getEnd() == 0 ? null : altcoord.getEnd();
-                    String reference = StringUtils.isEmpty(altcoord.getReference()) ? null : altcoord.getReference();
-                    String alternate = StringUtils.isEmpty(altcoord.getAlternate()) ? null : altcoord.getAlternate();
+                    String chr = StringUtils.isEmpty(altcoord.getChromosome()) ? variant.getChromosome() : altcoord.getChromosome();
+                    Integer start = altcoord.getStart() == 0 ? variant.getStart() : altcoord.getStart();
+                    Integer end = altcoord.getEnd() == 0 ? variant.getEnd() : altcoord.getEnd();
+                    String reference = StringUtils.isEmpty(altcoord.getReference()) ? "" : altcoord.getReference();
+                    String alternate = StringUtils.isEmpty(altcoord.getAlternate()) ? "" : altcoord.getAlternate();
                     AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, vart);
                     secAltArr.add(alt);
                 }

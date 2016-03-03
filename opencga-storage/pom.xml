@@ -102,7 +102,6 @@
                                 org/opencb/opencga/storage/app/cli/OptionsParser.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,
-                                org/opencb/opencga/storage/hadoop/variant/index/models/protobuf/VariantCallProtos.java,
                                 org/opencb/opencga/storage/mongodb/utils/TabixReader.java,
                                 org/opencb/opencga/storage/mongodb/alignment/BamManager.java,
                                 org/opencb/opencga/storage/mongodb/alignment/TabixAlignmentDBAdaptor.java,

@@ -1,19 +1,23 @@
 syntax = "proto3";
 
-package org.opencb.opencga.storage.hadoop.variant.models.protobuf;
+package protobuf.opencb;
 
 option java_outer_classname = "VariantHBase";
 option java_generate_equals_and_hash = true;
 option java_multiple_files = true;
+option java_package = "org.opencb.opencga.storage.hadoop.variant.models.protobuf";
 
-message Alternate {
-    string chromosome = 1;
-    int32 start = 2;
-    int32 end = 3;
-    string reference = 4;
-    string alternate = 5;
-//    VariantType type = 6;
+import "protobuf/opencb/variant.proto";
+
+
+/**
+** Mapping a ComplexGenotype to an individual (sample index)
+**/
+message ComplexVariant {
+    repeated AlternateCoordinate secondaryAlternates = 1;
+    map<int32, Genotype> sampleToGenotype = 2;
 }
+
 
 message SampleList {
     repeated uint32 sampleIds = 1 [packed = true];
@@ -35,7 +39,7 @@ message VariantTableStudyRowProto {
 
     map<string, SampleList> otherGt = 10;
 
-    repeated Alternate secondaryAlternate = 11;
+    repeated AlternateCoordinate secondaryAlternate = 11;
 
     uint32 passCount = 12;
     uint32 callCount = 13;

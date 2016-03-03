@@ -14,14 +14,13 @@ import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.protobuf.VariantAnalysisProtos.ComplexVariant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VariantProto.AlternateCoordinate;
 import org.opencb.biodata.models.variant.protobuf.VariantProto.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.Alternate;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -107,18 +106,7 @@ public class VariantTableStudyRow {
                 sampleToGenotype.put(sid, gtProto);
             }
         }
-        this.secAlternate = new ArrayList<>(proto.getSecondaryAlternateCount());
-        for (Alternate alternate : proto.getSecondaryAlternateList()) {
-            secAlternate.add(
-                    AlternateCoordinate.newBuilder()
-                            .setChromosome(chromosome)
-                            .setAlternate(alternate.getAlternate())
-                            .setReference(alternate.getReference())
-                            .setStart(alternate.getStart())
-                            .setEnd(alternate.getEnd() == 0 ? alternate.getStart() : alternate.getEnd())
-                            .setType(VariantType.SNV)
-                            .build());
-        }
+        this.secAlternate = proto.getSecondaryAlternateList();
     }
 
     /**
@@ -336,11 +324,7 @@ public class VariantTableStudyRow {
                 .addAllHet(callMap.getOrDefault(HET_REF, Collections.emptySet()))
                 .addAllNocall(callMap.getOrDefault(NOCALL, Collections.emptySet()))
                 .addAllOther(callMap.getOrDefault(OTHER, Collections.emptySet()))
-                .addAllSecondaryAlternate(secAlternate.stream().map(a -> Alternate.newBuilder()
-                        .setStart(a.getStart())
-                        .setAlternate(a.getAlternate())
-                        .setReference(a.getReference()).build()
-                ).collect(Collectors.toList()))
+                .addAllSecondaryAlternate(secAlternate)
                 .putAllOtherGt(otherGt.entrySet().stream()
                         .collect(Collectors.toMap(
                                 Entry::getKey,
