@@ -146,7 +146,7 @@ public class VariantTableStudyRow {
         return b.build();
     }
 
-    private void setComplexFilter(ComplexFilter cf){
+    private void setComplexFilter(ComplexFilter cf) {
         Map<String, Set<Integer>> map = cf.getFilterNonPass().entrySet().stream().collect(
                 Collectors.toMap(e -> e.getKey(), e -> new HashSet<>(e.getValue().getSampleIdsList())));
         this.filterToSamples.putAll(map);
@@ -497,7 +497,7 @@ public class VariantTableStudyRow {
         }
         byte[] fArr = resultSet.getBytes(buildColumnKey(studyId, FILTER_OTHER));
         if (fArr != null && fArr.length > 0) {
-            try{
+            try {
                 ComplexFilter complexFilter = ComplexFilter.parseFrom(fArr);
                 row.setComplexFilter(complexFilter);
             } catch (IOException e) {

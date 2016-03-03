@@ -185,28 +185,29 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
                 String filterString = entry.getKey();
-                for (Integer id : entry.getValue().getSampleIdsList()){
+                for (Integer id : entry.getValue().getSampleIdsList()) {
                     Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, id);
                     if (samplePosition == null) {
-                        continue;   //Sample may not be required. Ignore this sample.
+                        continue; // Sample may not be required. Ignore this
+                                  // sample.
                     }
                     samplesDataArray[samplePosition].set(1, filterString);
                 }
                 String sampleName = mapSampleIds.get(entry.getKey());
                 Integer samplePosition = returnedSamplesPosition.get(sampleName);
                 if (samplePosition == null) {
-                    continue;   //Sample may not be required. Ignore this sample.
+                    continue; // Sample may not be required. Ignore this sample.
                 }
             }
             // Fill gaps (with PASS)
             int fillCnt = 0;
             for (int i = 0; i < samplesDataArray.length; i++) {
-                if (StringUtils.isBlank(samplesDataArray[i].get(1))){
-                    samplesDataArray[i].set(1,"PASS");
+                if (StringUtils.isBlank(samplesDataArray[i].get(1))) {
+                    samplesDataArray[i].set(1, "PASS");
                     ++fillCnt;
                 }
             }
-            if (fillCnt != row.getPassCount().intValue()){
+            if (fillCnt != row.getPassCount().intValue()) {
                 throw new RuntimeException(
                         String.format("Pass count %s does not match filter fill count: %s", row.getPassCount(), fillCnt));
             }
