@@ -16,16 +16,10 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Study;
-
-import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,33 +27,13 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class CatalogMongoStudyDBAdaptorTest {
-
-    static CatalogMongoDBAdaptorFactory dbAdaptorFactory;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-    private CatalogMongoStudyDBAdaptor catalogStudyDBAdaptor;
-
-    @AfterClass
-    public static void afterClass() {
-        CatalogMongoDBAdaptorTest.afterClass();
-    }
-
-    @Before
-    public void before() throws IOException, CatalogDBException {
-        CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
-        dbAdaptorTest.before();
-
-        dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
-        catalogStudyDBAdaptor = dbAdaptorFactory.getCatalogStudyDBAdaptor();
-    }
+public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void updateDiskUsage() throws Exception {
-        catalogStudyDBAdaptor.updateDiskUsage(5, 100);
+        catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, 100);
         assertEquals(2100, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
-        catalogStudyDBAdaptor.updateDiskUsage(5, -200);
+        catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, -200);
         assertEquals(1900, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
     }
 
@@ -73,6 +47,7 @@ public class CatalogMongoStudyDBAdaptorTest {
                 null);
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }
+
 
 
 }

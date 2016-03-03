@@ -573,14 +573,14 @@ public class FileManager extends AbstractManager implements IFileManager {
                     }
                 }
 
-                fileDBAdaptor.modifyFile(fileId, objectMap);
+                fileDBAdaptor.update(fileId, objectMap);
                 QueryResult<File> queryResult = rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, objectMap, null, null);
                 return queryResult; //TODO: Return the modified file
             }
             case FILE: {
                 rename(fileId, ".deleted_" + TimeUtils.getTime() + "_" + file.getName(), sessionId);
-                QueryResult<File> queryResult = fileDBAdaptor.modifyFile(fileId, objectMap);
+                QueryResult<File> queryResult = fileDBAdaptor.update(fileId, objectMap);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, objectMap, null, null);
                 return queryResult; //TODO: Return the modified file
             }

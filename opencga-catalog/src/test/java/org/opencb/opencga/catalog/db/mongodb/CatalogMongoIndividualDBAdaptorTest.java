@@ -24,7 +24,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptorTest {
+public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

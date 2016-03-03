@@ -57,14 +57,26 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     String getFileOwnerId(int fileId) throws CatalogDBException;
 
+    /***
+     * Inserts the passed file in the database.
+     *
+     * @param studyId Id of the study where the file belongs to.
+     * @param file The file to be inserted in the database.
+     * @param options Options to filter the output that will be returned after the insertion of the file.
+     * @return A QueryResult object containing information regarding the inserted file.
+     * @throws CatalogDBException when the file could not be inserted due to different reasons.
+     */
     QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException;
 
+    /***
+     * Retrieves the file from the database containing the fileId given.
+     *
+     * @param fileId File ID of the required file.
+     * @param options Options to filter the output.
+     * @return A QueryResult object containing the required file.
+     * @throws CatalogDBException when the file could not be found in the database.
+     */
     QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
-
-    @Deprecated
-    default QueryResult<File> getAllFiles(Query query, QueryOptions options) throws CatalogDBException {
-        return get(query, options);
-    }
 
     QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 

@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -13,10 +14,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -177,6 +176,108 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl);
 
         assertEquals(newAcl, catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first());
+
+    }
+
+    @Test
+    public void createSampleTest() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+
+        assertEquals(hg0097.getName(), result.first().getName());
+        assertEquals(hg0097.getDescription(), result.first().getDescription());
+        assertTrue(result.first().getId() > 0);
+    }
+
+    @Test
+    public void deleteSampleTest() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+        assertEquals(createResult.first().getId(), deleteResult.first().getId());
+        assertEquals(1, deleteResult.getNumResults());
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().getSample(deleteResult.first().getId(), null);
+    }
+
+    @Test
+    public void deleteSampleFail1Test() throws Exception {
+        thrown.expect(CatalogDBException.class);
+        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().deleteSample(55555555);
+    }
+
+    @Test
+    public void deleteSampleFail2Test() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileId(user3.getProjects().get(0).getStudies().get(0).getId(),
+                "data/file.vcf");
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+    }
+
+    @Test
+    public void deleteSampleFail3Test() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "",
+                Collections.singletonList(createResult.first().getId()), null), null);
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+    }
+
+    @Test
+    public void createMultipleCohorts() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        AtomicInteger numFailures = new AtomicInteger();
+        Function<Integer, String> getCohortName = c -> "Cohort_" + c;
+        int numThreads = 10;
+        int numCohorts = 10;
+        for (int c = 0; c < numCohorts; c++) {
+            List<Thread> threads = new LinkedList<>();
+            String cohortName = getCohortName.apply(c);
+            for (int i = 0; i < numThreads; i++) {
+                threads.add(new Thread(() -> {
+                    try {
+                        dbAdaptorFactory.getCatalogSampleDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
+                                "", "", Collections.emptyList(), null), null);
+                    } catch (CatalogDBException ignore) {
+                        numFailures.incrementAndGet();
+                    }
+                }));
+            }
+            threads.parallelStream().forEach(Thread::run);
+            threads.parallelStream().forEach((thread) -> {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+
+        assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
+        Study study = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudy(studyId, null).first();
+        assertEquals(numCohorts, study.getCohorts().size());
+        Set<String> names = study.getCohorts().stream().map(Cohort::getName).collect(Collectors.toSet());
+        for (int c = 0; c < numCohorts; c++) {
+            String cohortName = getCohortName.apply(c);
+            names.contains(cohortName);
+        }
 
     }
 
