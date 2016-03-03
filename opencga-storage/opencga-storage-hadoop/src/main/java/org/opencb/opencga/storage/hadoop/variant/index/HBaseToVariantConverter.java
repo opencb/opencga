@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
@@ -22,6 +23,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,8 +164,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             // Load complex genotypes
             for (Entry<Integer, VariantProto.Genotype> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
-                String sampleName = mapSampleIds.get(entry.getKey());
-                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, entry.getKey());
                 if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
@@ -175,11 +176,39 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             int homRef = 0;
             for (int i = 0; i < samplesDataArray.length; i++) {
                 if (samplesDataArray[i] == null) {
-                    ArrayList<String> data = new ArrayList<>(1);
+                    ArrayList<String> data = new ArrayList<>(2);
                     data.add(VariantTableStudyRow.HOM_REF);
+                    data.add(StringUtils.EMPTY);
                     samplesDataArray[i] = data;
                     homRef++;
                 }
+            }
+            for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
+                String filterString = entry.getKey();
+                for (Integer id : entry.getValue().getSampleIdsList()){
+                    Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, id);
+                    if (samplePosition == null) {
+                        continue;   //Sample may not be required. Ignore this sample.
+                    }
+                    samplesDataArray[samplePosition].set(1, filterString);
+                }
+                String sampleName = mapSampleIds.get(entry.getKey());
+                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                if (samplePosition == null) {
+                    continue;   //Sample may not be required. Ignore this sample.
+                }
+            }
+            // Fill gaps (with PASS)
+            int fillCnt = 0;
+            for (int i = 0; i < samplesDataArray.length; i++) {
+                if (StringUtils.isBlank(samplesDataArray[i].get(1))){
+                    samplesDataArray[i].set(1,"PASS");
+                    ++fillCnt;
+                }
+            }
+            if (fillCnt != row.getPassCount().intValue()){
+                throw new RuntimeException(
+                        String.format("Pass count %s does not match filter fill count: %s", row.getPassCount(), fillCnt));
             }
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
@@ -199,7 +228,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
             studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
-            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.PASS_KEY));
+            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.VCF_FILTER));
             studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
             variant.addStudyEntry(studyEntry);
@@ -209,6 +238,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
+    }
+
+    private Integer getSamplePosition(LinkedHashMap<String, Integer> returnedSamplesPosition, BiMap<Integer, String> mapSampleIds,
+            Integer id) {
+        String sampleName = mapSampleIds.get(id);
+        Integer samplePosition = returnedSamplesPosition.get(sampleName);
+        return samplePosition;
     }
 
     /**

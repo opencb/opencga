@@ -3,8 +3,27 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.base.Objects;
-import com.google.protobuf.InvalidProtocolBufferException;
+import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
+
+import java.io.IOException;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -20,21 +39,15 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter.Builder;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import java.io.IOException;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
-import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
+import com.google.common.base.Objects;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -47,10 +60,11 @@ public class VariantTableStudyRow {
     public static final String OTHER = "?";
     public static final String COMPLEX = "X";
     public static final String PASS_CNT = "P";
+    public static final String FILTER_OTHER = "F";
     public static final String CALL_CNT = "C";
 
     public static final List<String> STUDY_COLUMNS = Collections.unmodifiableList(
-            Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT));
+            Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT, FILTER_OTHER));
 
     public static final char COLUMN_KEY_SEPARATOR = '_';
 
@@ -64,6 +78,7 @@ public class VariantTableStudyRow {
     private String alt;
     private Map<String, Set<Integer>> callMap = new HashMap<>();
     private Map<Integer, VariantProto.Genotype> sampleToGenotype = new HashMap<>();
+    private Map<String, Set<Integer>> filterToSamples = new HashMap<>();
     private List<AlternateCoordinate> secAlternate = new ArrayList<>();
 
     public VariantTableStudyRow(Integer studyId, String chr, int pos, String ref, String alt) {
@@ -106,6 +121,8 @@ public class VariantTableStudyRow {
                 sampleToGenotype.put(sid, gtProto);
             }
         }
+        this.filterToSamples = proto.getFilterNonPass().entrySet().stream()
+                .collect(Collectors.toMap(k -> k.getKey(), e -> new HashSet<>(e.getValue().getSampleIdsList())));
         this.secAlternate = proto.getSecondaryAlternateList();
     }
 
@@ -120,6 +137,19 @@ public class VariantTableStudyRow {
 
     public int getPos() {
         return pos;
+    }
+
+    public ComplexFilter getComplexFilter() {
+        Builder b = ComplexFilter.newBuilder();
+        Map<String, SampleList> map = toSampleListMap(this.filterToSamples);
+        b.putAllFilterNonPass(map);
+        return b.build();
+    }
+
+    private void setComplexFilter(ComplexFilter cf){
+        Map<String, Set<Integer>> map = cf.getFilterNonPass().entrySet().stream().collect(
+                Collectors.toMap(e -> e.getKey(), e -> new HashSet<>(e.getValue().getSampleIdsList())));
+        this.filterToSamples.putAll(map);
     }
 
     public ComplexVariant getComplexVariant() {
@@ -282,6 +312,9 @@ public class VariantTableStudyRow {
         if (this.secAlternate.size() > 0 || this.sampleToGenotype.size() > 0) { //add complex genotype column if required
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, COMPLEX)), this.getComplexVariant().toByteArray());
         }
+        if (!this.filterToSamples.isEmpty()) {
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, FILTER_OTHER)), this.getComplexFilter().toByteArray());
+        }
         for (Entry<String, Set<Integer>> entry : this.callMap.entrySet()) {
             byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));
 
@@ -325,11 +358,16 @@ public class VariantTableStudyRow {
                 .addAllNocall(callMap.getOrDefault(NOCALL, Collections.emptySet()))
                 .addAllOther(callMap.getOrDefault(OTHER, Collections.emptySet()))
                 .addAllSecondaryAlternate(secAlternate)
-                .putAllOtherGt(otherGt.entrySet().stream()
-                        .collect(Collectors.toMap(
-                                Entry::getKey,
-                                entry -> SampleList.newBuilder().addAllSampleIds(entry.getValue()).build())))
+                .putAllOtherGt(toSampleListMap(otherGt))
+                .putAllFilterNonPass(toSampleListMap(this.filterToSamples))
                 .build();
+    }
+
+    private Map<String, SampleList> toSampleListMap(Map<String, ? extends Collection<Integer>> map) {
+        return map.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Entry::getKey,
+                        entry -> SampleList.newBuilder().addAllSampleIds(entry.getValue()).build()));
     }
 
     public static List<VariantTableStudyRow> parse(Result result, GenomeHelper helper) {
@@ -383,6 +421,14 @@ public class VariantTableStudyRow {
                     try {
                         ComplexVariant complexVariant = ComplexVariant.parseFrom(entry.getValue());
                         row.setComplexVariant(complexVariant);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                    break;
+                case FILTER_OTHER:
+                    try {
+                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
+                        row.setComplexFilter(complexFilter);
                     } catch (InvalidProtocolBufferException e) {
                         throw new RuntimeException(e);
                     }
@@ -449,6 +495,15 @@ public class VariantTableStudyRow {
                 throw new RuntimeException(e);
             }
         }
+        byte[] fArr = resultSet.getBytes(buildColumnKey(studyId, FILTER_OTHER));
+        if (fArr != null && fArr.length > 0) {
+            try{
+                ComplexFilter complexFilter = ComplexFilter.parseFrom(fArr);
+                row.setComplexFilter(complexFilter);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         for (String gt : new String[] { HET_REF, HOM_VAR, OTHER, NOCALL }) {
             Array sqlArray = resultSet.getArray(buildColumnKey(studyId, gt));
             HashSet<Integer> value = new HashSet<>();
@@ -502,11 +557,12 @@ public class VariantTableStudyRow {
         if (null == se) {
             throw new IllegalStateException("Study Entry of variant is null: " + variant);
         }
-        if (se.getFiles() != null && !se.getFiles().isEmpty() && se.getFiles().get(0) != null
-                && se.getFiles().get(0).getAttributes() != null && !se.getFiles().get(0).getAttributes().isEmpty()) {
-            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(VariantMerger.VCF_FILTER, "0");
-            row.setPassCount(Integer.valueOf(passStr));
-        }
+        // PASS flag should now be populated
+//        if (se.getFiles() != null && !se.getFiles().isEmpty() && se.getFiles().get(0) != null
+//                && se.getFiles().get(0).getAttributes() != null && !se.getFiles().get(0).getAttributes().isEmpty()) {
+//            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(VariantMerger.VCF_FILTER, "0");
+//            row.setPassCount(Integer.valueOf(passStr));
+//        }
         Set<String> sampleSet = se.getSamplesName();
         // Create Secondary index
         List<VariantProto.AlternateCoordinate> arr = Collections.emptyList();
@@ -552,8 +608,16 @@ public class VariantTableStudyRow {
             }
             // Work out PASS / CALL count
             // Samples from Archive table have PASS/etc set. From Analysis table, the flag is empty (already counted)
-            if (StringUtils.equals("PASS", se.getSampleData(sample, VariantMerger.VCF_FILTER))) {
+            String filterString = se.getSampleData(sample, VariantMerger.VCF_FILTER);
+            if (StringUtils.equals("PASS", filterString)) {
                 row.addPassCount(1);
+            } else if (StringUtils.isNotBlank(filterString) && !StringUtils.equals("-", filterString)) {
+                Set<Integer> set = row.filterToSamples.get(filterString);
+                if (set == null) {
+                    set = new HashSet<Integer>();
+                    row.filterToSamples.put(filterString, set);
+                }
+                set.add(sid);
             }
         }
         row.addHomeRefCount(homref.size());

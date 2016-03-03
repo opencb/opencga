@@ -160,7 +160,7 @@ public class VariantPhoenixHelper {
                 VariantTableStudyRow.CALL_CNT);
         addView(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
-        addView(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX);
+        addView(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
         con.commit();
     }
 

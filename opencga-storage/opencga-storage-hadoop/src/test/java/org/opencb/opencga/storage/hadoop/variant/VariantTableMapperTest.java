@@ -111,4 +111,29 @@ public class VariantTableMapperTest extends HadoopVariantStorageManagerTestUtils
         
     }
 
+    @Test
+    public void testFilterMap() throws Exception {
+        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
+        System.out.println("Query from HBase : " + DB_NAME);
+        Configuration conf = configuration.get();
+        HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
+        HBaseManager hm = new HBaseManager(conf);
+        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        for(Variant variant : dbAdaptor){
+            List<StudyEntry> studies = variant.getStudies();
+            StudyEntry se = studies.get(0);
+            FileEntry fe = se.getFiles().get(0);
+            System.out.println(se.getSamplesData());
+            String passString = fe.getAttributes().get("PASS");
+            Integer passCnt = Integer.parseInt(passString);
+            System.out.println(String.format("Variant = %s; Studies=%s; Pass=%s;",variant,studies.size(),passCnt));
+            assertEquals("Position issue with PASS", variant.getStart().equals(10032), passCnt.equals(1));
+        }
+        System.out.println("End query from HBase : " + DB_NAME);
+//        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
+        
+    }
+
 }

@@ -18,6 +18,9 @@ message ComplexVariant {
     map<int32, Genotype> sampleToGenotype = 2;
 }
 
+message ComplexFilter {
+    map<string, SampleList> filterNonPass = 1;
+}
 
 message SampleList {
     repeated uint32 sampleIds = 1 [packed = true];
@@ -44,6 +47,7 @@ message VariantTableStudyRowProto {
     uint32 passCount = 12;
     uint32 callCount = 13;
 
+    map<string, SampleList> filterNonPass = 14;
 }
 
 message VariantTableStudyRowsProto  {
