@@ -105,6 +105,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         @Deprecated
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
         EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
+        EXTRA_GENOTYPE_FIELDS_TYPE("include.extra-fields-format", ""),  //Include other sample information (like DP, GQ, ...)
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes

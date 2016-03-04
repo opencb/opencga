@@ -23,10 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
-//import org.opencb.cellbase.core.db.DBAdaptorFactory;
-//import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
-//import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
-import org.opencb.datastore.core.*;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -37,6 +36,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+//import org.opencb.cellbase.core.db.DBAdaptorFactory;
+//import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
+//import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -189,7 +192,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
-        QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
+        org.opencb.commons.datastore.core.QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
 
         boolean queryError = false;
         try {
@@ -199,11 +202,11 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 //                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
 //                    "full_annotation",
 //                    queryOptions, VariantAnnotation.class);
-            queryResponse = cellBaseClient.getFullAnnotation(
+            queryResponse = cellBaseClient.getAnnotation(
                     CellBaseClient.Category.genomic,
                     CellBaseClient.SubCategory.variant,
                     variants,
-                    queryOptions);
+                    new org.opencb.commons.datastore.core.QueryOptions(queryOptions));
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
                         variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
