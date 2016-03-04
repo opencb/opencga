@@ -78,27 +78,67 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      */
     QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
 
+    /***
+     * Retrieves all the files belonging to the given study.
+     *
+     * @param studyId Study id where the files will be extracted from.
+     * @param options Options to filter the output.
+     * @return A QueryResult object containing all the files belonging to the study.
+     * @throws CatalogDBException when the study does not exist.
+     */
     QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
 
+    /***
+     * Retrieves all the files present in the folder.
+     *
+     * @param studyId Study id where the files will be extracted from.
+     * @param path Directory where the files will be extracted from.
+     * @param options Options to filter the file output.
+     * @return A QueryResult object containing the files present in the folder of the given study.
+     * @throws CatalogDBException when the study or the path does not exist.
+     */
     QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
-
+    /***
+     * Renames the file.
+     *
+     * @param fileId Id of the file to be renamed.
+     * @param filePath New file or directory name (containing the full path).
+     * @param options Options to filter the file output.
+     * @return A QueryResult object containing the file that have been renamed.
+     *
+     * @throws CatalogDBException when the filePath already exists.
+     */
     QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<File> deleteFile(int fileId) throws CatalogDBException;
+
 
     /*
      * ACL methods
      * ***************************
      */
 
+    /***
+     * Retrieve the AclEntry of the user in the given file.
+     *
+     * @param fileId File id where the permissions will be checked.
+     * @param userId User id of the user to be checked.
+     * @return AclEntry of the user in the file if any.
+     * @throws CatalogDBException when the userId or the fileId does not exist.
+     */
     QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws
-            CatalogDBException;
+    /***
+     * Retrieves the AclEntries of the files and users given.
+     *
+     * @param studyId The id of the study where the files belong to.
+     * @param filePaths The file paths of the files to extract the permissions from.
+     * @param userIds The list of user ids from whom the permissions will be checked.
+     * @return A map of files containing a map of user - AclEntries.
+     * @throws CatalogDBException when the study does not exist.
+     */
+    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds)
+            throws CatalogDBException;
 
     QueryResult<AclEntry> setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException;
 
@@ -270,4 +310,11 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         }
     }
 
+
+
+    @Deprecated
+    QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
+
+    @Deprecated
+    QueryResult<File> deleteFile(int fileId) throws CatalogDBException;
 }

@@ -11,6 +11,8 @@ import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -73,16 +75,36 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
+    public void getAllFilesStudyNotValidTest() throws CatalogDBException {
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not valid");
+        catalogFileDBAdaptor.getAllFilesInStudy(-1, null);
+    }
+
+    @Test
+    public void getAllFilesStudyNotExistsTest() throws CatalogDBException {
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not exist");
+        catalogFileDBAdaptor.getAllFilesInStudy(216544, null);
+    }
+
+    @Test
     public void getAllFilesTest() throws CatalogDBException {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         QueryResult<File> allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
         List<File> files = allFiles.getResult();
-        System.out.println(files);
-        assertTrue(!files.isEmpty());
-
-        studyId = catalogStudyDBAdaptor.getStudyId(catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph7");
-        allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
-        assertTrue(allFiles.getResult().isEmpty());
+        List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
+        assertEquals(expectedFiles.size(), files.size());
+        for (File expectedFile : expectedFiles) {
+            boolean found = false;
+            for (File fileResult : allFiles.getResult()) {
+                if (fileResult.getId() == expectedFile.getId())
+                    found = true;
+            }
+            if (!found) {
+                throw new CatalogDBException("The file " + expectedFile.getName() + " could not be found.");
+            }
+        }
     }
 
     @Test

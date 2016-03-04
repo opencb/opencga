@@ -138,6 +138,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return get(query, options);
     }
@@ -153,6 +154,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
+        checkFileId(fileId);
+        //dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+        checkAclUserId(dbAdaptorFactory, userId, getStudyIdByFileId(fileId));
         Query query = new Query(QueryParams.ID.key(), fileId);
         Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
         QueryOptions options = new QueryOptions(MongoDBCollection.ELEM_MATCH, projection);
@@ -171,6 +175,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             CatalogDBException {
 
         long startTime = startQuery();
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 //        DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_STUDY_ID, studyId).append("path", new BasicDBObject("$in",
 //                filePaths)));
 //        DBObject unwind = new BasicDBObject("$unwind", "$acl");
@@ -178,9 +183,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        DBObject project = new BasicDBObject("$project", new BasicDBObject("path", 1).append("id", 1).append("acl", 1));
 //        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
-        Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in("acl.userId", userIds)));
+        Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
         Bson unwind = Aggregates.unwind("$acl");
-        Bson match2 = Aggregates.match(Filters.and(Filters.in("acl.userId", userIds)));
+        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
         Bson project = Aggregates.project(Projections.include("id", "path", "acl"));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
@@ -324,10 +329,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update file", startTime, Collections.singletonList(0L));
     }
 
-    /**
-     * @param filePath assuming 'pathRelativeToStudy + name'
-     * @param options
-     */
     @Override
     public QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options)
             throws CatalogDBException {

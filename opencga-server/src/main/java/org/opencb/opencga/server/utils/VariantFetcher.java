@@ -102,8 +102,8 @@ public class VariantFetcher {
         for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
             if (!entry.getValue().isEmpty()) {
                 QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                        new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), entry.getValue())
-                                .append("exclude", Arrays.asList("projects.studies.samples.annotationSets",
+                        new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
+                        new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
                                         "projects.studies.samples.attributes"))
                         , sessionId);
                 if (samplesQueryResult.getNumResults() != entry.getValue().size()) {

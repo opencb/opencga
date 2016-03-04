@@ -27,6 +27,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -173,7 +175,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Users in group") @QueryParam("groups.users") String groups_users
                                   ) {
         try {
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -186,7 +190,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllFiles(studyId, , queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -211,7 +217,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -287,7 +295,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                   @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
 
-        Query query = new Query();
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
         List<Region> regions = Region.parseRegions(region);
 
@@ -297,13 +304,15 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
         // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
 
+        int studyId = 4;
+        int sampleId = 33;
+        QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
-            int studyId = 4;
-            int sampleId = 33;
-            File file = catalogManager.getAllFiles(studyId, , new QueryOptions()
-                    .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.ALIGNMENT)
-                    .append(CatalogFileDBAdaptor.FileFilterOption.sampleIds.toString(), sampleId)
-                    .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY), sessionId).first();
+            File file = catalogManager.getAllFiles(studyId, query
+                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
+                    .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
+                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS.key(), Index.Status.READY),
+                    qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
         }
@@ -400,7 +409,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, , new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.STATUS.key(),
+                    File.Status.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 
