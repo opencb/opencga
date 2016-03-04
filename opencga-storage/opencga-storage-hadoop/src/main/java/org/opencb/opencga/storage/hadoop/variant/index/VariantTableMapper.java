@@ -5,6 +5,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
@@ -141,11 +142,18 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
             Set<String> fileIds = extractFileIds(value);
             getLog().info("Results contain file IDs : " + StringUtils.join(fileIds, ','));
+            Set<Integer> newSampleIds = new HashSet<>();
+            for (String fid : fileIds) {
+                if (!StringUtils.equals("_V", fid)) {
+                    LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(Integer.parseInt(fid));
+                    newSampleIds.addAll(sids);
+                }
+            }
 
             getLog().info("Processing slice " + sliceKey);
 
             // Archive: unpack Archive data (selection only
-            List<Variant> archiveVar = getResultConverter().convert(value, startPos,  nextStartPos, true);
+            List<Variant> archiveVar = getResultConverter().convert(value, startPos, nextStartPos, true);
             context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
             addTime("Filter slice");
             // Variants of target type
@@ -230,8 +238,8 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
             // fetchCurrentValues(context, summary.keySet());
             List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
-            updateOutputTable(context, analysisNew, rows);
-            updateOutputTable(context, analysisVar, rows);
+            updateOutputTable(context, analysisNew, rows, null);
+            updateOutputTable(context, analysisVar, rows, newSampleIds);
 
             updateArchiveTable(key, context, rows);
 
@@ -442,19 +450,27 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
      * @param context
      * @param analysisVar
      * @param rows
+     * @param newSampleIds
      * @throws IOException
      * @throws InterruptedException
      */
-    private List<VariantTableStudyRow> updateOutputTable(Context context, Collection<Variant> analysisVar, List<VariantTableStudyRow> rows)
-            throws IOException, InterruptedException {
+    private List<VariantTableStudyRow> updateOutputTable(Context context, Collection<Variant> analysisVar, List<VariantTableStudyRow> rows,
+            Set<Integer> newSampleIds) throws IOException, InterruptedException {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : analysisVar) {
             VariantTableStudyRow row = VariantTableStudyRow.build(variant, studyId, idMapping);
             rows.add(row);
-            Put put = row.createPut(getHelper());
-            context.write(new ImmutableBytesWritable(helper.getOutputTable()), put);
-            context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+            Put put = null;
+            if (null != newSampleIds) {
+                put = row.createSpecificPut(getHelper(), newSampleIds);
+            } else {
+                put = row.createPut(getHelper());
+            }
+            if (put != null) {
+                context.write(new ImmutableBytesWritable(helper.getOutputTable()), put);
+                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+            }
         }
         return rows;
     }

@@ -296,6 +296,89 @@ public class VariantTableStudyRow {
         return this;
     }
 
+    /**
+     * Fills only changed columns of a PUT object. If no column changed, returns NULL
+     * @param helper
+     * @param newSampleIds
+     * @return NULL if no changes, else PUT object with changed columns
+     */
+    public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {
+        boolean doPut = false;
+        byte[] generateRowKey = generateRowKey(helper);
+        byte[] cf = helper.getColumnFamily();
+        Integer sid = helper.getStudyId();
+        Put put = new Put(generateRowKey);
+        Set<Integer> newHomRef = new HashSet<>(newSampleIds);
+
+        /***** Complex GT *****/
+        Set<Integer> foundIds = this.sampleToGenotype.entrySet().stream().filter(e -> newSampleIds.contains(e.getKey()))
+                .map(e -> e.getKey()).collect(Collectors.toSet());
+        /***** Secondary Alt list *****/
+        // newRow.secAlternate // not needed to filter down //TODO check if a
+        // new alternate is referenced
+        Set<Integer> oldIdx = this.sampleToGenotype.entrySet().stream().filter(e -> !newSampleIds.contains(e.getKey()))
+                .map(e -> e.getValue().getAllelesIdxList()).flatMap(l -> l.stream()).collect(Collectors.toSet());
+        Set<Integer> newIdx = this.sampleToGenotype.entrySet().stream().filter(e -> newSampleIds.contains(e.getKey()))
+                .map(e -> e.getValue().getAllelesIdxList()).flatMap(l -> l.stream()).collect(Collectors.toSet());
+        newIdx.removeAll(oldIdx);
+        if (newIdx.size() > 0 || foundIds.size() > 0) {
+            doPut = true;
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, COMPLEX)), this.getComplexVariant().toByteArray());
+            newHomRef.removeAll(foundIds);
+        }
+
+        /***** Filter *****/
+        long cntFilter = this.filterToSamples.entrySet().stream().filter(e -> ! Collections.disjoint(e.getValue(),newSampleIds)).count();
+        if (cntFilter > 0) {
+            doPut = true;
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, FILTER_OTHER)), this.getComplexFilter().toByteArray());
+        }
+        /**** PASS CNT ***/
+        Set<Integer> newPassIds = new HashSet<>(newSampleIds);
+        this.filterToSamples.values().forEach(l -> newPassIds.removeAll(l));
+        if (newPassIds.size() > 0) {
+            doPut = true;
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
+        }
+
+        /**** GT ***/
+        Set<Integer> newCalls = new HashSet<>(newSampleIds);
+        for (Entry<String, Set<Integer>> entry : this.callMap.entrySet()) {
+            byte[] column = Bytes.toBytes(buildColumnKey(sid, entry.getKey()));
+            boolean disjoint = Collections.disjoint(entry.getValue(), newSampleIds);
+            if (!disjoint) {
+                doPut = true;
+                List<Integer> value = new ArrayList<>(entry.getValue());
+                Collections.sort(value);
+                byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
+                put.addColumn(cf, column, bytesArray);
+                newHomRef.removeAll(value);
+                if (StringUtils.equals(entry.getKey(), NOCALL)) {
+                    newCalls.removeAll(value);
+                }
+            }
+        }
+        if (newHomRef.size() > 0) {
+            doPut = true;
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
+        }
+
+        if (!this.callCount.equals(newCalls.size())) {
+            doPut = true;
+            put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));
+        }
+
+        if (this.callMap.containsKey(HOM_REF)) {
+            throw new IllegalStateException(
+                    String.format("HOM_REF data found for row %s for sample IDs %s",
+                            Arrays.toString(generateRowKey), StringUtils.join(this.callMap.get(HOM_REF), ",")));
+        }
+        if (doPut) {
+            return put;
+        }
+        return null;
+    }
+
     public Put createPut(VariantTableHelper helper) {
         byte[] generateRowKey = generateRowKey(helper);
         if (this.callMap.containsKey(HOM_REF)) {
