@@ -76,9 +76,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             int studyId = catalogManager.getStudyId(studyIdStr);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
-                QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
-                samplesQuery.add("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery));
+                QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
+                Query samplesQuery = new Query("id", sampleIdsStr);
+                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery, samplesQOptions));
             } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
@@ -95,10 +95,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                     return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
                 }
                 for (String s : variable.getAllowedValues()) {
-                    QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
-                    samplesQuery.add("annotation", variableName + ":" + s);
-                    samplesQuery.add("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery));
+                    QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
+                    Query samplesQuery = new Query("annotation", variableName + ":" + s)
+                            .append("variableSetId", variableSetId);
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, query, samplesQOptions));
                 }
             } else {
                 //Create empty cohort
@@ -139,8 +139,9 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
-        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, new Query(), queryOptions, sessionId);
+    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
+                                             QueryOptions queryOptions) throws CatalogException {
+        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);

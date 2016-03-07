@@ -231,7 +231,7 @@ public class OpenCGAWSServer {
             param = indexOf > 0 ? param.substring(0, indexOf) : param;
 
             if (getParam.apply(param) != null) {
-                query.put(param, entry.getValue());
+                query.put(entry.getKey(), entry.getValue());
             } else {
                 queryOptions.add(param, entry.getValue());
             }

@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.sun.org.apache.xml.internal.resolver.Catalog;
 import org.bson.Document;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
@@ -188,6 +191,16 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         System.out.println(jmmut.get(0));
         List<AclEntry> jcoll = catalogFileDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
         assertTrue(jcoll.isEmpty());
+    }
+
+    @Test
+    public void includeFields() throws CatalogDBException {
+
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.getFile(7,
+                new QueryOptions("include", "projects.studies.files.id,projects.studies.files.path"));
+        List<File> files = fileQueryResult.getResult();
+        assertEquals("Include path does not work.", "data/file.vcf", files.get(0).getPath());
+        assertEquals("Include not working.", null, files.get(0).getName());
     }
 
 }

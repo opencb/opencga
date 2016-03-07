@@ -461,7 +461,7 @@ public class FileWSServer extends OpenCGAWSServer {
             int studyIdNum = catalogManager.getStudyId(studyId);
             // TODO this must be changed: only one queryOptions need to be passed
             Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
             parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
 
             if (query.containsKey(CatalogFileDBAdaptor.QueryParams.NAME.key())
@@ -471,8 +471,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 System.out.println("Name attribute empty, it's been removed");
             }
 
-            if (!this.queryOptions.containsKey(MongoDBCollection.LIMIT)) {
-                this.queryOptions.put(MongoDBCollection.LIMIT, 1000);
+            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+                qOptions.put(MongoDBCollection.LIMIT, 1000);
                 System.out.println("Adding a limit of 1000");
             }
             System.out.println("query = " + query.toJson());
