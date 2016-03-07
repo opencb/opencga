@@ -1438,10 +1438,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." +
                         DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds));
 
-        List<Object> missingOtherValues = new ArrayList<>(fileSampleIds.size());
-        for (int size = fileSampleIds.size(); size > 0; size--) {
-            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
-        }
+//        List<Object> missingOtherValues = new ArrayList<>(fileSampleIds.size());
+//        for (int size = fileSampleIds.size(); size > 0; size--) {
+//            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
+//        }
 //        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
 //        for (String extraField : extraFields) {
 //            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),

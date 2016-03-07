@@ -47,6 +47,7 @@ import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConverter.UNKNOWN_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
 
 /**
@@ -159,7 +160,9 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     public void testInsertMultiFiles() throws StorageManagerException {
         List<Variant> allVariants;
         studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
         studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0), loadFile1());
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
@@ -187,7 +190,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         assertEquals(1002, variant.getStart().longValue());
         assertEquals(new HashSet<>(Arrays.asList(studyName1, studyName2)), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration, fileId1, (sampleId) -> Integer.toString(sampleId + 10), "DP");
-        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
+        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_FIELD, "DP");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
         checkSampleData(variant, studyConfiguration2, fileId3, Object::toString, "DP");
 
@@ -195,14 +198,16 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         assertEquals(1004, variant.getStart().longValue());
         assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
         checkSampleData(variant, studyConfiguration2, fileId2, Object::toString, "DP");
-        checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
+        checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> UNKNOWN_FIELD, "DP");
         checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
+        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> sampleId % 2 == 0 ? UNKNOWN_FIELD : "0.7", "GQX");
+        checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> UNKNOWN_FIELD, "GQX");
 
         variant = allVariants.get(4);
         assertEquals(1006, variant.getStart().longValue());
         assertEquals(Collections.singleton(studyName2), variant.getStudiesMap().keySet());
-        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "DP");
-        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> DBObjectToSamplesConverter.UNKNOWN_FIELD.toString(), "GQX");
+        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_FIELD, "DP");
+        checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_FIELD, "GQX");
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
         checkSampleData(variant, studyConfiguration2, fileId3, Object::toString, "DP");
         checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> "0.7", "GQX");
@@ -212,8 +217,8 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String> valueProvider, String field) {
         assertTrue(studyConfiguration.getFileIds().values().contains(fileId));
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
-            assertEquals(valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
-                    .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
+                assertEquals("FileId=" + fileId + " Field=" + field + " Sample=" + sampleId, valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
+                        .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
         );
     }
 
@@ -283,9 +288,9 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         variant = new Variant("X", 1004, 1004, "A", "C");
         sourceEntry = new StudyEntry(source2.getFileId(), source2.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "0/1").append("DP", "1").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "2").append("GQX", "0.7")));
+        sourceEntry.addSampleData("NA19660", ((Map) new ObjectMap("GT", "0/0").append("DP", "2").append("GQX", ".")));
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "3").append("GQX", "0.7")));
-        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "4").append("GQX", "0.7")));
+        sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "4").append("GQX", "..")));
         variant.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant);
 

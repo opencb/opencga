@@ -22,7 +22,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -31,12 +31,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantEntryConverter.*;
 
@@ -47,7 +45,7 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantE
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
     public static final String UNKNOWN_GENOTYPE = "?/?";
-    public static final Object UNKNOWN_FIELD = 0;
+    public static final String UNKNOWN_FIELD = ".";
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
@@ -59,6 +57,47 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private String returnedUnknownGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
+
+    /**
+     * Converts Integer FORMAT fields.
+     */
+    final static ComplexTypeConverter<String, Integer> INTEGER_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+        @Override
+        public String convertToDataModelType(Integer anInt) {
+            return anInt == 0? UNKNOWN_FIELD : Integer.toString(anInt > 0 ? anInt - 1 : anInt);
+        }
+
+        @Override
+        public Integer convertToStorageType(String stringValue) {
+            try {
+                int anInt = ((int) Float.parseFloat(stringValue));
+                return anInt >= 0? anInt + 1 : anInt;
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+    };
+
+    /**
+     * Converts Float FORMAT fields.
+     */
+    final static ComplexTypeConverter<String, Integer> FLOAT_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+        @Override
+        public String convertToDataModelType(Integer anInt) {
+            return anInt == 0? UNKNOWN_FIELD : Double.toString((anInt > 0 ? anInt - 1 : anInt) / 1000.0);
+        }
+
+        @Override
+        public Integer convertToStorageType(String stringValue) {
+            try {
+                int anInt = (int) (Float.parseFloat(stringValue) * 1000);
+                return anInt >= 0? anInt + 1 : anInt;
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+    };
+
 
     /**
      * Create a converter from a Map of samples to DBObject entities.
@@ -224,7 +263,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
             for (Integer fid : studyConfiguration.getIndexedFiles()) {
                 if (files.containsKey(fid)) {
-                    DBObject sampleDatas = (DBObject) files.get(fid).get("sampleData");
+                    DBObject sampleDatas = (DBObject) files.get(fid).get(SAMPLE_DATA_FIELD);
 
                     int extraFieldPosition = 1; //Skip GT
                     for (String extraField : extraFields) {
@@ -246,23 +285,34 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         Supplier<String> supplier;
                         if (otherFields.getIntValuesCount() > 0) {
                             final Iterator<Integer> iterator = otherFields.getIntValuesList().iterator();
-                            supplier = () -> iterator.hasNext() ? Integer.toString(iterator.next() - 1) : "";
+                            supplier = () -> iterator.hasNext() ? INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(iterator.next()) : UNKNOWN_FIELD;
                         } else if (otherFields.getFloatValuesCount() > 0) {
                             final Iterator<Integer> iterator = otherFields.getFloatValuesList().iterator();
-                            supplier = () -> iterator.hasNext() ? Double.toString((iterator.next() - 1) / 1000.0) : "";
+                            supplier = () -> iterator.hasNext() ? FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(iterator.next()) : UNKNOWN_FIELD;
                         } else {
                             final Iterator<String> iterator = otherFields.getStringValuesList().iterator();
-                            supplier = () -> iterator.hasNext() ? iterator.next() : "";
+                            supplier = () -> iterator.hasNext() ? iterator.next() : UNKNOWN_FIELD;
                         }
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
-                            String sampleName = samplesPosition.inverse().get(sampleId);
-                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            try {
+                                samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
+                            } catch (NullPointerException e) {
+                                throw e;
+                            }
                         }
 
                         extraFieldPosition++;
                     }
                 } else {
-                    //Missing values.
+                    int extraFieldPosition = 1; //Skip GT
+                    for (int i = 0; i < extraFields.size(); i++) {
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, UNKNOWN_FIELD);
+                        }
+                        extraFieldPosition++;
+                    }
                 }
             }
         }
@@ -394,20 +444,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 //                        value = stringValue;
 //                    }
                     switch (extraFieldType) {
-                        case "Integer":
-                            try {
-                                builder.addIntValues(((int) Float.parseFloat(stringValue)) + 1);
-                            } catch (NumberFormatException e) {
-                                builder.addIntValues(0);
-                            }
+                        case "Integer": {
+                            builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
                             break;
-                        case "Float":
-                            try {
-                                builder.addFloatValues((int) (Float.parseFloat(stringValue) * 1000) + 1);
-                            } catch (NumberFormatException e) {
-                                builder.addIntValues(0);
-                            }
+                        }
+                        case "Float": {
+                            builder.addFloatValues(FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
                             break;
+                        }
                         case "String":
                         default:
                             builder.addStringValues(stringValue);
@@ -428,7 +472,6 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         return mongoSamples;
     }
-
 
     public void setSamples(int studyId, Integer fileId, List<String> samples) {
         int i = 0;

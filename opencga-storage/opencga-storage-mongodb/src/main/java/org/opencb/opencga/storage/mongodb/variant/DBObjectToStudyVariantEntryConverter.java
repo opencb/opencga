@@ -44,6 +44,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
     //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
+    public static final String SAMPLE_DATA_FIELD = "sampleData";
     public static final String ORI_FIELD = "_ori";
 
     public final static String ALTERNATES_FIELD = "alts";
@@ -335,7 +336,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
             BasicDBObject otherFields = new BasicDBObject();
-            fileObject.append("sampleData", otherFields);
+            fileObject.append(SAMPLE_DATA_FIELD, otherFields);
             mongoStudy.putAll(samplesConverter.convertToStorageType(object, studyId, fileId, otherFields));
 
         }
