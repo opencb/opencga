@@ -144,7 +144,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             getLog().info("Results contain file IDs : " + StringUtils.join(fileIds, ','));
             Set<Integer> newSampleIds = new HashSet<>();
             for (String fid : fileIds) {
-                if (!StringUtils.equals("_V", fid)) {
+                if (!StringUtils.equals(GenomeHelper.VARIANT_COLUMN, fid)) {
                     LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(Integer.parseInt(fid));
                     newSampleIds.addAll(sids);
                 }
@@ -459,7 +459,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : analysisVar) {
-            VariantTableStudyRow row = VariantTableStudyRow.build(variant, studyId, idMapping);
+            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             rows.add(row);
             Put put = null;
             if (null != newSampleIds) {

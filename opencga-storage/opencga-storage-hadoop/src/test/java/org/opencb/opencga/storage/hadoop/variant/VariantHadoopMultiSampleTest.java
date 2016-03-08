@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStu
 
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -134,9 +135,11 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         assertEquals("0/1", variants.get("1:10031:T:G").getStudy(studyName).getSampleData("s2", "GT"));
 
         assertTrue(variants.containsKey("1:10032:A:G"));
+        assertEquals("1", variants.get("1:10032:A:G").getStudy(studyName).getFiles().get(0).getAttributes().get("PASS"));
         assertEquals("0/1", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "GT"));
-//        assertEquals("1", variants.get("1:10032:A:G").getStudy(studyName).getAttributes().get("FILTER"));
+        assertEquals("PASS", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s1", "FILTER"));
         assertEquals("0/0", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals("LowGQX", variants.get("1:10032:A:G").getStudy(studyName).getSampleData("s2", "FILTER"));
 
         assertTrue(variants.containsKey("1:11000:T:G"));
         assertEquals("1/1", variants.get("1:11000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
@@ -144,7 +147,9 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
 
         assertTrue(variants.containsKey("1:12000:T:G"));
         assertEquals("1/1", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "GT"));
+        assertEquals(".", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s1", "FILTER"));
         assertEquals("0/0", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
+        assertEquals("HighDPFRatio;LowGQX", variants.get("1:12000:T:G").getStudy(studyName).getSampleData("s2", "FILTER"));
 
         assertTrue(variants.containsKey("1:13000:T:G"));
         assertEquals("0/0", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s1", "GT"));

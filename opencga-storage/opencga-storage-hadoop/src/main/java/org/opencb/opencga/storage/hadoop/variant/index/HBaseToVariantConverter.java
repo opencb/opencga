@@ -207,9 +207,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                     ++fillCnt;
                 }
             }
-            if (fillCnt != row.getPassCount().intValue()) {
+            if (fillCnt != row.getPassCount()) {
                 throw new RuntimeException(
-                        String.format("Pass count %s does not match filter fill count: %s", row.getPassCount(), fillCnt));
+                        String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
+                                row.toString(), row.getPassCount(), fillCnt));
             }
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
