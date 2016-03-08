@@ -298,8 +298,8 @@ public class VariantTableStudyRow {
 
     /**
      * Fills only changed columns of a PUT object. If no column changed, returns NULL
-     * @param helper
-     * @param newSampleIds
+     * @param helper VariantTableHelper
+     * @param newSampleIds Sample IDs which are loaded
      * @return NULL if no changes, else PUT object with changed columns
      */
     public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {
@@ -328,7 +328,7 @@ public class VariantTableStudyRow {
         }
 
         /***** Filter *****/
-        long cntFilter = this.filterToSamples.entrySet().stream().filter(e -> ! Collections.disjoint(e.getValue(),newSampleIds)).count();
+        long cntFilter = this.filterToSamples.entrySet().stream().filter(e -> !Collections.disjoint(e.getValue(), newSampleIds)).count();
         if (cntFilter > 0) {
             doPut = true;
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, FILTER_OTHER)), this.getComplexFilter().toByteArray());
