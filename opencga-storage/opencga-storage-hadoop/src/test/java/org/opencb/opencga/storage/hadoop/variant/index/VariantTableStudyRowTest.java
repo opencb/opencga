@@ -42,9 +42,9 @@ public class VariantTableStudyRowTest {
         // Check GT
         assertEquals(3, row.getHomRefCount().intValue());
         assertEquals(5, row.getCallCount().intValue());
-        assertEquals(Collections.singleton(1), row.getSampleIds(VariantTableStudyRow.HET_REF));
-        assertEquals(Collections.singleton(3), row.getSampleIds(VariantTableStudyRow.HOM_VAR));
-        assertEquals(Collections.singleton(6), row.getSampleIds(VariantTableStudyRow.NOCALL));
+        assertEquals(Collections.singleton(0), row.getSampleIds(VariantTableStudyRow.HET_REF));
+        assertEquals(Collections.singleton(2), row.getSampleIds(VariantTableStudyRow.HOM_VAR));
+        assertEquals(Collections.singleton(5), row.getSampleIds(VariantTableStudyRow.NOCALL));
 
         // Check FILTER
         assertEquals(1, row.getPassCount().intValue());
