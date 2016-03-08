@@ -49,6 +49,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     static User user1;
     static User user2;
     static User user3;
+    static User user4;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -138,6 +139,44 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createUser = catalogUserDBAdaptor.insertUser(user3, null);
         assertNotNull(createUser.getResult());
 
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, "active", "", 0, 50000,
+                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", "active", "", 0,
+                        Collections.<AclEntry>emptyList(),
+                        Arrays.asList(
+                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", "", "", "", 0, "", null, null,
+                                        Arrays.asList(
+                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                        null, "Description", File.Status.READY, 10),
+                                                new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                                        File.Bioformat.NONE, "data/file1.txt", null, null, "Description", File.Status.READY,
+                                                        100),
+                                                new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+                                                        "data/alignment.bam", null, null, "Tophat alignment file", File.Status.READY, 5000)
+                                                ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
+                                        LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String,
+                                        Object>emptyMap(),
+                                        Collections.<String, Object>emptyMap()),
+                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", "", "", "", 0, "", null, null,
+                                        Arrays.asList(
+                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                        null, "Description", File.Status.READY, 10),
+                                                new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                                        File.Bioformat.NONE, "data/file1.txt", null, null, "Description", File.Status.READY,
+                                                        100),
+                                                new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+                                                        "data/alignment.bam", null, null, "Tophat alignment file", File.Status.READY, 5000)
+                                        ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
+                                        LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String,
+                                        Object>emptyMap(),
+                                        Collections.<String, Object>emptyMap())
+                        ), Collections.<String, Object>emptyMap())
+                ),
+                Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
+                Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
+
+        createUser = catalogUserDBAdaptor.insertUser(user4, null);
+        assertNotNull(createUser.getResult());
+
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
         options.put("includeJobs", true);
@@ -145,6 +184,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         user1 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
         user2 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
         user3 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
+        user4 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
         System.out.println("user3 = " + user3);
 
     }
