@@ -141,7 +141,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
             Set<String> fileIds = extractFileIds(value);
-            getLog().info("Results contain file IDs : " + StringUtils.join(fileIds, ','));
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
+            }
             Set<Integer> newSampleIds = new HashSet<>();
             for (String fid : fileIds) {
                 if (!StringUtils.equals(GenomeHelper.VARIANT_COLUMN, fid)) {
@@ -150,7 +152,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 }
             }
 
-            getLog().info("Processing slice " + sliceKey);
+            getLog().info("Processing slice {}", sliceKey);
 
             // Archive: unpack Archive data (selection only
             List<Variant> archiveVar = getResultConverter().convert(value, startPos, nextStartPos, true);
@@ -160,7 +162,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
             if (!archiveTarget.isEmpty()) {
                 Variant tmpVar = archiveTarget.get(0);
-                getLog().info("Loaded variant from archive table: " + tmpVar.toJson());
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Loaded variant from archive table: " + tmpVar.toJson());
+                }
             }
             context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
             addTime("Load Analysis");
@@ -172,10 +176,12 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 
 //            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
             Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
-            getLog().info(String.format("Loaded %s variants ... ", analysisVar.size()));
+            getLog().info("Loaded {} variants ... ", analysisVar.size());
             if (!analysisVar.isEmpty()) {
                 Variant tmpVar = analysisVar.get(0);
-                getLog().info("Loaded variant from analysis table: " + tmpVar.toJson());
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Loaded variant from analysis table: " + tmpVar.toJson());
+                }
             }
             addTime("Check consistency");
 
@@ -290,7 +296,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             getLog().info("No files found to search for in archive table");
             return Collections.emptyList();
         }
-        getLog().info("Add files to search in archive: " + StringUtils.join(archiveFileIds, ','));
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Add files to search in archive: " + StringUtils.join(archiveFileIds, ','));
+        }
         Get get = new Get(Bytes.toBytes(sliceKey));
         byte[] cf = getHelper().getColumnFamily();
         archiveFileIds.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
@@ -406,8 +414,9 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 //        boolean foundScan = false; // FIXME clean up
         try (Table table = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));) {
             context.getCounter(COUNTER_GROUP_NAME, "VCF_TABLE_SCAN-query").increment(1);
-            getLog().info(
-                    String.format("Scan chr %s from %s to %s with column prefix %s", chr, start, end, colPrefix));
+            if (getLog().isDebugEnabled()) {
+                getLog().debug(String.format("Scan chr %s from %s to %s with column prefix %s", chr, start, end, colPrefix));
+            }
 
             Scan scan = new Scan(startKey, endKey);
             scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(colPrefix))); // Limit to current study
@@ -516,7 +525,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
             }
         }
-        getLog().info(String.format("Loaded %s VcfMETA data!!!", vcfMetaMap.size()));
+        getLog().info("Loaded {} VcfMETA data!!!", vcfMetaMap.size());
         return vcfMetaMap;
     }
 

@@ -299,8 +299,8 @@ public class VariantTableStudyRow {
 
     /**
      * Fills only changed columns of a PUT object. If no column changed, returns NULL
-     * @param helper        VariantTableHelper
-     * @param newSampleIds  Samples that were not in the original variant
+     * @param helper VariantTableHelper
+     * @param newSampleIds Sample IDs which are loaded were not in the original variant
      * @return NULL if no changes, else PUT object with changed columns
      */
     public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {
@@ -561,7 +561,6 @@ public class VariantTableStudyRow {
      * @param variant Variant to create {@link VariantTableStudyRow#VariantTableStudyRow(Integer, Variant)} with
      * @param resultSet Phoenix result set
      * @param studyId Study id
-     * @return variantTableStudyRow {@link VariantTableStudyRow} object filled with data
      * @throws SQLException Problems accessing data in {@link ResultSet}
      */
     public VariantTableStudyRow(Variant variant, ResultSet resultSet, int studyId) throws SQLException {
