@@ -249,7 +249,8 @@ public class JobWSServer extends OpenCGAWSServer {
 //                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
 //            Job job = jobResult.getResult().get(0);
 
-            org.opencb.datastore.core.QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
+            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description,
+                    jobOutDir, inputFiles, sessionId);
 
             // Execute job
 //            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);

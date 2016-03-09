@@ -19,14 +19,14 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-
-import java.util.*;
-
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
+
+import java.util.*;
 
 /**
  *
@@ -118,6 +118,9 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         if (object.containsField(IDS_FIELD)) {
             Object ids = object.get(IDS_FIELD);
             variant.setIds(new LinkedList<>(((Collection<String>) ids)));
+        }
+        if (object.containsField(TYPE_FIELD)) {
+            variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));
         }
 
         // Transform HGVS: List of map entries -> Map of lists

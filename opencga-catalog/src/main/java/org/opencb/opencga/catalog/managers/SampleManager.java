@@ -40,7 +40,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
-
     @Override
     public Integer getStudyId(int sampleId) throws CatalogException {
         return sampleDBAdaptor.getStudyIdBySampleId(sampleId);

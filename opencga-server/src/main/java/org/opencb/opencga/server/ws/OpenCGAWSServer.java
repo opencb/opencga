@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
@@ -32,10 +33,7 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Config;
@@ -52,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import java.io.FileInputStream;
@@ -95,6 +94,7 @@ public class OpenCGAWSServer {
 
     protected QueryOptions queryOptions;
     protected QueryResponse queryResponse;
+    protected Query query;
 
     protected static ObjectWriter jsonObjectWriter;
     protected static ObjectMapper jsonObjectMapper;
@@ -209,8 +209,34 @@ public class OpenCGAWSServer {
 
 //        queryResponse = new QueryResponse();
         queryOptions = new QueryOptions();
+        query = new Query();
 
         parseParams();
+    }
+
+    /**
+     * Builds the query and the queryOptions based on the query parameters.
+     *
+     * @param params Map of parameters.
+     * @param getParam Method that returns the QueryParams object based on the key.
+     * @param query Query where parameters parsing the getParam function will be inserted.
+     * @param queryOptions QueryOptions where parameters not parsing the getParam function will be inserted.
+     */
+    protected static void parseQueryParams(Map<String, List<String>> params,
+                                           Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
+                                           Query query, QueryOptions queryOptions) {
+        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+            String param = entry.getKey();
+            int indexOf = param.indexOf('.');
+            param = indexOf > 0 ? param.substring(0, indexOf) : param;
+
+            if (getParam.apply(param) != null) {
+                query.put(entry.getKey(), entry.getValue());
+            } else {
+                queryOptions.add(param, entry.getValue());
+            }
+
+        }
     }
 
     public void parseParams() throws VersionException {

@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -52,7 +53,8 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.*;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ID;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID;
 
 public class CatalogManagerTest extends GenericTest {
 
@@ -64,6 +66,8 @@ public class CatalogManagerTest extends GenericTest {
     protected String sessionIdUser2;
     protected String sessionIdUser3;
     private File testFolder;
+    private int studyId;
+    private int studyId2;
     private int s_1;
     private int s_2;
     private int s_3;
@@ -164,12 +168,9 @@ public class CatalogManagerTest extends GenericTest {
                 "myorg", null, sessionIdUser2).first();
         Project project3 = catalogManager.createProject("user3", "project 1", "p1", "", "", null, sessionIdUser3).first();
 
-        int studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first()
-                .getId();
-        int studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser)
-                .first().getId();
-        int studyId3 = catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first()
-                .getId();
+        studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
+        studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
+        catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
 
@@ -531,6 +532,30 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteDataFromStudy() throws Exception {
+
+    }
+
+    @Test
+    public void testCreateFileFromUnsharedStudy() throws CatalogException {
+        try {
+            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
+                    sessionIdUser2);
+            fail("The file could be created despite not having the proper permissions.");
+        } catch (CatalogAuthorizationException e) {
+            assertTrue(e.getMessage().contains("Permission denied"));
+            assertEquals(0, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                    "data/test/folder/file.txt"), sessionIdUser).getNumResults());
+        }
+    }
+
+    @Test
+    public void testCreateFileFromSharedStudy() throws CatalogException {
+        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
+        catalogManager.shareFile(testFolder.getId(), new AclEntry("user2", false, true, false, false), sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
+                sessionIdUser2);
+        assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                "data/test/folder/file.txt"), sessionIdUser).getNumResults());
 
     }
 

@@ -26,8 +26,9 @@ import org.junit.Test;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
@@ -139,7 +140,8 @@ public class OpenCGAWSServerTest {
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
-        List<Sample> samples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(), new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), fileVcf.getSampleIds()), sessionId).getResult();
+        List<Sample> samples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(),
+                new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), fileVcf.getSampleIds()), new QueryOptions(), sessionId).getResult();
         List<String> sampleNames = samples.stream().map(Sample::getName).collect(Collectors.toList());
         List<Variant> variants = fileTest.fetchVariants(fileVcf.getId(), sessionId, queryOptions);
         assertEquals(10, variants.size());

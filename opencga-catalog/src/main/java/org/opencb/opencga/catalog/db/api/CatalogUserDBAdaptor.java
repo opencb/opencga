@@ -161,6 +161,61 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         }
     }
 
+    enum ToolQueryParams implements QueryParam {
+        ID("id", TEXT, ""),
+        ALIAS("alias", TEXT, ""),
+        NAME("name", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+        MANIFEST("manifest", TEXT, ""),
+        RESULT("result", TEXT, ""),
+        PATH("path", TEXT, ""),
+        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
+        ACL_READ("acl.read", BOOLEAN, ""),
+        ACL_WRITE("acl.write", BOOLEAN, ""),
+        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
+        ACL_DELETE("acl.delete", BOOLEAN, "");
+
+        private static Map<String, ToolQueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (ToolQueryParams params : ToolQueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        ToolQueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, ToolQueryParams> getMap() {
+            return map;
+        }
+
+        public static ToolQueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
 
     /**
      * Project methods moved to ProjectDBAdaptor

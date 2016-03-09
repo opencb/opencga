@@ -2,7 +2,8 @@ package org.opencb.opencga.server.ws;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -52,7 +53,8 @@ public class JobWSServerTest {
 
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                File.Type.FOLDER), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -78,7 +80,8 @@ public class JobWSServerTest {
 
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                File.Type.FOLDER), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -106,7 +109,8 @@ public class JobWSServerTest {
 
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
-        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER), sessionId).first();
+        File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                File.Type.FOLDER), new QueryOptions(), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";

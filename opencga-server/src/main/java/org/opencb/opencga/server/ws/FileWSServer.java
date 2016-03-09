@@ -23,12 +23,13 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
-import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -48,7 +49,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -146,9 +150,9 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/info")
     @ApiOperation(value = "File info", position = 3)
-    public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileId) {
+    public Response info(@PathParam(value = "fileId") @DefaultValue("") @FormDataParam("fileId") String fileIds) {
         try {
-            String[] fieldIdArray = fileId.split(",");
+            String[] fieldIdArray = fileIds.split(",");
             List<QueryResult> results = new LinkedList<>();
             for (String id : fieldIdArray) {
                 results.add(catalogManager.getFile(catalogManager.getFileId(id), this.queryOptions, sessionId));
@@ -277,7 +281,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             description, parents, sessionId
                     );
                     File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                            new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
+                            new QueryOptions(queryOptions), sessionId, false);
                     queryResult.setResult(Collections.singletonList(file));
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
@@ -455,28 +459,24 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
-
             // TODO this must be changed: only one queryOptions need to be passed
-            QueryOptions options = new QueryOptions();
-            for (String param : params.keySet()) {
-                try {
-                    CatalogFileDBAdaptor.FileFilterOption.valueOf(param.split("\\.")[0]);
-                    options.put(param, params.getFirst(param));
-                } catch (IllegalArgumentException ignore) {
-                }
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            if (query.containsKey(CatalogFileDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(CatalogFileDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(CatalogFileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(CatalogFileDBAdaptor.QueryParams.NAME.key());
+                System.out.println("Name attribute empty, it's been removed");
             }
 
-            if (options.containsKey("name") && (options.get("name") == null || options.getString("name").isEmpty())) {
-                options.remove("name");
-                System.out.println("Name attribute empty, it;s been removed");
-            }
-
-            if (!this.queryOptions.containsKey("limit")) {
-                this.queryOptions.put("limit", 1000);
+            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+                qOptions.put(MongoDBCollection.LIMIT, 1000);
                 System.out.println("Adding a limit of 1000");
             }
-            System.out.println("query = " + options.toJson());
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, new Query(options), this.queryOptions, sessionId);
+            System.out.println("query = " + query.toJson());
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -511,9 +511,10 @@ public class FileWSServer extends OpenCGAWSServer {
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
+            // TODO: Change it to query
             queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
             queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
-            org.opencb.datastore.core.QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new org.opencb.datastore.core.QueryOptions(queryOptions));
+            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -722,13 +723,15 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Polyphen value: [<|>|<=|>=]{number}") @QueryParam("polyphen") String polyphen,
                                 @ApiParam(value = "Sift value: [<|>|<=|>=]{number}") @QueryParam("sift") String sift,
 //                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
-                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number}") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1") @QueryParam("conservation") String conservation,
                                 @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("annot-population-maf") String annotPopulationMaf,
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
                                 @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
                                 @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+                                @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
+                                @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -892,7 +895,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 if (path.endsWith("/")) {
                     filePath = path + Paths.get(uri.getPath()).getFileName().toString();
                 } else {
-                    int folders = catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), path + "/"), sessionId).getNumResults();
+                    int folders = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), path + "/"),
+                            new QueryOptions(), sessionId).getNumResults();
                     if (folders != 0) {
                         filePath = path + "/" + Paths.get(uri.getPath()).getFileName().toString();
                     } else {
@@ -902,7 +906,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 file = catalogManager.createFile(studyId, null, null,
                         filePath, description, parents, -1, sessionId).first();
                 file = catalogFileUtils.link(file, calculateChecksum, uri, false, false, sessionId);
-                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
+                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
+                        false);
             }
             return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
         } catch (Exception e) {
@@ -930,7 +935,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             new CatalogFileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
             file = catalogManager.getFile(file.getId(), queryOptions, sessionId).first();
-            file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
+            file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId, false);
 
             return createOkResponse(new QueryResult<>("relink", 0, 1, 1, null, null, Collections.singletonList(file)));
         } catch (Exception e) {
@@ -951,7 +956,7 @@ public class FileWSServer extends OpenCGAWSServer {
             FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
             if (file.getType() == File.Type.FILE) {
                 File file1 = catalogFileUtils.checkFile(file, false, sessionId);
-                file1 = fileMetadataReader.setMetadataInformation(file1, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
+                file1 = fileMetadataReader.setMetadataInformation(file1, null, new QueryOptions(queryOptions), sessionId, false);
                 if (file == file1) {    //If the file is the same, it was not modified. Only return modified files.
                     files = Collections.emptyList();
                 } else {
@@ -961,7 +966,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 List<File> result = catalogManager.getAllFilesInFolder(file.getId(), null, sessionId).getResult();
                 files = new ArrayList<>(result.size());
                 for (File f : result) {
-                    File file1 = fileMetadataReader.setMetadataInformation(f, null, new org.opencb.datastore.core.QueryOptions(queryOptions), sessionId, false);
+                    File file1 = fileMetadataReader.setMetadataInformation(f, null, new QueryOptions(queryOptions), sessionId, false);
                     if (f != file1) {    //Add only modified files.
                         files.add(file1);
                     }

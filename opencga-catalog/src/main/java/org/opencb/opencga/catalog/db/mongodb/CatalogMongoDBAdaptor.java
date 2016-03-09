@@ -136,17 +136,17 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
             return rank(collection, query, Arrays.asList(groupByField.split(",")), idField, numResults, asc);
         } else {
             Bson match = Aggregates.match(query);
-            Bson project = Aggregates.project(Projections.include(groupByField, idField));
-            Bson group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
+       //     Bson project = Aggregates.project(Projections.include(groupByField, idField));
+      //      Bson group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
             Bson sort;
             if (asc) {
-                sort = Aggregates.sort(Sorts.ascending("count"));
+                sort = Aggregates.sort(Sorts.ascending(groupByField));
             } else {
-                sort = Aggregates.sort(Sorts.descending("count"));
+                sort = Aggregates.sort(Sorts.descending(groupByField));
             }
             Bson limit = Aggregates.limit(numResults);
 
-            return collection.aggregate(Arrays.asList(match, project, group, sort, limit), new QueryOptions());
+            return collection.aggregate(Arrays.asList(match,  sort, limit), new QueryOptions());
         }
     }
 

@@ -106,7 +106,8 @@ public class SampleWSServerTest {
     @Test
     public void createCohort() throws IOException {
         String json = webTarget.path("cohorts").path("create")
-                .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name").queryParam("type", Cohort.Type.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
+                .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name")
+                .queryParam("type", Cohort.Type.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
                 .request().get(String.class);
         Cohort c = WSServerTestUtils.parseResult(json, Cohort.class).getResponse().get(0).first();
         assertEquals(4, c.getSamples().size());

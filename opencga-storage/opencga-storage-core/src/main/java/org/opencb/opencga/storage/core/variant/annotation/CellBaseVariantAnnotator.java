@@ -43,7 +43,8 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 
 
     private final JsonFactory factory;
-//    private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = null;
+    private final org.opencb.commons.datastore.core.QueryOptions queryOptions = new org.opencb.commons.datastore.core.QueryOptions("post", true).append("exclude", "expression");
+    //    private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = null;
 //    private VariationDBAdaptor variationDBAdaptor = null;
 //    private DBAdaptorFactory dbAdaptorFactory = null;
     private CellBaseClient cellBaseClient = null;
@@ -186,30 +187,32 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
+
         org.opencb.commons.datastore.core.QueryResponse<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResponse;
-//        List<String> genomicVariantStringList = new ArrayList<>(variants.size());
-//        for (GenomicVariant genomicVariant : variants) {
-//            genomicVariantStringList.add(genomicVariant.toString());
-//        }
 
         boolean queryError = false;
         try {
-            queryResponse = cellBaseClient.nativeGet(
-                    CellBaseClient.Category.genomic.toString(),
-                    CellBaseClient.SubCategory.variant.toString(),
-                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
-                    "full_annotation",
-//                    new QueryOptions("post", true),
-                    new org.opencb.commons.datastore.core.QueryOptions("post", true),
-                    VariantAnnotation.class
-            );
+//            queryResponse = cellBaseClient.nativeGet(
+//                    CellBaseClient.Category.genomic.toString(),
+//                    CellBaseClient.SubCategory.variant.toString(),
+//                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
+//                    "full_annotation",
+//                    queryOptions, VariantAnnotation.class);
+            queryResponse = cellBaseClient.getAnnotation(
+                    CellBaseClient.Category.genomic,
+                    CellBaseClient.SubCategory.variant,
+                    variants,
+                    queryOptions);
 
             if (queryResponse == null) {
-                logger.warn("CellBase REST fail. Returned null. {}", cellBaseClient.getLastQuery());
+                logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
+                        variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
+
                 queryError = true;
             }
-        } catch (JsonProcessingException e ) {
-            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery(), e);
+        } catch (JsonProcessingException | javax.ws.rs.ProcessingException e ) {
+            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery() + " for variants "
+                    + variants.stream().map(Variant::toString).collect(Collectors.joining(",")), e);
             queryError = true;
             queryResponse = null;
         }
@@ -240,11 +243,11 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
             return variantAnnotationList;
         }
 
-        Collection<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> response = queryResponse.getResponse();
 
-        QueryResult<VariantAnnotation>[] queryResults = response.toArray(new QueryResult[1]);
+        List<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResults = queryResponse.getResponse();
+
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
-        for (QueryResult<VariantAnnotation> queryResult : queryResults) {
+        for (org.opencb.commons.datastore.core.QueryResult<VariantAnnotation> queryResult : queryResults) {
             variantAnnotationList.addAll(queryResult.getResult());
         }
         return variantAnnotationList;

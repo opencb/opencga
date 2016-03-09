@@ -5,6 +5,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -83,7 +84,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

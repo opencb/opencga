@@ -19,6 +19,8 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
@@ -74,9 +76,9 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             int studyId = catalogManager.getStudyId(studyIdStr);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
-                QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
-                samplesQuery.add("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery));
+                QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
+                Query samplesQuery = new Query("id", sampleIdsStr);
+                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery, samplesQOptions));
             } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
@@ -93,10 +95,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                     return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
                 }
                 for (String s : variable.getAllowedValues()) {
-                    QueryOptions samplesQuery = new QueryOptions("include", "projects.studies.samples.id");
-                    samplesQuery.add("annotation", variableName + ":" + s);
-                    samplesQuery.add("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery));
+                    QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
+                    Query samplesQuery = new Query("annotation", variableName + ":" + s)
+                            .append("variableSetId", variableSetId);
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, query, samplesQOptions));
                 }
             } else {
                 //Create empty cohort
@@ -127,9 +129,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
         try {
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
-            queryOptions.put("id", cohort.getSamples());
+            query.put("id", cohort.getSamples());
             int studyId = catalogManager.getStudyIdByCohortId(cohortId);
-            QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+            QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             allSamples.setId("getCohortSamples");
             return createOkResponse(allSamples);
         } catch (Exception e) {
@@ -137,8 +139,9 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, QueryOptions queryOptions) throws CatalogException {
-        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
+                                             QueryOptions queryOptions) throws CatalogException {
+        QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
@@ -183,7 +186,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
         try {
-            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, sessionId));
+            // TODO: Change queryOptions, queryOptions
+            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }    }
@@ -195,7 +199,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
-            return createOkResponse(catalogManager.modifyCohort(cohortId, new QueryOptions(params), sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, new ObjectMap(params), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -221,8 +225,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                 Integer outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
                 queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                org.opencb.datastore.core.QueryResult<Job> jobQueryResult =
-                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new org.opencb.datastore.core.QueryOptions(queryOptions));
+                QueryResult<Job> jobQueryResult =
+                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
                 List<QueryResult<Cohort>> results = new LinkedList<>();

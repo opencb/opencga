@@ -6,8 +6,9 @@ import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
@@ -151,7 +152,8 @@ public class FileWSServerTest {
 
     @Test
     public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, , new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.type.toString(), "FILE"), sessionId).first();
+        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
+                new QueryOptions(), sessionId).first();
 
         FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();
         updateFile.description = "Change description";

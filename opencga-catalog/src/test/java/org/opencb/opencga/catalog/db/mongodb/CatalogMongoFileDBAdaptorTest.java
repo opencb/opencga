@@ -3,7 +3,10 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.bson.Document;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
@@ -11,6 +14,7 @@ import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -73,16 +77,36 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
+    public void getAllFilesStudyNotValidTest() throws CatalogDBException {
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not valid");
+        catalogFileDBAdaptor.getAllFilesInStudy(-1, null);
+    }
+
+    @Test
+    public void getAllFilesStudyNotExistsTest() throws CatalogDBException {
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not exist");
+        catalogFileDBAdaptor.getAllFilesInStudy(216544, null);
+    }
+
+    @Test
     public void getAllFilesTest() throws CatalogDBException {
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         QueryResult<File> allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
         List<File> files = allFiles.getResult();
-        System.out.println(files);
-        assertTrue(!files.isEmpty());
-
-        studyId = catalogStudyDBAdaptor.getStudyId(catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph7");
-        allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
-        assertTrue(allFiles.getResult().isEmpty());
+        List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
+        assertEquals(expectedFiles.size(), files.size());
+        for (File expectedFile : expectedFiles) {
+            boolean found = false;
+            for (File fileResult : allFiles.getResult()) {
+                if (fileResult.getId() == expectedFile.getId())
+                    found = true;
+            }
+            if (!found) {
+                throw new CatalogDBException("The file " + expectedFile.getName() + " could not be found.");
+            }
+        }
     }
 
     @Test
@@ -168,4 +192,56 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertTrue(jcoll.isEmpty());
     }
 
+    @Test
+    public void includeFields() throws CatalogDBException {
+
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.getFile(7,
+                new QueryOptions("include", "projects.studies.files.id,projects.studies.files.path"));
+        List<File> files = fileQueryResult.getResult();
+        assertEquals("Include path does not work.", "data/file.vcf", files.get(0).getPath());
+        assertEquals("Include not working.", null, files.get(0).getName());
+    }
+
+    @Test
+    public void testDistinct() throws Exception {
+
+        List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResult();
+        List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.TYPE.key()).getResult();
+        assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
+        assertEquals(Arrays.asList("FOLDER","FILE"), distinctTypes);
+
+        List<String> distinctFormats = catalogFileDBAdaptor.distinct(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+                CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
+        assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+
+        distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
+                CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
+        assertEquals(Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+    }
+
+    @Test
+    public void testRank() throws Exception {
+
+        // TODO: Check with Nacho the rank method.
+
+        List rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+                CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
+        System.out.println(rankedFilesPerDiskUsage);
+
+
+    }
+
+    @Test
+    public void testGroupBy() throws Exception {
+
+        // TODO: Check with Nacho. What for is the queryOptions in group?
+        List groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+                CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions("include", "projects.studies.files.path")).getResult();
+        System.out.println(groupByBioformat);
+    }
+
+    @Test
+    public void testGroupBy1() throws Exception {
+
+    }
 }
