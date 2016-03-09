@@ -296,16 +296,6 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         studyDBAdaptor.checkStudyId(studyId);
 
-        if (!ownerId.equals(userId)) {
-            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
-            } else {
-                if (!userDBAdaptor.userExists(ownerId)) {
-                    throw new CatalogException("ERROR: ownerId does not exist.");
-                }
-            }
-        }
-
         if (status != File.Status.STAGE && type == File.Type.FILE) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
@@ -319,34 +309,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             path = path.substring(0, path.length() - 1);
         }
 
-
         //Create file object
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
                 path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
                 new LinkedList<>(), stats, attributes);
-
-        return create(studyId, file, parents, options, sessionId);
-    }
-
-    /**
-     * Unchecked create file. Private only
-     *
-     * @throws CatalogException
-     */
-    private QueryResult<File> create(int studyId, File file, boolean parents, QueryOptions options, String sessionId) throws
-            CatalogException {
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        /**
-         * CHECK ALREADY EXISTS
-         */
-        if (fileDBAdaptor.getFileId(studyId, file.getPath()) >= 0) {
-            if (file.getType() == File.Type.FOLDER && parents) {
-                return read(fileDBAdaptor.getFileId(studyId, file.getPath()), options, sessionId);
-            } else {
-                throw new CatalogException("Cannot create file ‘" + file.getPath() + "’: File exists");
-            }
-        }
 
         //Find parent. If parents == true, create folders.
         Path parent = Paths.get(file.getPath()).getParent();
@@ -360,14 +326,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         int parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
+        boolean newParent = false;
         if (parentFileId < 0 && parent != null) {
             if (parents) {
-                create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
+                newParent = true;
+                parentFileId = create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
                         file.getOwnerId(), file.getCreationDate(), "", File.Status.READY, 0, -1,
                         Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
-                        options, sessionId);
-                parentFileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
+                        options, sessionId).first().getId();
             } else {
                 throw new CatalogDBException("Directory not found " + parent.toString());
             }
@@ -377,7 +344,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (parentFileId < 0) {
             throw new CatalogException("Unable to create file without a parent file");
         } else {
-            authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
+            if (!newParent) {
+                //If parent has been created, for sure we have permissions to create the new file.
+                authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
+            }
         }
 
 

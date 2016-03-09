@@ -768,7 +768,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
-                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
+                addQueryFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND, s -> {
+                    VariantType type = VariantType.valueOf(s);
+                    Set<VariantType> subTypes = Variant.subTypes(type);
+                    List<String> types = new ArrayList<>(subTypes.size() + 1);
+                    types.add(s);
+                    subTypes.forEach(subType -> types.add(subType.toString()));
+                    return types;
+                });
+//                addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
 
@@ -1518,32 +1526,57 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (operation == null) {
             if (value.startsWith("!")) {
-                _builder.and(key).notEquals(map.apply(value.substring(1)));
+                T mapped = map.apply(value.substring(1));
+                if (mapped instanceof Collection) {
+                    _builder.and(key).notIn(mapped);
+                } else {
+                    _builder.and(key).notEquals(mapped);
+                }
             } else {
-                _builder.and(key).is(map.apply(value));
+                T mapped = map.apply(value);
+                if (mapped instanceof Collection) {
+                    _builder.and(key).in(mapped);
+                } else {
+                    _builder.and(key).is(mapped);
+                }
             }
         } else if (operation == QueryOperation.OR) {
             String[] array = value.split(OR);
-            List<T> list = new ArrayList<>(array.length);
+            List list = new ArrayList(array.length);
             for (String elem : array) {
                 if (elem.startsWith("!")) {
                     throw new IllegalArgumentException("Unable to use negate (!) operator in OR sequences (<it_1>(,<it_n>)*)");
                 } else {
-                    list.add(map.apply(elem));
+                    T mapped = map.apply(elem);
+                    if (mapped instanceof Collection) {
+                        list.addAll(((Collection) mapped));
+                    } else {
+                        list.add(mapped);
+                    }
                 }
             }
             _builder.and(key).in(list);
         } else {
             //Split in two lists: positive and negative
             String[] array = value.split(AND);
-            List<T> listIs = new ArrayList<>(array.length);
-            List<T> listNotIs = new ArrayList<>(array.length);
+            List listIs = new ArrayList(array.length);
+            List listNotIs = new ArrayList(array.length);
 
             for (String elem : array) {
                 if (elem.startsWith("!")) {
-                    listNotIs.add(map.apply(elem.substring(1)));
+                    T mapped = map.apply(elem.substring(1));
+                    if (mapped instanceof Collection) {
+                        listNotIs.addAll(((Collection) mapped));
+                    } else {
+                        listNotIs.add(mapped);
+                    }
                 } else {
-                    listIs.add(map.apply(elem));
+                    T mapped = map.apply(elem);
+                    if (mapped instanceof Collection) {
+                        listIs.addAll(((Collection) mapped));
+                    } else {
+                        listIs.add(mapped);
+                    }
                 }
             }
 
@@ -1651,14 +1684,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         List<DBObject> dbObjects = new ArrayList<>();
         for (String elem : list) {
-            String[] populationFrequency = splitKeyValue(elem);
-            if (populationFrequency.length != 2) {
+            String[] score = splitKeyValue(elem);
+            if (score.length != 2) {
                 logger.error("Bad score filter: " + elem);
                 throw new IllegalArgumentException("Bad score filter: " + elem);
             }
             QueryBuilder scoreBuilder = new QueryBuilder();
-            scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(populationFrequency[0]);
-            addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, populationFrequency[1], scoreBuilder);
+            scoreBuilder.and(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(score[0]);
+            addCompQueryFilter(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, score[1], scoreBuilder);
             dbObjects.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", scoreBuilder.get())));
         }
         if (!dbObjects.isEmpty()) {
@@ -1717,8 +1750,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder frequencyBuilder = new QueryBuilder();
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD).is(study);
             frequencyBuilder.and(DBObjectToVariantAnnotationConverter.POPULATION_FREQUENCY_POP_FIELD).is(populationFrequency[0]);
+            DBObject studyPopFilter = new BasicDBObject(frequencyBuilder.get().toMap());
             addFilter.accept(populationFrequency[1], frequencyBuilder);
-            dbObjects.add(new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get())));
+            BasicDBObject elemMatch = new BasicDBObject(key, new BasicDBObject("$elemMatch", frequencyBuilder.get()));
+            if (populationFrequency[1].startsWith("<")) {
+                BasicDBObject orNotExistsAnyPopulation = new BasicDBObject(key, new BasicDBObject("$exists", false));
+                BasicDBObject orNotExistsPopulation = new BasicDBObject(key, new BasicDBObject("$not", new BasicDBObject("$elemMatch", studyPopFilter)));
+                dbObjects.add(new BasicDBObject("$or", Arrays.asList(orNotExistsAnyPopulation, orNotExistsPopulation, elemMatch)));
+            } else {
+                dbObjects.add(elemMatch);
+            }
         }
         if (!dbObjects.isEmpty()) {
             if (operation == null || operation == QueryOperation.AND) {

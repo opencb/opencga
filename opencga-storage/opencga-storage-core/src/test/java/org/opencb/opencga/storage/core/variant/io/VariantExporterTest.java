@@ -23,6 +23,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -242,6 +243,9 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             read = variantVcfReader.read(variantsToRead);
             for (Variant variant : read) {
                 lines++;
+                if (variant.getType().equals(VariantType.SYMBOLIC) || variant.getAlternate().startsWith("<")) {
+                    continue;
+                }
                 if (variant.getStart() >= region.getStart() && variant.getEnd() <= region.getEnd()) {
                     start = Math.min(start, variant.getStart());
                     end = Math.max(end, variant.getEnd());
