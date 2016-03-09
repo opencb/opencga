@@ -448,23 +448,24 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
-            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "mytest/file.txt", "My description", true, -1,
+            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                     sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
             assertEquals(0, catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
-                    "mytest/file.txt"), sessionIdUser).getNumResults());
+                    "data/test/folder/file.txt"), sessionIdUser).getNumResults());
         }
     }
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
-        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "mytest/file.txt", "My description", true, -1,
+        catalogManager.shareFile(testFolder.getId(), new AclEntry("user2", false, true, false, false), sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                 sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
-                "mytest/file.txt"), sessionIdUser).getNumResults());
+                "data/test/folder/file.txt"), sessionIdUser).getNumResults());
 
     }
 
