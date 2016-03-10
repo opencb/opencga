@@ -3,62 +3,37 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import com.google.common.collect.BiMap;
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
-import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put> {
+public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] { VariantType.SNV, VariantType.SNP };
-    public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
-
-    private final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
-
-    private VariantTableHelper helper;
-    private StudyConfiguration studyConfiguration = null;
-//    private final Map<Integer, VcfMeta> vcfMetaMap = new ConcurrentHashMap<>();
-    private Connection dbConnection = null;
-    private Map<String, Long> timeSum = new HashMap<>();
-    private ArchiveResultToVariantConverter resultConverter;
-    private VariantMerger variantMerger;
-    private HBaseToVariantConverter hbaseToVariantConverter;
-    private SortedMap<Long, String> times = new TreeMap<>();
-
-    private Logger getLog() {
-        return LOG;
-    }
-
 
     /*
      *
@@ -84,79 +59,12 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         SAME_VARIANTS
     }
 
-
     @Override
-    protected void setup(Context context) throws IOException,
-            InterruptedException {
-        getLog().debug("Setup configuration");
-        // Setup configuration
-        helper = new VariantTableHelper(context.getConfiguration());
-        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
-
-        // Open DB connection
-        dbConnection = ConnectionFactory.createConnection(context.getConfiguration());
-
-        // Load VCF meta data for columns
-        Map<Integer, VcfMeta> vcfMetaMap = loadVcfMetaMap(context.getConfiguration()); // Archive meta
-        resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper);
-        variantMerger = new VariantMerger();
-        super.setup(context);
-    }
-
-    @Override
-    protected void cleanup(Context context) throws IOException,
-            InterruptedException {
-        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
-        }
-        if (null != this.dbConnection) {
-            dbConnection.close();
-        }
-    }
-
-    @Override
-    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        times.clear();
-        if (value.isEmpty()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
-            return; // TODO search backwards?
-        }
+    protected void doMap(VariantMapReduceContect ctx) throws IOException, InterruptedException {
         try {
-            if (Bytes.equals(key.get(), getHelper().getMetaRowKey())) {
-                return; // ignore metadata column
-            }
-
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_BLOCK_READ").increment(1);
-
-            addTime("Unpack slice");
-
-            // Calculate various positions
-            byte[] currRowKey = key.get();
-            String sliceKey = Bytes.toString(currRowKey);
-            VariantTableHelper h = getHelper();
-            String chr = h.extractChromosomeFromBlockId(sliceKey);
-            Long sliceReg = h.extractSliceFromBlockId(sliceKey);
-            long startPos = h.getStartPositionFromSlice(sliceReg);
-            long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
-
-            Set<String> fileIds = extractFileIds(value);
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
-            }
-            Set<Integer> newSampleIds = new HashSet<>();
-            for (String fid : fileIds) {
-                if (!StringUtils.equals(GenomeHelper.VARIANT_COLUMN, fid)) {
-                    LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(Integer.parseInt(fid));
-                    newSampleIds.addAll(sids);
-                }
-            }
-
-            getLog().info("Processing slice {}", sliceKey);
-
             // Archive: unpack Archive data (selection only
-            List<Variant> archiveVar = getResultConverter().convert(value, startPos, nextStartPos, true);
-            context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
+            List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
+            ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
             addTime("Filter slice");
             // Variants of target type
             List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
@@ -166,31 +74,18 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                     getLog().debug("Loaded variant from archive table: " + tmpVar.toJson());
                 }
             }
-            context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
-            addTime("Load Analysis");
-
-            // Analysis: Load variants for region (study specific)
-//            List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
-            List<Variant> analysisVar = parseCurrentVariantsRegion(value, chr);
-            context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
+            ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
 
 //            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
-            Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
-            getLog().info("Loaded {} variants ... ", analysisVar.size());
-            if (!analysisVar.isEmpty()) {
-                Variant tmpVar = analysisVar.get(0);
-                if (getLog().isDebugEnabled()) {
-                    getLog().debug("Loaded variant from analysis table: " + tmpVar.toJson());
-                }
-            }
             addTime("Check consistency");
 
             // Check if Archive covers all bases in Analysis
-            checkArchiveConsistency(context, startPos, nextStartPos, archiveVar, analysisVar);
+            checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, ctx.analysisVar);
 
             /* ******** Update Analysis Variants ************** */
             // (1) NEW variants (only create the position, no filling yet)
             addTime("Merge NEW variants");
+            Set<String> analysisVarSet = ctx.analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
             Set<Variant> analysisNew = new HashSet<>();
             Set<String> archiveTargetSet = new HashSet<>();
             for (Variant tar : archiveTarget) {
@@ -202,40 +97,40 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
                 if (!analysisVarSet.contains(tarString)) {
                     // Empty variant with no Sample information
                     // Filled with Sample information later (see 2)
-                    Variant tarNew = this.variantMerger.createFromTemplate(tar);
+                    Variant tarNew = this.getVariantMerger().createFromTemplate(tar);
                     analysisNew.add(tarNew);
                 }
             }
 
             int sameVariants = archiveTargetSet.size() - analysisNew.size();
-            context.getCounter(OpenCGAVariantTableCounters.NEW_VARIANTS).increment(analysisNew.size());
-            context.getCounter(OpenCGAVariantTableCounters.SAME_VARIANTS).increment(sameVariants);
-            context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(analysisVar.size() - sameVariants);
-            context.getCounter(OpenCGAVariantTableCounters.ARCHIVE_TABLE_VARIANTS).increment(archiveTargetSet.size());
-            context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(analysisVar.size());
+            ctx.context.getCounter(OpenCGAVariantTableCounters.NEW_VARIANTS).increment(analysisNew.size());
+            ctx.context.getCounter(OpenCGAVariantTableCounters.SAME_VARIANTS).increment(sameVariants);
+            ctx.context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(ctx.analysisVar.size() - sameVariants);
+            ctx.context.getCounter(OpenCGAVariantTableCounters.ARCHIVE_TABLE_VARIANTS).increment(archiveTargetSet.size());
+            ctx.context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(ctx.analysisVar.size());
 
             // with current files of same region
             for (Variant var : analysisNew) {
-                this.variantMerger.merge(var, archiveVar);
+                this.getVariantMerger().merge(var, archiveVar);
             }
             // with all other gVCF files of same region
             if (!analysisNew.isEmpty()) {
                 addTime("Load archive slice from hbase");
-                List<Variant> archiveOther = loadFromArchive(context, sliceKey, fileIds);
+                List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.sliceKey, ctx.fileIds);
                 if (!archiveOther.isEmpty()) {
-                    context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
-                    context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
+                    ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
+                    ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                     addTime("Merge NEW with archive slice");
                     for (Variant var : analysisNew) {
-                        this.variantMerger.merge(var, archiveOther);
+                        this.getVariantMerger().merge(var, archiveOther);
                     }
                 }
             }
 
             // (2) and (3): Same / overlapping position
             addTime("Merge same / overlapping");
-            for (Variant var : analysisVar) {
-                this.variantMerger.merge(var, archiveVar);
+            for (Variant var : ctx.analysisVar) {
+                this.getVariantMerger().merge(var, archiveVar);
             }
             // (1) Merge NEW into Analysis table
 //            analysisVar.addAll(analysisNew);
@@ -243,39 +138,16 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             addTime("Store analysis");
 
             // fetchCurrentValues(context, summary.keySet());
-            List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
-            updateOutputTable(context, analysisNew, rows, null);
-            updateOutputTable(context, analysisVar, rows, newSampleIds);
+            List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + ctx.analysisVar.size());
+            updateOutputTable(ctx.context, analysisNew, rows, null);
+            updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
 
-            updateArchiveTable(key, context, rows);
+            updateArchiveTable(ctx.key, ctx.context, rows);
 
             addTime("Done");
             addTimes();
         } catch (InvalidProtocolBufferException e) {
             throw new IOException(e);
-        }
-    }
-
-    private List<Variant> parseCurrentVariantsRegion(Result value, String chr)
-            throws InvalidProtocolBufferException {
-
-        List<VariantTableStudyRow> tableStudyRows;
-        byte[] protoData = value.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (protoData != null && protoData.length > 0) {
-            VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
-            tableStudyRows = new ArrayList<>(variantTableStudyRowsProto.getRowsCount());
-            for (VariantTableStudyRowProto variantTableStudyRowProto : variantTableStudyRowsProto.getRowsList()) {
-                tableStudyRows.add(new VariantTableStudyRow(variantTableStudyRowProto, chr, studyConfiguration.getStudyId()));
-            }
-
-            List<Variant> variants = new ArrayList<>(tableStudyRows.size());
-            for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
-                variants.add(hbaseToVariantConverter.convert(tableStudyRow));
-            }
-            return variants;
-
-        } else {
-            return Collections.emptyList();
         }
     }
 
@@ -336,37 +208,6 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
         }
     }
 
-    private Set<String> extractFileIds(Result value) {
-        Set<String> fieldIds = new HashSet<String>();
-        for (Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> grp : value.getMap().entrySet()) {
-            Set<String> keys = grp.getValue().keySet().stream().map(k -> Bytes.toString(k)).collect(Collectors.toSet());
-            fieldIds.addAll(keys);
-        }
-        return fieldIds;
-    }
-
-    private void addTime(String done) {
-        times.put(System.currentTimeMillis(), done);
-    }
-
-    private void addTimes() {
-        long prev = -1;
-        String id = "";
-        for (Entry<Long, String> e : times.entrySet()) {
-            if (prev > 0) {
-                long curr = timeSum.getOrDefault(id, 0L);
-                long diff = e.getKey() - prev;
-                if (prev < 0) {
-                    diff = 0;
-                }
-                timeSum.put(id, curr + diff);
-            }
-            prev = e.getKey();
-            id = e.getValue();
-        }
-        times.clear();
-    }
-
     protected Set<Integer> generateCoveredPositions(Stream<Variant> variants, long startPos, long nextStartPos) {
         final int sPos = (int) startPos;
         final int ePos = (int) (nextStartPos - 1);
@@ -423,7 +264,7 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
             ResultScanner rs = table.getScanner(scan);
             for (Result r : rs) {
 //                foundScan = true;
-                Variant var = this.hbaseToVariantConverter.convert(r);
+                Variant var = this.getHbaseToVariantConverter().convert(r);
                 if (var.getStudiesMap().isEmpty()) {
                     throw new IllegalStateException("No Studies registered for variant!!! " + var);
                 }
@@ -450,91 +291,6 @@ public class VariantTableMapper extends TableMapper<ImmutableBytesWritable, Put>
 //                    + Strings.join(maplst, ","));
 //        }
         return analysisVariants;
-    }
-
-    /**
-     * Load (if available) current data, merge information and store new object
-     * in DB.
-     *
-     * @param context
-     * @param analysisVar
-     * @param rows
-     * @param newSampleIds
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    private List<VariantTableStudyRow> updateOutputTable(Context context, Collection<Variant> analysisVar, List<VariantTableStudyRow> rows,
-            Set<Integer> newSampleIds) throws IOException, InterruptedException {
-        int studyId = getStudyConfiguration().getStudyId();
-        BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
-        for (Variant variant : analysisVar) {
-            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
-            rows.add(row);
-            Put put = null;
-            if (null != newSampleIds) {
-                put = row.createSpecificPut(getHelper(), newSampleIds);
-            } else {
-                put = row.createPut(getHelper());
-            }
-            if (put != null) {
-                context.write(new ImmutableBytesWritable(helper.getOutputTable()), put);
-                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
-            }
-        }
-        return rows;
-    }
-
-    private void updateArchiveTable(ImmutableBytesWritable key, Context context, List<VariantTableStudyRow> tableStudyRows)
-            throws IOException, InterruptedException {
-        Put put = new Put(key.get());
-        put.addColumn(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B,
-                VariantTableStudyRow.toProto(tableStudyRows).toByteArray());
-        context.write(new ImmutableBytesWritable(helper.getIntputTable()), put);
-        context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
-        context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());
-    }
-
-    public VariantTableHelper getHelper() {
-        return helper;
-    }
-
-    protected void setHelper(VariantTableHelper helper) {
-        this.helper = helper;
-    }
-
-    protected Connection getDbConnection() {
-        return dbConnection;
-    }
-
-    /**
-     * Load VCF Meta data from input table and create table index.
-     *
-     * @param conf
-     *            Hadoop configuration object
-     * @throws IOException
-     *             If any IO problem occurs
-     * @return {@link Map} from file id to {@link VcfMeta}
-     */
-    protected Map<Integer, VcfMeta> loadVcfMetaMap(Configuration conf) throws IOException {
-        Map<Integer, VcfMeta> vcfMetaMap = new HashMap<Integer, VcfMeta>();
-        String tableName = Bytes.toString(getHelper().getIntputTable());
-        getLog().debug("Load VcfMETA from {}", tableName);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf, null)) {
-            QueryResult<VcfMeta> allVcfMetas = metadataManager.getAllVcfMetas(new ObjectMap());
-            for (VcfMeta vcfMeta : allVcfMetas.getResult()) {
-                vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
-            }
-        }
-        getLog().info("Loaded {} VcfMETA data!!!", vcfMetaMap.size());
-        return vcfMetaMap;
-    }
-
-    private ArchiveResultToVariantConverter getResultConverter() {
-        return resultConverter;
-    }
-
-    private StudyConfiguration getStudyConfiguration() {
-        return studyConfiguration;
     }
 
 }
