@@ -23,6 +23,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -541,34 +542,35 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Project> delete(int id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Project> projectQueryResult = get(query, null);
-        if (projectQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Project id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.idNotFound("Project id '{}' does not exist (or there are too many)", id);
-        }
-        return projectQueryResult;
+        long startTime = startQuery();
+        Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
+        delete(query);
+        return endQuery("Delete project", startTime, get(query, new QueryOptions()));
     }
 
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long startTime = startQuery();
 
-        Bson bson = parseQuery(query);
-        Bson pull = Updates.pull("projects", new Document(QueryParams.ID.key(), query.get(QueryParams.ID.key())));
-
-        QueryResult<UpdateResult> update = userCollection.update(bson, pull, null);
-        List<Long> deletes = new LinkedList<>();
-        if (update.getResult().get(0).getModifiedCount() == 0) {
-            throw CatalogDBException.newInstance("Project id '{}' not found", query.get(CatalogUserDBAdaptor.QueryParams.PROJECT_ID.key()));
-        } else {
-            deletes.add(update.getResult().get(0).getModifiedCount());
-            return endQuery("delete project", startTime, deletes);
+        List<Project> projectList = get(query, new QueryOptions()).getResult();
+        List<Integer> studyIds = new ArrayList<>();
+        for (Project project : projectList) {
+            for (Study study : project.getStudies()) {
+                studyIds.add(study.getId());
+            }
         }
+
+        Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
+        dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
+
+        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
+
+        if (deleted.first().getModifiedCount() == 0) {
+            throw CatalogDBException.deleteError("Project");
+        } else {
+            return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+        }
+
     }
 
     @Override

@@ -57,4 +57,8 @@ public class CatalogDBException extends CatalogException {
     public static CatalogDBException alreadyExists(String name, int id) {
         return new CatalogDBException(name + " { id:" + id + "} already exists");
     }
+
+    public static CatalogDBException deleteError(String name) {
+        return new CatalogDBException(name + ": It has been impossible to delete from the database.");
+    }
 }
