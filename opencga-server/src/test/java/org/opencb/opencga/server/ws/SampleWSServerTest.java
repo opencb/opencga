@@ -6,6 +6,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
@@ -15,6 +16,7 @@ import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -114,4 +116,17 @@ public class SampleWSServerTest {
         assertEquals(Cohort.Type.FAMILY, c.getType());
     }
 
+    @Test
+    public void shareMultipleSamplesWithMultipleUsers () throws IOException {
+
+        String shareWith = "user2,user3";
+        String sampleIds = "34,35,36,37";
+
+        String json = webTarget.path("samples").path(sampleIds).path("share")
+                .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
+                .queryParam("write", true).request().get(String.class);
+        List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
+        assertEquals(8, response.size());
+
+    }
 }
