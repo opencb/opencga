@@ -21,6 +21,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -205,7 +206,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         String userId = "anonymous_" + sessionId;
         logout(userId, sessionId);
-        delete(userId);
+        clean(userId);
         return endQuery("Logout anonymous", startTime);
     }
 
@@ -444,8 +445,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
         }
 
-        Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
-        dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
+        if (projectIds.size() > 0) {
+            Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
+        }
 
         QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
 
@@ -455,6 +458,27 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             return endQuery("Delete user", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
         }
 
+    }
+
+
+    /***
+     * Removes completely the user from the database.
+     * @param id User id to be removed from the database.
+     * @return a QueryResult object with the user removed.
+     * @throws CatalogDBException when there is any problem during the removal.
+     */
+    public QueryResult<User> clean(String id) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(QueryParams.ID.key(), id);
+        Bson bson = parseQuery(query);
+
+        QueryResult<User> userQueryResult = get(query, new QueryOptions());
+        QueryResult<DeleteResult> remove = userCollection.remove(bson, new QueryOptions());
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.idNotFound("User", query.getString(QueryParams.ID.key()));
+        } else {
+            return endQuery("Delete user", startTime, userQueryResult);
+        }
     }
 
     @Override

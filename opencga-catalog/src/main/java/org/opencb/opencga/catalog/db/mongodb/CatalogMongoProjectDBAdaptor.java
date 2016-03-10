@@ -343,6 +343,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
     }
 
+    /*
+    @Deprecated
     public AclEntry getFullProjectAcl(int projectId, String userId) throws CatalogDBException {
         QueryResult<Project> project = getProject(projectId, null);
         if (project.getNumResults() != 0) {
@@ -355,6 +357,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
         return null;
     }
+*/
 
     /*
      * db.user.aggregate(
@@ -560,8 +563,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             }
         }
 
-        Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
-        dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
+        if (studyIds.size() > 0) {
+            Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
+        }
 
         QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
 

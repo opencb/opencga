@@ -131,12 +131,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        //Copy generic permissions from the project.
-        QueryResult<AclEntry> aclQueryResult = projectDBAdaptor.getProjectAcl(projectId, AclEntry.USER_OTHERS_ID);
-        if (aclQueryResult.getResult().isEmpty()) {
-            throw new CatalogDBException("Project " + projectId + " must have generic ACL");
-        }
-
         File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0);
         rootFile.setUri(uri);
         files.add(rootFile);

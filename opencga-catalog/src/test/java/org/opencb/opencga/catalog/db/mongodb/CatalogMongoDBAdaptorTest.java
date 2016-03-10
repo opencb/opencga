@@ -118,9 +118,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, "active", "", 1222, 122222,
-                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Collections
-                        .<AclEntry>emptyList(),
-                        Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null,
+                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", "", "", 0, Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", "", "", 0, "", null,
                                         Collections.<Experiment>emptyList(),
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/",
@@ -140,9 +138,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, "active", "", 0, 50000,
-                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", "active", "", 0,
-                        Collections.<AclEntry>emptyList(),
-                        Arrays.asList(
+                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", "active", "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", "", "", "", 0, "", null, null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
