@@ -21,9 +21,6 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
     public void createProjectTest() throws CatalogDBException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
         LinkedList<AclEntry> acl = new LinkedList<>();
-        acl.push(new AclEntry(user1.getId(), true, false, true, true));
-        acl.push(new AclEntry(user2.getId(), false, true, true, true));
-        p.setAcl(acl);
         System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
         System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));

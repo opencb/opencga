@@ -24,6 +24,7 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,7 +33,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
@@ -205,7 +206,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         String userId = "anonymous_" + sessionId;
         logout(userId, sessionId);
-        delete(userId);
+        clean(userId);
         return endQuery("Logout anonymous", startTime);
     }
 
@@ -426,42 +427,57 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     public QueryResult<User> delete(String id) throws CatalogDBException {
-        Query query = new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), id);
-        QueryResult<User> userQueryResult = get(query, null);
-        if (userQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("User id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.idNotFound("User id '{}' does not exist (or there are too many)", id);
-        }
-        return userQueryResult;
+        long startTime = startQuery();
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id);
+        delete(query);
+        return endQuery("Delete user", startTime, get(query, new QueryOptions()));
     }
 
-    /*
-     * TODO: delete user from:
-     * project acl and owner
-     * study acl and owner
-     * file acl and creator
-     * job userid
-     * also, delete his:
-     * projects
-     * studies
-     * analysesS
-     * jobs
-     * files
-     */
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
-        checkParameter(query.getString(QueryParams.ID.key()), QueryParams.ID.key());
         long startTime = startQuery();
+
+        List<User> userList = get(query, new QueryOptions()).getResult();
+        List<Integer> projectIds = new ArrayList<>();
+        for (User user : userList) {
+            for (Project project : user.getProjects()) {
+                projectIds.add(project.getId());
+            }
+        }
+
+        if (projectIds.size() > 0) {
+            Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
+        }
+
+        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
+
+        if (deleted.first().getModifiedCount() == 0) {
+            throw CatalogDBException.deleteError("User");
+        } else {
+            return endQuery("Delete user", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+        }
+
+    }
+
+
+    /***
+     * Removes completely the user from the database.
+     * @param id User id to be removed from the database.
+     * @return a QueryResult object with the user removed.
+     * @throws CatalogDBException when there is any problem during the removal.
+     */
+    public QueryResult<User> clean(String id) throws CatalogDBException {
+        long startTime = startQuery();
+        Query query = new Query(QueryParams.ID.key(), id);
         Bson bson = parseQuery(query);
+
+        QueryResult<User> userQueryResult = get(query, new QueryOptions());
         QueryResult<DeleteResult> remove = userCollection.remove(bson, new QueryOptions());
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.idNotFound("User", query.getString(QueryParams.ID.key()));
         } else {
-            return endQuery("Delete user", startTime, Collections.singletonList(remove.first().getDeletedCount()));
+            return endQuery("Delete user", startTime, userQueryResult);
         }
     }
 

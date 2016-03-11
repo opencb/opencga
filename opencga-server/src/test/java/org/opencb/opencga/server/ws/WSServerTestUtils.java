@@ -85,7 +85,7 @@ public class WSServerTestUtils {
     }
 
     public void shutdownServer() throws Exception {
-        System.err.println("Shout down server");
+        System.err.println("Shutdown server");
         server.stop();
         server.join();
     }

@@ -15,7 +15,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
-import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -75,10 +74,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         organization = organization != null ? organization : "";
 
         Project project = new Project(name, alias, description, "", organization);
-
-        /* Add default ACL */
-        //Add generic permissions to the project.
-        project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
 
         QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
         project = queryResult.getResult().get(0);

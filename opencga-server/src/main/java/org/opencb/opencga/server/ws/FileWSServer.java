@@ -845,24 +845,31 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/share")
+    @Path("/{fileIds}/share")
     @ApiOperation(value = "Share file with other user", position = 16)
-    public Response share(@PathParam(value = "fileId") String fileIdStr,
-                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+    public Response share(@PathParam(value = "fileIds") String fileIds,
+                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userIds") String userIds,
                           @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
                           @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
                           @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
                           @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
                           /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
+
+        String[] fileIdArray = fileIds.split(",");
+        String[] userIdArray = userIds.split(",");
+        List<QueryResult> queryResults = new ArrayList<>();
         try {
-            int fileId = catalogManager.getFileId(fileIdStr);
-            QueryResult queryResult;
-            if (unshare) {
-                queryResult = catalogManager.unshareFile(fileId, userId, sessionId);
-            } else {
-                queryResult = catalogManager.shareFile(fileId, new AclEntry(userId, read, write, false, delete), sessionId);
+            for (String fileIdValue : fileIdArray) {
+                int fileId = Integer.valueOf(fileIdValue);
+                for (String userId : userIdArray) {
+                    if (unshare) {
+                        queryResults.add(catalogManager.unshareFile(fileId, userId, sessionId));
+                    } else {
+                        queryResults.add(catalogManager.shareFile(fileId, new AclEntry(userId, read, write, false, delete), sessionId));
+                    }
+                }
             }
-            return createOkResponse(queryResult);
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

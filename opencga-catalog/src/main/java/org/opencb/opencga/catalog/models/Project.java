@@ -38,7 +38,6 @@ public class Project {
     private String lastActivity;
     private long diskUsage;
 
-    private List<AclEntry> acl;
     private List<Study> studies;
 
     private Map<File.Bioformat, DataStore> dataStores;
@@ -48,19 +47,18 @@ public class Project {
     }
 
     public Project(String name, String alias, String description, String status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<Study>(),
+                new HashMap<String, Object>());
     }
 
     public Project(String name, String alias, String creationDate, String description, String status,
                    String lastActivity, long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
+        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<Study>(),
+                new HashMap<String, Object>());
     }
 
-    public Project(int id, String name, String alias, String creationDate, String description, String organization,
-                   String status, String lastActivity, long diskUsage, List<AclEntry> acl, List<Study> studies,
-                   Map<String, Object> attributes) {
+    public Project(int id, String name, String alias, String creationDate, String description, String organization, String status,
+                   String lastActivity, long diskUsage, List<Study> studies, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -70,7 +68,6 @@ public class Project {
         this.status = status;
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
-        this.acl = acl;
         this.studies = studies;
         this.dataStores = new HashMap<>();
         this.attributes = attributes;
@@ -88,7 +85,6 @@ public class Project {
         sb.append(", status='").append(status).append('\'');
         sb.append(", lastActivity='").append(lastActivity).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", acl=").append(acl);
         sb.append(", studies=").append(studies);
         sb.append(", dataStores=").append(dataStores);
         sb.append(", attributes=").append(attributes);
@@ -158,14 +154,6 @@ public class Project {
 
     public void setDiskUsage(long diskUsage) {
         this.diskUsage = diskUsage;
-    }
-
-    public List<AclEntry> getAcl() {
-        return acl;
-    }
-
-    public void setAcl(List<AclEntry> acl) {
-        this.acl = acl;
     }
 
     public List<Study> getStudies() {

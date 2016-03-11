@@ -15,6 +15,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.IOUtils;
@@ -394,5 +395,19 @@ public class FileWSServerTest {
         System.out.println(json);
 
         return alignments;
+    }
+
+    @Test
+    public void shareMultipleFilesWithMultipleUsers () throws IOException {
+
+        String shareWith = "user2,user3";
+        String fileIds = "18,19,20,21,22";
+
+        String json = webTarget.path("files").path(fileIds).path("share")
+                .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
+                .queryParam("write", true).request().get(String.class);
+        List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
+        assertEquals(10, response.size());
+
     }
 }

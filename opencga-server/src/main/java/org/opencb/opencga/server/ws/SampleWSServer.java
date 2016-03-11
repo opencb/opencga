@@ -33,7 +33,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -232,23 +234,31 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/share")
+    @Path("/{sampleIds}/share")
     @ApiOperation(value = "Update some sample attributes using GET method", position = 7)
-    public Response share(@PathParam(value = "sampleId") int sampleId,
-                          @ApiParam(value = "User you want to share the sample with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+    public Response share(@PathParam(value = "sampleIds") String sampleIds,
+                          @ApiParam(value = "User you want to share the sample with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userIds") String userIds,
                           @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
                           @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
                           @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
                           @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
                           /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
+
+        String[] sampleIdArray = sampleIds.split(",");
+        String[] userIdArray = userIds.split(",");
+        List<QueryResult> queryResults = new ArrayList<>();
         try {
-            QueryResult queryResult;
-            if (unshare) {
-                queryResult = catalogManager.unshareSample(sampleId, userId, sessionId);
-            } else {
-                queryResult = catalogManager.shareSample(sampleId, new AclEntry(userId, read, write, false, delete), sessionId);
+            for (String sampleIdValue : sampleIdArray) {
+                int sampleId = Integer.valueOf(sampleIdValue);
+                for (String userId : userIdArray) {
+                    if (unshare) {
+                        queryResults.add(catalogManager.unshareSample(sampleId, userId, sessionId));
+                    } else {
+                        queryResults.add(catalogManager.shareSample(sampleId, new AclEntry(userId, read, write, false, delete), sessionId));
+                    }
+                }
             }
-            return createOkResponse(queryResult);
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
