@@ -340,6 +340,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            // Current StudyConfiguration may be outdated. Remove it.
+            options.remove(Options.STUDY_CONFIGURATION.key());
+
             HadoopCredentials dbCredentials = getDbCredentials();
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
             int studyId = options.getInt(Options.STUDY_ID.key());

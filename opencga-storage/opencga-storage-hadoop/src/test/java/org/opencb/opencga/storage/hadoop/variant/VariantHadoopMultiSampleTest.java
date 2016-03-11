@@ -12,6 +12,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -187,10 +188,15 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         Set<String> expectedVariants = new HashSet<>();
 
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
 
 
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
+
+            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
+            System.out.println(studyConfiguration);
+
             Set<String> variants = checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source);
             sources.add(source);
             expectedVariants.addAll(variants);
@@ -205,6 +211,11 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);
         }
+
+
+        studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
+
+        System.out.println(studyConfiguration);
 
 
     }
@@ -234,6 +245,12 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         );
         sources.add(source);
         expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
+
+        HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
+        studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
+
+        System.out.println("studyConfiguration = " + studyConfiguration.getAttributes().toJson());
+        System.out.println("HBaseStudyConfiguration = " + scm.toHBaseStudyConfiguration(studyConfiguration));
 
         for (fileId = 12877; fileId <= 12893; fileId++) {
             assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));

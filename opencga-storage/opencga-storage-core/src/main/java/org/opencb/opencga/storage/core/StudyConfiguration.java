@@ -32,7 +32,7 @@ import java.util.function.Function;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class StudyConfiguration implements Cloneable {
+public class StudyConfiguration {
 
     private int studyId;
     private String studyName;
@@ -54,7 +54,7 @@ public class StudyConfiguration implements Cloneable {
 
     private ObjectMap attributes;
 
-    StudyConfiguration() {
+    protected StudyConfiguration() {
     }
 
     public StudyConfiguration(StudyConfiguration other) {
@@ -73,13 +73,7 @@ public class StudyConfiguration implements Cloneable {
         this.attributes = new ObjectMap(other.attributes);
     }
 
-    @Override
-    public StudyConfiguration clone() {
-        try {
-            super.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
+    public StudyConfiguration newInstance() {
         return new StudyConfiguration(this);
     }
 

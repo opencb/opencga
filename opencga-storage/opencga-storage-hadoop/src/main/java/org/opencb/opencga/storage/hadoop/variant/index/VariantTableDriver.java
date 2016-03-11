@@ -24,14 +24,15 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +44,7 @@ public class VariantTableDriver extends Configured implements Tool {
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
     public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
+    private HBaseStudyConfigurationManager scm;
 
     public VariantTableDriver() { /* nothing */}
 
@@ -77,6 +79,12 @@ public class VariantTableDriver extends Configured implements Tool {
             throw new IllegalArgumentException("No files specified");
         }
 
+        List<Integer> fileIds = new ArrayList<>(fileArr.length);
+        for (String fileIdStr : fileArr) {
+            int id = Integer.parseInt(fileIdStr);
+            fileIds.add(id);
+        }
+
         LOG.info(String.format("Use table %s as input", inTable));
 
         GenomeHelper.setStudyId(conf, studyId);
@@ -94,8 +102,47 @@ public class VariantTableDriver extends Configured implements Tool {
 
         /* -------------------------------*/
         // INIT META Data
-        StudyConfiguration sconf = loadStudyConfiguration(conf, gh, studyId); // needed for query (column names)
-        // TODO check if this needs further work
+        scm = new HBaseStudyConfigurationManager(Bytes.toString(gh.getOutputTable()), conf, null);
+        HBaseVariantStudyConfiguration studyConfiguration = loadStudyConfiguration(studyId);
+
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation batchFileOperation;
+        if (!batches.isEmpty()) {
+            batchFileOperation = batches.get(batches.size() - 1);
+            BatchFileOperation.Status currentStatus;
+            try {
+                currentStatus = batchFileOperation.currentStatus();
+            } catch (Exception e) {
+                throw e;
+            }
+            if (currentStatus != null) {
+                switch (currentStatus) {
+                    case RUNNING:
+                        throw new StorageHadoopException("Unable to load a new batch. Already loading batch: "
+                                + batchFileOperation);
+                    case READY:
+                        batchFileOperation = new BatchFileOperation(fileIds, batchFileOperation.getTimestamp() + 1);
+                        break;
+                    case ERROR:
+                        if (batchFileOperation.getFileIds().equals(fileIds)) {
+                            LOG.info("Resuming Last batch loading due to error.");
+                        } else {
+                            throw new StorageHadoopException("Unable to resume last batch loading. Must load the same "
+                                    + "files from the previous batch: " + batchFileOperation);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown Status " + currentStatus);
+                }
+            }
+        } else {
+            batchFileOperation = new BatchFileOperation(fileIds, 1);
+        }
+        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        batches.add(batchFileOperation);
+
+        scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+
 
         /* -------------------------------*/
         // JOB setup
@@ -109,9 +156,8 @@ public class VariantTableDriver extends Configured implements Tool {
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
 
         // specify return columns (file IDs)
-        for (String fileIdStr : fileArr) {
-            int id = Integer.parseInt(fileIdStr);
-            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
+        for (Integer fileId : fileIds) {
+            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
         }
         scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
 
@@ -138,6 +184,8 @@ public class VariantTableDriver extends Configured implements Tool {
                 if (!job.isComplete()) {
                     job.killJob();
                 }
+                batches.get(batches.size() - 1).addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
+                scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -148,7 +196,15 @@ public class VariantTableDriver extends Configured implements Tool {
         if (!succeed) {
             LOG.error("error with job!");
         }
-        return succeed ? 0 : 1;
+        if (succeed) {
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+            return 0;
+        } else {
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+            return 1;
+        }
     }
 
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
@@ -163,13 +219,12 @@ public class VariantTableDriver extends Configured implements Tool {
                         genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
     }
 
-    private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(Bytes.toString(gh.getOutputTable()), conf, null);
+    private HBaseVariantStudyConfiguration loadStudyConfiguration(int studyId) throws IOException {
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
             throw new NotSupportedException();
         }
-        return res.first();
+        return scm.toHBaseStudyConfiguration(res.first());
     }
 
     public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId,

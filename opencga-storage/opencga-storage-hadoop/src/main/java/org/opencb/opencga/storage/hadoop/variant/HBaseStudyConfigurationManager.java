@@ -16,6 +16,8 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
 import java.io.IOException;
 import java.util.*;
@@ -80,7 +82,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             try {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
             } catch (IOException e) {
-                //This should not happen never.
+                //This should not happen ever.
                 throw new IllegalArgumentException(e);
             }
         }
@@ -191,6 +193,25 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             connection = ConnectionFactory.createConnection(configuration);
         }
         return connection;
+    }
+
+    public HBaseVariantStudyConfiguration toHBaseStudyConfiguration(StudyConfiguration studyConfiguration) throws IOException {
+        if (studyConfiguration instanceof HBaseVariantStudyConfiguration) {
+            return ((HBaseVariantStudyConfiguration) studyConfiguration);
+        } else {
+            List<BatchFileOperation> batches = new ArrayList<>();
+
+            if (studyConfiguration.getAttributes() != null) {
+                List<Object> batchesObj = studyConfiguration.getAttributes().getList(HBaseVariantStudyConfiguration.BATCHES_FIELD,
+                        Collections.emptyList());
+                for (Object o : batchesObj) {
+                    batches.add(objectMapper.readValue(objectMapper.writeValueAsString(o), BatchFileOperation.class));
+                }
+                studyConfiguration.getAttributes().remove(HBaseVariantStudyConfiguration.BATCHES_FIELD);
+            }
+
+            return new HBaseVariantStudyConfiguration(studyConfiguration).setBatches(batches);
+        }
     }
 
 }
