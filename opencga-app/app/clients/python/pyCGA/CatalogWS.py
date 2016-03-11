@@ -68,8 +68,8 @@ class Users(WS):
         :param password: user password
         """
 
-        self.general_method("users", "create", email=email, userId=userId, name=name, organization=organization,
-                            password=password, **options)
+        return self.general_method("users", "create", email=email, userId=userId, name=name, organization=organization,
+                                   password=password, **options)
 
     def change_email(self, userId, nemail, **options):
         """
@@ -358,6 +358,16 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, **options)
 
+    def update_post(self, sampleId, data, **options):
+        """
+
+        method to do simple update of sample via get method
+
+        :param sampleId: Sample Id
+        :param options: Options will be updated
+        """
+
+        return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, data=data, **options)
 
     def search(self, studyId, **options):
         """
@@ -519,18 +529,18 @@ class Individuals(WS):
 
         if update:
             for annt_set in self.info(str(individual_id))[0]["annotationSets"]:
-                if annt_set["variableSetId"] == variableSetId:
+                if annt_set["variableSetId"] == int(variableSetId):
                     annotationSetName = annt_set["id"]
 
                     return self.general_method(ws_category="individuals", method_name="annotate",
-                                               item_id=str(individual_id), annotationSetName=annotationSetName,
+                                               item_id=str(individual_id), annotateSetName=annotationSetName,
                                                variableSetId=variableSetId, update="true", data=data
                                                )
 
         annotationSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
         return self.general_method(ws_category="individuals", method_name="annotate",
-                                   item_id=str(individual_id), annotationSetName=annotationSetName,
+                                   item_id=str(individual_id), annotateSetName=annotationSetName,
                                    variableSetId=variableSetId, update="false", data=data
                                    )
 
@@ -728,6 +738,8 @@ class Studies(WS):
         """
 
         return self.general_method(ws_category="studies", method_name="delete", item_id=studyId, **options)
+
+
 
 class Jobs(WS):
     """
