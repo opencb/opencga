@@ -1,1 +1,3 @@
-requests==2.7
+pip>=7.1.2
+requests>=2.7
+avro==1.7.7
