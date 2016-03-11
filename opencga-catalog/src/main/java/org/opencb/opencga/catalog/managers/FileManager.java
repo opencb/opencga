@@ -291,10 +291,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (jobId > 0 && !jobDBAdaptor.jobExists(jobId)) {
             throw new CatalogException("Job { id: " + jobId + "} does not exist.");
         }
+
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
-
-        studyDBAdaptor.checkStudyId(studyId);
 
         if (status != File.Status.STAGE && type == File.Type.FILE) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
@@ -359,8 +358,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
             ioManager.createDirectory(fileUri, parents);
         }
-
-
+        
         QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, file, options);
         auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;

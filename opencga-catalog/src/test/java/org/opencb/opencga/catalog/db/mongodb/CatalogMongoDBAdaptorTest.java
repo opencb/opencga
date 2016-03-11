@@ -58,6 +58,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogFileDBAdaptor catalogFileDBAdaptor;
     CatalogJobDBAdaptor catalogJobDBAdaptor;
     CatalogStudyDBAdaptor catalogStudyDBAdaptor;
+    CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
 
     @AfterClass
     public static void afterClass() {
@@ -95,6 +96,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
         catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
         catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
+        catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
         initDefaultCatalogDB();
     }
 
@@ -150,12 +152,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
                                                         File.Bioformat.NONE, "data/file1.txt", null, null, "Description", File.Status.READY,
                                                         100),
+                                                new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                                        File.Bioformat.NONE, "data/file2.txt", null, null, "Description2", File.Status.READY,
+                                                        100),
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, null, "Tophat alignment file", File.Status.READY, 5000)
-                                                ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                        LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String,
-                                        Object>emptyMap(),
-                                        Collections.<String, Object>emptyMap()),
+                                                ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new
+                                        LinkedList<>(), new LinkedList<>(), null, null, Collections.emptyMap(),
+                                        Collections.emptyMap()),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", "", "", "", 0, "", null, null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
@@ -165,11 +169,9 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                         100),
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, null, "Tophat alignment file", File.Status.READY, 5000)
-                                        ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                        LinkedList<Cohort>(), new LinkedList<VariableSet>(), null, null, Collections.<String,
-                                        Object>emptyMap(),
-                                        Collections.<String, Object>emptyMap())
-                        ), Collections.<String, Object>emptyMap())
+                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap())
+                        ), Collections.emptyMap())
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
@@ -185,7 +187,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         user2 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
         user3 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
         user4 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
-        System.out.println("user3 = " + user3);
 
     }
 

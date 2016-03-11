@@ -636,7 +636,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllSamplesInStudy(studyId, options).getResult());
         }
         if (options.getBoolean("includeIndividuals")) {
-            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getAllIndividualsInStudy(studyId, options).getResult());
+            study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
+                    new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId), options).getResult());
         }
     }
 
