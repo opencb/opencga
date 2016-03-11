@@ -63,7 +63,6 @@ public class VariantTableDeleteTest extends HadoopVariantStorageManagerTestUtils
         if (variants.containsKey("1:10014:A:G")) {
             System.out.println(variants.get("1:10014:A:G").getImpl());
         }
-        assertTrue(variants.containsKey("1:10014:A:G"));
         assertFalse(variants.containsKey("1:10014:A:G"));
 
         assertTrue(variants.containsKey("1:10013:T:C"));
