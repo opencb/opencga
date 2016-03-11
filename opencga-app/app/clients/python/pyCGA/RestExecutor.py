@@ -23,7 +23,10 @@ class WS:
             session = token
         self.session_id = session["sid"]
         self.host = session["host"]
-        self.instance = instance
+        if "instance" in session:
+            self.instance = session["instance"]
+        else:
+            self.instance = instance
         self.pre_url = os.path.join(self.host, self.instance, "webservices", "rest", version)
 
     @staticmethod
@@ -78,10 +81,13 @@ class WS:
         :param options: this argument is a dictionary with parameters to be used in the ws
         :return: list of results
         """
+        # TODO: Add pagination
+        if data is None and "limit" not in options:
+            options["limit"] = -1
 
         options_string = ""
         if options:
-            options_string = "&".join([option_name + "=" + options[option_name] for option_name in options])
+            options_string = "&".join([option_name + "=" + str(options[option_name]) for option_name in options])
 
         if item_id:
             url = os.path.join(self.pre_url, ws_category, item_id, method_name, "?sid=" + self.session_id + "&" + options_string)
