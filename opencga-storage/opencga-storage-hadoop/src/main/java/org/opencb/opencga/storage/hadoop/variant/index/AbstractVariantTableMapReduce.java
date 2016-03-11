@@ -322,7 +322,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     abstract void doMap(VariantMapReduceContect ctx) throws IOException, InterruptedException;
 
     protected class VariantMapReduceContect {
-        public byte[] currRowKey;
+        protected byte[] currRowKey;
         protected Context context;
         protected ImmutableBytesWritable key;
         protected Result value;

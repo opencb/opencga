@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -410,6 +411,17 @@ public class VariantTableStudyRow {
             }
         }
         return put;
+    }
+
+    public Delete createDelete(VariantTableHelper helper) {
+        byte[] generateRowKey = generateRowKey(helper);
+        byte[] cf = helper.getColumnFamily();
+        Integer sid = helper.getStudyId();
+        Delete delete = new Delete(generateRowKey);
+        for (String key : STUDY_COLUMNS) {
+            delete.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, key)));
+        }
+        return delete;
     }
 
     public static VariantTableStudyRowsProto toProto(List<VariantTableStudyRow> rows) {

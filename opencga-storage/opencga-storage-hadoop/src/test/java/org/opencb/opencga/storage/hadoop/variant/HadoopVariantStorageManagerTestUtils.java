@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 
 import java.io.IOException;
@@ -169,6 +170,11 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
                     System.out.println("Executing VariantTableDriver");
                     int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), configuration);
                     System.out.println("Finish execution VariantTableDriver");
+                    return r;
+                } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
+                    System.out.println("Executing VariantTableDeletionDriver");
+                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }
             } catch (Exception e) {
