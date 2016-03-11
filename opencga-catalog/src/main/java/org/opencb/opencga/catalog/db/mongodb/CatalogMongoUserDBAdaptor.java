@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
@@ -183,7 +184,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, "");
+        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new Status());
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");

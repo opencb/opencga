@@ -358,7 +358,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
             ioManager.createDirectory(fileUri, parents);
         }
-        
+
         QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, file, options);
         auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
