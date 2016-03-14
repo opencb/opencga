@@ -556,7 +556,6 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), sessionIdUser).getNumResults());
-
     }
 
     @Test

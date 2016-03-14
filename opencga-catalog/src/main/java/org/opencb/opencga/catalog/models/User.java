@@ -39,7 +39,7 @@ public class User {
      * This specifies the role of this user in OpenCGA, possible values: admin, user, demo, ...
      */
     private Role role;
-    private String status;
+    private Status status;
     private String lastActivity;
     private long diskUsage;
     private long diskQuota;
@@ -59,13 +59,13 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, String status) {
+    public User(String id, String name, String email, String password, String organization, Role role, Status status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
                 new ArrayList<Tool>(0), new ArrayList<Session>(0),
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, String status,
+    public User(String id, String name, String email, String password, String organization, Role role, Status status,
                 String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
                 List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
@@ -155,11 +155,11 @@ public class User {
         this.role = role;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

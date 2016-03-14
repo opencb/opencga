@@ -1,19 +1,18 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
+import org.bson.Document;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Annotation;
+import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,32 +24,6 @@ import static org.junit.Assert.assertFalse;
  * Created by hpccoll1 on 19/06/15.
  */
 public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-    private CatalogMongoDBAdaptorFactory dbAdaptorFactory;
-    private CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
-    private User user1;
-    private User user2;
-    private User user3;
-
-    @AfterClass
-    public static void afterClass() {
-        CatalogMongoDBAdaptorTest.afterClass();
-    }
-
-    @Before
-    public void before() throws IOException, CatalogDBException {
-        CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
-        dbAdaptorTest.before();
-
-        user1 = CatalogMongoDBAdaptorTest.user1;
-        user2 = CatalogMongoDBAdaptorTest.user2;
-        user3 = CatalogMongoDBAdaptorTest.user3;
-        dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
-        catalogIndividualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
-
-    }
 
     @Test
     public void testCreateIndividual() throws Exception {
@@ -299,7 +272,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
         int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, new Sample(0, "Sample", "", individualId, ""), null);
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, new Sample(0, "Sample", "", individualId, ""), null);
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.deleteIndividual(individualId, null);
@@ -314,4 +287,31 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
         assertEquals(studyId, studyIdByIndividualId);
     }
 
+    @Test
+    public void testNativeGet() throws Exception {
+        int studyId = user4.getProjects().get(0).getStudies().get(0).getId();
+        Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Gender.MALE, "", null, new Individual
+                .Population(), Collections.emptyList(), null);
+        individual = catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();
+        Individual individual2 = new Individual(0, "Another Individual", -1, -1, "Family2", Individual.Gender.FEMALE, "", null, new Individual
+                .Population(), Collections.emptyList(), null);
+        individual2 = catalogIndividualDBAdaptor.createIndividual(studyId, individual2, null).first();
+        List<QueryResult> queryResults = catalogIndividualDBAdaptor.nativeGet(Arrays.asList(
+                new Query(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individual.getId()),
+                new Query(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individual2.getId())), new QueryOptions());
+
+        assertEquals(2, queryResults.size());
+
+        // Individual
+        List<Document> results = queryResults.get(0).getResult();
+        assertEquals(1, results.size());
+        assertEquals("MALE", results.get(0).get("gender"));
+        assertEquals("Family", results.get(0).get("family"));
+
+        // Individual2
+        results = queryResults.get(1).getResult();
+        assertEquals(1, results.size());
+        assertEquals("FEMALE", results.get(0).get("gender"));
+        assertEquals("Family2", results.get(0).get("family"));
+    }
 }

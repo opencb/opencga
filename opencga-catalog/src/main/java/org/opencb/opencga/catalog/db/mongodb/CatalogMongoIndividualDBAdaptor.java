@@ -122,6 +122,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return getAllIndividuals(query, options, variableMap);
     }
 
+    @Deprecated
     public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options, Map<String, Variable> variableMap)
             throws CatalogDBException {
         long startTime = startQuery();
@@ -174,6 +175,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("getAllIndividuals", startTime, individuals);
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();

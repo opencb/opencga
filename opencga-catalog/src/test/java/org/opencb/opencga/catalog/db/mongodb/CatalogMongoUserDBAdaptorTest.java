@@ -23,7 +23,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,7 +45,8 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void createUserTest() throws CatalogDBException {
-        User user = new User("NewUser", "", "", "", "", User.Role.USER, "");
+
+        User user = new User("NewUser", "", "", "", "", User.Role.USER, new Status());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
         assertNotSame(0, createUser.getResult().size());
 
@@ -53,7 +56,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteUserTest() throws CatalogDBException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, "");
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new Status());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
