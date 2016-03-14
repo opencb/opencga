@@ -12,7 +12,7 @@ public class Status {
     private String msg;
 
     public Status() {
-        this.status = "ready";
+        this.status = "active";
         this.date = TimeUtils.getTimeMillis();
     }
 

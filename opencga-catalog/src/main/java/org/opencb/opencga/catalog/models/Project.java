@@ -34,7 +34,7 @@ public class Project {
     private String creationDate;
     private String description;
     private String organization;
-    private String status;
+    private Status status;
     private String lastActivity;
     private long diskUsage;
 
@@ -46,18 +46,18 @@ public class Project {
     public Project() {
     }
 
-    public Project(String name, String alias, String description, String status, String organization) {
+    public Project(String name, String alias, String description, Status status, String organization) {
         this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<Study>(),
                 new HashMap<String, Object>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, String status,
+    public Project(String name, String alias, String creationDate, String description, Status status,
                    String lastActivity, long diskUsage, String organization) {
         this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<Study>(),
                 new HashMap<String, Object>());
     }
 
-    public Project(int id, String name, String alias, String creationDate, String description, String organization, String status,
+    public Project(int id, String name, String alias, String creationDate, String description, String organization, Status status,
                    String lastActivity, long diskUsage, List<Study> studies, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -132,11 +132,11 @@ public class Project {
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

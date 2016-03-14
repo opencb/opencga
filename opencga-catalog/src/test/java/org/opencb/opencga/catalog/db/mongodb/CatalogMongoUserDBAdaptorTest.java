@@ -57,16 +57,22 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void deleteUserTest() throws CatalogDBException {
         User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new Status());
-        QueryResult createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
+        QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
-        QueryResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId());
+        assertEquals("active", createUser.first().getStatus().getStatus());
+
+        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
+        assertEquals("deleted", deleteUser.first().getStatus().getStatus());
 
+
+        /*
         thrown.expect(CatalogDBException.class);
         catalogUserDBAdaptor.delete(deletable1.getId());
+        */
     }
 
     @Test

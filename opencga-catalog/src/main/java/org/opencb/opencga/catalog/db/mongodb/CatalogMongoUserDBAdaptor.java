@@ -326,7 +326,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return userCollection.count(bsonDocument);
     }
 
-
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
@@ -422,6 +421,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update user", startTime, get(query, null));
     }
 
+    public QueryResult<User> setStatus(String userId, Status status) throws CatalogDBException {
+        return update(userId, new ObjectMap("status", status));
+    }
+
     @Override
     public QueryResult<User> delete(int id) throws CatalogDBException {
         throw new NotImplementedException("Delete user by int id. The id should be a string.");
@@ -451,7 +454,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
         }
 
-        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
+        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
+                QueryParams.STATUS_STATUS.key(), "deleted"), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+                new QueryOptions());
 
         if (deleted.first().getModifiedCount() == 0) {
             throw CatalogDBException.deleteError("User");
@@ -478,7 +483,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         if (remove.first().getDeletedCount() == 0) {
             throw CatalogDBException.idNotFound("User", query.getString(QueryParams.ID.key()));
         } else {
-            return endQuery("Delete user", startTime, userQueryResult);
+            return endQuery("Clean user", startTime, userQueryResult);
         }
     }
 

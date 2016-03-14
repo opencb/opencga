@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
@@ -73,7 +74,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         description = description != null ? description : "";
         organization = organization != null ? organization : "";
 
-        Project project = new Project(name, alias, description, "", organization);
+        Project project = new Project(name, alias, description, new Status(), organization);
 
         QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
         project = queryResult.getResult().get(0);

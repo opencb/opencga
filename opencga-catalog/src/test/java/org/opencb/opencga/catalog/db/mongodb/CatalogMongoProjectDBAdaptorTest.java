@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Status;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,12 +20,12 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void createProjectTest() throws CatalogDBException, JsonProcessingException {
-        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", "", "", 1000, "");
+        Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "");
         LinkedList<AclEntry> acl = new LinkedList<>();
         System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
-        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
+        p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "");
         System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
-        p = new Project("Project management project", "pmp", "yesterday", "it is a system", "", "", 2000, "");
+        p = new Project("Project management project", "pmp", "yesterday", "it is a system", new Status(), "", 2000, "");
         System.out.println(catalogProjectDBAdaptor.createProject(user2.getId(), p, null));
         System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
 
@@ -57,7 +58,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void deleteProjectTest() throws CatalogDBException {
-        Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", "", "", 3000, "");
+        Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "");
         QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
         System.out.println(result);
         p = result.first();
@@ -87,10 +88,10 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
      */
     @Test
     public void renameProjectTest() throws CatalogDBException {
-        Project p1 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project1", "p1", "Tomorrow", "Cool", "", "", 3000,
-                ""), null).first();
-        Project p2 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project2", "p2", "Tomorrow", "Cool", "", "", 3000,
-                ""), null).first();
+        Project p1 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project1", "p1", "Tomorrow", "Cool", new Status(),
+                "", 3000, ""), null).first();
+        Project p2 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
+                "", 3000, ""), null).first();
         System.out.println(catalogProjectDBAdaptor.renameProjectAlias(p1.getId(), "newpmp"));
 
         try {

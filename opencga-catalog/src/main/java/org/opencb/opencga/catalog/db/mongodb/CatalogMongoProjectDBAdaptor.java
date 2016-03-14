@@ -33,13 +33,17 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -556,8 +560,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         long startTime = startQuery();
 
         List<Project> projectList = get(query, new QueryOptions()).getResult();
+        List<Integer> projectListIds = new ArrayList<>();
         List<Integer> studyIds = new ArrayList<>();
         for (Project project : projectList) {
+            projectListIds.add(project.getId());
             for (Study study : project.getStudies()) {
                 studyIds.add(study.getId());
             }
@@ -568,7 +574,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
         }
 
-        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.set("deleted", true), new QueryOptions());
+        QueryResult<UpdateResult> deleted = userCollection.update(Filters.all("projects.id", projectListIds),
+                new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), "deleted")
+                        .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())
+                ), new QueryOptions());
 
         if (deleted.first().getModifiedCount() == 0) {
             throw CatalogDBException.deleteError("Project");
