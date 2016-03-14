@@ -220,6 +220,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
+    public List<Integer> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds));
+        return fileCollection.distinct(PRIVATE_STUDY_ID, query, Integer.class).getResult();
+    }
+
+    @Override
     public String getFileOwnerId(int fileId) throws CatalogDBException {
         return getFile(fileId, null).getResult().get(0).getOwnerId();
     }

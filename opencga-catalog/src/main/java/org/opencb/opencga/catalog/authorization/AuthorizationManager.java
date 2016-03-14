@@ -63,9 +63,28 @@ public interface AuthorizationManager {
 
     User.Role getUserRole(String userId) throws CatalogException;
 
-    QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException;
+    /***
+     * Set the ACL given for all the users and file ids given.
+     *
+     * @param fileIds File ids separated by commas where the permissions have to be applied.
+     * @param userIds User ids for which the permissions will be set.
+     * @param acl ACL containing the permission that are going to be set. User ACL will be set for each of the userIds.
+     * @param sessionId Session ID of the user ordering the update.
+     * @return A queryResult containing all the ACL entries that have been set.
+     * @throws CatalogException when the user corresponding to the sessionId does not have permission in the files.
+     */
+    QueryResult setFileACL(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException;
 
-    QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException;
+    /***
+     * Unset the ACL given for all the users and sample ids given.
+     *
+     * @param fileIds File ids separated by commas where the ACLs will be taken out.
+     * @param userIds User ids for which the permissions will be unset.
+     * @param sessionId Session ID of the user ordering the update.
+     * @return A queryResult containing all the ACL entries that have been set.
+     * @throws CatalogException when the user corresponding to the sessionId does not have permission in the files.
+     */
+    QueryResult unsetFileACL(String fileIds, String userIds, String sessionId) throws CatalogException;
 
     /***
      * Set the ACL given for all the users and sample ids given.

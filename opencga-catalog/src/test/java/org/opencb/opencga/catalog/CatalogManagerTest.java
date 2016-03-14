@@ -551,7 +551,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
         catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
-        catalogManager.shareFile(testFolder.getId(), new AclEntry("user2", false, true, false, false), sessionIdUser);
+        catalogManager.shareFile(Integer.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
         catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                 sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),

@@ -407,7 +407,7 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
                 .queryParam("write", true).request().get(String.class);
         List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
-        assertEquals(10, response.size());
+        assertEquals(10, response.get(0).getNumResults());
 
     }
 }

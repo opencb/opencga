@@ -374,36 +374,70 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
     }
 
-    @Override
-    public QueryResult setFileACL(int fileId, AclEntry acl, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(acl, "acl");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userId, StudyPermission.MANAGE_STUDY);
-
-        QueryResult queryResult = fileDBAdaptor.setFileAcl(fileId, acl);
-        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("acl", acl), "setAcl", null);
-        return queryResult;
-    }
-
     /*
      * ACL Management methods
      */
 
     @Override
-    public QueryResult unsetFileACL(int fileId, String userId, String sessionId) throws CatalogException {
+    public QueryResult setFileACL(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
+
+        long startTime = System.currentTimeMillis();
+        ParamUtils.checkObj(acl, "acl");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(userId, "userId");
 
-        checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission
-                .MANAGE_STUDY);
+        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        List<Integer> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+        for (Integer studyId : studyIdsBySampleIds) {
+            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+        }
 
-        QueryResult<AclEntry> queryResult = fileDBAdaptor.unsetFileAcl(fileId, userId);
-        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl",
-                queryResult.first()), null, "unsetAcl", null);
+        List<AclEntry> aclEntries = new ArrayList<>();
 
-        return queryResult;
+        String[] fileIdArray = fileIds.split(",");
+        String[] userIdArray = userIds.split(",");
+
+        for (String userId : userIdArray) {
+            acl.setUserId(userId);
+            for (String fileIdValue : fileIdArray) {
+                int fileId = Integer.valueOf(fileIdValue);
+                aclEntries.add(fileDBAdaptor.setFileAcl(fileId, acl).first());
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userSessionId, new ObjectMap("acl", acl), "setAcl", null);
+            }
+        }
+
+        return new QueryResult<>("Set File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+                "", "", aclEntries);
+    }
+
+    @Override
+    public QueryResult unsetFileACL(String fileIds, String userIds, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(userIds, "userId");
+
+        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        List<Integer> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+        for (Integer studyId : studyIdsBySampleIds) {
+            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+        }
+
+        List<AclEntry> aclEntries = new ArrayList<>();
+
+        String[] fileIdArray = fileIds.split(",");
+        String[] userIdArray = userIds.split(",");
+
+        for (String userId : userIdArray) {
+            for (String fileIdValue : fileIdArray) {
+                int fileId = Integer.valueOf(fileIdValue);
+                aclEntries.add(fileDBAdaptor.unsetFileAcl(fileId, userId).first());
+                auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl",
+                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
+
+            }
+        }
+
+        return new QueryResult<>("Unset File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+                "", "", aclEntries);
     }
 
     @Override

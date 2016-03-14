@@ -100,16 +100,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.addMemberToGroup(s1, AuthorizationManager.MEMBERS_GROUP, memberUser, ownerSessionId);
         catalogManager.addMemberToGroup(s1, AuthorizationManager.ADMINS_GROUP, studyAdminUser1, ownerSessionId);
 
-        catalogManager.shareFile(data_d1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false),
-                ownerSessionId);
-        catalogManager.shareFile(data_d1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false),
-                ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3_d4, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true),
-                ownerSessionId);
-        catalogManager.shareFile(data_d1_d2_d3_d4_txt, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1), "@" + AuthorizationManager.ADMINS_GROUP, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1), studyAdminUser1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1_d2), "@" + AuthorizationManager.ADMINS_GROUP, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1_d2_d3), memberUser, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1_d2_d3_d4), "@" + AuthorizationManager.ADMINS_GROUP, new AclEntry("@" + AuthorizationManager.ADMINS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareFile(Integer.toString(data_d1_d2_d3_d4_txt), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
@@ -273,7 +270,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readExplicitlyUnsharedFile() throws CatalogException {
         catalogManager.getFile(data_d1, memberSessionId);
-        catalogManager.unshareFile(data_d1, memberUser, ownerSessionId);
+        catalogManager.unshareFile(Integer.toString(data_d1), memberUser, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1, memberSessionId);
     }

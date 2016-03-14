@@ -638,14 +638,14 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    public QueryResult shareFile(int fileId, AclEntry acl, String sessionId)
+    public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId)
             throws CatalogException {
-        return authorizationManager.setFileACL(fileId, acl, sessionId);
+        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
     }
 
-    public QueryResult unshareFile(int fileId, String userId, String sessionId)
+    public QueryResult unshareFile(String fileIds, String userIds, String sessionId)
             throws CatalogException {
-        return authorizationManager.unsetFileACL(fileId, userId, sessionId);
+        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
     }
 
     /*Require role admin*/

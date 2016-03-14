@@ -55,6 +55,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     int getStudyIdByFileId(int fileId) throws CatalogDBException;
 
+    List<Integer> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
+
     String getFileOwnerId(int fileId) throws CatalogDBException;
 
     /***

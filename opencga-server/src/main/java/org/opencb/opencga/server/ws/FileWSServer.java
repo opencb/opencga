@@ -855,24 +855,19 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
                           /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
 
-        String[] fileIdArray = fileIds.split(",");
-        String[] userIdArray = userIds.split(",");
-        List<QueryResult> queryResults = new ArrayList<>();
+        QueryResult queryResult;
         try {
-            for (String fileIdValue : fileIdArray) {
-                int fileId = Integer.valueOf(fileIdValue);
-                for (String userId : userIdArray) {
-                    if (unshare) {
-                        queryResults.add(catalogManager.unshareFile(fileId, userId, sessionId));
-                    } else {
-                        queryResults.add(catalogManager.shareFile(fileId, new AclEntry(userId, read, write, false, delete), sessionId));
-                    }
-                }
+            if (unshare) {
+                queryResult = catalogManager.unshareFile(fileIds, userIds, sessionId);
+            } else {
+                queryResult = catalogManager.shareFile(fileIds, userIds, new AclEntry("", read, write, false, delete), sessionId);
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+
     }
 
     @GET
