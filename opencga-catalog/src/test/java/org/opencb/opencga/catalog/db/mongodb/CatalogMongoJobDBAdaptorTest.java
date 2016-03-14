@@ -7,8 +7,7 @@ import org.opencb.opencga.catalog.models.Job;
 
 import java.util.Collections;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Created by pfurio on 3/2/16.
@@ -42,11 +41,13 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Integer>emptyList
                 ()), null).first();
         int jobId = job.getId();
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.deleteJob(jobId);
+        assertEquals("active", job.getStatus().getStatus());
+        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId);
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
+        assertEquals("deleted", queryResult.first().getStatus().getStatus());
         try {
-            System.out.println(catalogJobDBAdaptor.deleteJob(-1));
+            System.out.println(catalogJobDBAdaptor.delete(-1));
             fail("error: Expected \"Job not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

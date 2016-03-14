@@ -85,6 +85,7 @@ public class Job {
     private String commandLine;
     private int visits;
     private Status status;
+    private JobStatus jobStatus;
     private long diskUsage;
     private int outDirId;
     private URI tmpOutDirUri;
@@ -101,14 +102,14 @@ public class Job {
 
     public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
                URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, JobStatus
                         .PREPARED, 0,
                 outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
 
     public Job(int id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, int visits, Status status,
+               long startTime, long endTime, String outputError, String commandLine, int visits, JobStatus jobStatus,
                long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
                List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
@@ -122,7 +123,8 @@ public class Job {
         this.outputError = outputError;
         this.commandLine = commandLine;
         this.visits = visits;
-        this.status = status;
+        this.status = new Status();
+        this.jobStatus = jobStatus;
         this.diskUsage = diskUsage;
         this.outDirId = outDirId;
 //        this.tmpOutDirId = tmpOutDirId;
@@ -164,6 +166,7 @@ public class Job {
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visits=").append(visits);
         sb.append(", status=").append(status);
+        sb.append(", jobStatus=").append(jobStatus);
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", outDirId=").append(outDirId);
         sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
@@ -264,6 +267,14 @@ public class Job {
 
     public void setVisits(int visits) {
         this.visits = visits;
+    }
+
+    public JobStatus getJobStatus() {
+        return jobStatus;
+    }
+
+    public void setJobStatus(JobStatus jobStatus) {
+        this.jobStatus = jobStatus;
     }
 
     public Status getStatus() {
@@ -372,7 +383,7 @@ public class Job {
         this.error = error;
     }
 
-    public enum Status {
+    public enum JobStatus {
         PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
         ERROR,                 //Job with errors. See "error"
         QUEUED,

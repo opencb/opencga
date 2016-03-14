@@ -71,7 +71,7 @@ public class JobManager extends AbstractManager implements IJobManager {
                     objectMap.getAsIntegerList("outputFiles"),
                     objectMap.getMap("attributes"),
                     objectMap.getMap("resourceManagerAttributes"),
-                    Job.Status.valueOf(options.getString("status")),
+                    Job.JobStatus.valueOf(options.getString("status")),
                     objectMap.getLong("startTime"),
                     objectMap.getLong("endTime"),
                     options,
@@ -86,7 +86,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor,
                                    Map<String, String> params, String commandLine, URI tmpOutDirUri, int outDirId,
                                    List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
-                                   Map<String, Object> resourceManagerAttributes, Job.Status status, long startTime,
+                                   Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -94,7 +94,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(toolName, "toolName");
         ParamUtils.checkParameter(commandLine, "commandLine");
         description = ParamUtils.defaultString(description, "");
-        status = ParamUtils.defaultObject(status, Job.Status.PREPARED);
+        status = ParamUtils.defaultObject(status, Job.JobStatus.PREPARED);
         inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Integer>emptyList());
         outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Integer>emptyList());
 
@@ -118,7 +118,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
         job.setOutput(outputFiles);
-        job.setStatus(status);
+        job.setJobStatus(status);
         job.setStartTime(startTime);
         job.setEndTime(endTime);
         job.setParams(params);

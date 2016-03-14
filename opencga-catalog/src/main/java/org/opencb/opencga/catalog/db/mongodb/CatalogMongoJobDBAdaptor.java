@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -432,11 +433,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         Map<String, Object> jobParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(), QueryParams.DATE.key()
-                , QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key(), QueryParams.STATUS.key()
-                , QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(), };
+                , QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key()
+                , QueryParams.JOB_STATUS.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.STATUS.key()), Job.Status.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.JOB_STATUS.key()), Job.JobStatus.class);
         filterEnumParams(parameters, jobParameters, acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
@@ -476,12 +478,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         return endQuery("Update user", startTime, get(query, null));
     }
 
-    @Override
-    public QueryResult<Job> delete(int id) throws CatalogDBException {
+
+    public QueryResult<Job> clean(int id) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
+            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query), null);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -492,9 +494,39 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
+    public QueryResult<Job> delete(int id) throws CatalogDBException {
+        long timeStart = startQuery();
+        if (id > 0) {
+            Query query = new Query(QueryParams.ID.key(), id);
+            QueryResult<Long> delete = delete(query);
+            if (delete.getResult().size() == 0) {
+                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
+            }
+            return endQuery("Delete job", timeStart, get(query, null));
+        }
+        throw CatalogDBException.idNotFound("Job ID", id);
+    }
+
+    @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long timeStart = startQuery();
-        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query), null);
+        // 1. Mark the jobs from the query as deleted.
+        QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
+                Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
+                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
+
+        // 2. Check the output files that were created with the deleted jobs.
+        List<Job> jobs = get(query, new QueryOptions("include", QueryParams.OUTPUT.key())).getResult();
+        for (Job job : jobs) {
+            for (Integer fileId : job.getOutput()) {
+                try {
+                    dbAdaptorFactory.getCatalogFileDBAdaptor().delete(fileId);
+                } catch (CatalogDBException e) {
+                    logger.info("Delete job " + job + ": " + e.getMessage());
+                }
+            }
+        }
+
         return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
     }
 

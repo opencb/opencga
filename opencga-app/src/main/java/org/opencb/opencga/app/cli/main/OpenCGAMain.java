@@ -861,11 +861,11 @@ public class OpenCGAMain {
                         QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         Job job = jobQueryResult.first();
                         if (c.force) {
-                            if (job.getStatus().equals(Job.Status.ERROR) || job.getStatus().equals(Job.Status.READY)) {
-                                logger.info("Job status is '{}' . Nothing to do.", job.getStatus());
+                            if (job.getJobStatus().equals(Job.Status.ERROR) || job.getJobStatus().equals(Job.Status.READY)) {
+                                logger.info("Job status is '{}' . Nothing to do.", job.getJobStatus());
                                 System.out.println(createOutput(c.cOpt, jobQueryResult, null));
                             }
-                        } else if (!job.getStatus().equals(Job.Status.DONE)) {
+                        } else if (!job.getJobStatus().equals(Job.Status.DONE)) {
                             throw new Exception("Job status != DONE. Need --force to continue");
                         }
 

@@ -136,7 +136,7 @@ public class OpenCGAWSServerTest {
 
         /* Emulate DAEMON working */
         indexJobVcf = runStorageJob(sessionId, indexJobVcf);
-        assertEquals(Job.Status.READY, indexJobVcf.getStatus());
+        assertEquals(Job.Status.READY, indexJobVcf.getJobStatus());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
@@ -161,7 +161,7 @@ public class OpenCGAWSServerTest {
 
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
-        assertEquals(Job.Status.READY, calculateVariantStatsJob.getStatus());
+        assertEquals(Job.Status.READY, calculateVariantStatsJob.getJobStatus());
         assertEquals(Cohort.Status.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus());
 
 
@@ -173,7 +173,7 @@ public class OpenCGAWSServerTest {
 
         /* Emulate DAEMON working */
         indexJobBam = runStorageJob(sessionId, indexJobBam);
-        assertEquals(Job.Status.READY, indexJobBam.getStatus());
+        assertEquals(Job.Status.READY, indexJobBam.getJobStatus());
 
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");

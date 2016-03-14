@@ -695,7 +695,7 @@ public class CatalogManager implements AutoCloseable {
             params, String commandLine,
                                       URI tmpOutDirUri, int outDirId, List<Integer> inputFiles, List<Integer> outputFiles, Map<String,
             Object> attributes,
-                                      Map<String, Object> resourceManagerAttributes, Job.Status status,
+                                      Map<String, Object> resourceManagerAttributes, Job.JobStatus status,
                                       long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, executor, params, commandLine, tmpOutDirUri, outDirId, inputFiles,
@@ -721,12 +721,12 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.readAll(new Query("status",
+        return jobManager.readAll(new Query("jobStatus",
                 Arrays.asList(
-                        Job.Status.PREPARED.toString(),
-                        Job.Status.QUEUED.toString(),
-                        Job.Status.RUNNING.toString(),
-                        Job.Status.DONE.toString()
+                        Job.JobStatus.PREPARED.toString(),
+                        Job.JobStatus.QUEUED.toString(),
+                        Job.JobStatus.RUNNING.toString(),
+                        Job.JobStatus.DONE.toString()
                 )
         ), null, sessionId);
     }
