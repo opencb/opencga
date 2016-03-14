@@ -93,6 +93,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
+    List<Integer> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException;
+
     QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;

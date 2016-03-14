@@ -407,32 +407,64 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult setSampleACL(int sampleId, AclEntry acl, String sessionId) throws CatalogException {
+    public QueryResult<AclEntry> setSampleACL(String sampleIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
         ParamUtils.checkObj(acl, "acl");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
+        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        List<Integer> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
+        for (Integer studyId : studyIdsBySampleIds) {
+            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+        }
 
-        QueryResult queryResult = sampleDBAdaptor.setSampleAcl(sampleId, acl);
-        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("acl", acl), "setAcl", null);
-        return queryResult;
+        List<AclEntry> aclEntries = new ArrayList<>();
+
+        String[] sampleIdArray = sampleIds.split(",");
+        String[] userIdArray = userIds.split(",");
+
+        for (String userId : userIdArray) {
+            acl.setUserId(userId);
+            for (String sampleIdValue : sampleIdArray) {
+                int sampleId = Integer.valueOf(sampleIdValue);
+                aclEntries.add(sampleDBAdaptor.setSampleAcl(sampleId, acl).first());
+                auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userSessionId, new ObjectMap("acl", acl), "setAcl", null);
+            }
+        }
+
+        return new QueryResult<>("Set Sample ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+                "", "", aclEntries);
     }
 
     @Override
-    public QueryResult unsetSampleACL(int sampleId, String userId, String sessionId) throws CatalogException {
+    public QueryResult unsetSampleACL(String sampleIds, String userIds, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(userIds, "userId");
 
-        checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userDBAdaptor.getUserIdBySessionId(sessionId),
-                StudyPermission.MANAGE_STUDY);
+        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        List<Integer> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
+        for (Integer studyId : studyIdsBySampleIds) {
+            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+        }
 
-        QueryResult<AclEntry> queryResult = sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
+        List<AclEntry> aclEntries = new ArrayList<>();
 
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
-                queryResult.first()), null, "unsetAcl", null);
+        String[] sampleIdArray = sampleIds.split(",");
+        String[] userIdArray = userIds.split(",");
 
-        return queryResult;
+        for (String userId : userIdArray) {
+            for (String sampleIdValue : sampleIdArray) {
+                int sampleId = Integer.valueOf(sampleIdValue);
+                aclEntries.add(sampleDBAdaptor.unsetSampleAcl(sampleId, userId).first());
+                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
+                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
+
+            }
+        }
+
+        return new QueryResult<>("Unset Sample ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+                "", "", aclEntries);
     }
 
     @Override

@@ -126,7 +126,7 @@ public class SampleWSServerTest {
                 .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
                 .queryParam("write", true).request().get(String.class);
         List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
-        assertEquals(8, response.size());
+        assertEquals(8, response.get(0).getNumResults());
 
     }
 }

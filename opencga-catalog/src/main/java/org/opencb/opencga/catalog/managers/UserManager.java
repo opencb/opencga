@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -94,7 +95,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkEmail(email);
         organization = organization != null ? organization : "";
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, "");
+        User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
         String userId;
         switch (creationUserPolicy) {

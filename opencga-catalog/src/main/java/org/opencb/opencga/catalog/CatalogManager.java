@@ -103,7 +103,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB();
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, "active");
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
@@ -798,14 +798,14 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
 
-    public QueryResult shareSample(int sampleId, AclEntry acl, String sessionId)
+    public QueryResult shareSample(String sampleIds, String userIds, AclEntry acl, String sessionId)
             throws CatalogException {
-        return authorizationManager.setSampleACL(sampleId, acl, sessionId);
+        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
     }
 
-    public QueryResult unshareSample(int sampleId, String userId, String sessionId)
+    public QueryResult unshareSample(String sampleIds, String userIds, String sessionId)
             throws CatalogException {
-        return authorizationManager.unsetSampleACL(sampleId, userId, sessionId);
+        return authorizationManager.unsetSampleACL(sampleIds, userIds, sessionId);
     }
 
     public QueryResult<AnnotationSet> annotateSample(int sampleId, String id, int variableSetId,

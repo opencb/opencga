@@ -434,6 +434,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
     }
 
+    @Override
+    public List<Integer> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException {
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), sampleIds));
+        return sampleCollection.distinct(PRIVATE_STUDY_ID, query, Integer.class).getResult();
+    }
+
     /*
      * Cohorts methods
      * ***************************

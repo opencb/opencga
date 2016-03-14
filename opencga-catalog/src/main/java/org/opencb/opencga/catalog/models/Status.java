@@ -18,7 +18,7 @@ public class Status {
 
     public Status(String status, String msg) {
         this.status = status;
-        this.date = TimeUtils.getTimeMillis();;
+        this.date = TimeUtils.getTimeMillis();
         this.msg = msg;
     }
 

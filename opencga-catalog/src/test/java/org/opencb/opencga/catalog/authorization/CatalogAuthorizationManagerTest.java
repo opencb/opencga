@@ -125,13 +125,18 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.modifySample(smp2, new QueryOptions("individualId", ind1), ownerSessionId);
         catalogManager.modifySample(smp2, new QueryOptions("individualId", ind2), ownerSessionId);
 
-        catalogManager.shareSample(smp1, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp3, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp2, new AclEntry(studyAdminUser1, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp4, new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp5, new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
-        catalogManager.shareSample(smp5, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-        catalogManager.shareSample(smp6, new AclEntry(AclEntry.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp1), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp3), memberUser, new AclEntry(memberUser, false, false, false, false),
+                ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp2), studyAdminUser1, new AclEntry(studyAdminUser1, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp4), "@" + AuthorizationManager.MEMBERS_GROUP,
+                new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp5), "@" + AuthorizationManager.MEMBERS_GROUP,
+                new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, true, true, true), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp5), memberUser, new AclEntry(memberUser, false, false, false, false),
+                ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp6), AclEntry.USER_OTHERS_ID,
+                new AclEntry(AclEntry.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
 
     }
 
@@ -380,7 +385,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getSample(smp3, null, ownerSessionId);
 
         //Owner always have access
-        catalogManager.shareSample(smp1, new AclEntry(ownerUser, false, false, false, false), ownerSessionId);
+        catalogManager.shareSample(Integer.toString(smp1), ownerUser, new AclEntry(ownerUser, false, false, false, false), ownerSessionId);
         catalogManager.getSample(smp1, null, ownerSessionId);
     }
 
@@ -392,7 +397,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readSampleExplicitUnshared() throws CatalogException {
         catalogManager.getSample(smp1, null, memberSessionId);
-        catalogManager.unshareSample(smp1, memberUser, ownerSessionId);
+        catalogManager.unshareSample(Integer.toString(smp1), memberUser, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSample(smp1, null, memberSessionId);
     }
@@ -445,7 +450,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void shareSampleBySampleManagerUser() throws CatalogException {
-        catalogManager.shareSample(smp2, new AclEntry(studyAdminUser1, true, true, true, true), studyAdmin1SessionId);
+        catalogManager.shareSample(Integer.toString(smp2), studyAdminUser1, new AclEntry(studyAdminUser1, true, true, true, true),
+                studyAdmin1SessionId);
         catalogManager.getSample(smp2, null, studyAdmin1SessionId);
     }
 

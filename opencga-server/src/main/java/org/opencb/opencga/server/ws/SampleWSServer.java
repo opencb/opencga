@@ -33,9 +33,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -244,24 +242,19 @@ public class SampleWSServer extends OpenCGAWSServer {
                           @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
                           /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
 
-        String[] sampleIdArray = sampleIds.split(",");
-        String[] userIdArray = userIds.split(",");
-        List<QueryResult> queryResults = new ArrayList<>();
+        QueryResult queryResult;
         try {
-            for (String sampleIdValue : sampleIdArray) {
-                int sampleId = Integer.valueOf(sampleIdValue);
-                for (String userId : userIdArray) {
-                    if (unshare) {
-                        queryResults.add(catalogManager.unshareSample(sampleId, userId, sessionId));
-                    } else {
-                        queryResults.add(catalogManager.shareSample(sampleId, new AclEntry(userId, read, write, false, delete), sessionId));
-                    }
-                }
+            if (unshare) {
+                queryResult = catalogManager.unshareSample(sampleIds, userIds, sessionId);
+            } else {
+                queryResult = catalogManager.shareSample(sampleIds, userIds, new AclEntry("", read, write, false, delete), sessionId);
             }
-            return createOkResponse(queryResults);
+
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+
     }
 
     @GET
