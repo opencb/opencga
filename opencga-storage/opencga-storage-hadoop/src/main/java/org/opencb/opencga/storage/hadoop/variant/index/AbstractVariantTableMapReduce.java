@@ -1,6 +1,3 @@
-/**
- *
- */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import java.io.IOException;
@@ -47,7 +44,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
- *
  */
 public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Put> {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
@@ -149,13 +145,15 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         getTimes().clear();
     }
 
-    private Set<String> extractFileIds(Result value) {
+    private Set<Integer> extractFileIds(Result value) {
         Set<String> fieldIds = new HashSet<String>();
         for (Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> grp : value.getMap().entrySet()) {
             Set<String> keys = grp.getValue().keySet().stream().map(k -> Bytes.toString(k)).collect(Collectors.toSet());
             fieldIds.addAll(keys);
         }
-        return fieldIds;
+        Set<Integer> fieldInts = fieldIds.stream().filter(s -> !StringUtils.equals(GenomeHelper.VARIANT_COLUMN, s))
+                .map(s -> Integer.parseInt(s)).collect(Collectors.toSet());
+        return fieldInts;
     }
 
     private List<Variant> parseCurrentVariantsRegion(Result value, String chr)
@@ -273,16 +271,14 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             long startPos = h.getStartPositionFromSlice(sliceReg);
             long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
-            Set<String> fileIds = extractFileIds(value);
+            Set<Integer> fileIds = extractFileIds(value);
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
             }
             Set<Integer> sampleIds = new HashSet<>();
-            for (String fid : fileIds) {
-                if (!StringUtils.equals(GenomeHelper.VARIANT_COLUMN, fid)) {
-                    LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(Integer.parseInt(fid));
-                    sampleIds.addAll(sids);
-                }
+            for (Integer fid : fileIds) {
+                LinkedHashSet<Integer> sids = getStudyConfiguration().getSamplesInFiles().get(fid);
+                sampleIds.addAll(sids);
             }
 
             getLog().info("Processing slice {}", sliceKey);
@@ -302,6 +298,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             }
             VariantMapReduceContect ctx = new VariantMapReduceContect();
             ctx.context = context;
+            ctx.currRowKey = currRowKey;
             ctx.key = key;
             ctx.value = value;
             ctx.sliceKey = sliceKey;
@@ -325,11 +322,12 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     abstract void doMap(VariantMapReduceContect ctx) throws IOException, InterruptedException;
 
     protected class VariantMapReduceContect {
+        protected byte[] currRowKey;
         protected Context context;
         protected ImmutableBytesWritable key;
         protected Result value;
         protected String sliceKey;
-        protected Set<String> fileIds;
+        protected Set<Integer> fileIds;
         protected Set<Integer> sampleIds;
         protected long startPos;
         protected long nextStartPos;

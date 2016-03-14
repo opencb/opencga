@@ -159,10 +159,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
      * @return Variants all variants for the slice
      * @throws IOException
      */
-    private List<Variant> loadFromArchive(Context context, String sliceKey, Set<String> currFileIds) throws IOException {
+    private List<Variant> loadFromArchive(Context context, String sliceKey, Set<Integer> currFileIds) throws IOException {
         // Extract File IDs to search through
         LinkedHashSet<Integer> indexedFiles = getStudyConfiguration().getIndexedFiles();
-        Set<String> archiveFileIds = indexedFiles.stream().map(v -> v.toString()).filter(k -> !currFileIds.contains(k))
+        Set<String> archiveFileIds = indexedFiles.stream().filter(k -> !currFileIds.contains(k)).map(s -> s.toString())
                 .collect(Collectors.toSet());
         if (archiveFileIds.isEmpty()) {
             getLog().info("No files found to search for in archive table");

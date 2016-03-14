@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.exceptions;
 import org.opencb.opencga.storage.core.StorageManagerException;
 
 /**
- * Any exception produced by the StorageHadoop plugin
+ * Any exception produced by the StorageHadoop plugin.
  *
  * Created on 11/03/16
  *

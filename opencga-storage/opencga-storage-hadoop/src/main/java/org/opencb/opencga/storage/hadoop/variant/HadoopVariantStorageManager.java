@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -20,6 +21,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +50,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
+    public static final String HADOOP_DELETE_FILE = "hadoop.delete.file";
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
@@ -210,6 +214,38 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             throw new StorageManagerException("Unable to read VariantSource", e);
         }
         return source;
+    }
+
+    public void remove() throws StorageManagerException {
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        int studyId = options.getInt(Options.STUDY_ID.key());
+        Integer fileId = options.getInt(Options.FILE_ID.key());
+
+        HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
+        HadoopCredentials variantsTable = getDbCredentials();
+        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+
+        Class execClass = VariantTableDeletionDriver.class;
+        String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable.getTable(),
+                variantsTable.getTable(), studyId, Collections.singletonList(fileId), options);
+        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
+
+        long startTime = System.currentTimeMillis();
+        logger.info("------------------------------------------------------");
+        logger.info("Remove file IDs {} in analysis {} and archive table '{}'", fileId, archiveTable.getTable(), variantsTable.getTable());
+        logger.debug(executable + " " + args);
+        logger.info("------------------------------------------------------");
+        int exitValue = getMRExecutor(options).run(executable, args);
+        logger.info("------------------------------------------------------");
+        logger.info("Exit value: {}", exitValue);
+        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+        if (exitValue != 0) {
+            throw new StorageManagerException("Error removing fileId " + fileId + " from tables ");
+        }
     }
 
     @Override
