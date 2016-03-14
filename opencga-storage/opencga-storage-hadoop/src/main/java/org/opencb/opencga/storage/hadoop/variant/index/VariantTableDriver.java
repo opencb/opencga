@@ -23,7 +23,7 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
 
     private HBaseVariantStudyConfiguration studyConfiguration;
 
-    public VariantTableDriver() { /* nothing */}
+    public VariantTableDriver() { /* nothing */ }
 
     public VariantTableDriver(Configuration conf) {
         super(conf);
@@ -73,8 +73,6 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         batches.add(batchFileOperation);
 
         scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-
-//        scm.close();
 
     }
 
