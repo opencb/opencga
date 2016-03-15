@@ -44,7 +44,7 @@ public interface IStudyManager extends ResourceManager<Integer, Study> {
      * @throws CatalogException CatalogException
      */
     QueryResult<Study> create(int projectId, String name, String alias, Study.Type type, String creatorId, String creationDate,
-                              String description, String status, String cipher, String uriScheme, URI uri,
+                              String description, Status status, String cipher, String uriScheme, URI uri,
                               Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                               QueryOptions options, String sessionId) throws CatalogException;
 

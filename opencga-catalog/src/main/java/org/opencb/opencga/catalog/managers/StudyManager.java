@@ -71,7 +71,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
     @Override
     public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type, String creatorId,
-                                     String creationDate, String description, String status, String cipher,
+                                     String creationDate, String description, Status status, String cipher,
                                      String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores,
                                      Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options,
                                      String sessionId)
@@ -87,7 +87,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         description = ParamUtils.defaultString(description, "");
         creatorId = ParamUtils.defaultString(creatorId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
-        status = ParamUtils.defaultString(status, "active");
+        status = ParamUtils.defaultObject(status, new Status());
         cipher = ParamUtils.defaultString(cipher, "none");
         if (uri != null) {
             if (uri.getScheme() == null) {
@@ -182,7 +182,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 objectMap.getString("creatorId"),
                 objectMap.getString("creationDate"),
                 objectMap.getString("description"),
-                objectMap.getString("status"),
+                objectMap.get("status", Status.class, null),
                 objectMap.getString("cipher"),
                 objectMap.getString("uriScheme"),
                 objectMap.get("uri", URI.class, null),

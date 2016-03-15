@@ -406,7 +406,7 @@ public class CatalogManager implements AutoCloseable {
      * @throws CatalogException CatalogException
      */
     public QueryResult<Study> createStudy(int projectId, String name, String alias, Study.Type type,
-                                          String creatorId, String creationDate, String description, String status,
+                                          String creatorId, String creationDate, String description, Status status,
                                           String cipher, String uriScheme, URI uri,
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)

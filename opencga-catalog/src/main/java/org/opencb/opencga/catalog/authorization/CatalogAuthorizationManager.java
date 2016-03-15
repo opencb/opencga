@@ -457,6 +457,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] sampleIdArray = sampleIds.split(",");
         String[] userIdArray = userIds.split(",");
 
+        // FIXME: Check audit.
         for (String userId : userIdArray) {
             acl.setUserId(userId);
             for (String sampleIdValue : sampleIdArray) {
