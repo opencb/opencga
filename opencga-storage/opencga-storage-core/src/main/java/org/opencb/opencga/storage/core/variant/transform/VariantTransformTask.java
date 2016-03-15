@@ -61,7 +61,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
                                 VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
-                                boolean includeSrc) {
+                                boolean includeSrc, boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.source = source;
@@ -72,6 +72,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
         this.normalizer = new VariantNormalizer();
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
     @Override

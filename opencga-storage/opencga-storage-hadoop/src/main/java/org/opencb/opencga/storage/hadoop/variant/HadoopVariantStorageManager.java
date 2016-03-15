@@ -67,6 +67,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         logger.info("PreTransform: " + input);
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         options.put(Options.TRANSFORM_FORMAT.key(), "avro");
+        options.put(Options.GVCF.key(), true);
         return super.preTransform(input);
     }
 

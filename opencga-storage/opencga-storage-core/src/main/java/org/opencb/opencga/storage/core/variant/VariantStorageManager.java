@@ -93,6 +93,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         FILE_ID("fileId", -1),
         OVERRIDE_FILE_ID("overrideFileId", false),
         SAMPLE_IDS("sampleIds", ""),
+        GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
 
         COMPRESS_METHOD("compressMethod", "gzip"),
@@ -229,6 +230,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
 
+        boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
         int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key, Options.TRANSFORM_BATCH_SIZE.defaultValue());
 
@@ -331,7 +333,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
                     VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                     taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile,
-                            statsCalculator, includeSrc);
+                            statsCalculator, includeSrc, generateReferenceBlocks);
                 } catch (IOException e) {
                     throw new StorageManagerException("Unable to read VCFHeader", e);
                 }
@@ -390,8 +392,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
                     VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
                     VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
-                    taskSupplier = () -> new VariantJsonTransformTask(header, headerVersion, finalSource,
-                            finalOutputFileJsonFile, statsCalculator, includeSrc);
+                    taskSupplier = () -> {
+                        return new VariantJsonTransformTask(header, headerVersion, finalSource,
+                                finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
+                    };
                 } catch (IOException e) {
                     throw new StorageManagerException("Unable to read VCFHeader", e);
                 }
