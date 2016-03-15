@@ -49,7 +49,7 @@ public class VariantTableHelper extends GenomeHelper {
 
     public StudyConfiguration loadMeta() throws IOException {
         try (HBaseStudyConfigurationManager scm =
-                new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null) ) {
+                new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null)) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
                 throw new NotSupportedException("Only one study configuration expected for study");

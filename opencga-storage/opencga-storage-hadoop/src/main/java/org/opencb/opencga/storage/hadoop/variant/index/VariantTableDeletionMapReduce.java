@@ -44,7 +44,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         this.archiveTable = getDbConnection().getTable(TableName.valueOf(getHelper().getIntputTable()));
     }
     @Override
-    protected void doMap(VariantMapReduceContect ctx) throws IOException, InterruptedException {
+    protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
         List<Variant> updateLst = new ArrayList<>();
         List<Variant> removeLst = new ArrayList<>();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();

@@ -45,6 +45,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
     public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
 
+    public static final String TIMESTAMP                        = "opencga.variant.table.timestamp";
+
     private VariantTableHelper variantTablehelper;
 
     private HBaseStudyConfigurationManager scm;
@@ -109,7 +111,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         }
 
         /* -------------------------------*/
-        check(fileIds, getConf());
+        check(fileIds);
 
         /* -------------------------------*/
         // JOB setup
@@ -137,7 +139,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return succeed ? 0 : 1;
     }
 
-    protected void check(List<Integer> fileIds, Configuration conf) throws StorageHadoopException, IOException {}
+    protected void check(List<Integer> fileIds) throws StorageHadoopException, IOException {}
 
     protected void onError() {}
 

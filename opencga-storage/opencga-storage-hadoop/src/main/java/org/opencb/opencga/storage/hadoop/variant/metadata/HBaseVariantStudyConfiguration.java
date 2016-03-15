@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,19 +17,12 @@ public class HBaseVariantStudyConfiguration extends StudyConfiguration {
 
     public static final String BATCHES_FIELD = "batches";
 
-    @JsonIgnore
-    private List<BatchFileOperation> batches = new ArrayList<>();
-
     protected HBaseVariantStudyConfiguration() {
         super();
     }
 
     public HBaseVariantStudyConfiguration(StudyConfiguration other) {
         super(other);
-        batches = new ArrayList<>();
-        if (other instanceof HBaseVariantStudyConfiguration) {
-            batches.addAll(((HBaseVariantStudyConfiguration) other).getBatches());
-        }
     }
 
     @Override
@@ -38,27 +30,17 @@ public class HBaseVariantStudyConfiguration extends StudyConfiguration {
         return new HBaseVariantStudyConfiguration(this);
     }
 
+    @JsonIgnore
     public List<BatchFileOperation> getBatches() {
-        return batches;
+        return getAttributes().getAsList(BATCHES_FIELD, BatchFileOperation.class, null);
     }
 
     public HBaseVariantStudyConfiguration setBatches(List<BatchFileOperation> batches) {
-        this.batches = batches;
+        if (getAttributes() == null) {
+            setAttributes(new ObjectMap());
+        }
+        getAttributes().put(BATCHES_FIELD, batches);
         return this;
-    }
-
-    @Override
-    public ObjectMap getAttributes() {
-        return super.getAttributes() == null
-                ? new ObjectMap(BATCHES_FIELD, batches)
-                : super.getAttributes().append(BATCHES_FIELD, batches);
-    }
-
-    @Override
-    public String toString() {
-        return "HBaseVariantStudyConfiguration{"
-                + "super=" + super.toString() + ", "
-                + "batches=" + batches + '}';
     }
 
 }

@@ -3,30 +3,20 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -40,11 +30,11 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
      *             +---------+----------+
      *             | ARCHIVE | ANALYSIS |
      *  +----------+---------+----------+
-     *  | 1:10:A:T |   DATA  |   ----   |   <= New variant
+     *  | 1:10:A:T |   DATA  |   ----   |   <= New variant          (1)
      *  +----------+---------+----------+
-     *  | 1:20:C:G |   ----  |   DATA   |   <= Missing variant
+     *  | 1:20:C:G |   ----  |   DATA   |   <= Missing variant      (2)
      *  +----------+---------+----------+
-     *  | 1:30:G:T |   DATA  |   DATA   |   <= Same variant
+     *  | 1:30:G:T |   DATA  |   DATA   |   <= Same variant         (3)
      *  +----------+---------+----------+
      *  | 1:40:T:C |   DATA  |   ----   |   <= Overlapped variant (new)
      *  | 1:40:T:G |   ----  |   DATA   |   <= Overlapped variant (missing)
@@ -60,95 +50,102 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     }
 
     @Override
-    protected void doMap(VariantMapReduceContect ctx) throws IOException, InterruptedException {
-        try {
-            // Archive: unpack Archive data (selection only
-            List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
-            ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
-            addTime("Filter slice");
-            // Variants of target type
-            List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
-            if (!archiveTarget.isEmpty()) {
-                Variant tmpVar = archiveTarget.get(0);
-                if (getLog().isDebugEnabled()) {
-                    getLog().debug("Loaded variant from archive table: " + tmpVar.toJson());
-                }
+    protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+
+        Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+        if (latestCell != null && latestCell.getTimestamp() == timestamp) {
+            ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
+            ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(ctx.analysisVar.size());
+            List<VariantTableStudyRow> rows = new ArrayList<>(ctx.analysisVar.size());
+            updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
+            return;
+        }
+
+        // Archive: unpack Archive data (selection only
+        List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
+        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
+
+        endTime("3 Unpack and convert input ARCHIVE variants");
+
+        // Variants of target type
+        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
+        if (!archiveTarget.isEmpty()) {
+            Variant tmpVar = archiveTarget.get(0);
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Loaded variant from archive table: " + tmpVar.toJson());
             }
-            ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
+        }
+        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
 
 //            Set<Variant> analysisVarSet = new HashSet<>(analysisVar);
-            addTime("Check consistency");
+        endTime("4 Filter archive variants by target");
 
-            // Check if Archive covers all bases in Analysis
-            checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, ctx.analysisVar);
+        // Check if Archive covers all bases in Analysis
+        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, ctx.analysisVar);
 
-            /* ******** Update Analysis Variants ************** */
-            // (1) NEW variants (only create the position, no filling yet)
-            addTime("Merge NEW variants");
-            Set<String> analysisVarSet = ctx.analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
-            Set<Variant> analysisNew = new HashSet<>();
-            Set<String> archiveTargetSet = new HashSet<>();
-            for (Variant tar : archiveTarget) {
-                // Get all the archive target variants that are not in the analysis variants.
+        endTime("5 Check consistency");
+
+        /* ******** Update Analysis Variants ************** */
+        // (1) NEW variants (only create the position, no filling yet)
+        Set<String> analysisVarSet = ctx.analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
+        Set<Variant> analysisNew = new HashSet<>();
+        Set<String> archiveTargetSet = new HashSet<>();
+        for (Variant tar : archiveTarget) {
+            // Get all the archive target variants that are not in the analysis variants.
 //                Optional<Variant> any = analysisVar.stream().filter(v -> VariantMerger.isSameVariant(v, tar)).findAny();
-                // is new Variant?
-                String tarString = tar.toString();
-                archiveTargetSet.add(tarString);
-                if (!analysisVarSet.contains(tarString)) {
-                    // Empty variant with no Sample information
-                    // Filled with Sample information later (see 2)
-                    Variant tarNew = this.getVariantMerger().createFromTemplate(tar);
-                    analysisNew.add(tarNew);
-                }
+            // is new Variant?
+            String tarString = tar.toString();
+            archiveTargetSet.add(tarString);
+            if (!analysisVarSet.contains(tarString)) {
+                // Empty variant with no Sample information
+                // Filled with Sample information later (see 2)
+                Variant tarNew = this.getVariantMerger().createFromTemplate(tar);
+                analysisNew.add(tarNew);
             }
-
-            int sameVariants = archiveTargetSet.size() - analysisNew.size();
-            ctx.context.getCounter(OpenCGAVariantTableCounters.NEW_VARIANTS).increment(analysisNew.size());
-            ctx.context.getCounter(OpenCGAVariantTableCounters.SAME_VARIANTS).increment(sameVariants);
-            ctx.context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(ctx.analysisVar.size() - sameVariants);
-            ctx.context.getCounter(OpenCGAVariantTableCounters.ARCHIVE_TABLE_VARIANTS).increment(archiveTargetSet.size());
-            ctx.context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(ctx.analysisVar.size());
-
-            // with current files of same region
-            for (Variant var : analysisNew) {
-                this.getVariantMerger().merge(var, archiveVar);
-            }
-            // with all other gVCF files of same region
-            if (!analysisNew.isEmpty()) {
-                addTime("Load archive slice from hbase");
-                List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.sliceKey, ctx.fileIds);
-                if (!archiveOther.isEmpty()) {
-                    ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
-                    ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
-                    addTime("Merge NEW with archive slice");
-                    for (Variant var : analysisNew) {
-                        this.getVariantMerger().merge(var, archiveOther);
-                    }
-                }
-            }
-
-            // (2) and (3): Same / overlapping position
-            addTime("Merge same / overlapping");
-            for (Variant var : ctx.analysisVar) {
-                this.getVariantMerger().merge(var, archiveVar);
-            }
-            // (1) Merge NEW into Analysis table
-//            analysisVar.addAll(analysisNew);
-
-            addTime("Store analysis");
-
-            // fetchCurrentValues(context, summary.keySet());
-            List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + ctx.analysisVar.size());
-            updateOutputTable(ctx.context, analysisNew, rows, null);
-            updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
-
-            updateArchiveTable(ctx.key, ctx.context, rows);
-
-            addTime("Done");
-            addTimes();
-        } catch (InvalidProtocolBufferException e) {
-            throw new IOException(e);
         }
+        endTime("6 Create NEW variants");
+
+        int sameVariants = archiveTargetSet.size() - analysisNew.size();
+        ctx.context.getCounter(OpenCGAVariantTableCounters.NEW_VARIANTS).increment(analysisNew.size());
+        ctx.context.getCounter(OpenCGAVariantTableCounters.SAME_VARIANTS).increment(sameVariants);
+        ctx.context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(ctx.analysisVar.size() - sameVariants);
+        ctx.context.getCounter(OpenCGAVariantTableCounters.ARCHIVE_TABLE_VARIANTS).increment(archiveTargetSet.size());
+        ctx.context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(ctx.analysisVar.size());
+
+        // with current files of same region
+        for (Variant var : analysisNew) {
+            this.getVariantMerger().merge(var, archiveVar);
+        }
+        endTime("7 Merge NEW variants");
+
+        // with all other gVCF files of same region
+        if (!analysisNew.isEmpty()) {
+            List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.sliceKey, ctx.fileIds);
+            endTime("8 Load archive slice from hbase");
+            if (!archiveOther.isEmpty()) {
+                ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
+                ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
+                for (Variant var : analysisNew) {
+                    this.getVariantMerger().merge(var, archiveOther);
+                }
+                endTime("8 Merge NEW with archive slice");
+            }
+        }
+
+        // (2) and (3): Same, missing (and overlapping missing) variants
+        for (Variant var : ctx.analysisVar) {
+            this.getVariantMerger().merge(var, archiveVar);
+        }
+        endTime("9 Merge same and missing");
+
+        // WRITE VALUES
+        List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + ctx.analysisVar.size());
+        updateOutputTable(ctx.context, analysisNew, rows, null);
+        updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
+        endTime("10 Update OUTPUT table");
+
+        updateArchiveTable(ctx.key, ctx.context, rows);
+        endTime("11 Update INPUT table");
     }
 
     /**

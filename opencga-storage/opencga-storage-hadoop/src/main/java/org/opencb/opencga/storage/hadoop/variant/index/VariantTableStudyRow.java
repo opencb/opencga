@@ -3,27 +3,8 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
-
-import java.io.IOException;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import com.google.common.base.Objects;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
@@ -40,15 +21,19 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.*;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter.Builder;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexVariant;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
-import com.google.common.base.Objects;
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
+import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
 
 /**
  *
@@ -302,14 +287,15 @@ public class VariantTableStudyRow {
      * Fills only changed columns of a PUT object. If no column changed, returns NULL
      * @param helper VariantTableHelper
      * @param newSampleIds Sample IDs which are loaded were not in the original variant
+     * @param ts            Timestamp used to create the new PUT objects
      * @return NULL if no changes, else PUT object with changed columns
      */
-    public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {
+    public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds, long ts) {
         boolean doPut = false;
         byte[] generateRowKey = generateRowKey(helper);
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
-        Put put = new Put(generateRowKey);
+        Put put = new Put(generateRowKey, ts);
         Set<Integer> newHomRef = new HashSet<>(newSampleIds);
 
         /***** Complex GT *****/
@@ -381,7 +367,7 @@ public class VariantTableStudyRow {
         return null;
     }
 
-    public Put createPut(VariantTableHelper helper) {
+    public Put createPut(VariantTableHelper helper, long ts) {
         byte[] generateRowKey = generateRowKey(helper);
         if (this.callMap.containsKey(HOM_REF)) {
             throw new IllegalStateException(
@@ -390,7 +376,7 @@ public class VariantTableStudyRow {
         }
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
-        Put put = new Put(generateRowKey);
+        Put put = new Put(generateRowKey, ts);
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));

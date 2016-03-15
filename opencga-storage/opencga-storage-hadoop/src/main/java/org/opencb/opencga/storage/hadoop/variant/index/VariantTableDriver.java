@@ -5,8 +5,8 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
@@ -36,12 +36,13 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
     }
 
     @Override
-    protected void check(List<Integer> fileIds, Configuration conf) throws StorageHadoopException, IOException {
-
+    protected void check(List<Integer> fileIds) throws StorageHadoopException, IOException {
+        Configuration conf = getConf();
         HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-        studyConfiguration = scm.toHBaseStudyConfiguration(loadStudyConfiguration());
+        StudyConfiguration s = loadStudyConfiguration();
+        this.studyConfiguration = scm.toHBaseStudyConfiguration(s);
 
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        List<BatchFileOperation> batches = this.studyConfiguration.getBatches();
         BatchFileOperation batchFileOperation;
         if (!batches.isEmpty()) {
             batchFileOperation = batches.get(batches.size() - 1);
@@ -72,8 +73,8 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
         batches.add(batchFileOperation);
 
-        scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-
+        scm.updateStudyConfiguration(this.studyConfiguration, new QueryOptions());
+        conf.setLong(TIMESTAMP, batchFileOperation.getTimestamp());
     }
 
     @Override

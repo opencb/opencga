@@ -208,9 +208,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             if (fillCnt != row.getPassCount()) {
-                throw new RuntimeException(
-                        String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
-                                row.toString(), row.getPassCount(), fillCnt));
+                String message = String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
+                        row.toString(), row.getPassCount(), fillCnt);
+                if (failOnWrongVariants) {
+                    throw new RuntimeException(message);
+                } else {
+                    logger.warn(message);
+                }
             }
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
@@ -230,7 +234,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
             studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
-            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.VCF_FILTER));
+            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));
             studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
             variant.addStudyEntry(studyEntry);

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -122,8 +123,14 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
         HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
-        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.NONE.getName());
-        options.put(VariantTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.NONE.getName());
+        EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
+
+        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.GZ)
+                ? Compression.Algorithm.GZ.getName()
+                : Compression.Algorithm.NONE.getName());
+        options.put(VariantTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+                ? Compression.Algorithm.SNAPPY.getName()
+                : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageManagerTestUtils.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();

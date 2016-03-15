@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -18,6 +19,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -55,7 +57,7 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
             studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
             etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                     new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                            .append(Options.ANNOTATE.key(), true)
+                            .append(Options.ANNOTATE.key(), false)
                             .append(Options.CALCULATE_STATS.key(), false)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
@@ -200,10 +202,12 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
                     System.out.println(variant.toJson());
                 }
 
-                value = result.getValue(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-                System.out.println(GenomeHelper.VARIANT_COLUMN + " == " + VariantTableStudyRowsProto.parseFrom(value));
-
-
+                Cell cell = result.getColumnLatestCell(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+                if (cell != null) {
+                    value = result.getValue(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+                    VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(value);
+                    System.out.println(GenomeHelper.VARIANT_COLUMN + " ts:" + cell.getTimestamp() + " value: " + proto);
+                }
             }
             resultScanner.close();
             return null;
@@ -212,7 +216,7 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
     }
 
     @Test
-    public void checkMeta() {
+    public void checkMeta() throws Exception {
         System.out.println("Get studies");
         for (String studyName : dbAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions())) {
             System.out.println("studyName = " + studyName);
