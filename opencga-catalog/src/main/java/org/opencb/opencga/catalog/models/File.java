@@ -58,6 +58,7 @@ public class File {
     private String modificationDate;
     private String description;
     private Status status;
+    private FileStatus fileStatus;
     private long diskUsage;
     //private int studyId;
     private int experimentId;
@@ -81,21 +82,21 @@ public class File {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, Status status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
+                String description, FileStatus fileStatus, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, fileStatus, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
+                String creationDate, String description, FileStatus fileStatus, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, fileStatus, diskUsage,
                 -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage, int experimentId,
+                String creationDate, String description, FileStatus fileStatus, long diskUsage, int experimentId,
                 List<Integer> sampleIds, int jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
@@ -109,7 +110,8 @@ public class File {
         this.creationDate = creationDate;
         this.modificationDate = creationDate;
         this.description = description;
-        this.status = status;
+        this.fileStatus = fileStatus;
+        this.status = new Status();
         this.diskUsage = diskUsage;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
@@ -136,6 +138,7 @@ public class File {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", fileStatus=").append(fileStatus);
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
@@ -237,6 +240,14 @@ public class File {
         this.description = description;
     }
 
+    public FileStatus getFileStatus() {
+        return fileStatus;
+    }
+
+    public void setFileStatus(FileStatus fileStatus) {
+        this.fileStatus = fileStatus;
+    }
+
     public Status getStatus() {
         return status;
     }
@@ -310,7 +321,7 @@ public class File {
     }
 
     /* Status */
-    public enum Status {
+    public enum FileStatus {
         STAGE,
         READY,
         MISSING,

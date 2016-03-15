@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -130,7 +129,7 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileVcf.getStatus());
+        assertEquals(File.Status.READY, fileVcf.getFileStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
@@ -167,7 +166,7 @@ public class OpenCGAWSServerTest {
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileBam.getStatus());
+        assertEquals(File.Status.READY, fileBam.getFileStatus());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 
@@ -178,7 +177,7 @@ public class OpenCGAWSServerTest {
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");
         queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
-        List<ObjectMap> alignments = fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
+        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
 
     }

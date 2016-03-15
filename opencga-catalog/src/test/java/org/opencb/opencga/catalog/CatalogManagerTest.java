@@ -611,7 +611,7 @@ public class CatalogManagerTest extends GenericTest {
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
-        assertTrue("", fileResult.first().getStatus() == File.Status.READY);
+        assertTrue("", fileResult.first().getFileStatus() == File.FileStatus.READY);
         assertTrue("", fileResult.first().getDiskUsage() == 200);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
@@ -1103,7 +1103,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus(), File.Status.TRASHED);
+            assertEquals(f.getFileStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1115,7 +1115,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus(), File.Status.TRASHED);
+            assertEquals(f.getFileStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1165,7 +1165,7 @@ public class CatalogManagerTest extends GenericTest {
 
         File stagedFile = catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
                 "folder/subfolder/subsubfolder/my_staged.txt",
-                null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, sessionIdUser).first();
+                null, null, null, File.FileStatus.STAGE, 0, -1, null, -1, null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
         try {
@@ -1194,9 +1194,9 @@ public class CatalogManagerTest extends GenericTest {
                 new Query("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getStatus() == File.Status.TRASHED);
+        assertTrue(file.getFileStatus() == File.FileStatus.TRASHED);
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus() == File.Status.TRASHED);
+            assertTrue(subFile.getFileStatus() == File.FileStatus.TRASHED);
         }
     }
 

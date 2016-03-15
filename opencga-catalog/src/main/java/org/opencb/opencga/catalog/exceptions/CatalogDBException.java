@@ -61,4 +61,8 @@ public class CatalogDBException extends CatalogException {
     public static CatalogDBException deleteError(String name) {
         return new CatalogDBException(name + ": It has been impossible to delete from the database.");
     }
+
+    public static CatalogDBException fileInUse(int id, int count) {
+        return new CatalogDBException("The file { id: " + id + "} cannot be removed as it is being used as input in " + count + " job(s).");
+    }
 }

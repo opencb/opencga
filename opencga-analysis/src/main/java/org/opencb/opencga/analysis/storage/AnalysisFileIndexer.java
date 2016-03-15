@@ -148,8 +148,8 @@ public class AnalysisFileIndexer {
                 indexedFileId = jobInputFiles.get(0);
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
-            if (originalFile.getStatus() != File.Status.READY) {
-                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getStatus() + "\"");
+            if (originalFile.getFileStatus() != File.Status.READY) {
+                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getFileStatus() + "\"");
             }
         } else {
             originalFile = inputFile;

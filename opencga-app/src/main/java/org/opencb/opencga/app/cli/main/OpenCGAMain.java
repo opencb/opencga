@@ -390,7 +390,7 @@ public class OpenCGAMain {
 
                         /** First, run CheckStudyFiles to find new missing files **/
                         List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-                        List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().equals(File.Status.READY)).collect(Collectors.toList());
+                        List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatus().equals(File.Status.READY)).collect(Collectors.toList());
                         int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
                         /** Get untracked files **/
@@ -1208,7 +1208,7 @@ public class OpenCGAMain {
                         indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                         file.getId(),
                         file.getName(),
-                        file.getStatus(),
+                        file.getFileStatus(),
                         humanReadableByteCount(file.getDiskUsage(), false),
                         showUries && file.getUri() != null ? " --> " + file.getUri() : ""
                 ));

@@ -131,7 +131,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.Status.READY, 0);
+        File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder", File.FileStatus.READY, 0);
         rootFile.setUri(uri);
         files.add(rootFile);
 

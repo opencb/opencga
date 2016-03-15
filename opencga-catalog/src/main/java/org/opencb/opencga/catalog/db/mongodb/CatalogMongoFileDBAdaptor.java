@@ -17,12 +17,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.AclEntry;
-import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
@@ -279,7 +278,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         acceptedEnums.put("type", File.Type.class);
         acceptedEnums.put("format", File.Format.class);
         acceptedEnums.put("bioformat", File.Bioformat.class);
-        acceptedEnums.put("status", File.Status.class);
+        acceptedEnums.put("fileStatus", File.FileStatus.class);
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
         } catch (CatalogDBException e) {
@@ -376,20 +375,56 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> delete(int id) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<File> file = getFile(id, null);
-        Bson query = new Document(PRIVATE_ID, id);
-        DeleteResult removedFile = fileCollection.remove(query, null).first();
-        if (removedFile.getDeletedCount() != 1) {
-            throw new CatalogDBException("Could not remove file " + id);
-        }
-        return endQuery("Delete file", startTime, file.getResult());
+        delete(new Query(QueryParams.ID.key(), id));
+        return endQuery("Delete file", startTime, getFile(id, null));
     }
 
     @Override
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<DeleteResult> deleteResult = fileCollection.remove(parseQuery(query), null);
-        return endQuery("Delete file", startTime, Collections.singletonList(deleteResult.first().getDeletedCount()));
+        List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
+        List<Integer> fileIdsToRemove = new ArrayList<>();
+        for (File file : files) {
+            try {
+                checkFileNotInUse(file.getId());
+                fileIdsToRemove.add(file.getId());
+            } catch (CatalogDBException e) {
+                logger.info(e.getMessage());
+            }
+        }
+        QueryResult<UpdateResult> deleted = null;
+        if (fileIdsToRemove.size() > 0) {
+            deleted = fileCollection.update(parseQuery(new Query(QueryParams.ID.key(), fileIdsToRemove)),
+                    Updates.combine(
+                            Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
+                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+                    new QueryOptions());
+        } else {
+            throw CatalogDBException.deleteError("File");
+        }
+
+        return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    }
+
+    public QueryResult<File> clean(int id) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryResult<File> file = getFile(id, new QueryOptions());
+        QueryResult<DeleteResult> deleteResult = fileCollection.remove(new Document(QueryParams.ID.key(), id), null);
+        if (deleteResult.getNumResults() == 1) {
+            return endQuery("Delete file", startTime, file);
+        } else {
+            throw CatalogDBException.deleteError("File");
+        }
+    }
+
+    public void checkFileNotInUse(int fileId) throws CatalogDBException {
+        Query query = new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), fileId);
+        QueryResult<Long> count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query);
+
+        if (count.first() > 0) {
+            throw CatalogDBException.fileInUse(fileId, count.getNumResults());
+        }
+
     }
 
     @Override

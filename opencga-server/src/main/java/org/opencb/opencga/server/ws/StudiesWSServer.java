@@ -21,7 +21,6 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
@@ -403,7 +402,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
             /** First, run CheckStudyFiles to find new missing files **/
             List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().equals(File.Status.READY)).collect(Collectors.toList());
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatus().equals(File.Status.READY)).collect(Collectors.toList());
 
             /** Get untracked files **/
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);

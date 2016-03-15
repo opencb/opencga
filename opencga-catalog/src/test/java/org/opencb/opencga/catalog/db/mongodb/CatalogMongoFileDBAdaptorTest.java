@@ -13,7 +13,6 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import javax.print.Doc;
 import java.io.IOException;
 import java.util.*;
 
@@ -30,20 +29,20 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File
-                .Status.STAGE, 1000);
+                .FileStatus.STAGE, 1000);
         LinkedList<AclEntry> acl = new LinkedList<>();
         acl.push(new AclEntry("jcoll", true, true, true, true));
         acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcl(acl);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime
-                (), "", File.Status.STAGE, 1000);
+                (), "", File.FileStatus.STAGE, 1000);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, TimeUtils
-                .getTime(), "", File.Status.STAGE, 1000);
+                .getTime(), "", File.FileStatus.STAGE, 1000);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, TimeUtils.getTime
-                (), "", File.Status.STAGE, 1000);
+                (), "", File.FileStatus.STAGE, 1000);
 
         try {
             System.out.println(catalogFileDBAdaptor.createFile(-20, file, null));
@@ -117,12 +116,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 .randomString(20));
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("status", File.Status.READY);
+        parameters.put("fileStatus", File.FileStatus.READY);
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
 
         file = catalogFileDBAdaptor.getFile(fileId, null).first();
-        assertEquals(file.getStatus(), File.Status.READY);
+        assertEquals(file.getFileStatus(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
     }
