@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +116,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         /* -------------------------------*/
         // JOB setup
-        Job job = createJob(conf, outTable, fileArr);
+        Job job = createJob(outTable, fileArr);
 
         // QUERY design
         Scan scan = createScan(gh, fileArr);
@@ -144,6 +145,17 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     protected void onError() {}
 
     protected void onSuccess() {}
+
+    /**
+     * Give the name of the action that the job is doing.
+     *
+     * Used to create the jobName and as {@link BatchFileOperation#operationName}
+     *
+     * e.g. : "Delete", "Load", "Annotate", ...
+     *
+     * @return Job action
+     */
+    protected abstract String getJobOperationName();
 
     protected String[] argFileArray() {
         return getConf().getStrings(CONFIG_VARIANT_FILE_IDS, new String[0]);
@@ -196,8 +208,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return LOG;
     }
 
-    protected Job createJob(Configuration conf, String outTable, String[] fileArr) throws IOException {
-        Job job = Job.getInstance(conf, "opencga: Act on file " + Arrays.toString(fileArr) + " on VariantTable '" + outTable + "'");
+    protected Job createJob(String outTable, String[] fileArr) throws IOException {
+        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + " file " + Arrays.toString(fileArr) + " on VariantTable '" + outTable + "'");
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
         return job;

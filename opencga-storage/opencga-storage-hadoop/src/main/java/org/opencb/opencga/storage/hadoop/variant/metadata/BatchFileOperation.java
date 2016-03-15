@@ -22,6 +22,7 @@ public class BatchFileOperation {
         ERROR
     }
 
+    private String operationName;
     private List<Integer> fileIds;
     private long timestamp;
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
@@ -29,18 +30,29 @@ public class BatchFileOperation {
     public BatchFileOperation() {
     }
 
-    public BatchFileOperation(List<Integer> fileIds, long timestamp, TreeMap<Date, Status> status) {
+    public BatchFileOperation(List<Integer> fileIds, long timestamp, TreeMap<Date, Status> status, String operationName) {
         this.fileIds = fileIds;
         this.timestamp = timestamp;
+        this.operationName = operationName;
     }
 
-    public BatchFileOperation(List<Integer> fileIds, long timestamp) {
+    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp) {
+        this.operationName = operationName;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
     }
 
     public Status currentStatus() {
         return status.isEmpty() ? null : status.lastEntry().getValue();
+    }
+
+    public String getOperationName() {
+        return operationName;
+    }
+
+    public BatchFileOperation setOperationName(String operationName) {
+        this.operationName = operationName;
+        return this;
     }
 
     public List<Integer> getFileIds() {
@@ -72,9 +84,11 @@ public class BatchFileOperation {
 
     @Override
     public String toString() {
-        return "BatchLoad{"
-                + "fileIds=" + fileIds
+        return "BatchFileOperation{" +
+                "operationName='" + operationName + '\''
+                + ", fileIds=" + fileIds
                 + ", timestamp=" + timestamp
-                + ", status=" + status + '}';
+                + ", status=" + status
+                + '}';
     }
 }

@@ -53,7 +53,7 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
                         throw new StorageHadoopException("Unable to load a new batch. Already loading batch: "
                                 + batchFileOperation);
                     case READY:
-                        batchFileOperation = new BatchFileOperation(fileIds, batchFileOperation.getTimestamp() + 1);
+                        batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, batchFileOperation.getTimestamp() + 1);
                         break;
                     case ERROR:
                         if (batchFileOperation.getFileIds().equals(fileIds)) {
@@ -68,7 +68,7 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
                 }
             }
         } else {
-            batchFileOperation = new BatchFileOperation(fileIds, 1);
+            batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, 1);
         }
         batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
         batches.add(batchFileOperation);
@@ -104,16 +104,20 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        System.exit(privateMain(args, null));
+    @Override
+    protected String getJobOperationName() {
+        return "Load";
     }
 
-    public static int privateMain(String[] args, Configuration conf) throws Exception {
+    public static void main(String[] args) throws Exception {
+        System.exit(privateMain(args, null, new VariantTableDriver()));
+    }
+
+    public static int privateMain(String[] args, Configuration conf, VariantTableDriver driver) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
         if (conf == null) {
             conf = new Configuration();
         }
-        VariantTableDriver driver = new VariantTableDriver();
         String[] toolArgs = configure(args, conf);
         if (null == toolArgs) {
             return -1;
