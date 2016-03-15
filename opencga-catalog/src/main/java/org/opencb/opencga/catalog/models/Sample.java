@@ -32,6 +32,8 @@ public class Sample {
     private List<AclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
+    private Status status;
+
     private Map<String, Object> attributes;
 
     public Sample() {
@@ -47,6 +49,7 @@ public class Sample {
         this.id = id;
         this.name = name;
         this.source = source;
+        this.status = new Status();
         this.individualId = individualId;
         this.description = description;
         this.acl = acl;
@@ -60,6 +63,7 @@ public class Sample {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
+        sb.append(", status='").append(status).append('\'');
         sb.append(", individualId=").append(individualId);
         sb.append(", description='").append(description).append('\'');
         sb.append(", acl=").append(acl);
@@ -94,6 +98,14 @@ public class Sample {
     public Sample setSource(String source) {
         this.source = source;
         return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public int getIndividualId() {

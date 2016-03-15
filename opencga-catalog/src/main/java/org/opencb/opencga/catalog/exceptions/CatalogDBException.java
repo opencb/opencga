@@ -65,4 +65,8 @@ public class CatalogDBException extends CatalogException {
     public static CatalogDBException fileInUse(int id, int count) {
         return new CatalogDBException("The file { id: " + id + "} cannot be removed as it is being used as input in " + count + " job(s).");
     }
+
+    public static CatalogDBException sampleIdIsParentOfOtherIndividual(int id) {
+        return new CatalogDBException("The sample { id: " + id + "} cannot be removed as it is already the parent of other individual(s).");
+    }
 }
