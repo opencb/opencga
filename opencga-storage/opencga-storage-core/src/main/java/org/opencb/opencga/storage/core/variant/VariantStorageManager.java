@@ -38,7 +38,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
