@@ -877,6 +877,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         List<Integer> sampleIdsToRemove = new ArrayList<>();
         for (Sample sample : samples) {
             try {
+                checkInUse(sample.getId());
                 checkSampleIsParentOfFamily(sample.getId());
                 sampleIdsToRemove.add(sample.getId());
             } catch (CatalogDBException e) {
@@ -917,6 +918,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      * @param id Sample id that will be checked.
      * @throws CatalogDBException when the sample is parent of other individual.
      */
+    @Deprecated
     public void checkSampleIsParentOfFamily(int id) throws CatalogDBException {
         Sample sample = getSample(id, new QueryOptions()).first();
         if (sample.getIndividualId() > 0) {

@@ -392,7 +392,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 logger.info(e.getMessage());
             }
         }
-        QueryResult<UpdateResult> deleted = null;
+        QueryResult<UpdateResult> deleted;
         if (fileIdsToRemove.size() > 0) {
             deleted = fileCollection.update(parseQuery(new Query(QueryParams.ID.key(), fileIdsToRemove)),
                     Updates.combine(

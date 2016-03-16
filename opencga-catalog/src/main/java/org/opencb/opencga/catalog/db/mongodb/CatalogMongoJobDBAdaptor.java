@@ -514,19 +514,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
                 Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
                 Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-
-        // 2. Check the output files that were created with the deleted jobs.
-        List<Job> jobs = get(query, new QueryOptions("include", QueryParams.OUTPUT.key())).getResult();
-        for (Job job : jobs) {
-            for (Integer fileId : job.getOutput()) {
-                try {
-                    dbAdaptorFactory.getCatalogFileDBAdaptor().delete(fileId);
-                } catch (CatalogDBException e) {
-                    logger.info("Delete job " + job + ": " + e.getMessage());
-                }
-            }
-        }
-
         return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
     }
 
