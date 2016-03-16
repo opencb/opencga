@@ -454,8 +454,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
         }
 
+        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
         QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
-                QueryParams.STATUS_STATUS.key(), "deleted"), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+                QueryParams.STATUS_STATUS.key(), Status.DELETED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
                 new QueryOptions());
 
         if (deleted.first().getModifiedCount() == 0) {

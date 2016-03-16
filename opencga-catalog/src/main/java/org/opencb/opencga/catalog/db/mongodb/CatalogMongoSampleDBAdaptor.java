@@ -871,6 +871,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long startTime = startQuery();
 
+        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
         List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogFileDBAdaptor.QueryParams.ID.key())
                 .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
 
@@ -878,7 +879,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         for (Sample sample : samples) {
             try {
                 checkInUse(sample.getId());
-                checkSampleIsParentOfFamily(sample.getId());
                 sampleIdsToRemove.add(sample.getId());
             } catch (CatalogDBException e) {
                 logger.info(e.getMessage());
@@ -889,7 +889,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         if (sampleIdsToRemove.size() > 0) {
             deleted = sampleCollection.update(parseQuery(new Query(QueryParams.ID.key(), sampleIdsToRemove)),
                     Updates.combine(
-                            Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
+                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
                             Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
                     new QueryOptions());
         } else {

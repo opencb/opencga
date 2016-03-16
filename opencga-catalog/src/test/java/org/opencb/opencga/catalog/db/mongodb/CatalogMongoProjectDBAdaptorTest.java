@@ -60,12 +60,15 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
     public void deleteProjectTest() throws CatalogDBException {
         Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "");
         QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
-        System.out.println(result);
+        System.out.println(result.first().getStatus());
         p = result.first();
         QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId());
-
-        System.out.println(queryResult);
+        System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
+
+        //thrown.expect(CatalogDBException.class);
+        //catalogProjectDBAdaptor.delete(p.getId());
+
         thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
         catalogProjectDBAdaptor.delete(-1);
     }
