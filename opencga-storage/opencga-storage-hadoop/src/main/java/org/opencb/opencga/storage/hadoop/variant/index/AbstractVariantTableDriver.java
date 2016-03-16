@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
-import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +148,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation#operationName}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *
@@ -209,7 +208,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     }
 
     protected Job createJob(String outTable, String[] fileArr) throws IOException {
-        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + " file " + Arrays.toString(fileArr) + " on VariantTable '" + outTable + "'");
+        Job job = Job.getInstance(getConf(), "opencga: " + getJobOperationName() + " file " + Arrays.toString(fileArr)
+                + " on VariantTable '" + outTable + "'");
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
         return job;

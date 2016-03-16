@@ -198,7 +198,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         VariantSource source;
 
-        if (input.getScheme().startsWith("file")) {
+        if (input.getScheme() == null || input.getScheme().startsWith("file")) {
             return readVariantSource(Paths.get(input.getPath()), null);
         }
 

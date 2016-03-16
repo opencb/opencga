@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 
 import com.google.common.collect.BiMap;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 /**
  * Removes Sample data for a provided file from the Analysis (Variant) and the
@@ -49,7 +50,20 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         List<Variant> removeLst = new ArrayList<>();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
 
-        for (Variant var : ctx.analysisVar) {
+        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx.getValue(), ctx.getChromosome());
+        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
+        getLog().info("Loaded {} variants ... ", analysisVar.size());
+        if (!analysisVar.isEmpty()) {
+            Variant tmpVar = analysisVar.get(0);
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Loaded variant from analysis table: " + tmpVar.toJson());
+            }
+        }
+
+        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+
+
+        for (Variant var : analysisVar) {
             // remove values for Sample
             for (Integer sample : ctx.sampleIds) {
                 String sampleName = sampleIds.get(sample);

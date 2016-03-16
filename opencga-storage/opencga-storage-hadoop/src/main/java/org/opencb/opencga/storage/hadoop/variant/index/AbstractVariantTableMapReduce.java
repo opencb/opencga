@@ -139,8 +139,21 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         return fieldInts;
     }
 
-    private List<Variant> parseCurrentVariantsRegion(Result value, String chr)
+    protected List<Variant> parseCurrentVariantsRegion(Result value, String chromosome)
             throws InvalidProtocolBufferException {
+        List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(value, chromosome);
+
+        HBaseToVariantConverter converter = getHbaseToVariantConverter();
+
+        List<Variant> variants = new ArrayList<>(tableStudyRows.size());
+        for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
+            variants.add(converter.convert(tableStudyRow));
+        }
+        return variants;
+
+    }
+
+    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(Result value, String chr) throws InvalidProtocolBufferException {
         List<VariantTableStudyRow> tableStudyRows;
         byte[] protoData = value.getValue(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
         if (protoData != null && protoData.length > 0) {
@@ -149,16 +162,10 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             for (VariantTableStudyRowProto variantTableStudyRowProto : variantTableStudyRowsProto.getRowsList()) {
                 tableStudyRows.add(new VariantTableStudyRow(variantTableStudyRowProto, chr, getStudyConfiguration().getStudyId()));
             }
-
-            List<Variant> variants = new ArrayList<>(tableStudyRows.size());
-            for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
-                variants.add(getHbaseToVariantConverter().convert(tableStudyRow));
-            }
-            return variants;
-
         } else {
-            return Collections.emptyList();
+            tableStudyRows = Collections.emptyList();
         }
+        return tableStudyRows;
     }
 
     /**
@@ -189,6 +196,19 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
+    }
+
+    protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) throws IOException, InterruptedException {
+
+        for (VariantTableStudyRow variant : variants) {
+            Put put = variant.createPut(getHelper(), timestamp);
+
+            if (put != null) {
+                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+            }
+        }
+
     }
 
     protected void updateArchiveTable(ImmutableBytesWritable key, Context context, List<VariantTableStudyRow> tableStudyRows)
@@ -269,25 +289,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
         getLog().info("Processing slice {}", sliceKey);
 
-        endTime("1 Prepare slice");
-
-        // Analysis: Load variants for region (study specific)
-//            List<Variant> analysisVar = loadCurrentVariantsRegion(context, chr, startPos, nextStartPos);
-        List<Variant> analysisVar = parseCurrentVariantsRegion(value, chr);
-        context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
-        getLog().info("Loaded {} variants ... ", analysisVar.size());
-        if (!analysisVar.isEmpty()) {
-            Variant tmpVar = analysisVar.get(0);
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Loaded variant from analysis table: " + tmpVar.toJson());
-            }
-        }
-
-        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
 
         VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, key, value, sliceKey, fileIds,
-                sampleIds, startPos, nextStartPos, analysisVar);
+                sampleIds, chr, startPos, nextStartPos);
 
+        endTime("1 Prepare slice");
 
         /* *********************************** */
         /* ********* CALL concrete class ***** */
@@ -300,8 +306,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected class VariantMapReduceContext {
         public VariantMapReduceContext(byte[] currRowKey, Context context, ImmutableBytesWritable key, Result value,
-                                       String sliceKey, Set<Integer> fileIds, Set<Integer> sampleIds, long startPos,
-                                       long nextStartPos, List<Variant> analysisVar) {
+                                       String sliceKey, Set<Integer> fileIds, Set<Integer> sampleIds, String chr, long startPos,
+                                       long nextStartPos) {
             this.currRowKey = currRowKey;
             this.context = context;
             this.key = key;
@@ -309,9 +315,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             this.sliceKey = sliceKey;
             this.fileIds = fileIds;
             this.sampleIds = sampleIds;
+            this.chr = chr;
             this.startPos = startPos;
             this.nextStartPos = nextStartPos;
-            this.analysisVar = analysisVar;
         }
 
         protected final byte[] currRowKey;
@@ -321,8 +327,50 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         protected final String sliceKey;
         protected final Set<Integer> fileIds;
         protected final Set<Integer> sampleIds;
+        private final String chr;
         protected final long startPos;
         protected final long nextStartPos;
-        protected final List<Variant> analysisVar;
+
+
+        public byte[] getCurrRowKey() {
+            return currRowKey;
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public ImmutableBytesWritable getKey() {
+            return key;
+        }
+
+        public Result getValue() {
+            return value;
+        }
+
+        public String getSliceKey() {
+            return sliceKey;
+        }
+
+        public Set<Integer> getFileIds() {
+            return fileIds;
+        }
+
+        public Set<Integer> getSampleIds() {
+            return sampleIds;
+        }
+
+        public long getStartPos() {
+            return startPos;
+        }
+
+        public long getNextStartPos() {
+            return nextStartPos;
+        }
+
+        public String getChromosome() {
+            return chr;
+        }
+
     }
 }

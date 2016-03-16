@@ -84,8 +84,8 @@ public class BatchFileOperation {
 
     @Override
     public String toString() {
-        return "BatchFileOperation{" +
-                "operationName='" + operationName + '\''
+        return "BatchFileOperation{"
+                + "operationName='" + operationName + '\''
                 + ", fileIds=" + fileIds
                 + ", timestamp=" + timestamp
                 + ", status=" + status

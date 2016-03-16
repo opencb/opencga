@@ -53,13 +53,25 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
 
         Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (latestCell != null && latestCell.getTimestamp() == timestamp) {
-            ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
-            ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(ctx.analysisVar.size());
-            List<VariantTableStudyRow> rows = new ArrayList<>(ctx.analysisVar.size());
-            updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
-            return;
+        if (latestCell != null) {
+            System.out.println("latestCell.getTimestamp() = " + latestCell.getTimestamp());
+            if (latestCell.getTimestamp() == timestamp) {
+
+                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getValue(), ctx.getChromosome());
+
+                ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
+                ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(variants.size());
+
+                updateOutputTable(ctx.context, variants);
+                endTime("X Unpack, convert and write ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+                return;
+            }
         }
+
+        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx.getValue(), ctx.getChromosome());
+        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
+        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+
 
         // Archive: unpack Archive data (selection only
         List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
@@ -81,13 +93,13 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         endTime("4 Filter archive variants by target");
 
         // Check if Archive covers all bases in Analysis
-        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, ctx.analysisVar);
+        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
 
         endTime("5 Check consistency");
 
         /* ******** Update Analysis Variants ************** */
         // (1) NEW variants (only create the position, no filling yet)
-        Set<String> analysisVarSet = ctx.analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
+        Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
         Set<Variant> analysisNew = new HashSet<>();
         Set<String> archiveTargetSet = new HashSet<>();
         for (Variant tar : archiveTarget) {
@@ -108,9 +120,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         int sameVariants = archiveTargetSet.size() - analysisNew.size();
         ctx.context.getCounter(OpenCGAVariantTableCounters.NEW_VARIANTS).increment(analysisNew.size());
         ctx.context.getCounter(OpenCGAVariantTableCounters.SAME_VARIANTS).increment(sameVariants);
-        ctx.context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(ctx.analysisVar.size() - sameVariants);
+        ctx.context.getCounter(OpenCGAVariantTableCounters.MISSING_VARIANTS).increment(analysisVar.size() - sameVariants);
         ctx.context.getCounter(OpenCGAVariantTableCounters.ARCHIVE_TABLE_VARIANTS).increment(archiveTargetSet.size());
-        ctx.context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(ctx.analysisVar.size());
+        ctx.context.getCounter(OpenCGAVariantTableCounters.ANALYSIS_TABLE_VARIANTS).increment(analysisVar.size());
 
         // with current files of same region
         for (Variant var : analysisNew) {
@@ -133,15 +145,15 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
 
         // (2) and (3): Same, missing (and overlapping missing) variants
-        for (Variant var : ctx.analysisVar) {
+        for (Variant var : analysisVar) {
             this.getVariantMerger().merge(var, archiveVar);
         }
         endTime("9 Merge same and missing");
 
         // WRITE VALUES
-        List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + ctx.analysisVar.size());
+        List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
         updateOutputTable(ctx.context, analysisNew, rows, null);
-        updateOutputTable(ctx.context, ctx.analysisVar, rows, ctx.sampleIds);
+        updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
         endTime("10 Update OUTPUT table");
 
         updateArchiveTable(ctx.key, ctx.context, rows);

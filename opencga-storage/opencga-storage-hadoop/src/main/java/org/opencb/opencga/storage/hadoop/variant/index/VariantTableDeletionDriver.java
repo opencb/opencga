@@ -45,6 +45,11 @@ public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
         return exitValue;
     }
 
+    @Override
+    protected String getJobOperationName() {
+        return "Delete";
+    }
+
     public static void main(String[] args) throws Exception {
         System.exit(privateMain(args, null));
     }

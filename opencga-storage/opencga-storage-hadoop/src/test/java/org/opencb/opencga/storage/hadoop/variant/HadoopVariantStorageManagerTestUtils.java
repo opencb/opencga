@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.AfterClass;
@@ -24,6 +25,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -156,12 +159,40 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
         }
     }
 
-    class TestMRExecutor implements MRExecutor {
+    public static class TestMRExecutor implements MRExecutor {
 
         private final Configuration configuration;
 
         public TestMRExecutor(Configuration configuration) {
             this.configuration = configuration;
+        }
+
+        public static class VariantTableMapperFail extends VariantTableMapper {
+
+            public static final String SLICE_TO_FAIL = "slice.to.fail";
+            private String sliceToFail = "";
+            private AtomicBoolean hadFail = new AtomicBoolean();
+
+            @Override
+            protected void setup(Context context) throws IOException, InterruptedException {
+                super.setup(context);
+
+                hadFail.set(false);
+                sliceToFail = context.getConfiguration().get(SLICE_TO_FAIL, sliceToFail);
+
+            }
+
+            @Override
+            protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+                if (ctx.getSliceKey().equals(sliceToFail)) {
+                    if (!hadFail.getAndSet(true)) {
+                        System.out.println("DO FAIL!!");
+                        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
+                        throw new RuntimeException();
+                    }
+                }
+                super.doMap(ctx);
+            }
         }
 
         @Override
@@ -175,7 +206,12 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
                     return r;
                 } else if (executable.endsWith(VariantTableDriver.class.getName())) {
                     System.out.println("Executing VariantTableDriver");
-                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), configuration, new VariantTableDriver(){
+                        @Override
+                        protected Class<? extends TableMapper> getMapperClass() {
+                            return VariantTableMapperFail.class;
+                        }
+                    });
                     System.out.println("Finish execution VariantTableDriver");
                     return r;
                 } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
