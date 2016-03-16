@@ -15,7 +15,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -496,11 +495,11 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> delete(int id) throws CatalogDBException {
+    public QueryResult<Job> delete(int id, boolean force) throws CatalogDBException {
         long timeStart = startQuery();
         if (id > 0) {
             Query query = new Query(QueryParams.ID.key(), id);
-            QueryResult<Long> delete = delete(query);
+            QueryResult<Long> delete = delete(query, force);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -510,7 +509,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long timeStart = startQuery();
         // 1. Mark the jobs from the query as deleted.
         query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);

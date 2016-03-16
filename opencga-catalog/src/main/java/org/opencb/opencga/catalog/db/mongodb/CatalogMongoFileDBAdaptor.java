@@ -91,7 +91,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         try {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
         } catch (CatalogDBException e) {
-            delete(newFileId);
+            delete(newFileId, false);
             throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
                     + "with the study collection.");
         }
@@ -373,14 +373,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> delete(int id) throws CatalogDBException {
+    public QueryResult<File> delete(int id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
-        delete(new Query(QueryParams.ID.key(), id));
+        delete(new Query(QueryParams.ID.key(), id), force);
         return endQuery("Delete file", startTime, getFile(id, null));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
         List<Integer> fileIdsToRemove = new ArrayList<>();
@@ -395,7 +395,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<UpdateResult> deleted;
         if (fileIdsToRemove.size() > 0) {
             Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED+ ";" + Status.REMOVED);
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
             deleted = fileCollection.update(parseQuery(query1), Updates.combine(
                             Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
                             Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),

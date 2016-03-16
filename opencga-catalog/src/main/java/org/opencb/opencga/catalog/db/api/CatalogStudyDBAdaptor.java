@@ -74,7 +74,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     @Deprecated
     default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
-        return delete(studyId);
+        return delete(studyId, false);
     }
 
     int getStudyId(int projectId, String studyAlias) throws CatalogDBException;

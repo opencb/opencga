@@ -23,12 +23,12 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -775,45 +776,107 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> delete(int id) throws CatalogDBException {
-        //FIXME: Check the following commented code from deleteStudy
-        /*
-        * Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
-        QueryResult<Study> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
+    public QueryResult<Study> delete(int id, boolean force) throws CatalogDBException {
+        long startTime = startQuery();
+        checkStudyId(id);
+        delete(new Query(QueryParams.ID.key(), id), force);
+        return endQuery("Delete study", startTime, getStudy(id, null));
+    }
+
+    @Override
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<Integer> studiesToRemove = new ArrayList<>();
+        List<Study> studies = get(query, new QueryOptions()).getResult();
+        for (Study study : studies) {
+            boolean success = true;
+
+            // Try to remove all the samples
+            if (study.getSamples().size() > 0) {
+                List<Integer> sampleIds = new ArrayList<>(study.getSamples().size());
+                sampleIds.addAll(study.getSamples().stream().map((Function<Sample, Integer>) Sample::getId).collect(Collectors.toList()));
+                try {
+                    Long nDeleted = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(
+                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), force).first();
+                    if (nDeleted != sampleIds.size()) {
+                        success = false;
+                    }
+                } catch (CatalogDBException e) {
+                    logger.info("Delete Study: " + e.getMessage());
+                }
+            }
+
+            // Try to remove all the jobs.
+            if (study.getJobs().size() > 0) {
+                List<Integer> jobIds = new ArrayList<>(study.getJobs().size());
+                jobIds.addAll(study.getJobs().stream().map((Function<Job, Integer>) Job::getId).collect(Collectors.toList()));
+                try {
+                    Long nDeleted = dbAdaptorFactory.getCatalogJobDBAdaptor().delete(
+                            new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), jobIds), force).first();
+                    if (nDeleted != jobIds.size()) {
+                        success = false;
+                    }
+                } catch (CatalogDBException e) {
+                    logger.info("Delete Study: " + e.getMessage());
+                }
+            }
+
+            // Try to remove all the files.
+            if (study.getFiles().size() > 0) {
+                List<Integer> fileIds = new ArrayList<>(study.getFiles().size());
+                fileIds.addAll(study.getFiles().stream().map((Function<File, Integer>) File::getId).collect(Collectors.toList()));
+                try {
+                    Long nDeleted = dbAdaptorFactory.getCatalogFileDBAdaptor().delete(
+                            new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds), force).first();
+                    if (nDeleted != fileIds.size()) {
+                        success = false;
+                    }
+                } catch (CatalogDBException e) {
+                    logger.info("Delete Study: " + e.getMessage());
+                }
+            }
+
+            if (success || force) {
+                if (!success && force) {
+                    logger.error("Delete study: Force was true and success was false. This should not be happening.");
+                }
+                studiesToRemove.add(study.getId());
+            }
+        }
+
+        if (studiesToRemove.size() == 0) {
+            throw CatalogDBException.deleteError("Study");
+        }
+
+        Query queryDelete = new Query(QueryParams.ID.key(), studiesToRemove)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+        QueryResult<UpdateResult> deleted = studyCollection.update(parseQuery(queryDelete), Updates.combine(
+                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.DELETED),
+                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+                new QueryOptions());
+
+        if (deleted.first().getModifiedCount() == 0) {
+            throw CatalogDBException.deleteError("Delete");
+        } else {
+            return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+        }
+
+    }
+
+    public QueryResult<Study> remove(int studyId) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), studyId);
+        QueryResult<Study> studyQueryResult = get(query, null);
+        if (studyQueryResult.getResult().size() == 1) {
+            QueryResult<DeleteResult> remove = studyCollection.remove(parseQuery(query), null);
+            if (remove.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Study id '{}' has not been deleted", studyId);
             }
         } else {
-            throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
-        }
-        return sampleQueryResult;
-        * */
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Study> studyQueryResult = get(query, null);
-        if (studyQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Study id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.idNotFound("Study id '{}' does not exist (or there are too many)", id);
+            throw CatalogDBException.idNotFound("Study id '{}' does not exist (or there are too many)", studyId);
         }
         return studyQueryResult;
     }
-
-    /**
-     * At the moment it does not clean external references to itself.
-     */
-    @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
-        long startTime = startQuery();
-        Bson bson = parseQuery(query);
-        QueryResult<DeleteResult> remove = studyCollection.remove(bson, null);
-        return endQuery("Delete study", startTime, Arrays.asList(remove.getNumTotalResults()));
-    }
-
 
     @Override
     public CatalogDBIterator<Study> iterator(Query query, QueryOptions options) throws CatalogDBException {

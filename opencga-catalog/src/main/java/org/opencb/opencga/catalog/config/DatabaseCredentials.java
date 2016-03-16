@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class DatabaseCredentials {
 
-    /**
+    /*
      * host attribute includes port with this format 'host[:port]'
      */
     private List<String> hosts;
@@ -34,7 +34,7 @@ public class DatabaseCredentials {
     private String user;
     private String password;
 
-    /**
+    /*
      * Options parameter defines database-specific parameters such as "--authenticateDatabase admin" of MongoDB
      */
     private Map<String, String> options;

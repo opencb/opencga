@@ -498,7 +498,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         Bson bson = parseQuery(query);
         QueryResult<DeleteResult> remove = individualCollection.remove(bson, null);
@@ -506,11 +506,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> delete(int id) throws CatalogDBException {
+    public QueryResult<Individual> delete(int id, boolean force) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Individual> individualQueryResult = get(query, null);
         if (individualQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query);
+            QueryResult<Long> delete = delete(query, force);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Individual id '{}' has not been deleted", id);
             }

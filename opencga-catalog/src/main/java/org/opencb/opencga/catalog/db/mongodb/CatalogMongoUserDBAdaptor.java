@@ -426,19 +426,19 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> delete(int id) throws CatalogDBException {
+    public QueryResult<User> delete(int id, boolean force) throws CatalogDBException {
         throw new NotImplementedException("Delete user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> delete(String id) throws CatalogDBException {
+    public QueryResult<User> delete(String id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id);
-        delete(query);
+        delete(query, force);
         return endQuery("Delete user", startTime, get(query, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
 
         List<User> userList = get(query, new QueryOptions()).getResult();
@@ -451,7 +451,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         if (projectIds.size() > 0) {
             Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
-            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery);
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, force);
         }
 
         query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);

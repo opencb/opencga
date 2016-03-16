@@ -62,7 +62,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
         QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
         System.out.println(result.first().getStatus());
         p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId());
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), false);
         System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
 
@@ -70,7 +70,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
         //catalogProjectDBAdaptor.delete(p.getId());
 
         thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
-        catalogProjectDBAdaptor.delete(-1);
+        catalogProjectDBAdaptor.delete(-1, false);
     }
 
     @Test

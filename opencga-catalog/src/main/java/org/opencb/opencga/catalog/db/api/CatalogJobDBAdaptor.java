@@ -49,7 +49,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     @Deprecated
     default QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
-        return delete(jobId);
+        return delete(jobId, false);
     }
 
     default QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {

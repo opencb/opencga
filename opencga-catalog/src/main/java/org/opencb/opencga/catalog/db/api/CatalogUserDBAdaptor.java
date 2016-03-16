@@ -63,10 +63,10 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     @Deprecated
     default QueryResult<User> deleteUser(String userId) throws CatalogDBException {
-        return delete(userId);
+        return delete(userId, false);
     }
 
-    QueryResult<User> delete(String userId) throws CatalogDBException;
+    QueryResult<User> delete(String userId, boolean force) throws CatalogDBException;
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 

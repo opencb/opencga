@@ -214,7 +214,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             } catch (CatalogIOException e) {
                 e.printStackTrace();
             }
-            userDBAdaptor.delete(userId);
+            userDBAdaptor.delete(userId, false);
         }
         user.setId("deleteUser");
         auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);

@@ -83,7 +83,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
-            projectDBAdaptor.delete(project.getId());
+            projectDBAdaptor.delete(project.getId(), false);
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);

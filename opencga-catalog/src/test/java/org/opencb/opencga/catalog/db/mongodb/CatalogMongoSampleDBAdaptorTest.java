@@ -197,7 +197,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
-        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
 
@@ -208,7 +208,7 @@ public class CatalogMongoSampleDBAdaptorTest {
     @Test
     public void deleteSampleFail1Test() throws Exception {
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(55555555);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(55555555, false);
     }
 
     @Test
@@ -222,7 +222,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
 
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
     }
 
     @Test
@@ -235,7 +235,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 Collections.singletonList(createResult.first().getId()), null), null);
 
         thrown.expect(CatalogDBException.class);
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId());
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
     }
 
     @Test

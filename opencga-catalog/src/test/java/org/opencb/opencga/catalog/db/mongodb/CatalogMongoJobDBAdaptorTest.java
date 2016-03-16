@@ -42,12 +42,12 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 ()), null).first();
         int jobId = job.getId();
         assertEquals("active", job.getStatus().getStatus());
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId);
+        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, false);
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
         assertEquals("deleted", queryResult.first().getStatus().getStatus());
         try {
-            System.out.println(catalogJobDBAdaptor.delete(-1));
+            System.out.println(catalogJobDBAdaptor.delete(-1, false));
             fail("error: Expected \"Job not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

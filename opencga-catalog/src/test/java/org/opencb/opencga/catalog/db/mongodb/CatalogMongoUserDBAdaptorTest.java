@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -63,7 +62,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         assertEquals("active", createUser.first().getStatus().getStatus());
 
-        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId());
+        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), false);
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
         assertEquals("deleted", deleteUser.first().getStatus().getStatus());

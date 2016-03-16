@@ -833,7 +833,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         if (sampleQueryResult.getResult().size() == 1) {
             // Check if the sample is being used anywhere
             checkInUse(id);
-            QueryResult<Long> delete = delete(query);
+            QueryResult<Long> delete = delete(query, false);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);
             }
@@ -844,10 +844,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Sample> delete(int id) throws CatalogDBException {
+    public QueryResult<Sample> delete(int id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(id);
-        delete(new Query(QueryParams.ID.key(), id));
+        delete(new Query(QueryParams.ID.key(), id), force);
         return endQuery("Delete sample", startTime, getSample(id, null));
         /*
 
@@ -868,7 +868,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
 
         query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);

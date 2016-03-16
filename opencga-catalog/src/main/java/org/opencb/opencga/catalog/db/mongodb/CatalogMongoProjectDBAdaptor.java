@@ -545,15 +545,15 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> delete(int id) throws CatalogDBException {
+    public QueryResult<Project> delete(int id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
-        delete(query);
+        delete(query, force);
         return endQuery("Delete project", startTime, get(query, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query) throws CatalogDBException {
+    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
 
         List<Project> projectList = get(query, new QueryOptions()).getResult();
@@ -568,7 +568,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         if (studyIds.size() > 0) {
             Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
-            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(studyIdsQuery, force);
         }
 
         if (projectListIds.size() > 0) {

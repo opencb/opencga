@@ -53,7 +53,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     @Deprecated
     default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
-        return delete(projectId);
+        return delete(projectId, false);
     }
 
     QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;

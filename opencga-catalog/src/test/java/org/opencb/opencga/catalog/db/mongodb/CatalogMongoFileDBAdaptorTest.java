@@ -154,12 +154,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void deleteFileTest() throws CatalogDBException, IOException {
         int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId);
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, false);
         System.out.println(delete);
         assertTrue(delete.getNumResults() == 1);
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
-                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists")));
+                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), false));
             fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
