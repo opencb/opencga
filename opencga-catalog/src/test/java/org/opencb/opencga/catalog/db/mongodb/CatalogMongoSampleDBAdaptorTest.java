@@ -208,7 +208,7 @@ public class CatalogMongoSampleDBAdaptorTest {
     @Test
     public void deleteSampleFail1Test() throws Exception {
         thrown.expect(CatalogDBException.class);
-        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().deleteSample(55555555);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(55555555);
     }
 
     @Test

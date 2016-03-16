@@ -392,11 +392,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 logger.info(e.getMessage());
             }
         }
-        QueryResult<UpdateResult> deleted = null;
+        QueryResult<UpdateResult> deleted;
         if (fileIdsToRemove.size() > 0) {
-            deleted = fileCollection.update(parseQuery(new Query(QueryParams.ID.key(), fileIdsToRemove)),
-                    Updates.combine(
-                            Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
+            Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED+ ";" + Status.REMOVED);
+            deleted = fileCollection.update(parseQuery(query1), Updates.combine(
+                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
                             Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
                     new QueryOptions());
         } else {

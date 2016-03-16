@@ -7,12 +7,25 @@ import org.opencb.opencga.core.common.TimeUtils;
  */
 public class Status {
 
+    /**
+     * ACTIVE status means that the object is being used.
+     */
+    public static final String ACTIVE = "active";
+    /**
+     * DELETED status means that the object is marked as deleted although is still available in the database.
+     */
+    public static final String DELETED = "deleted";
+    /**
+     * REMOVED status means that the object is marked as removed, so it will get completely removed from the database ASAP.
+     */
+    public static final String REMOVED = "removed";
+
     private String status;
     private String date;
     private String msg;
 
     public Status() {
-        this.status = "active";
+        this.status = ACTIVE;
         this.date = TimeUtils.getTimeMillis();
     }
 
@@ -48,6 +61,11 @@ public class Status {
 
     @Override
     public String toString() {
-        return status;
+        final StringBuilder sb = new StringBuilder("Status{");
+        sb.append("status='").append(status).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", msg='").append(msg).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -33,7 +33,7 @@ public class Study {
     private String creatorId;
     private String creationDate;
     private String description;
-    private String status;
+    private Status status;
     private String lastActivity;
     private long diskUsage;
     private String cipher;
@@ -61,7 +61,7 @@ public class Study {
     public Study() {
     }
 
-    public Study(String name, String alias, Type type, String description, String status, URI uri) {
+    public Study(String name, String alias, Type type, String description, Status status, URI uri) {
         this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
                 null, new ArrayList<Experiment>(), new ArrayList<File>(), new LinkedList<Job>(),
                 new LinkedList<Sample>(), new LinkedList<Dataset>(), new LinkedList<Cohort>(), new LinkedList<VariableSet>(),
@@ -69,7 +69,7 @@ public class Study {
     }
 
     public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
-                 String description, String status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
+                 String description, Status status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
                  List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
@@ -185,11 +185,11 @@ public class Study {
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 

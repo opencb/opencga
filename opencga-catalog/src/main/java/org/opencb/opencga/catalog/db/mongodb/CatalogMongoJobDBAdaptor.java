@@ -15,10 +15,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -511,22 +513,10 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<Long> delete(Query query) throws CatalogDBException {
         long timeStart = startQuery();
         // 1. Mark the jobs from the query as deleted.
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
         QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
-                Updates.set(QueryParams.STATUS_STATUS.key(), "deleted"),
+                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
                 Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-
-        // 2. Check the output files that were created with the deleted jobs.
-        List<Job> jobs = get(query, new QueryOptions("include", QueryParams.OUTPUT.key())).getResult();
-        for (Job job : jobs) {
-            for (Integer fileId : job.getOutput()) {
-                try {
-                    dbAdaptorFactory.getCatalogFileDBAdaptor().delete(fileId);
-                } catch (CatalogDBException e) {
-                    logger.info("Delete job " + job + ": " + e.getMessage());
-                }
-            }
-        }
-
         return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
     }
 

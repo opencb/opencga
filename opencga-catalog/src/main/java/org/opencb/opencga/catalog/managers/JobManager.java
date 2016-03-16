@@ -11,7 +11,9 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
@@ -202,6 +204,16 @@ public class JobManager extends AbstractManager implements IJobManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
         QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId);
+        // Delete the output files of the job if they are not in use.
+        // TODO: Add an if clause to do this only when the user does not want to keep the output files.
+        // 2. Check the output files that were created with the deleted jobs.
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
+        try {
+            fileDBAdaptor.delete(query);
+        } catch (CatalogDBException e) {
+            logger.info("Delete job { Job: " + queryResult.first() + " }:" + e.getMessage());
+        }
+
         auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
         return queryResult;
     }

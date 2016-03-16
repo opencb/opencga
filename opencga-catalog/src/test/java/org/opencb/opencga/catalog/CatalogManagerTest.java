@@ -496,13 +496,13 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetAllStudies() throws CatalogException {
         int projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
-                "Status", null, null, null, null, null, null, null, sessionIdUser);
+                new Status(), null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
-                "Status", null, null, null, null, null, null, null, sessionIdUser);
+                new Status(), null, null, null, null, null, null, null, sessionIdUser);
         catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
-                "Status", null, null, null, null, null, null, null, sessionIdUser);
+                new Status(), null, null, null, null, null, null, null, sessionIdUser);
         int study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate",
-                "description", "Status", null, null, null, null, null, null, null, sessionIdUser).first().getId();
+                "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)

@@ -39,10 +39,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.AclEntry;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -574,17 +571,21 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(studyIdsQuery);
         }
 
-        QueryResult<UpdateResult> deleted = userCollection.update(Filters.all("projects.id", projectListIds),
-                new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), "deleted")
-                        .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())
-                ), new QueryOptions());
+        if (projectListIds.size() > 0) {
+            QueryResult<UpdateResult> deleted = userCollection.update(Filters.and(
+                    Filters.all("projects.id", projectListIds),
+                    Filters.nin("projects." + QueryParams.STATUS_STATUS.key(), Arrays.asList(Status.DELETED, Status.REMOVED))),
+                    new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), Status.DELETED)
+                            .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
 
-        if (deleted.first().getModifiedCount() == 0) {
-            throw CatalogDBException.deleteError("Project");
-        } else {
-            return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+            if (deleted.first().getModifiedCount() == 0) {
+                throw CatalogDBException.alreadyDeletedOrRemoved("Project");
+            } else {
+                return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+            }
         }
 
+        throw CatalogDBException.deleteError("Project");
     }
 
     @Override
