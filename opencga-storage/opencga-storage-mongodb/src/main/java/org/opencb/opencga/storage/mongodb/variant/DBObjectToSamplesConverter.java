@@ -22,6 +22,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -31,10 +32,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantEntryConverter.*;
 
@@ -270,13 +273,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         byte[] byteArray = (byte[]) sampleDatas.get(extraField.toLowerCase());
 
                         VariantMongoDBProto.OtherFields otherFields = null;
-//                        try {
-//                            byteArray = CompressionUtils.decompress(byteArray);
-//                        } catch (IOException e) {
-//                            throw new UncheckedIOException(e);
-//                        } catch (DataFormatException ignore) {
-////                            throw new RuntimeException(e);
-//                        }
+                        try {
+                            byteArray = CompressionUtils.decompress(byteArray);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        } catch (DataFormatException ignore) {
+                        }
                         try {
                             otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
                         } catch (InvalidProtocolBufferException e) {
@@ -462,11 +464,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             } // else { Don't set that field }
 
             byte[] byteArray = builder.build().toByteArray();
-//            try {
-//                byteArray = CompressionUtils.compress(byteArray);
-//            } catch (IOException e) {
-//                throw new UncheckedIOException(e);
-//            }
+            try {
+                byteArray = CompressionUtils.compress(byteArray);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             otherFields.append(extraField.toLowerCase(), byteArray);
         }
 
