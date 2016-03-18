@@ -2,10 +2,9 @@ from __future__ import print_function
 import json
 import sys
 
-from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples, Studies
-from GELpyCGA.AdditionalMethods import AnnotationSet
+from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples
 from pyCGA.Exceptions import ServerResponseException
-from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample
+from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample, AnnotationSet
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
 __author__ = 'antonior'
@@ -27,6 +26,7 @@ class Methods:
         try:
             sid = user.login_method(args.user, args.pwd)[0].get("sessionId")
             print(sid)
+            return sid
         except ServerResponseException as e:
             print(str(e), file=sys.stderr)
 
@@ -119,7 +119,7 @@ class Methods:
         """
         Method to query stats stored with files.... generic so user has to specify certain aspects
 
-        Call: python pyCGA [--host hostname] sid query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
+        Call: python pyCGA query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
 
         :param args:
         """
@@ -139,9 +139,9 @@ class Methods:
                 if "stats" in result:
                     try:
                         if isinstance(result["stats"][level1], list) and result["stats"][level1]!=[]:
-                            print(result["name"] + "\t" + ",".join([term[level2] for term in result["stats"][level1]]))
+                            print(result["name"] + "\t" + ",".join(map(str, [term[level2] for term in result["stats"][level1]])))
                         elif isinstance(result["stats"][level1], dict):
-                            print(result["name"] + "\t" + result["stats"][level1][level2])
+                            print(result["name"] + "\t" + str(result["stats"][level1][level2]))
                         else:
                             print(result["name"] + "\t" + "ERROR")
                     except:

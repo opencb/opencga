@@ -154,6 +154,7 @@ public class FetchVariantsCommandExecutor extends CommandExecutor {
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsCommandOptions.consequenceType);
         addParam(query, ANNOT_BIOTYPE, queryVariantsCommandOptions.biotype);
         addParam(query, ALTERNATE_FREQUENCY, queryVariantsCommandOptions.populationFreqs);
+        addParam(query, POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsCommandOptions.populationMaf);
         addParam(query, CONSERVATION, queryVariantsCommandOptions.conservation);
 
         if (queryVariantsCommandOptions.proteinSubstitution != null && !queryVariantsCommandOptions.proteinSubstitution.isEmpty()) {

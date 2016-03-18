@@ -66,7 +66,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String POPULATION_FREQUENCIES_FIELD = "popFq";
     public static final String POPULATION_FREQUENCY_STUDY_FIELD = "study";
     public static final String POPULATION_FREQUENCY_POP_FIELD = "pop";
-    public static final String POPULATION_FREQUENCY_SUPERPOP_FIELD = "superPop";
     public static final String POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD = "ref";
     public static final String POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD = "alt";
     public static final String POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD = "refFq";
@@ -192,7 +191,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 populationFrequencies.add(new PopulationFrequency(
                         getDefault(dbObject, POPULATION_FREQUENCY_STUDY_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_POP_FIELD, ""),
-                        getDefault(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_ALLELE_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_ALLELE_FIELD, ""),
                         (float) getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0),
@@ -473,7 +471,6 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     private DBObject convertPopulationFrequencyToStorage(PopulationFrequency populationFrequency) {
         DBObject dbObject = new BasicDBObject(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
         putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPopulation());
-        putNotNull(dbObject, POPULATION_FREQUENCY_SUPERPOP_FIELD, populationFrequency.getSuperPopulation());
         putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
         putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
         return dbObject;

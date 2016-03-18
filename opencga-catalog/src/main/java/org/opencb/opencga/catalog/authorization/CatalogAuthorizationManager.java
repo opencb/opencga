@@ -390,7 +390,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userId, StudyPermission.MANAGE_STUDY);
 
         QueryResult queryResult = fileDBAdaptor.setFileAcl(fileId, acl);
-        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("adl", acl), "setAcl", null);
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("acl", acl), "setAcl", null);
         return queryResult;
     }
 
@@ -402,7 +402,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(fileDBAdaptor.getStudyIdByFileId(fileId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
 
         QueryResult<AclEntry> queryResult = fileDBAdaptor.unsetFileAcl(fileId, userId);
-        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("adl", queryResult.first()), null, "unsetAcl", null);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl", queryResult.first()), null, "unsetAcl", null);
         return queryResult;
     }
 
@@ -415,7 +415,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userId, StudyPermission.MANAGE_STUDY);
 
         QueryResult queryResult = sampleDBAdaptor.setSampleAcl(sampleId, acl);
-        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("adl", acl), "setAcl", null);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("acl", acl), "setAcl", null);
         return queryResult;
     }
 
@@ -427,7 +427,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkStudyPermission(sampleDBAdaptor.getStudyIdBySampleId(sampleId), userDBAdaptor.getUserIdBySessionId(sessionId), StudyPermission.MANAGE_STUDY);
 
         QueryResult<AclEntry> queryResult = sampleDBAdaptor.unsetSampleAcl(sampleId, userId);
-        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("adl", queryResult.first()), null, "unsetAcl", null);
+        auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl", queryResult.first()), null, "unsetAcl", null);
         return queryResult;
     }
 

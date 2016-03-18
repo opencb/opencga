@@ -71,6 +71,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         @Deprecated
         PROTEIN_SUBSTITUTION ("protein_substitution", TEXT_ARRAY, ""),
         CONSERVATION("conservation", TEXT_ARRAY, ""),
+        POPULATION_MINOR_ALLELE_FREQUENCY ("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}"),
         ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
         REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes."),
