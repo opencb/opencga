@@ -124,8 +124,9 @@ class Methods:
         :param args:
         """
         file_instance = Files()
-        # TODO: Test this ---big change--
+        # TODO: move to expanded methods
         try:
+
             results = file_instance.search(studyId=str(args.studyId), bioformat=args.fileType,
                                                 include="projects.studies.files.name,projects.studies.files.stats." +args.query)
             # print(json.dumps(result, indent=4))
