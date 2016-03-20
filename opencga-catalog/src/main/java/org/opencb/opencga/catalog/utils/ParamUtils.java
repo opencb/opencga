@@ -19,7 +19,7 @@ public class ParamUtils {
     }
 
     public static void checkParameter(String param, String name) throws CatalogParameterException {
-        if (param == null || param.equals("") || param.equals("null")) {
+        if (param == null || param.isEmpty() || param.equals("null")) {
             throw new CatalogParameterException("Error in parameter: parameter '" + name + "' is null or empty: "
                     + param + ".");
         }
@@ -47,19 +47,26 @@ public class ParamUtils {
         }
     }
 
-    public static void checkPath(String path, String name) throws CatalogParameterException {
+    public static void checkPath(String path, String paramName) throws CatalogParameterException {
         if (path == null) {
-            throw new CatalogParameterException("parameter '" + name + "' is null.");
+            throw new CatalogParameterException("parameter '" + paramName + "' is null.");
         }
-        checkPath(Paths.get(path), name);
+        checkPath(Paths.get(path), paramName);
     }
 
-    public static void checkPath(Path path, String name) throws CatalogParameterException {
-        checkObj(path, name);
+    public static void checkFileName(String fileName, String paramName) throws CatalogParameterException {
+        checkParameter(fileName, paramName);
+        if (fileName.contains("/")) {
+            throw new CatalogParameterException("Error in " + paramName + ": '" + fileName + "' can not contain '/' character");
+        }
+    }
+
+    public static void checkPath(Path path, String paramName) throws CatalogParameterException {
+        checkObj(path, paramName);
         if (path.isAbsolute()) {
-            throw new CatalogParameterException("Error in path: Path '" + name + "' can't be absolute");
+            throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
         } else if (path.toString().matches("\\.|\\.\\.")) {
-            throw new CatalogParameterException("Error in path: Path '" + name + "' can't have relative names '.' or '..'");
+            throw new CatalogParameterException("Error in path: Path '" + path + "' can't have relative names '.' or '..'");
         }
     }
 

@@ -71,6 +71,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         @Deprecated
         PROTEIN_SUBSTITUTION ("protein_substitution", TEXT_ARRAY, ""),
         CONSERVATION("conservation", TEXT_ARRAY, ""),
+        POPULATION_MINOR_ALLELE_FREQUENCY ("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}"),
         ALTERNATE_FREQUENCY ("alternate_frequency", TEXT_ARRAY, ""),
         REFERENCE_FREQUENCY ("reference_frequency", TEXT_ARRAY, ""),
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes."),
@@ -213,7 +214,14 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
-
+    /**
+     * Returns all the possible samples to be returned by an specific query.
+     *
+     * @param query     Query to execute
+     * @param options   Query Options
+     * @return  Map key: StudyId, value: list of sampleIds
+     */
+    Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options);
 
     QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 

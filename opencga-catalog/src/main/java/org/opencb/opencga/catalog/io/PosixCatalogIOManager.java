@@ -168,6 +168,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         try {
             if (!Files.exists(Paths.get(newName))) {
                 Files.move(Paths.get(oldName), Paths.get(newName));
+            } else {
+                throw new CatalogIOException("Unable to rename. File \"" + newName + "\" already exists");
             }
         } catch (IOException e) {
             throw new CatalogIOException("Unable to rename file", e);

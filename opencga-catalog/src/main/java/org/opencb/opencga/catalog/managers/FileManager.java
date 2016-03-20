@@ -285,16 +285,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Study { id: " + studyId + "} does not exist.");
         }
 
-        if (!ownerId.equals(userId)) {
-            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with ownerId != userId");
-            } else {
-                if (!userDBAdaptor.userExists(ownerId)) {
-                    throw new CatalogException("ERROR: ownerId does not exist.");
-                }
-            }
-        }
-
         if (status != File.Status.STAGE && type == File.Type.FILE) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
@@ -308,33 +298,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             path = path.substring(0, path.length() - 1);
         }
 
-
         //Create file object
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
                 path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
                 new LinkedList<>(), stats, attributes);
-
-        return create(studyId, file, parents, options, sessionId);
-    }
-
-    /**
-     * Unchecked create file. Private only
-     *
-     * @throws CatalogException
-     */
-    private QueryResult<File> create(int studyId, File file, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        /**
-         * CHECK ALREADY EXISTS
-         */
-        if (fileDBAdaptor.getFileId(studyId, file.getPath()) >= 0) {
-            if (file.getType() == File.Type.FOLDER && parents) {
-                return read(fileDBAdaptor.getFileId(studyId, file.getPath()), options, sessionId);
-            } else {
-                throw new CatalogException("Cannot create file ‘" + file.getPath() + "’: File exists");
-            }
-        }
 
         //Find parent. If parents == true, create folders.
         Path parent = Paths.get(file.getPath()).getParent();
@@ -348,14 +315,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         int parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
+        boolean newParent = false;
         if (parentFileId < 0 && parent != null) {
             if (parents) {
-                create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
+                newParent = true;
+                parentFileId = create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
                         file.getOwnerId(), file.getCreationDate(), "", File.Status.READY, 0, -1,
                         Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
-                        options, sessionId);
-                parentFileId = fileDBAdaptor.getFileId(studyId, parent.toString() + "/");
+                        options, sessionId).first().getId();
             } else {
                 throw new CatalogDBException("Directory not found " + parent.toString());
             }
@@ -365,7 +333,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (parentFileId < 0) {
             throw new CatalogException("Unable to create file without a parent file");
         } else {
-            authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
+            if (!newParent) {
+                //If parent has been created, for sure we have permissions to create the new file.
+                authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
+            }
         }
 
 
@@ -489,8 +460,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         //Path and Name must be changed with "raname" and/or "move" methods.
                         case "path":
                         case "name":
-                            throw new CatalogException("Parameter '" + s + "' can't be changed directly. " +
-                                    "Use \"rename\" instead");
+                            break;
                         case "type":
                         default:
                             throw new CatalogException("Parameter '" + s + "' can't be changed. " +
@@ -499,6 +469,16 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
                 break;
         }
+        //Path and Name must be changed with "raname" and/or "move" methods.
+        if (parameters.containsKey("name")) {
+            logger.info("Rename file using update method!");
+            rename(fileId, parameters.getString("name"), sessionId);
+        }
+        if (parameters.containsKey("path") ) {
+            logger.info("Move file using update method!");
+            move(fileId, parameters.getString("path"), options, sessionId);
+        }
+
         String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
         QueryResult queryResult = fileDBAdaptor.modifyFile(fileId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
@@ -596,14 +576,21 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkPath(newName, "newName");
+        ParamUtils.checkFileName(newName, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
-        File file = fileDBAdaptor.getFile(fileId, null).first();
+        QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
+        File file = fileResult.first();
+
+        if (file.getName().equals(newName)) {
+            fileResult.setId("rename");
+            fileResult.setWarningMsg("File name '" + newName + "' is the original name. Do nothing.");
+            return fileResult;
+        }
 
         if (isRootFolder(file)) {
             throw new CatalogException("Can not rename root folder");
@@ -622,24 +609,29 @@ public class FileManager extends AbstractManager implements IFileManager {
         CatalogIOManager catalogIOManager;
         URI studyUri = getStudyUri(studyId);
         boolean isExternal = isExternal(file); //If the file URI is not null, the file is external located.
+        QueryResult<File> result;
         switch (file.getType()) {
             case FOLDER:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
                     catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
                 }
+                result = fileDBAdaptor.renameFile(fileId, newPath, null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
-                return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
+                break;
             case FILE:
                 if (!isExternal) {  //Only rename non external files
                     catalogIOManager = catalogIOManagerFactory.get(studyUri);
                     catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
                 }
+                result = fileDBAdaptor.renameFile(fileId, newPath, null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath).append("name", newName), "rename", null);
-                return fileDBAdaptor.renameFile(fileId, newPath); //TODO: Return the modified file
+                break;
+            default:
+                throw new CatalogException("Unknown file type " + file.getType());
         }
 
-        return null;
+        return result;
     }
 
     @Override

@@ -394,7 +394,7 @@ class Samples(WS):
 
         return self.search(studyId=studyId, variableSetId=str(v_id), annotation=";".join(queries))
 
-    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, **options):
+    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, update=True, **options):
         """
         This annotate a sample using a json file (this is a post method)
 
@@ -412,6 +412,19 @@ class Samples(WS):
 
         variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
+
+
+        if update:
+            for annt_set in self.info(str(sample_id))[0]["annotationSets"]:
+                if annt_set["variableSetId"] == int(variableSetId):
+                    annotationSetName = annt_set["id"]
+
+                    return self.general_method(ws_category="samples", method_name="annotate",
+                                               item_id=str(sample_id), annotateSetName=annotationSetName,
+                                               variableSetId=variableSetId, update="true", data=data
+                                               )
+
+
         annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
         return self.general_method(ws_category="samples", method_name="annotate", item_id=sample_id,

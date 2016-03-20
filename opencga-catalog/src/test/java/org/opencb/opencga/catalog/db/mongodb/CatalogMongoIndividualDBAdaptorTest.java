@@ -151,7 +151,16 @@ public class CatalogMongoIndividualDBAdaptorTest {
         int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", -4));
+        catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", 4000));
+    }
+
+    @Test
+    public void testModifyIndividualNegativeFatherId() throws Exception {
+        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
+
+        Individual individual = catalogIndividualDBAdaptor.modifyIndividual(individualId, new QueryOptions("fatherId", -1)).first();
+        assertEquals(-1, individual.getFatherId());
     }
 
     @Test

@@ -17,36 +17,31 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
-import org.junit.*;
-
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.SampleFilterOption.*;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
@@ -59,6 +54,11 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.SampleFilterOption.*;
+
 public class CatalogManagerTest extends GenericTest {
 
     public final static String PASSWORD = "asdf";
@@ -70,6 +70,8 @@ public class CatalogManagerTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private File testFolder;
+    private int studyId;
+    private int studyId2;
     private int s_1;
     private int s_2;
     private int s_3;
@@ -102,9 +104,9 @@ public class CatalogManagerTest extends GenericTest {
         Project project2 = catalogManager.createProject("user2", "Project Management Project", "pmp", "life art intelligent system", "myorg", null, sessionIdUser2).first();
         Project project3 = catalogManager.createProject("user3", "project 1", "p1", "", "", null, sessionIdUser3).first();
 
-        int studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
-        int studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
-        int studyId3 = catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
+        studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
+        studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
+        catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
 
@@ -444,6 +446,30 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateFileFromUnsharedStudy() throws CatalogException {
+        try {
+            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
+                    sessionIdUser2);
+            fail("The file could be created despite not having the proper permissions.");
+        } catch (CatalogAuthorizationException e) {
+            assertTrue(e.getMessage().contains("Permission denied"));
+            assertEquals(0, catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                    "data/test/folder/file.txt"), sessionIdUser).getNumResults());
+        }
+    }
+
+    @Test
+    public void testCreateFileFromSharedStudy() throws CatalogException {
+        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
+        catalogManager.shareFile(testFolder.getId(), new AclEntry("user2", false, true, false, false), sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
+                sessionIdUser2);
+        assertEquals(1, catalogManager.searchFile(studyId, new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(),
+                "data/test/folder/file.txt"), sessionIdUser).getNumResults());
+
+    }
+
+    @Test
     public void testCreateFolder() throws Exception {
         int projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
         int studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
@@ -623,6 +649,26 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(paths.contains("Data/nested2/"));
         assertTrue(paths.contains("Data/nested2/folder/"));
         assertTrue(paths.contains("Data/nested2/folder/file2.txt"));
+    }
+
+    @Test
+    public void renameFileEmptyName() throws CatalogException {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("null or empty"));
+
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "", sessionIdUser);
+    }
+
+    @Test
+    public void renameFileSlashInName() throws CatalogException {
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "my/folder", sessionIdUser);
+    }
+
+    @Test
+    public void renameFileAlreadyExists() throws CatalogException {
+        thrown.expect(CatalogIOException.class);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "analysis", sessionIdUser);
     }
 
     @Test
@@ -1612,6 +1658,15 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
+    }
+
+    @Test
+    public void testModifySampleUnknownIndividual() throws CatalogException {
+        int studyId = catalogManager.getStudyId("user@1000G:phase1");
+        int sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+
+        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+        assertEquals(-1, sample.getIndividualId());
     }
 
     @Test
