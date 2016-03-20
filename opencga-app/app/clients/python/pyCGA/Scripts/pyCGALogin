@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
 
         sid = Methods.users_login(args)
-        token = {"user": args.user, "host": args.host, "sid": sid, "instance": args.instance}
+        token = {"user": args.user, "host": args.host, "sid": sid, "instance": args.instance, "debug": args.debug}
         if not os.path.exists(openCGA_dir):
             os.system("mkdir " + openCGA_dir)
 
