@@ -66,6 +66,10 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + ": The object(s) were already marked as deleted or removed.");
     }
 
+    public static CatalogDBException queryNotFound(String name) {
+        return new CatalogDBException(name + ": The query used to delete did not report any result.");
+    }
+
     public static CatalogDBException fileInUse(int id, int count) {
         return new CatalogDBException("The file { id: " + id + "} cannot be removed as it is being used as input in " + count + " job(s).");
     }

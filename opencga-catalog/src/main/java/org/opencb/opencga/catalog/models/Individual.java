@@ -33,6 +33,7 @@ public class Individual {
     private String race;
     private Species species;
     private Population population;
+    private Status status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
 
@@ -51,16 +52,8 @@ public class Individual {
         this.species = species;
         this.population = population;
         this.annotationSets = annotationSets;
+        this.status = new Status();
         this.attributes = attributes;
-    }
-
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
     }
 
     @Override
@@ -98,6 +91,15 @@ public class Individual {
         this.name = name;
         return this;
 
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
     }
 
     @Override
@@ -230,6 +232,14 @@ public class Individual {
     public Individual setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 
     public enum Gender {
