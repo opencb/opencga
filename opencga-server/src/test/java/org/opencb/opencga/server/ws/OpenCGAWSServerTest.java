@@ -129,7 +129,7 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileVcf.getFileStatus());
+        assertEquals(File.FileStatus.READY, fileVcf.getFileStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
@@ -166,7 +166,7 @@ public class OpenCGAWSServerTest {
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileBam.getFileStatus());
+        assertEquals(File.FileStatus.READY, fileBam.getFileStatus());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 

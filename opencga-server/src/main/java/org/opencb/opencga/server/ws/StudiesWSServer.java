@@ -29,10 +29,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -78,7 +75,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         try {
             int projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, status, cipher, null, null, null, null, null, queryOptions, sessionId);
+                    creationDate, description, new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -402,14 +399,14 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
             /** First, run CheckStudyFiles to find new missing files **/
             List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-            List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatus().equals(File.Status.READY)).collect(Collectors.toList());
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatus().equals(File.FileStatus.READY)).collect(Collectors.toList());
 
             /** Get untracked files **/
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.STATUS.key(),
-                    File.Status.MISSING), queryOptions, sessionId).getResult();
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+                    File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 

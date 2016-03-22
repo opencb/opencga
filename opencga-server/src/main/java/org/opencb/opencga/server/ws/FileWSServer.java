@@ -446,7 +446,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") File.Type type,
                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                            @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") File.Bioformat bioformat,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.Status status,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
                            @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
                            @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,

@@ -173,6 +173,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        FILE_STATUS("fileStatus", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),

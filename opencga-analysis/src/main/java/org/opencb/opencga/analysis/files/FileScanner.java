@@ -53,8 +53,8 @@ public class FileScanner {
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
-        query.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), Arrays.asList(
-                File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
+        query.put(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), Arrays.asList(
+                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
@@ -227,9 +227,9 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getFileStatus().equals(File.Status.MISSING)) {
+                if (file.getFileStatus().equals(File.FileStatus.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                    logger.debug("Set status to " + File.Status.READY);
+                    logger.debug("Set status to " + File.FileStatus.READY);
                     returnFile = true;      //Return file because was missing
                 }
                 long start = System.currentTimeMillis();
