@@ -484,8 +484,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readCohort() throws CatalogException {
-        assertEquals(1, catalogManager.getAllCohorts(s1, null, ownerSessionId).getNumResults());
-        assertEquals(0, catalogManager.getAllCohorts(s1, null, memberSessionId).getNumResults());
+        assertEquals(1, catalogManager.getAllCohorts(s1, null, null, ownerSessionId).getNumResults());
+        assertEquals(0, catalogManager.getAllCohorts(s1, null, null, memberSessionId).getNumResults());
     }
 
     /*--------------------------*/

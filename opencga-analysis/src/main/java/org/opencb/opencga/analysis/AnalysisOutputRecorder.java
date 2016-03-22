@@ -18,11 +18,13 @@ package org.opencb.opencga.analysis;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -167,17 +169,19 @@ public class AnalysisOutputRecorder {
                 }
                 catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
                 if (index.getStatus().equals(Index.Status.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.name.toString(), StudyEntry.DEFAULT_COHORT), sessionId);
+                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
                     if (queryResult.getNumResults() != 0) {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();
-                        catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("status", Cohort.Status.READY), new QueryOptions(), sessionId);
+                        catalogManager.modifyCohort(defaultCohort.getId(),
+                                new ObjectMap(CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key(), Cohort.CohortStatus.READY),
+                                new QueryOptions(), sessionId);
                     }
                 }
                 break;
             case COHORT_STATS:
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
-                ObjectMap updateParams = new ObjectMap("status", jobFailed? Cohort.Status.INVALID : Cohort.Status.READY);
+                ObjectMap updateParams = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key(), jobFailed? Cohort.CohortStatus.INVALID : Cohort.CohortStatus.READY);
                 for (Integer cohortId : cohortIds) {
                     catalogManager.modifyCohort(cohortId, updateParams, new QueryOptions(), sessionId);
                 }

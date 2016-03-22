@@ -236,7 +236,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
+        return endQuery("Modify sample", startTime, getSample(sampleId, parameters));
     }
 
     public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
@@ -438,194 +438,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     /*
-     * Cohorts methods
-     * ***************************
-     */
-
-    @Override
-    public QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
-
-        checkCohortNameExists(studyId, cohort.getName());
-
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
-
-//        int newId = getNewAutoIncrementId(metaCollection);
-        int newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
-
-        cohort.setId(newId);
-
-        Document cohortObject = getMongoDBDocument(cohort, "Cohort");
-        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection().update(
-                new Document(PRIVATE_ID, studyId).append("cohorts.name", new Document("$ne", cohort.getName())),
-                new Document("$push", new Document("cohorts", cohortObject)), null);
-
-        if (update.getResult().get(0).getModifiedCount() == 0) {
-            throw CatalogDBException.alreadyExists("Cohort", "name", cohort.getName());
-        }
-
-        return endQuery("createCohort", startTime, getCohort(newId, options));
-    }
-
-    private void checkCohortNameExists(int studyId, String cohortName) throws CatalogDBException {
-//        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
-//                .start(PRIVATE_ID, studyId)
-//                .append("cohorts.name", cohortName)
-//                .get());
-        QueryResult<Long> count = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .count(Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("cohorts.name", cohortName)));
-
-        if (count.getResult().get(0) > 0) {
-            throw CatalogDBException.alreadyExists("Cohort", "name", cohortName);
-        }
-    }
-
-    @Override
-    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-//        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
-//        BasicDBObject projection = new BasicDBObject("cohorts", new BasicDBObject("$elemMatch", new BasicDBObject("id", cohortId)));
-//        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, null);
-
-        Bson query = Filters.eq("cohorts.id", cohortId);
-        Bson projection = Projections.elemMatch("cohorts", Filters.eq("id", cohortId));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .find(query, projection, options);
-
-        List<Study> studies = parseStudies(queryResult);
-        if (studies == null || studies.get(0).getCohorts().isEmpty()) {
-            throw CatalogDBException.idNotFound("Cohort", cohortId);
-        } else {
-            return endQuery("getCohort", startTime, studies.get(0).getCohorts());
-        }
-    }
-
-    @Override
-    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        List<Bson> mongoQueryList = new LinkedList<>();
-        options.put(CohortParams.STUDY_ID.key(), studyId);
-        for (Map.Entry<String, Object> entry : options.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                CohortParams option = CohortParams.getParam(key);
-                switch (option) {
-                    case STUDY_ID:
-                        addCompQueryFilter(option, option.key(), PRIVATE_ID, options, mongoQueryList);
-                        break;
-                    default:
-                        String optionsKey = "cohorts." + entry.getKey().replaceFirst(option.name(), option.key());
-                        addCompQueryFilter(option, entry.getKey(), optionsKey, options, mongoQueryList);
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .aggregate(Arrays.<Bson>asList(
-                        new Document("$match", new Document(PRIVATE_ID, studyId)),
-                        new Document("$project", new Document("cohorts", 1)),
-                        new Document("$unwind", "$cohorts"),
-                        new Document("$match", new Document("$and", mongoQueryList))
-                ), filterOptions(options, FILTER_ROUTE_STUDIES));
-
-        List<Cohort> cohorts = parseObjects(queryResult, Study.class).stream().map((study) -> study.getCohorts().get(0))
-                .collect(Collectors.toList());
-
-        return endQuery("getAllCohorts", startTime, cohorts);
-    }
-
-
-
-    @Override
-    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Map<String, Object> cohortParams = new HashMap<>();
-
-        String[] acceptedParams = {"description", "name", "creationDate"};
-        filterStringParams(parameters, cohortParams, acceptedParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("type", Cohort.Type.class);
-        filterEnumParams(parameters, cohortParams, acceptedEnums);
-
-        String[] acceptedIntegerListParams = {"samples"};
-        filterIntegerListParams(parameters, cohortParams, acceptedIntegerListParams);
-        if (parameters.containsKey("samples")) {
-            for (Integer sampleId : parameters.getAsIntegerList("samples")) {
-                if (!sampleExists(sampleId)) {
-                    throw CatalogDBException.idNotFound("Sample", sampleId);
-                }
-            }
-        }
-
-        String[] acceptedMapParams = {"attributes", "stats"};
-        filterMapParams(parameters, cohortParams, acceptedMapParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap("status", Cohort.Status.class);
-        filterEnumParams(parameters, cohortParams, acceptedEnumParams);
-
-        if (!cohortParams.isEmpty()) {
-            HashMap<Object, Object> studyRelativeCohortParameters = new HashMap<>();
-            for (Map.Entry<String, Object> entry : cohortParams.entrySet()) {
-                studyRelativeCohortParameters.put("cohorts.$." + entry.getKey(), entry.getValue());
-            }
-            QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                    .update(new Document("cohorts.id", cohortId), new Document("$set", studyRelativeCohortParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("Cohort", cohortId);
-            }
-        }
-
-        return endQuery("Modify cohort", startTime, getCohort(cohortId, options));
-    }
-
-    @Override
-    public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-//        checkCohortInUse(cohortId);
-        int studyId = getStudyIdByCohortId(cohortId);
-        QueryResult<Cohort> cohort = getCohort(cohortId, queryOptions);
-
-//        QueryResult<WriteResult> update = studyCollection.update(new BasicDBObject(PRIVATE_ID, studyId), new BasicDBObject("$pull", new
-//                BasicDBObject("cohorts", new BasicDBObject("id", cohortId))), null);
-        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .update(Filters.eq(PRIVATE_ID, studyId), Updates.pull("cohorts", new Document("id", cohortId)), null);
-        if (update.first().getModifiedCount() == 0) {
-            throw CatalogDBException.idNotFound("Cohort", cohortId);
-        }
-
-        return endQuery("Delete Cohort", startTime, cohort);
-    }
-
-    @Override
-    public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
-//        BasicDBObject query = new BasicDBObject("cohorts.id", cohortId);
-//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", true), null);
-
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
-                .nativeGet(new Query(CatalogStudyDBAdaptor.QueryParams.COHORT_ID.key(), cohortId),
-                        new QueryOptions(MongoDBCollection.INCLUDE, CatalogStudyDBAdaptor.QueryParams.ID.key()));
-
-        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsKey("id")) {
-            throw CatalogDBException.idNotFound("Cohort", cohortId);
-        } else {
-            Object id = queryResult.getResult().get(0).get("id");
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
-        }
-    }
-
-
-    /*
      * Annotations Methods
      * ***************************
      */
@@ -734,9 +546,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
 
-        queryOptions = new QueryOptions(CohortParams.SAMPLES.key(), sampleId)
-                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
-        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+        queryOptions = new QueryOptions(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId)
+                .append(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_COHORTS + CatalogCohortDBAdaptor.QueryParams.ID.key(),
+                        FILTER_ROUTE_COHORTS + CatalogCohortDBAdaptor.QueryParams.NAME.key()));
+        QueryResult<Cohort> cohortQueryResult = dbAdaptorFactory.getCatalogCohortDBAdaptor().getAllCohorts(studyId, queryOptions);
         if (cohortQueryResult.getNumResults() != 0) {
             String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : "
                     + cohortQueryResult.getResult().stream()
@@ -872,7 +685,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogFileDBAdaptor.QueryParams.ID.key())
+        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
                 .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
 
         List<Integer> sampleIdsToRemove = new ArrayList<>();

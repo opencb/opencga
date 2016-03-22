@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
@@ -11,6 +12,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -256,7 +258,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
      */
     @Override
     public int getStudyIdByCohortId(int cohortId) throws CatalogException {
-        return sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        return cohortDBAdaptor.getStudyIdByCohortId(cohortId);
     }
 
     @Override
@@ -264,12 +266,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         //options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        int studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.getCohort(cohortId, options);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.getCohort(cohortId, options);
         authorizationManager.checkReadCohort(userId, queryResult.first());
 
         return queryResult;
@@ -277,13 +279,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Cohort> readAllCohort(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
 
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.getAllCohorts(studyId, options);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(new Query(query)
+                .append(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId), options);
         authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
@@ -305,7 +309,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.createCohort(studyId, cohort, null);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.createCohort(studyId, cohort, null);
         auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
                 ObjectMap());
         return queryResult;
@@ -315,16 +319,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Cohort> updateCohort(int cohortId, ObjectMap params, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(params, "Update parameters");
-        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        int studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        Cohort cohort = readCohort(cohortId, new QueryOptions("include", "projects.studies.cohorts.status"), sessionId).first();
-        if (params.containsKey("samples") || params.containsKey("name")/* || params.containsKey("type")*/) {
-            switch (cohort.getStatus()) {
+        Cohort cohort = readCohort(cohortId, new QueryOptions(MongoDBCollection.INCLUDE, "projects.studies.cohorts."
+                + CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key()), sessionId).first();
+        if (params.containsKey(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key())
+                || params.containsKey(CatalogCohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
+            switch (cohort.getCohortStatus()) {
                 case CALCULATING:
-                    throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.Status.CALCULATING + "\"");
+                    throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
+                            + "\"");
                 case READY:
-                    params.put("status", Cohort.Status.INVALID);
+                    params.put("status", Cohort.CohortStatus.INVALID);
                     break;
                 case NONE:
                 case INVALID:
@@ -334,19 +341,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.modifyCohort(cohortId, params, options);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.modifyCohort(cohortId, params, options);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, params, null, null);
         return queryResult;
     }
 
     @Override
     public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        int studyId = sampleDBAdaptor.getStudyIdByCohortId(cohortId);
+        int studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
 
-        QueryResult<Cohort> queryResult = sampleDBAdaptor.deleteCohort(cohortId, options);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.deleteCohort(cohortId, options);
         auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
         return queryResult;
     }

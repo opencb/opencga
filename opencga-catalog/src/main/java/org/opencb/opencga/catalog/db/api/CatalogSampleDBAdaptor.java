@@ -17,10 +17,16 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -98,23 +104,6 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
-
-
-    /*
-     * Cohort methods
-     */
-
-    QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException;
-
-    int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
@@ -230,68 +219,6 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
 
         public static VariableSetParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
-    enum CohortParams implements QueryParam {
-        ID("id", DECIMAL, ""),
-        NAME("name", TEXT, ""),
-        TYPE("type", TEXT, ""),
-        STATUS("status", TEXT, ""),
-        CREATION_DATE("creationDate", TEXT, ""),
-        DESCRIPTION("description", TEXT, ""),
-
-        SAMPLES("samples", DECIMAL, ""),
-
-        ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
-
-        STATS("stats", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        NSTATS("nstats", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
-        BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
-
-        STUDY_ID("studyId", DECIMAL, "");
-
-        private static Map<String, CohortParams> map;
-        static {
-            map = new LinkedMap();
-            for (CohortParams params : CohortParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-        private Type type;
-        private String description;
-
-        CohortParams(String key, Type type, String description) {
-            this.key = key;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        public Type type() {
-            return type;
-        }
-
-        @Override
-        public String description() {
-            return description;
-        }
-
-        public static Map<String, CohortParams> getMap() {
-            return map;
-        }
-
-        public static CohortParams getParam(String key) {
             return map.get(key);
         }
     }

@@ -907,8 +907,8 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.readCohort(cohortId, options, sessionId);
     }
 
-    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.readAllCohort(studyId, options, sessionId);
+    public QueryResult<Cohort> getAllCohorts(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        return sampleManager.readAllCohort(studyId, query, options, sessionId);
     }
 
     public QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,

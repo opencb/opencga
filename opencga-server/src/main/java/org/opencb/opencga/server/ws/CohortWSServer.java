@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -237,7 +238,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             } else {
                 int studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
                 return createOkResponse(catalogManager.getAllCohorts(studyId,
-                        new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), cohortIdsCsv), sessionId).first());
+                        new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
             }
 
         } catch (Exception e) {

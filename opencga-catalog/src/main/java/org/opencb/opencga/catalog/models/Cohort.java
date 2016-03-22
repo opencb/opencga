@@ -32,6 +32,7 @@ public class Cohort {
     private Type type;
     private String creationDate;
     private Status status;
+    private CohortStatus cohortStatus;
     private String description;
 
     private List<Integer> samples;
@@ -44,16 +45,17 @@ public class Cohort {
 
     public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
                   Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, Status.NONE, description, samples, Collections.emptyMap(), attributes);
+        this(-1, name, type, creationDate, CohortStatus.NONE, description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, Type type, String creationDate, Status status, String description, List<Integer> samples,
+    public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Integer> samples,
                   Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
         this.creationDate = creationDate;
-        this.status = status;
+        this.cohortStatus = cohortStatus;
+        this.status = new Status();
         this.description = description;
         this.samples = samples;
         this.stats = stats;
@@ -67,6 +69,7 @@ public class Cohort {
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", cohortStatus=").append(cohortStatus);
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
@@ -106,6 +109,14 @@ public class Cohort {
 
     public void setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public CohortStatus getCohortStatus() {
+        return cohortStatus;
+    }
+
+    public void setCohortStatus(CohortStatus cohortStatus) {
+        this.cohortStatus = cohortStatus;
     }
 
     public Status getStatus() {
@@ -148,7 +159,7 @@ public class Cohort {
         this.attributes = attributes;
     }
 
-    public enum Status {NONE, CALCULATING, READY, INVALID}
+    public enum CohortStatus {NONE, CALCULATING, READY, INVALID}
 
     //Represents the criteria of grouping samples in the cohort
     public enum Type {

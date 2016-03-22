@@ -111,6 +111,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Job> jobs = study.getJobs();
         study.setJobs(Collections.<Job>emptyList());
 
+        List<Cohort> cohorts = study.getCohorts();
+        study.setCohorts(Collections.<Cohort>emptyList());
+
         //Create DBObject
         Document studyObject = getMongoDBDocument(study, "Study");
         studyObject.put(PRIVATE_ID, newId);
@@ -141,6 +144,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             String jobErrorMsg = dbAdaptorFactory.getCatalogJobDBAdaptor().createJob(study.getId(), job, options).getErrorMsg();
             if (jobErrorMsg != null && !jobErrorMsg.isEmpty()) {
                 errorMsg += job.getName() + ":" + jobErrorMsg + ", ";
+            }
+        }
+
+        for (Cohort cohort : cohorts) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(study.getId(), cohort, options).getErrorMsg();
+            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
+                errorMsg += cohort.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 

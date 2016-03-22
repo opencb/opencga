@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -52,9 +53,10 @@ public class CatalogStudyConfigurationFactory {
     public static final Query INDEXED_FILES_QUERY = new Query()
             .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS.key(), Index.Status.READY);
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
+    public static final Query COHORTS_QUERY = new Query();
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
-            .append(CatalogSampleDBAdaptor.CohortFilterOption.status.toString(), Cohort.Status.INVALID)
+            .append(CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key(), Cohort.CohortStatus.INVALID)
             .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactory.class);
 
@@ -170,15 +172,15 @@ public class CatalogStudyConfigurationFactory {
         }
 
         logger.debug("Get Cohorts");
-        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY_OPTIONS, sessionId);
+        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY, COHORTS_QUERY_OPTIONS, sessionId);
 
         for (Cohort cohort : cohorts.getResult()) {
             studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohort.getId());
             studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
-            if (cohort.getStatus() == Cohort.Status.READY) {
+            if (cohort.getCohortStatus() == Cohort.CohortStatus.READY) {
                 studyConfiguration.getCalculatedStats().add(cohort.getId());
                 studyConfiguration.getInvalidStats().remove(cohort.getId());
-            } else if (cohort.getStatus() == Cohort.Status.INVALID) {
+            } else if (cohort.getCohortStatus() == Cohort.CohortStatus.INVALID) {
                 studyConfiguration.getCalculatedStats().remove(cohort.getId());
                 studyConfiguration.getInvalidStats().add(cohort.getId());
             } else { //CALCULATING || NONE
@@ -225,10 +227,11 @@ public class CatalogStudyConfigurationFactory {
         //Check if any cohort stat has been updated
         if (!studyConfiguration.getCalculatedStats().isEmpty()) {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                    new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getCalculatedStats())), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.READY)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.READY);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.READY), new QueryOptions(), sessionId);
+                    new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
+                    new QueryOptions(), sessionId).getResult()) {
+                if (cohort.getCohortStatus() == null || !cohort.getCohortStatus().equals(Cohort.CohortStatus.READY)) {
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.CohortStatus.READY), new QueryOptions(), sessionId);
                 }
             }
         }
@@ -236,10 +239,11 @@ public class CatalogStudyConfigurationFactory {
         //Check if any cohort stat has been invalidated
         if (!studyConfiguration.getInvalidStats().isEmpty()) {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                    new QueryOptions(CatalogSampleDBAdaptor.CohortFilterOption.id.toString(), new ArrayList<>(studyConfiguration.getInvalidStats())), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().equals(Cohort.Status.INVALID)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.Status.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.Status.INVALID), new QueryOptions(), sessionId);
+                    new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
+                    new QueryOptions(), sessionId).getResult()) {
+                if (cohort.getCohortStatus() == null || !cohort.getCohortStatus().equals(Cohort.CohortStatus.INVALID)) {
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                 }
             }
         }

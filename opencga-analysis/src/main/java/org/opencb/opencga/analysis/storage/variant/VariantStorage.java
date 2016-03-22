@@ -84,19 +84,19 @@ public class VariantStorage {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
             int studyId = catalogManager.getStudyIdByCohortId(cohortId);
             studyIdSet.add(studyId);
-            switch (cohort.getStatus()) {
+            switch (cohort.getCohortStatus()) {
                 case NONE:
                 case INVALID:
                     break;
                 case READY:
                     if (updateStats) {
-                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.INVALID), new QueryOptions(), sessionId);
+                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                         break;
                     }
                 case CALCULATING:
                     throw new CatalogException("Unable to calculate stats for cohort " +
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
-                            " with status \"" + cohort.getStatus() + "\"");
+                            " with status \"" + cohort.getCohortStatus() + "\"");
             }
             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("id", cohort.getSamples()), new QueryOptions(), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());
@@ -109,7 +109,7 @@ public class VariantStorage {
             outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
-            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.Status.CALCULATING), new QueryOptions(), sessionId);
+            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
 
         }
 

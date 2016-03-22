@@ -32,6 +32,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     protected static final String JOB_COLLECTION = "job";
     protected static final String SAMPLE_COLLECTION = "sample";
     protected static final String INDIVIDUAL_COLLECTION = "individual";
+    protected static final String COHORT_COLLECTION = "cohort";
     protected static final String METADATA_COLLECTION = "metadata";
     protected static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
@@ -48,6 +49,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private MongoDBCollection sampleCollection;
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
+    private MongoDBCollection cohortCollection;
     private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
@@ -57,6 +59,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoFileDBAdaptor fileDBAdaptor;
     private CatalogMongoJobDBAdaptor jobDBAdaptor;
     private CatalogMongoProjectDBAdaptor projectDBAdaptor;
+    private CatalogMongoCohortDBAdaptor cohortDBAdaptor;
     private CatalogMongoAuditDBAdaptor auditDBAdaptor;
     private CatalogMongoMetaDBAdaptor metaDBAdaptor;
 
@@ -156,6 +159,11 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
+    public CatalogMongoCohortDBAdaptor getCatalogCohortDBAdaptor() {
+        return cohortDBAdaptor;
+    }
+
+    @Override
     public CatalogMongoAuditDBAdaptor getCatalogAuditDbAdaptor() {
         return auditDBAdaptor;
     }
@@ -173,6 +181,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         sampleCollection = db.getCollection(SAMPLE_COLLECTION);
         individualCollection = db.getCollection(INDIVIDUAL_COLLECTION);
         jobCollection = db.getCollection(JOB_COLLECTION);
+        cohortCollection = db.getCollection(COHORT_COLLECTION);
         auditCollection = db.getCollection(AUDIT_COLLECTION);
 
         collections = new HashMap<>();
@@ -183,6 +192,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         collections.put(SAMPLE_COLLECTION, sampleCollection);
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
         collections.put(JOB_COLLECTION, jobCollection);
+        collections.put(COHORT_COLLECTION, cohortCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
 
         fileDBAdaptor = new CatalogMongoFileDBAdaptor(fileCollection, this);
@@ -192,6 +202,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         sampleDBAdaptor = new CatalogMongoSampleDBAdaptor(sampleCollection, this);
         studyDBAdaptor = new CatalogMongoStudyDBAdaptor(studyCollection, this);
         userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
+        cohortDBAdaptor = new CatalogMongoCohortDBAdaptor(cohortCollection, this);
         metaDBAdaptor = new CatalogMongoMetaDBAdaptor(this, metaCollection);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 

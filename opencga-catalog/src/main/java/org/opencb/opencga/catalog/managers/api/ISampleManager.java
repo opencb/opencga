@@ -45,7 +45,7 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
 
     QueryResult<Cohort> readCohort(int cohortId, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Cohort> readAllCohort(int studyId, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Cohort> readAllCohort(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Cohort> createCohort(int studyId, String name, Cohort.Type type, String description, List<Integer> sampleIds,
                                      Map<String, Object> attributes, String sessionId) throws CatalogException;

@@ -997,7 +997,7 @@ public class OpenCGAMain {
         List<QueryResult<Cohort>> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
-        Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
+        Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.<Integer>emptyList(), null, sessionId);
