@@ -369,17 +369,23 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (List<String> data : studyEntry.getSamplesData()) {
-            String genotype = data.get(gtIdx);
-            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
-            if (genotype != null) {
-//                Genotype g = new Genotype(genotype);
-                List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
-                if (samplesWithGenotype == null) {
-                    samplesWithGenotype = new ArrayList<>();
-                    genotypeCodes.put(genotype, samplesWithGenotype);
-                }
-                samplesWithGenotype.add(sampleIds.get(sampleName));
+            String genotype;
+            if (gtIdx == null) {
+                genotype = UNKNOWN_GENOTYPE;
+            } else {
+                genotype = data.get(gtIdx);
             }
+            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+            if (genotype == null) {
+                genotype = UNKNOWN_GENOTYPE;
+            }
+//                Genotype g = new Genotype(genotype);
+            List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
+            if (samplesWithGenotype == null) {
+                samplesWithGenotype = new ArrayList<>();
+                genotypeCodes.put(genotype, samplesWithGenotype);
+            }
+            samplesWithGenotype.add(sampleIds.get(sampleName));
             sampleIdx++;
         }
 

@@ -352,6 +352,24 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     }
 
     @Test
+    public void indexWithOtherFieldsNoGT() throws Exception {
+        //GL:GU:SDP:TU:FDP:AU:DP:SUBDP:CU
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+
+        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME).iterator(new Query(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            assertEquals("./.", variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
+        }
+
+    }
+
+    @Test
     public void checkAndUpdateStudyConfigurationWithoutSampleIdsTest() throws StorageManagerException {
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         studyConfiguration.getSampleIds().put("s0", 1);
