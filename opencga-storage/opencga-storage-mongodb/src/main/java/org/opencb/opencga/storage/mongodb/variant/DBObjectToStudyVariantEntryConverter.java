@@ -213,10 +213,8 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
 //        }
 
         // Samples
-        if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
+        if (samplesConverter != null) {
             samplesConverter.convertToDataModelType(object, study, studyId);
-        } else {
-            study.setFormat(Collections.<String>emptyList());
         }
 
         return study;

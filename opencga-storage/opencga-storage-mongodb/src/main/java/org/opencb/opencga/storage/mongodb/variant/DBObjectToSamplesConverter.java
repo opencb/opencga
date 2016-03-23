@@ -205,14 +205,13 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
-        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+        boolean excludeGenotypes = !object.containsField(GENOTYPES_FIELD) || studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
         }
 
-        BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
 
         List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
@@ -247,6 +246,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
         Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
         if (!excludeGenotypes) {
+            BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
             for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
                 final String genotype;
                 if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
@@ -321,7 +321,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         extraFieldPosition++;
                     }
                 } else {
-                    int extraFieldPosition = 1; //Skip GT
+                    int extraFieldPosition;
+                    if (excludeGenotypes) {
+                        extraFieldPosition = 0; //There are no GT
+                    } else {
+                        extraFieldPosition = 1; //Skip GT
+                    }
                     for (int i = 0; i < extraFields.size(); i++) {
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
@@ -380,7 +385,11 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public DBObject convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, BasicDBObject otherFields) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
-        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+
+        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
         HashBiMap<String, Integer> sampleIds = HashBiMap.create(studyConfiguration.getSampleIds());
         // Classify samples by genotype
@@ -408,9 +417,6 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             sampleIdx++;
         }
 
-
-        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
-
         // In Mongo, samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
         // positions where it is shown will not be stored. Example from 1000G:
@@ -425,7 +431,10 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                 mongoGenotypes.append(genotypeStr, entry.getValue());
             }
         }
-        mongoSamples.append(GENOTYPES_FIELD, mongoGenotypes);
+
+        if (!excludeGenotypes) {
+            mongoSamples.append(GENOTYPES_FIELD, mongoGenotypes);
+        }
 
 
         //Position for samples in this file

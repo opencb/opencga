@@ -203,20 +203,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
             }
 
-            if (studyConfiguration.getIndexedFiles().isEmpty()) {
-                // First indexed file
-                // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
-                boolean excludeGenotypes =
-                        variantOptions.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-                studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-            } else {
-                // Not first indexed file
-                // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
-                boolean excludeGenotypes = studyConfiguration.getAttributes()
-                        .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-                variantOptions.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-            }
-
             checkNewFile(studyConfiguration, fileId, fileName);
         }
         variantOptions.put(Options.STUDY_CONFIGURATION.key, studyConfiguration);
@@ -540,6 +526,19 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
         studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
+        if (studyConfiguration.getIndexedFiles().isEmpty()) {
+            // First indexed file
+            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
+            boolean excludeGenotypes =
+                    options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+        } else {
+            // Not first indexed file
+            // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
+            boolean excludeGenotypes = studyConfiguration.getAttributes()
+                    .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+        }
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 

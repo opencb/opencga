@@ -1260,12 +1260,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Multiset<String> nonInsertedVariants = HashMultiset.create();
         String fileIdStr = Integer.toString(fileId);
 //        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
 
         {
             Map missingSamples = Collections.emptyMap();
             String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
             if (defaultGenotype.equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
-                logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).");
+                logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+            } else if (excludeGenotypes) {
+                logger.debug("Do not need fill gaps. Excluding genotypes.");
             } else if (!loadedSampleIds.isEmpty()) {
                 missingSamples = new BasicDBObject(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, loadedSampleIds);   // ?/?
             }
@@ -1360,17 +1364,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 DBObject studyObject = variantSourceEntryConverter.convertToStorageType(studyEntry);
                 DBObject genotypes = (DBObject) studyObject.get(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD);
                 DBObject push = new BasicDBObject();
-                if (genotypes != null) { //If genotypes is null, genotypes are not suppose to be loaded
-                    for (String genotype : genotypes.keySet()) {
-                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
-                    }
+                if (!excludeGenotypes) {
+                    if (genotypes != null) { //If genotypes is null, genotypes are not suppose to be loaded
+                        for (String genotype : genotypes.keySet()) {
+                            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
+                        }
 //                    for (String extraField : extraFields) {
 //                        List values = (List) studyObject.get(extraField.toLowerCase());
 //                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
 //                                new BasicDBObject("$each", values).append("$position", loadedSampleIds.size()));
 //                    }
-                } else {
-                    push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
+                    } else {
+                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
+                    }
                 }
                 push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.FILES_FIELD, ((List) studyObject.get(DBObjectToStudyVariantEntryConverter.FILES_FIELD)).get(0));
                 BasicDBObject update = new BasicDBObject(new BasicDBObject("$push", push));
@@ -1411,8 +1417,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "")
                 .equals(Collections.singletonList(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE))
-                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()) {
+//                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
+                ) {
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+            return new QueryResult<>();
+        } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+            logger.debug("Do not need fill gaps. Exclude genotypes.");
             return new QueryResult<>();
         }
 
