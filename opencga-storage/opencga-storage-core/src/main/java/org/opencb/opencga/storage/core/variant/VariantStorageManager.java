@@ -109,6 +109,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
+        EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
         STUDY_CONFIGURATION ("studyConfiguration", ""),      //
         STUDY_CONFIGURATION_MANAGER_CLASS_NAME ("studyConfigurationManagerClassName", ""),
@@ -200,6 +201,20 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 checkStudyId(studyId);
                 studyConfiguration = new StudyConfiguration(studyId, variantOptions.getString(Options.STUDY_NAME.key));
                 studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key, VariantSource.Aggregation.class));
+            }
+
+            if (studyConfiguration.getIndexedFiles().isEmpty()) {
+                // First indexed file
+                // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
+                boolean excludeGenotypes =
+                        variantOptions.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+                studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+            } else {
+                // Not first indexed file
+                // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
+                boolean excludeGenotypes = studyConfiguration.getAttributes()
+                        .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+                variantOptions.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
             }
 
             checkNewFile(studyConfiguration, fileId, fileName);
