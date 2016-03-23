@@ -341,7 +341,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
             loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
-                while(values.get(1).length() < 5) values.set(1, values.get(1) + "0");   //Set lost zeros
 
             });
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());

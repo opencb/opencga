@@ -1259,7 +1259,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Use a multiset instead of a normal set, to keep tracking of duplicated variants
         Multiset<String> nonInsertedVariants = HashMultiset.create();
         String fileIdStr = Integer.toString(fileId);
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
 
         {
             Map missingSamples = Collections.emptyMap();
@@ -1269,10 +1269,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             } else if (!loadedSampleIds.isEmpty()) {
                 missingSamples = new BasicDBObject(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, loadedSampleIds);   // ?/?
             }
-            List<Object> missingOtherValues = new ArrayList<>(loadedSampleIds.size());
-            for (int i = 0; i < loadedSampleIds.size(); i++) {
-                missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
-            }
+//            List<Object> missingOtherValues = new ArrayList<>(loadedSampleIds.size());
+//            for (int i = 0; i < loadedSampleIds.size(); i++) {
+//                missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
+//            }
             for (Variant variant : data) {
                 if (variant.getType().equals(VariantType.NO_VARIATION)) {
                     //Storage-MongoDB is not able to store NON VARIANTS
@@ -1293,10 +1293,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     DBObject genotypes = (DBObject) study.get(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD);
                     if (genotypes != null) {        //If genotypes is null, genotypes are not suppose to be loaded
                         genotypes.putAll(missingSamples);   //Add missing samples
-                        for (String extraField : extraFields) {
-                            List<Object> otherFieldValues = (List<Object>) study.get(extraField.toLowerCase());
-                            otherFieldValues.addAll(0, missingOtherValues);
-                        }
+//                        for (String extraField : extraFields) {
+//                            List<Object> otherFieldValues = (List<Object>) study.get(extraField.toLowerCase());
+//                            otherFieldValues.addAll(0, missingOtherValues);
+//                        }
                     }
                     DBObject push = new BasicDBObject(DBObjectToVariantConverter.STUDIES_FIELD, study);
                     BasicDBObject update = new BasicDBObject()
@@ -1364,11 +1364,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     for (String genotype : genotypes.keySet()) {
                         push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." + genotype, new BasicDBObject("$each", genotypes.get(genotype)));
                     }
-                    for (String extraField : extraFields) {
-                        List values = (List) studyObject.get(extraField.toLowerCase());
-                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
-                                new BasicDBObject("$each", values).append("$position", loadedSampleIds.size()));
-                    }
+//                    for (String extraField : extraFields) {
+//                        List values = (List) studyObject.get(extraField.toLowerCase());
+//                        push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
+//                                new BasicDBObject("$each", values).append("$position", loadedSampleIds.size()));
+//                    }
                 } else {
                     push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, Collections.emptyMap());
                 }
@@ -1438,16 +1438,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." +
                         DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds));
 
-        List<Object> missingOtherValues = new ArrayList<>(fileSampleIds.size());
-        for (int size = fileSampleIds.size(); size > 0; size--) {
-            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
-        }
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
-        for (String extraField : extraFields) {
-            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
-                    new BasicDBObject("$each", missingOtherValues).append("$position", loadedSamples.size())
-            );
-        }
+//        List<Object> missingOtherValues = new ArrayList<>(fileSampleIds.size());
+//        for (int size = fileSampleIds.size(); size > 0; size--) {
+//            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
+//        }
+//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+//        for (String extraField : extraFields) {
+//            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
+//                    new BasicDBObject("$each", missingOtherValues).append("$position", loadedSamples.size())
+//            );
+//        }
 
         BasicDBObject update = new BasicDBObject("$push", push);
 
