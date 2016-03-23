@@ -341,7 +341,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
             loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
-                while(values.get(1).length() < 5) values.set(1, values.get(1) + "0");   //Set lost zeros
 
             });
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
@@ -349,6 +348,24 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         }
         reader.post();
         reader.close();
+
+    }
+
+    @Test
+    public void indexWithOtherFieldsNoGT() throws Exception {
+        //GL:GU:SDP:TU:FDP:AU:DP:SUBDP:CU
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+
+        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME).iterator(new Query(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            assertEquals("./.", variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
+        }
 
     }
 

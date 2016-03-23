@@ -18,19 +18,26 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.datastore.core.ComplexTypeConverter;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantEntryConverter.*;
 
@@ -41,7 +48,7 @@ import static org.opencb.opencga.storage.mongodb.variant.DBObjectToStudyVariantE
 public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, DBObject>*/ {
 
     public static final String UNKNOWN_GENOTYPE = "?/?";
-    public static final Object UNKNOWN_FIELD = -1;
+    public static final String UNKNOWN_FIELD = ".";
 
     private final Map<Integer, StudyConfiguration> studyConfigurations;
     private final Map<Integer, BiMap<String, Integer>> __studySamplesId; //Inverse map from "sampleIds". Do not use directly, can be null. Use "getIndexedIdSamplesMap()"
@@ -53,6 +60,47 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     private String returnedUnknownGenotype;
 
     public static final org.slf4j.Logger logger = LoggerFactory.getLogger(DBObjectToSamplesConverter.class.getName());
+
+    /**
+     * Converts Integer FORMAT fields.
+     */
+    final static ComplexTypeConverter<String, Integer> INTEGER_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+        @Override
+        public String convertToDataModelType(Integer anInt) {
+            return anInt == 0? UNKNOWN_FIELD : Integer.toString(anInt > 0 ? anInt - 1 : anInt);
+        }
+
+        @Override
+        public Integer convertToStorageType(String stringValue) {
+            try {
+                int anInt = ((int) Float.parseFloat(stringValue));
+                return anInt >= 0? anInt + 1 : anInt;
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+    };
+
+    /**
+     * Converts Float FORMAT fields.
+     */
+    final static ComplexTypeConverter<String, Integer> FLOAT_COMPLEX_TYPE_CONVERTER = new ComplexTypeConverter<String, Integer>() {
+        @Override
+        public String convertToDataModelType(Integer anInt) {
+            return anInt == 0? UNKNOWN_FIELD : Double.toString((anInt > 0 ? anInt - 1 : anInt) / 1000.0);
+        }
+
+        @Override
+        public Integer convertToStorageType(String stringValue) {
+            try {
+                int anInt = (int) (Float.parseFloat(stringValue) * 1000);
+                return anInt >= 0? anInt + 1 : anInt;
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+    };
+
 
     /**
      * Create a converter from a Map of samples to DBObject entities.
@@ -212,19 +260,79 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
         }
 
-        int extraFieldPosition = 1; //Skip GT
-        for (String extraField : extraFields) {
-            if (object.containsField(extraField.toLowerCase())) {
-                List values = (List) object.get(extraField.toLowerCase());
+        if (object.containsField(FILES_FIELD)) {
+            List<DBObject> fileObjects = (List<DBObject>) object.get(FILES_FIELD);
+            Map<Integer, DBObject> files = fileObjects.stream().collect(Collectors.toMap(f -> (Integer) f.get(FILEID_FIELD), f -> f));
 
-                for (int i = 0; i < values.size(); i++) {
-                    Object value = values.get(i);
-                    String sampleName = samplesPosition.inverse().get(i);
-                    samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, value.toString());
+            for (Integer fid : studyConfiguration.getIndexedFiles()) {
+                if (files.containsKey(fid)) {
+                    DBObject sampleDatas = (DBObject) files.get(fid).get(SAMPLE_DATA_FIELD);
+
+                    int extraFieldPosition = 1; //Skip GT
+                    for (String extraField : extraFields) {
+                        byte[] byteArray = (byte[]) sampleDatas.get(extraField.toLowerCase());
+
+                        VariantMongoDBProto.OtherFields otherFields = null;
+                        try {
+                            byteArray = CompressionUtils.decompress(byteArray);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        } catch (DataFormatException ignore) {
+                        }
+                        try {
+                            otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
+                        } catch (InvalidProtocolBufferException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        Supplier<String> supplier;
+                        if (otherFields.getIntValuesCount() > 0) {
+                            final Iterator<Integer> iterator = otherFields.getIntValuesList().iterator();
+                            supplier = () -> iterator.hasNext() ? INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(iterator.next()) : UNKNOWN_FIELD;
+                        } else if (otherFields.getFloatValuesCount() > 0) {
+                            final Iterator<Integer> iterator = otherFields.getFloatValuesList().iterator();
+                            supplier = () -> iterator.hasNext() ? FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(iterator.next()) : UNKNOWN_FIELD;
+                        } else {
+                            final Iterator<String> iterator = otherFields.getStringValuesList().iterator();
+                            supplier = () -> iterator.hasNext() ? iterator.next() : UNKNOWN_FIELD;
+                        }
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            try {
+                                samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
+                            } catch (NullPointerException e) {
+                                throw e;
+                            }
+                        }
+
+                        extraFieldPosition++;
+                    }
+                } else {
+                    int extraFieldPosition = 1; //Skip GT
+                    for (int i = 0; i < extraFields.size(); i++) {
+                        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
+                            String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
+                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, UNKNOWN_FIELD);
+                        }
+                        extraFieldPosition++;
+                    }
                 }
             }
-            extraFieldPosition++;
         }
+
+//
+//        int extraFieldPosition = 1; //Skip GT
+//        for (String extraField : extraFields) {
+//            if (object.containsField(extraField.toLowerCase())) {
+//                List values = (List) object.get(extraField.toLowerCase());
+//
+//                for (int i = 0; i < values.size(); i++) {
+//                    Object value = values.get(i);
+//                    String sampleName = samplesPosition.inverse().get(i);
+//                    samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, value.toString());
+//                }
+//            }
+//            extraFieldPosition++;
+//        }
 
         fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData);
         return samplesData;
@@ -250,7 +358,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
     }
 
-    public DBObject convertToStorageType(StudyEntry studyEntry, int studyId, int fileId) {
+    public DBObject convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, BasicDBObject otherFields) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
@@ -261,17 +369,23 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (List<String> data : studyEntry.getSamplesData()) {
-            String genotype = data.get(gtIdx);
-            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
-            if (genotype != null) {
-//                Genotype g = new Genotype(genotype);
-                List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
-                if (samplesWithGenotype == null) {
-                    samplesWithGenotype = new ArrayList<>();
-                    genotypeCodes.put(genotype, samplesWithGenotype);
-                }
-                samplesWithGenotype.add(sampleIds.get(sampleName));
+            String genotype;
+            if (gtIdx == null) {
+                genotype = UNKNOWN_GENOTYPE;
+            } else {
+                genotype = data.get(gtIdx);
             }
+            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+            if (genotype == null) {
+                genotype = UNKNOWN_GENOTYPE;
+            }
+//                Genotype g = new Genotype(genotype);
+            List<Integer> samplesWithGenotype = genotypeCodes.get(genotype);
+            if (samplesWithGenotype == null) {
+                samplesWithGenotype = new ArrayList<>();
+                genotypeCodes.put(genotype, samplesWithGenotype);
+            }
+            samplesWithGenotype.add(sampleIds.get(sampleName));
             sampleIdx++;
         }
 
@@ -304,42 +418,68 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
 
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
-        for (String extraField : extraFields) {
-            List<Object> values = new ArrayList<>(samplesPosition.size());
-            for (int size = samplesPosition.size(); size > 0; size--) {
-                values.add(UNKNOWN_FIELD);
-            }
+        List<String> extraFieldsType = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+
+        for (int i = 0; i < extraFields.size(); i++) {
+            String extraField = extraFields.get(i);
+            String extraFieldType = i < extraFieldsType.size() ? extraFieldsType.get(i) : "String";
+
+
+            VariantMongoDBProto.OtherFields.Builder builder = VariantMongoDBProto.OtherFields.newBuilder();
+//            List<Object> values = new ArrayList<>(samplesPosition.size());
+//            for (int size = samplesPosition.size(); size > 0; size--) {
+//                values.add(UNKNOWN_FIELD);
+//            }
             sampleIdx = 0;
             if (studyEntry.getFormatPositions().containsKey(extraField)) {
-                Integer fieldIdx = studyEntry.getFormatPositions().get(extraField);
+                Integer formatIdx = studyEntry.getFormatPositions().get(extraField);
                 for (List<String> sampleData : studyEntry.getSamplesData()) {
-                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
-                    Integer index = samplesPosition.get(sampleName);
-                    Object value;
-                    String stringValue = sampleData.get(fieldIdx);
-                    if (NumberUtils.isNumber(stringValue)) {
-                        try {
-                            value = Integer.parseInt(stringValue);
-                        } catch (NumberFormatException e) {
-                            try {
-                                value = Double.parseDouble(stringValue);
-                            } catch (NumberFormatException e2) {
-                                value = stringValue;
-                            }
+//                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+//                    Integer index = samplesPosition.get(sampleName);
+                    String stringValue = sampleData.get(formatIdx);
+//                    Object value;
+//                    if (NumberUtils.isNumber(stringValue)) {
+//                        try {
+//                            value = Integer.parseInt(stringValue);
+//                        } catch (NumberFormatException e) {
+//                            try {
+//                                value = Double.parseDouble(stringValue);
+//                            } catch (NumberFormatException e2) {
+//                                value = stringValue;
+//                            }
+//                        }
+//                    } else {
+//                        value = stringValue;
+//                    }
+                    switch (extraFieldType) {
+                        case "Integer": {
+                            builder.addIntValues(INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            break;
                         }
-                    } else {
-                        value = stringValue;
+                        case "Float": {
+                            builder.addFloatValues(FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(stringValue));
+                            break;
+                        }
+                        case "String":
+                        default:
+                            builder.addStringValues(stringValue);
+                            break;
                     }
-                    values.set(index, value);
                     sampleIdx++;
                 }
+            } // else { Don't set that field }
+
+            byte[] byteArray = builder.build().toByteArray();
+            try {
+                byteArray = CompressionUtils.compress(byteArray);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            mongoSamples.append(extraField.toLowerCase(), values);
+            otherFields.append(extraField.toLowerCase(), byteArray);
         }
 
         return mongoSamples;
     }
-
 
     public void setSamples(int studyId, Integer fileId, List<String> samples) {
         int i = 0;

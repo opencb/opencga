@@ -24,7 +24,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -33,8 +32,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
+
+//import org.opencb.cellbase.core.db.DBAdaptorFactory;
+//import org.opencb.cellbase.core.db.api.variation.VariantAnnotationDBAdaptor;
+//import org.opencb.cellbase.core.db.api.variation.VariationDBAdaptor;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -202,8 +208,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
                     CellBaseClient.Category.genomic,
                     CellBaseClient.SubCategory.variant,
                     variants,
-                    queryOptions);
-
+                    new org.opencb.commons.datastore.core.QueryOptions(queryOptions));
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
                         variants.stream().map(Variant::toString).collect(Collectors.joining(",")));

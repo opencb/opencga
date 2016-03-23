@@ -135,12 +135,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String host : configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getHosts()) {
-            if (host.contains(":")) {
-                String[] hostPort = host.split(":");
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort[0], Integer.parseInt(hostPort[1])));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
+        for (String hostCsv : configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getHosts()) {
+            for (String host : hostCsv.split(",")) {
+                if (host.contains(":")) {
+                    String[] hostPort = host.split(":");
+                    dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort[0], Integer.parseInt(hostPort[1])));
+                } else {
+                    dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
+                }
             }
         }
 
@@ -183,6 +185,39 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
                     throw new StorageManagerException("Unable to change Stored Extra Fields if there are already indexed files.");
                 }
+            }
+            if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+                VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+                List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                for (String extraField : extraFields) {
+                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                    String type = "String";
+                    for (Map<String, Object> format : formats) {
+                        if (format.get("ID").toString().equals(extraField)) {
+                            if ("1".equals(format.get("Number"))) {
+                                type = Objects.toString(format.get("Type"));
+                            } else {
+                                //Fields with arity != 1 are loaded as String
+                                type = "String";
+                            }
+                            break;
+                        }
+                    }
+                    switch (type) {
+                        default:
+                        case "Character":
+                            type = "String";
+                            break;
+                        case "String":
+                        case "Float":
+                        case "Integer":
+                            break;
+
+                    }
+                    extraFieldsType.add(type);
+                    System.err.println(extraField + " : " + type);
+                }
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
         }
 
