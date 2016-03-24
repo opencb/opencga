@@ -207,6 +207,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
         boolean excludeGenotypes = !object.containsField(GENOTYPES_FIELD) || studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean compressExtraParams = studyConfiguration.getAttributes()
+                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
@@ -287,11 +290,13 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         byte[] byteArray = (byte[]) sampleDatas.get(extraField.toLowerCase());
 
                         VariantMongoDBProto.OtherFields otherFields = null;
-                        try {
-                            byteArray = CompressionUtils.decompress(byteArray);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        } catch (DataFormatException ignore) {
+                        if (compressExtraParams) {
+                            try {
+                                byteArray = CompressionUtils.decompress(byteArray);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            } catch (DataFormatException ignore) {
+                            }
                         }
                         try {
                             otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
@@ -388,6 +393,9 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean compressExtraParams = studyConfiguration.getAttributes()
+                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
         Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
@@ -498,10 +506,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             } // else { Don't set that field }
 
             byte[] byteArray = builder.build().toByteArray();
-            try {
-                byteArray = CompressionUtils.compress(byteArray);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (compressExtraParams) {
+                try {
+                    byteArray = CompressionUtils.compress(byteArray);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
             otherFields.append(extraField.toLowerCase(), byteArray);
         }
