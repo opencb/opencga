@@ -205,12 +205,16 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
         List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        boolean excludeGenotypes = !object.containsField(GENOTYPES_FIELD) || studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean compressExtraParams = studyConfiguration.getAttributes()
+                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
-            fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList());
+            fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
         }
 
-        BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
 
         List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
@@ -228,8 +232,13 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         // Add the samples to the file
         for (int i = 0; i < sampleIds.size(); i++) {
-            String[] values = new String[1 + extraFields.size()];
-            values[0] = mostCommonGtString;
+            String[] values;
+            if (excludeGenotypes) {
+                values = new String[extraFields.size()];
+            } else {
+                values = new String[1 + extraFields.size()];
+                values[0] = mostCommonGtString;
+            }
             samplesData.add(Arrays.asList(values));
         }
 
@@ -239,23 +248,26 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
         // "0|1" : [ 41, 311, 342, 358, 881, 898, 903 ]
         // genotypes[41], genotypes[311], etc, will be set to "0|1"
         Map<Integer, String> idSamples = getIndexedSamplesIdMap(studyId).inverse();
-        for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
-            final String genotype;
-            if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
-                if (returnedUnknownGenotype == null) {
-                    continue;
-                }
-                if (defaultGenotypes.contains(returnedUnknownGenotype)) {
-                    continue;
+        if (!excludeGenotypes) {
+            BasicDBObject mongoGenotypes = (BasicDBObject) object.get(GENOTYPES_FIELD);
+            for (Map.Entry<String, Object> dbo : mongoGenotypes.entrySet()) {
+                final String genotype;
+                if (dbo.getKey().equals(UNKNOWN_GENOTYPE)) {
+                    if (returnedUnknownGenotype == null) {
+                        continue;
+                    }
+                    if (defaultGenotypes.contains(returnedUnknownGenotype)) {
+                        continue;
+                    } else {
+                        genotype = returnedUnknownGenotype;
+                    }
                 } else {
-                    genotype = returnedUnknownGenotype;
+                    genotype = genotypeToDataModelType(dbo.getKey());
                 }
-            } else {
-                genotype = genotypeToDataModelType(dbo.getKey());
-            }
-            for (Integer sampleId : (List<Integer>) dbo.getValue()) {
-                if (idSamples.containsKey(sampleId)) {
-                    samplesData.get(samplesPositionToReturn.get(idSamples.get(sampleId))).set(0, genotype);
+                for (Integer sampleId : (List<Integer>) dbo.getValue()) {
+                    if (idSamples.containsKey(sampleId)) {
+                        samplesData.get(samplesPositionToReturn.get(idSamples.get(sampleId))).set(0, genotype);
+                    }
                 }
             }
         }
@@ -268,16 +280,23 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                 if (files.containsKey(fid)) {
                     DBObject sampleDatas = (DBObject) files.get(fid).get(SAMPLE_DATA_FIELD);
 
-                    int extraFieldPosition = 1; //Skip GT
+                    int extraFieldPosition;
+                    if (excludeGenotypes) {
+                        extraFieldPosition = 0; //There are no GT
+                    } else {
+                        extraFieldPosition = 1; //Skip GT
+                    }
                     for (String extraField : extraFields) {
                         byte[] byteArray = (byte[]) sampleDatas.get(extraField.toLowerCase());
 
                         VariantMongoDBProto.OtherFields otherFields = null;
-                        try {
-                            byteArray = CompressionUtils.decompress(byteArray);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        } catch (DataFormatException ignore) {
+                        if (compressExtraParams) {
+                            try {
+                                byteArray = CompressionUtils.decompress(byteArray);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            } catch (DataFormatException ignore) {
+                            }
                         }
                         try {
                             otherFields = VariantMongoDBProto.OtherFields.parseFrom(byteArray);
@@ -307,7 +326,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         extraFieldPosition++;
                     }
                 } else {
-                    int extraFieldPosition = 1; //Skip GT
+                    int extraFieldPosition;
+                    if (excludeGenotypes) {
+                        extraFieldPosition = 0; //There are no GT
+                    } else {
+                        extraFieldPosition = 1; //Skip GT
+                    }
                     for (int i = 0; i < extraFields.size(); i++) {
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
@@ -334,19 +358,24 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
 //            extraFieldPosition++;
 //        }
 
-        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData);
+        fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData, excludeGenotypes);
         return samplesData;
     }
 
-    private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData) {
-        //If != null, just return samplesData
+    private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields, List<List<String>> samplesData, boolean excludeGenotypes) {
         if (study != null) {
             //Set FORMAT
             if (extraFields.isEmpty()) {
-                study.setFormat(Collections.singletonList("GT"));
+                if (excludeGenotypes) {
+                    study.setFormat(Collections.emptyList());
+                } else {
+                    study.setFormat(Collections.singletonList("GT"));
+                }
             } else {
                 List<String> format = new ArrayList<>(1 + extraFields.size());
-                format.add("GT");
+                if (!excludeGenotypes) {
+                    format.add("GT");
+                }
                 format.addAll(extraFields);
                 study.setFormat(format);
             }
@@ -361,7 +390,14 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
     public DBObject convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, BasicDBObject otherFields) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
-        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean compressExtraParams = studyConfiguration.getAttributes()
+                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+
+        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
         HashBiMap<String, Integer> sampleIds = HashBiMap.create(studyConfiguration.getSampleIds());
         // Classify samples by genotype
@@ -389,9 +425,6 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             sampleIdx++;
         }
 
-
-        Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
-
         // In Mongo, samples are stored in a map, classified by their genotype.
         // The most common genotype will be marked as "default" and the specific
         // positions where it is shown will not be stored. Example from 1000G:
@@ -406,7 +439,10 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                 mongoGenotypes.append(genotypeStr, entry.getValue());
             }
         }
-        mongoSamples.append(GENOTYPES_FIELD, mongoGenotypes);
+
+        if (!excludeGenotypes) {
+            mongoSamples.append(GENOTYPES_FIELD, mongoGenotypes);
+        }
 
 
         //Position for samples in this file
@@ -470,10 +506,12 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
             } // else { Don't set that field }
 
             byte[] byteArray = builder.build().toByteArray();
-            try {
-                byteArray = CompressionUtils.compress(byteArray);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (compressExtraParams) {
+                try {
+                    byteArray = CompressionUtils.compress(byteArray);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
             otherFields.append(extraField.toLowerCase(), byteArray);
         }
