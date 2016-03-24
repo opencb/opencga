@@ -381,9 +381,18 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StudyConfiguration studyConfiguration = newStudyConfiguration();
         ETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
                 new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
                         .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), true)
                         .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                         .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+        etlResult = runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
+                        .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), false)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 3)
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
 

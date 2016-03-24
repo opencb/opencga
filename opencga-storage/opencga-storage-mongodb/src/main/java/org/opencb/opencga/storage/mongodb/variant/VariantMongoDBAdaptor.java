@@ -106,6 +106,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 : this.storageEngineConfiguration.getVariant().getOptions();
     }
 
+    protected MongoDBCollection getVariantsCollection() {
+        return variantsCollection;
+    }
 
     @Override
     @Deprecated
