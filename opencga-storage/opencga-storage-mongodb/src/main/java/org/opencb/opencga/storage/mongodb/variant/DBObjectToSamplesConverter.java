@@ -296,6 +296,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             } catch (DataFormatException ignore) {
+                                //It was not actually compressed, so it failed decompressing
                             }
                         }
                         try {
@@ -316,11 +317,7 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         }
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                            try {
-                                samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
-                            } catch (NullPointerException e) {
-                                throw e;
-                            }
+                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
                         }
 
                         extraFieldPosition++;

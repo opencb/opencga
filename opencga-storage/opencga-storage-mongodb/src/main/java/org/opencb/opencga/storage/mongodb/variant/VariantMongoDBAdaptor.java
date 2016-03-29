@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.BiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.mongodb.*;
@@ -1411,6 +1412,27 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return new QueryResult<>("insertVariants", ((int) (System.currentTimeMillis() - startTime)), 1, 1, "", "", Collections.singletonList(writeResult));
     }
 
+    /**
+     * Fills the missing genotype values for the new loaded samples.
+     * Missing data is which was present in the database but not in the input file.
+     * Data present in the file but not in the database is added during the {@link #insert} step.
+     *
+     *          +--------+---------+
+     *          | Loaded | NewFile |
+     * +--------+--------+---------+
+     * | 10:A:T | DATA   |         |   <- Missing data to be filled
+     * +--------+--------+---------+
+     * | 20:C:T |        | DATA    |   <- Missing data already filled in the {@link #insert} step.
+     * +--------+--------+---------+
+     *
+     *
+     *
+     * @param fileId        Loading File ID
+     * @param chromosomes   Chromosomes covered by the current file
+     * @param fileSampleIds FileSampleIds
+     * @param studyConfiguration StudyConfiguration
+     * @return  WriteResult
+     */
     QueryResult<WriteResult> fillFileGaps(int fileId, List<String> chromosomes, List<Integer> fileSampleIds, StudyConfiguration studyConfiguration) {
 
         // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
@@ -1422,15 +1444,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .equals(Collections.singletonList(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE))
 //                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {
+            // Check if the default genotype is the unknown genotype. In that case, is not required to fill missing genotypes.
+            // Previously, also checks if there where EXTRA_GENOTYPE_FIELDS like DP:AD,... . In that case, those arrays had to be filled.
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
             return new QueryResult<>();
         } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+            // Check if the genotypes are not required. In that case, no fillGaps is needed
             logger.debug("Do not need fill gaps. Exclude genotypes.");
             return new QueryResult<>();
+        } else {
+            BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+            if (indexedSamples.isEmpty() || indexedSamples.values().equals(new HashSet<>(fileSampleIds))) {
+                // If the loaded samples match with the current samples means that there where no other samples loaded.
+                // There were no gaps, so it is not needed to fill anything.
+                logger.debug("Do not need fill gaps. First sample batch.");
+                return new QueryResult<>();
+            }
         }
+        logger.debug("Do fill gaps.");
 
-        List<Integer> loadedSamples = getLoadedSamples(fileId, studyConfiguration);
 
         DBObject query = new BasicDBObject();
         if (chromosomes != null && !chromosomes.isEmpty()) {
@@ -1452,6 +1485,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD + "." +
                         DBObjectToSamplesConverter.UNKNOWN_GENOTYPE, new BasicDBObject("$each", fileSampleIds));
 
+//        List<Integer> loadedSamples = getLoadedSamples(fileId, studyConfiguration);
 //        List<Object> missingOtherValues = new ArrayList<>(fileSampleIds.size());
 //        for (int size = fileSampleIds.size(); size > 0; size--) {
 //            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
