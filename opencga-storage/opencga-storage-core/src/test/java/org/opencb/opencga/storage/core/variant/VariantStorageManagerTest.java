@@ -396,9 +396,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
 
-        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME).iterator(new Query(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
-        while (iterator.hasNext()) {
-            Variant variant = iterator.next();
+        for (Variant variant : getVariantStorageManager().getDBAdaptor(DB_NAME)) {
             System.out.println(variant.toJson());
             assertNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
@@ -408,6 +406,39 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GU"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
         }
+
+        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
+
+        });
+
+        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
+
+        });
+
+        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2")
+                        .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 3)
+                        .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 3), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            System.out.println("variant.toJson() = " + variant.toJson());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
+            if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
+                assertEquals("3", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
+            }
+        });
     }
 
     @Test

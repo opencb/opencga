@@ -317,7 +317,10 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                         }
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, supplier.get());
+                            Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                            if (samplePosition != null) {
+                                samplesData.get(samplePosition).set(extraFieldPosition, supplier.get());
+                            }
                         }
 
                         extraFieldPosition++;
@@ -332,7 +335,10 @@ public class DBObjectToSamplesConverter /*implements ComplexTypeConverter<Varian
                     for (int i = 0; i < extraFields.size(); i++) {
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
-                            samplesData.get(samplesPositionToReturn.get(sampleName)).set(extraFieldPosition, UNKNOWN_FIELD);
+                            Integer samplePosition = samplesPositionToReturn.get(sampleName);
+                            if (samplePosition != null) {
+                                samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                            }
                         }
                         extraFieldPosition++;
                     }
