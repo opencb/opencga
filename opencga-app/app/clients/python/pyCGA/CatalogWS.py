@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import datetime
 from pyCGA.RestExecutor import WS
@@ -530,6 +531,7 @@ class Individuals(WS):
         :param json_file:
         """
         if data is None and json_file is None:
+            logging.error("please provide a json file or a data")
             raise Exception("please provide a json file or a data")
 
         if data is None:
