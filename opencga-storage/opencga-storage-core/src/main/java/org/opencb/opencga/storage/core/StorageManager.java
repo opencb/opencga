@@ -17,18 +17,21 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * @param <DBWRITER>
  * @param <DBADAPTOR>
  * @author imedina
  */
-public abstract class StorageManager<DBWRITER, DBADAPTOR> {
+public abstract class StorageManager<DBADAPTOR> {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
@@ -60,61 +63,51 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
         return storageEngineId;
     }
 
-    /**
-     * ETL cycle consists of the following execution steps:
-     *  - extract: fetch data from different sources to be processed, eg. remote servers (S3), move to HDFS, ...
-     *  - pre-transform: data is prepared to be transformed, this may include data validation and uncompression
-     *  - transform: business rules are applied and some integrity checks can be applied
-     *  - post-transform: some cleaning, validation or other actions can be taken into account
-     *  - pre-load: transformed data can be validated or converted to physical schema in this step
-     *  - load: in this step a DBWriter from getDBWriter (see below) is used to load data in the storage engine
-     *  - post-load: data can be cleaned and some database validations can be performed
-     */
+    public List<ObjectMap> index(List<URI> inputFiles, URI outdirUri, boolean extract, boolean transform, boolean load)
+            throws StorageManagerException, IOException, FileFormatException {
 
+        for (URI inputFile : inputFiles) {
+            StorageETL storageETL = newStorageETL();
 
-    /*
-     * This method extracts the data from the data source. This data source can be a database or a remote
-     * file system. URI objects are used to allow all possibilities.
-     *
-     * @param input Data source origin
-     * @param ouput Final location of data
-     */
-    public abstract URI extract(URI input, URI ouput) throws StorageManagerException;
+            URI nextFileUri = inputFile;
 
+            // Check the database connection before we start
+            if (load) {
+                testConnection();
+            }
 
-    public abstract URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
+            if (extract) {
+                logger.info("Extract '{}'", inputFile);
+                nextFileUri = storageETL.extract(inputFile, outdirUri);
+            }
 
-    public abstract URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException;
+            if (transform) {
+                logger.info("PreTransform '{}'", nextFileUri);
+                nextFileUri = storageETL.preTransform(nextFileUri);
+                logger.info("Transform '{}'", nextFileUri);
+                nextFileUri = storageETL.transform(nextFileUri, null, outdirUri);
+                logger.info("PostTransform '{}'", nextFileUri);
+                nextFileUri = storageETL.postTransform(nextFileUri);
+            }
 
-    public abstract URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
+            if (load) {
+                logger.info("PreLoad '{}'", nextFileUri);
+                nextFileUri = storageETL.preLoad(nextFileUri, outdirUri);
+                logger.info("Load '{}'", nextFileUri);
+                nextFileUri = storageETL.load(nextFileUri);
+                logger.info("PostLoad '{}'", nextFileUri);
+                nextFileUri = storageETL.postLoad(nextFileUri, outdirUri);
+            }
+        }
 
-
-    public abstract URI preLoad(URI input, URI output) throws IOException, StorageManagerException;
-
-    /**
-     * This method loads the transformed data file into a database, the database credentials are expected to be read
-     * from configuration file.
-     *
-     * @param input The URI of the file to be loaded
-     * @return The loaded file
-     * @throws IOException If any IO problem occurs
-     * @throws StorageManagerException If any other problem occurs
-     */
-    public abstract URI load(URI input) throws IOException, StorageManagerException;
-
-    public abstract URI postLoad(URI input, URI output) throws IOException, StorageManagerException;
-
-
-    /*
-     * Storage Engines must implement these 2 methods in order to the ETL to be able to write and read from database:
-     * - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
-     * - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
-     */
-    @Deprecated
-    public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;
+        return Collections.emptyList();
+    }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
-    public abstract boolean testConnection(String dbName);
+    // TODO: Pending implementation
+    public abstract void testConnection() throws StorageManagerException;
+
+    protected abstract StorageETL newStorageETL();
 
 }

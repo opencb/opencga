@@ -65,7 +65,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
     }
 
-    @Override
     public CoverageMongoDBWriter getDBWriter(String dbName) {
         String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.FILE_ID.key());
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);

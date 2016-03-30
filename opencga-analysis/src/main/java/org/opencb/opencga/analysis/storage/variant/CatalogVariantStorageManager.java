@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -43,7 +44,7 @@ import java.util.Properties;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Deprecated
-public abstract class CatalogVariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
+public abstract class CatalogVariantStorageManager extends StorageManager<VariantDBAdaptor> implements StorageETL {
 //public class CatalogVariantStorageManager extends VariantStorageManager {
 
 
@@ -104,13 +105,13 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
         return getStorageManager(params).postLoad(input, output);
     }
 
-    @Override
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
-        if (dbName == null) {
-            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
-        }
-        return getStorageManager(params).getDBWriter(dbName);
-    }
+//    @Override
+//    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
+//        if (dbName == null) {
+//            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+//        }
+//        return getStorageManager(params).getDBWriter(dbName);
+//    }
 
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {

@@ -103,19 +103,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
 
-    @Override
-    @Deprecated
-    public VariantMongoDBWriter getDBWriter(String dbName) throws StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        int fileId = options.getInt(Options.FILE_ID.key());
-//
-////        Properties credentialsProperties = new Properties(properties);
-//
-//        MongoCredentials credentials = getMongoCredentials(dbName);
-//        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
-//        String filesCollection = options.getString(COLLECTION_FILES, "files");
-//        logger.debug("getting DBWriter to db: {}", credentials.getMongoDbName());
+    protected VariantMongoDBWriter getDBWriter(String dbName, int fileId, StudyConfiguration studyConfiguration) throws StorageManagerException {
         return new VariantMongoDBWriter(fileId, studyConfiguration, getDBAdaptor(dbName), true, false);
     }
 
@@ -348,7 +336,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         List<DataWriter> writerList = new LinkedList<>();
         AtomicBoolean atomicBoolean = new AtomicBoolean();
         for (int i = 0; i < numWriters; i++) {
-            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName);
+            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, options.getInt(Options.FILE_ID.key()), studyConfiguration);
 //            variantDBWriter.setBulkSize(bulkSize);
 //            variantDBWriter.includeSrc(includeSrc);
 //            variantDBWriter.includeSamples(includeSamples);
@@ -545,12 +533,17 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public boolean testConnection(String dbName) {
+    public void testConnection() throws StorageManagerException {
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        String dbName = options.getString(Options.DB_NAME.key());
         MongoCredentials credentials = getMongoCredentials(dbName);
+
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-//        return db.testConnection();
-        return true;
+        if (!db.testConnection()) {
+            logger.error("Connection to database '{}' failed", dbName);
+            throw new StorageManagerException("Database connection test failed");
+        }
     }
 
     /* --------------------------------------- */

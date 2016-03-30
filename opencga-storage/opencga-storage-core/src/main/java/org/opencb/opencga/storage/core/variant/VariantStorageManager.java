@@ -41,6 +41,7 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -72,7 +73,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Created by imedina on 13/08/14.
  */
-public abstract class VariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
+public abstract class VariantStorageManager extends StorageManager<VariantDBAdaptor> implements StorageETL {
 
 //    public static final String INCLUDE_STATS = "include.stats";              //Include existing stats on the original file.
 //    public static final String INCLUDE_GENOTYPES = "include.genotypes";      //Include sample information (genotypes)
@@ -780,8 +781,16 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             throws StorageManagerException;
 
     @Override
-    public boolean testConnection(String dbName) {
-        return true;
+    public void testConnection() throws StorageManagerException {
+//        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
+//        throw new StorageManagerException("Database connection test failed");
+    }
+
+
+    @Override
+    protected StorageETL newStorageETL() {
+        return this;
     }
 
     public static String buildFilename(String studyName, int fileId) {

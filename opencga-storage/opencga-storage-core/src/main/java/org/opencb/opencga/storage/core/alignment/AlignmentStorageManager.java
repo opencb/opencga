@@ -30,6 +30,7 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -39,6 +40,7 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -55,7 +57,7 @@ import java.util.List;
 /**
  * Created by jacobo on 14/08/14.
  */
-public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
+public abstract class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> implements StorageETL {
 
     private StorageEtlConfiguration storageEtlConfiguration;
 
@@ -250,8 +252,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public boolean testConnection(String dbName) {
-        return true;
+    public void testConnection() throws StorageManagerException {
+    }
+
+    @Override
+    protected StorageETL newStorageETL() {
+        return this;
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {
