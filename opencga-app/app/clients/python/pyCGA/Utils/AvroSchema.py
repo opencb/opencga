@@ -117,6 +117,3 @@ a = AvroSchemaFile("/home/antonior/PycharmGEL/GelReportModels/schemas/JSONs/RDPa
 print (a.convert_variable_set(a.data))
 
 """
-
-a = AvroSchemaFile("/home/antonior/Downloads/sampleState.avsc")
-print (a.convert_variable_set(a.data))
