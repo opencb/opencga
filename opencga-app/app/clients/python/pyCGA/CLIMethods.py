@@ -44,7 +44,6 @@ class Methods:
             for sample in acls[acl]["samples"]:
                 print("\t" + str(sample))
 
-
     @staticmethod
     def user_logout(args):
         """
@@ -55,8 +54,6 @@ class Methods:
         user = Users()
         user.logout_method(args.user)
         print("Successfully Log out")
-
-
 
     @staticmethod
     def users_create(args):
@@ -112,7 +109,6 @@ class Methods:
             
         except ServerResponseException as e:
             print(e, file=sys.stderr)
-
 
     @staticmethod
     def files_query_stats(args):
@@ -264,21 +260,22 @@ class Methods:
         """
         individual = Individuals()
         sample = Samples()
-        try:
-            individual_result = individual.search(args.studyId, args.name)[0]
+
+        individual_results = individual.search(studyId=args.studyId, name=args.name)
+        for individual_result in individual_results:
             gender = individual_result["gender"]
             individualId = individual_result["id"]
             print("ParticipantId in Catalog: "+ str(individualId))
             try:
-                sample_result = sample.search(args.studyId, individualId=str(individualId))
+                sample_result = sample.search(studyId=args.studyId, individualId=str(individualId))
 
                 for sample in sample_result:
                         print("Sample Name: " + sample["name"])
 
             except ServerResponseException as e:
                 print(str(e), file=sys.stderr)
-        except ServerResponseException as e:
-            print(str(e), file=sys.stderr)
+
+
 
     @staticmethod
     def individuals_search_by_annotation(args):
@@ -420,7 +417,6 @@ class Methods:
                     for info in sample_info:
                         yield [id, str(info["id"])]
 
-
             if inputIDType == "IndividualName":
                 if outputIDType == "CatalogIndividualId":
                     individual = Individuals()
@@ -443,7 +439,6 @@ class Methods:
 
                     for info in sample_info:
                         yield [id, str(info["id"])]
-
 
             if inputIDType == "CatalogSampleId":
                 if outputIDType == "CatalogIndividualId":
