@@ -16,8 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
@@ -25,6 +29,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
+
+import static org.junit.Assert.assertFalse;
 
 
 /**
@@ -108,4 +114,18 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         return studyConfiguration;
     }
 
+    @Override
+    public void indexWithOtherFieldsExcludeGT() throws Exception {
+        super.indexWithOtherFieldsExcludeGT();
+
+        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
+
+        for (DBObject dbObject : variantsCollection.nativeQuery().find(new BasicDBObject(), new QueryOptions())) {
+            assertFalse(((DBObject) dbObject.get(DBObjectToVariantConverter.STUDIES_FIELD))
+                    .containsField(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD));
+            System.out.println("dbObject = " + dbObject);
+        }
+
+    }
 }

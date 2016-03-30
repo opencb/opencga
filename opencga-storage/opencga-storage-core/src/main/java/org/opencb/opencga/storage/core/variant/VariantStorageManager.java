@@ -25,6 +25,7 @@ import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
@@ -38,7 +39,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
@@ -106,9 +106,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //        @Deprecated
 //        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)
         EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
+        EXTRA_GENOTYPE_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
+        EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
 //        @Deprecated
 //        INCLUDE_SRC("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
+        EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
         STUDY_CONFIGURATION("studyConfiguration", ""),      //
         STUDY_CONFIGURATION_MANAGER_CLASS_NAME("studyConfigurationManagerClassName", ""),
@@ -233,6 +236,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key, false);
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key, false);
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key, Options.INCLUDE_SRC.defaultValue());
+        boolean includeSrc = false;
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", "htsjdk");
 
@@ -356,7 +360,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                     VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
                     VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                     taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile,
-                            statsCalculator);
+                            statsCalculator, includeSrc);
                 } catch (IOException e) {
                     throw new StorageManagerException("Unable to read VCFHeader", e);
                 }
@@ -365,8 +369,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator);
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
             }
+
+            logger.info("Generating output file {}", outputVariantsFile);
 
             ParallelTaskRunner<String, ByteBuffer> ptr;
             try {
@@ -401,20 +407,43 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
             final VariantSource finalSource = source;
             final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
+
+            Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
+            if (parser.equalsIgnoreCase("htsjdk")) {
+                logger.info("Using HTSJDK to read variants.");
+                try (InputStream fileInputStream = input.toString().endsWith("gz")
+                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                        : new FileInputStream(input.toFile())) {
+                    FullVcfCodec codec = new FullVcfCodec();
+                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
+                    taskSupplier = () -> new VariantJsonTransformTask(header, headerVersion, finalSource,
+                            finalOutputFileJsonFile, statsCalculator, includeSrc);
+                } catch (IOException e) {
+                    throw new StorageManagerException("Unable to read VCFHeader", e);
+                }
+            } else {
+                logger.info("Using Biodata to read variants.");
+                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
+            }
+
+            logger.info("Generating output file {}", outputVariantsFile);
+
             try {
-                VariantJsonTransformTask variantJsonTransformTask =
-                        new VariantJsonTransformTask(factory, finalSource, finalOutputFileJsonFile);
-//                variantJsonTransformTask.setIncludeSrc(includeSrc);
                 ptr = new ParallelTaskRunner<>(
                         dataReader,
-                        variantJsonTransformTask,
+                        taskSupplier,
                         dataWriter,
                         new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
                 );
             } catch (Exception e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
             }
+
             logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
             start = System.currentTimeMillis();
             try {
@@ -504,6 +533,25 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         checkNewFile(studyConfiguration, fileId, fileName);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
         studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
+
+
+        if (studyConfiguration.getIndexedFiles().isEmpty()) {
+            // First indexed file
+            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
+            boolean excludeGenotypes =
+                    options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+            boolean compressExtraFields =
+                    options.getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+            studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), compressExtraFields);
+
+        } else {
+            // Not first indexed file
+            // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
+            boolean excludeGenotypes = studyConfiguration.getAttributes()
+                    .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+        }
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 

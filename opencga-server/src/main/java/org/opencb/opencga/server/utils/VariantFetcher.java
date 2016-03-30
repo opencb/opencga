@@ -92,6 +92,8 @@ public class VariantFetcher {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
         }
 
+        //TODO: Check files and studies exists
+
         logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 //        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));

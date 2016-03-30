@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import htsjdk.variant.variantcontext.VariantContext;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -7,6 +8,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -27,19 +29,19 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 @Ignore
 public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTestUtils {
 
-    public static final Integer file1 = 1;
-    public static final Integer file2 = 2;
-    public static final Integer file3 = 3;
-    public static final Integer file4 = 4;
-    public static final Integer file5 = 5;
-    private static StudyConfiguration studyConfiguration1;
-    private static StudyConfiguration studyConfiguration2;
-    private static StudyConfiguration studyConfiguration3;
-    private static VariantDBAdaptor dbAdaptor;
-    private QueryResult<Variant> queryResult;
-    static private final int NUM_VARIANTS = 9755;
-    private QueryOptions options;
-    private Query query;
+    protected static final Integer file1 = 1;
+    protected static final Integer file2 = 2;
+    protected static final Integer file3 = 3;
+    protected static final Integer file4 = 4;
+    protected static final Integer file5 = 5;
+    protected static StudyConfiguration studyConfiguration1;
+    protected static StudyConfiguration studyConfiguration2;
+    protected static StudyConfiguration studyConfiguration3;
+    protected static VariantDBAdaptor dbAdaptor;
+    protected static int NUM_VARIANTS = 9751;
+    protected QueryResult<Variant> queryResult;
+    protected QueryOptions options;
+    protected Query query;
 
     @Before
     public void before() throws Exception {
@@ -99,6 +101,41 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
                 assertEquals(studyConfiguration1.getStudyName(), sourceEntry.getStudyId());
             }
         }
+    }
+
+    @Test
+    public void testGetVariantsByType() {
+        Set<Variant> snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNV), new QueryOptions()).getResult());
+        System.out.println("SNV = " + snv.size());
+        assertEquals(9515, snv.size());
+        snv.forEach(variant -> assertTrue(EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType())));
+
+        Set<Variant> not_snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), "!" + VariantType.SNV), new QueryOptions()).getResult());
+        System.out.println("!SNV = " + not_snv.size());
+        not_snv.forEach(variant -> assertFalse(EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType())));
+
+        Set<Variant> snv_snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNV + "," + VariantContext.Type.SNP), new QueryOptions()).getResult());
+        System.out.println("SNV_SNP = " + snv_snp.size());
+        assertEquals(snv_snp, snv);
+
+        Set<Variant> snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNP), new QueryOptions()).getResult());
+        snp.forEach(variant -> assertEquals(VariantType.SNP, variant.getType()));
+        snp.forEach(variant -> assertTrue(snv.contains(variant)));
+        System.out.println("SNP = " + snp.size());
+
+        Set<Variant> indels = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL), new QueryOptions()).getResult());
+        indels.forEach(variant -> assertEquals(VariantType.INDEL, variant.getType()));
+        System.out.println("INDEL = " + indels.size());
+
+        Set<Variant> indels_snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL + "," + VariantType.SNP), new QueryOptions()).getResult());
+        indels_snp.forEach(variant -> assertTrue(EnumSet.of(VariantType.INDEL, VariantType.SNP).contains(variant.getType())));
+        indels_snp.forEach(variant -> assertTrue(indels.contains(variant) || snp.contains(variant)));
+        System.out.println("INDEL_SNP = " + indels_snp.size());
+
+        Set<Variant> indels_snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL + "," + VariantType.SNV), new QueryOptions()).getResult());
+        indels_snv.forEach(variant -> assertTrue(EnumSet.of(VariantType.INDEL, VariantType.SNP, VariantType.SNV).contains(variant.getType())));
+        indels_snv.forEach(variant -> assertTrue(indels.contains(variant) || snv.contains(variant)));
+        System.out.println("INDEL_SNV = " + indels_snv.size());
     }
 
     @Test
@@ -204,8 +241,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
                 .append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(7946, queryResult.getNumResults());
-        assertEquals(7946, queryResult.getNumTotalResults());
+        assertEquals(7942, queryResult.getNumResults());
+        assertEquals(7942, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -222,8 +259,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         query.append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(7946, queryResult.getNumResults());
-        assertEquals(7946, queryResult.getNumTotalResults());
+        assertEquals(7942, queryResult.getNumResults());
+        assertEquals(7942, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -238,8 +275,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         query.append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(3301, queryResult.getNumResults());
-        assertEquals(3301, queryResult.getNumTotalResults());
+        assertEquals(3298, queryResult.getNumResults());
+        assertEquals(3298, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -255,8 +292,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         queryResult = dbAdaptor.get(query, options);
 
         System.out.println(queryResult.getNumResults());
-        assertEquals(3293, queryResult.getNumResults());
-        assertEquals(3293, queryResult.getNumTotalResults());
+        assertEquals(3292, queryResult.getNumResults());
+        assertEquals(3292, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -277,8 +314,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         QueryResult<Variant> queryResultStudy = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultStudy.getNumTotalResults(), queryResult.getNumResults());
-        assertEquals(5479, queryResult.getNumResults());
-        assertEquals(5479, queryResult.getNumTotalResults());
+        assertEquals(5476, queryResult.getNumResults());
+        assertEquals(5476, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             Set<String> returnedFileIds = variant.getStudies().stream().map(StudyEntry::getFiles).flatMap(fileEntries -> fileEntries
@@ -330,8 +367,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         QueryResult<Variant> queryResultFile = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultFile.getNumTotalResults(), queryResult.getNumResults());
-        assertEquals(3282, queryResult.getNumResults());
-        assertEquals(3282, queryResult.getNumTotalResults());
+        assertEquals(3279, queryResult.getNumResults());
+        assertEquals(3279, queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             Set<String> returnedFileIds = variant.getStudies().stream().map(StudyEntry::getFiles).flatMap(fileEntries -> fileEntries
