@@ -96,11 +96,19 @@ class AvroSchemaFile:
                 variable_set[-1]["defaultValue"] = default
 
         elif field_type == "enum":
-            symbols = field["type"]["symbols"]
-            variable_set.append({"id": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
-                                 "allowedValues": symbols, "multiValue": multi})
-            if default is not None:
-                variable_set[-1]["defaultValue"] = default
+            try:
+                symbols = field["type"]["symbols"]
+                variable_set.append({"id": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
+                                     "allowedValues": symbols, "multiValue": multi})
+                if default is not None:
+                    variable_set[-1]["defaultValue"] = default
+            except:
+                symbols = field["symbols"]
+                variable_set.append({"id": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
+                                     "allowedValues": symbols, "multiValue": multi})
+                if default is not None:
+                    variable_set[-1]["defaultValue"] = default
+
 
 """
 This is how this work
@@ -109,4 +117,3 @@ a = AvroSchemaFile("/home/antonior/PycharmGEL/GelReportModels/schemas/JSONs/RDPa
 print (a.convert_variable_set(a.data))
 
 """
-
