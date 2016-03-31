@@ -451,20 +451,20 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="delete", item_id=sampleId, **options)
 
-    def share(self, userId, fileId, read=True, write=False, delete=False, unshare=False, **options):
+    def share(self, userId, sampleId, read=True, write=False, delete=False, unshare=False, **options):
 
         """
 
         Method to share files
 
         :param userId: id of the user this file will be shared
-        :param fileId: File id - Notice this is the internal id in Catalog
+        :param sampleId: File id - Notice this is the internal id in Catalog
         :param read: True/False - If True the user could read the file
         :param write: True/False - If True the user could write the file
         :param delete: True/False - If True the user could delete the file
         :param unshare: True/False - If True the file will be unshared for this user
         """
-        return self.general_method("samples", "share", item_id=fileId, unshare=str(unshare).lower(), userId=userId,
+        return self.general_method("samples", "share", item_id=sampleId, unshare=str(unshare).lower(), userId=userId,
                                    read=str(read).lower(), write=str(write).lower(), delete=str(delete).lower(),
                                    **options)
 

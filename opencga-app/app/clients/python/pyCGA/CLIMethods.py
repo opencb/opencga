@@ -375,7 +375,6 @@ class Methods:
             if args.format == "AVRO":
                 schema = AvroSchemaFile(args.json)
                 data = schema.convert_variable_set(schema.data)
-
                 variable_id = variable.create(args.studyId, args.name, data=data)[0]["id"]
 
             else:

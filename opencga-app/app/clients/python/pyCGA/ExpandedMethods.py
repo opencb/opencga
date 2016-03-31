@@ -1,6 +1,26 @@
 from pyCGA.CatalogWS import Studies, Samples, Individuals, Variables, Files
-
 __author__ = 'antonior'
+
+
+def share_samples(studyId, list_of_samples_file, folder_scope, user_id):
+    file_instance = Files()
+    sample_instance = Samples()
+    summary = {}
+    fd = open(list_of_samples_file)
+    for line in fd:
+        aline = line.rstrip("\n").split("\t")
+        if aline:
+            sample_name = aline[0]
+            sample_objs = sample_instance.search(studyId=studyId, name=sample_name)
+            for sample_obj in sample_objs:
+                folders_to_share = file_instance.search(studyId=studyId, path="~" + folder_scope,
+                                                        sampleIds=sample_obj["id"]
+                                                        )
+                for folder_to_share in folders_to_share:
+                    file_instance.share(userId=user_id, fileId=folder_to_share["id"])
+
+                sample_instance.share(userId=user_id, sampleId=sample_obj["id"])
+                summary[sample_name] = [folders_to_share]
 
 
 def get_all_samples_names(studyId):
