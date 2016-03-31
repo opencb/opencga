@@ -762,7 +762,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {CreateCommand.COMMAND_NAME}, commandDescription = "Create a cohort")
@@ -783,7 +783,7 @@ public class OptionsParser {
             String name;
 
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            int variableSetId;
+            long variableSetId;
 
             @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
             String description;
@@ -813,7 +813,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {StatsCommand.COMMAND_NAME}, commandDescription = "Calculate variant stats for a set of cohorts.")
@@ -828,7 +828,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = false)
-            List<Integer> cohortIds;
+            List<Long> cohortIds;
 
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
@@ -884,7 +884,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
@@ -924,7 +924,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
-            int variableSetId;
+            long variableSetId;
 
             @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
             String pedigreeFileId;
@@ -959,7 +959,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {"finished"}, commandDescription = "Notify catalog that a job have finished.")
@@ -971,7 +971,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            int id;
+            long id;
 
             @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
             boolean error;

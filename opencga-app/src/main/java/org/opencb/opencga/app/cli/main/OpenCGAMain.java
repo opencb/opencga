@@ -295,7 +295,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.ProjectCommands.InfoCommand c = optionsParser.getProjectCommands().infoCommand;
 
-                        int projectId = catalogManager.getProjectId(c.id);
+                        long projectId = catalogManager.getProjectId(c.id);
                         QueryResult<Project> project = catalogManager.getProject(projectId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
@@ -325,7 +325,7 @@ public class OpenCGAMain {
                             uri = UriUtils.createUri(c.uri);
                         }
                         Map<File.Bioformat, DataStore> dataStoreMap = parseBioformatDataStoreMap(c);
-                        int projectId = catalogManager.getProjectId(c.projectId);
+                        long projectId = catalogManager.getProjectId(c.projectId);
                         ObjectMap attributes = new ObjectMap();
                         attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
                         QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
@@ -342,7 +342,7 @@ public class OpenCGAMain {
                     }
                     case "resync": {
                         OptionsParser.StudyCommands.ResyncCommand c = optionsParser.getStudyCommands().resyncCommand;
-                        int studyId = catalogManager.getStudyId(c.id);
+                        long studyId = catalogManager.getStudyId(c.id);
 
                         Study study = catalogManager.getStudy(studyId, sessionId).first();
                         FileScanner fileScanner = new FileScanner(catalogManager);
@@ -353,7 +353,7 @@ public class OpenCGAMain {
                     }
                     case "check-files": {
                         OptionsParser.StudyCommands.CheckCommand c = optionsParser.getStudyCommands().checkCommand;
-                        int studyId = catalogManager.getStudyId(c.id);
+                        long studyId = catalogManager.getStudyId(c.id);
 
                         Study study = catalogManager.getStudy(studyId, sessionId).first();
                         FileScanner fileScanner = new FileScanner(catalogManager);
@@ -365,7 +365,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
 
-                        int studyId = catalogManager.getStudyId(c.id);
+                        long studyId = catalogManager.getStudyId(c.id);
                         QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, new QueryOptions(c.cOpt.getQueryOptions()));
                         System.out.println(createOutput(c.cOpt, study, null));
 
@@ -374,7 +374,7 @@ public class OpenCGAMain {
                     case "list": {
                         OptionsParser.StudyCommands.ListCommand c = optionsParser.getStudyCommands().listCommand;
 
-                        int studyId = catalogManager.getStudyId(c.id);
+                        long studyId = catalogManager.getStudyId(c.id);
                         List<Study> studies = catalogManager.getStudy(studyId, sessionId).getResult();
                         String indent = "";
                         System.out.println(listStudies(studies, c.recursive ? c.level : 1, indent, c.uries, new StringBuilder(), sessionId));
@@ -384,7 +384,7 @@ public class OpenCGAMain {
                     case "status": {
                         OptionsParser.StudyCommands.StatusCommand c = optionsParser.getStudyCommands().statusCommand;
 
-                        int studyId = catalogManager.getStudyId(c.id);
+                        long studyId = catalogManager.getStudyId(c.id);
                         Study study = catalogManager.getStudy(studyId, sessionId).first();
                         FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -439,8 +439,8 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-                        int studyId = catalogManager.getStudyId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
+                        long studyId = catalogManager.getStudyId(c.id);
+                        long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
 
                         queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
@@ -469,7 +469,7 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
                         Path inputFile = Paths.get(c.inputFile);
                         URI sourceUri = new URI(null, c.inputFile, null);
                         if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
@@ -491,7 +491,7 @@ public class OpenCGAMain {
                     case "create-folder": {
                         OptionsParser.FileCommands.CreateFolderCommand c = optionsParser.getFileCommands().createFolderCommand;
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
                         QueryResult<File> folder = catalogManager.createFolder(studyId, Paths.get(c.path), c.parents, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, folder, null));
 
@@ -507,7 +507,7 @@ public class OpenCGAMain {
                             throw new IOException("File " + sourceUri + " does not exist");
                         }
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id);
                         QueryResult<File> file = catalogManager.getFile(fileId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
 
                         new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, c.replace, c.replace, c.move, c.calculateChecksum);
@@ -527,7 +527,7 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + inputUri + " not found");
                         }
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
                         String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
@@ -555,7 +555,7 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + uri + " not found");
                         }
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
                         new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, true, sessionId);
@@ -570,7 +570,7 @@ public class OpenCGAMain {
                     case "refresh": {
                         OptionsParser.FileCommands.RefreshCommand c = optionsParser.getFileCommands().refreshCommand;
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
                         List<File> files;
@@ -602,7 +602,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.FileCommands.InfoCommand c = optionsParser.getFileCommands().infoCommand;
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id);
                         QueryResult<File> file = catalogManager.getFile(fileId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), file, null));
 
@@ -611,7 +611,7 @@ public class OpenCGAMain {
                     case "search": {
                         OptionsParser.FileCommands.SearchCommand c = optionsParser.getFileCommands().searchCommand;
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
                         Query query = new Query();
                         if (c.name != null) query.put("like", c.name);
                         if (c.directory != null) query.put("directory", c.directory);
@@ -627,9 +627,9 @@ public class OpenCGAMain {
                     case "list": {
                         OptionsParser.FileCommands.ListCommand c = optionsParser.getFileCommands().listCommand;
 
-                        int fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id);
                         List<File> result = catalogManager.getFile(fileId, sessionId).getResult();
-                        int studyId = catalogManager.getStudyIdByFileId(fileId);
+                        long studyId = catalogManager.getStudyIdByFileId(fileId);
                         System.out.println(listFiles(result, studyId, c.recursive? c.level : 1, "", c.uries, new StringBuilder(), sessionId));
 
                         break;
@@ -639,8 +639,8 @@ public class OpenCGAMain {
 
                         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
-                        int fileId = catalogManager.getFileId(c.id);
-                        int outdirId = catalogManager.getFileId(c.outdir);
+                        long fileId = catalogManager.getFileId(c.id);
+                        long outdirId = catalogManager.getFileId(c.outdir);
                         if (outdirId < 0) {
                             outdirId  = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
                         }
@@ -685,7 +685,7 @@ public class OpenCGAMain {
                     case "search": {
                         OptionsParser.SampleCommands.SearchCommand c = optionsParser.sampleCommands.searchCommand;
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         Query query = new Query()
                                 .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), c.sampleIds)
@@ -701,7 +701,7 @@ public class OpenCGAMain {
                         OptionsParser.SampleCommands.LoadCommand c = optionsParser.sampleCommands.loadCommand;
 
                         CatalogSampleAnnotationsLoader catalogSampleAnnotationsLoader = new CatalogSampleAnnotationsLoader(catalogManager);
-                        int fileId = catalogManager.getFileId(c.pedigreeFileId);
+                        long fileId = catalogManager.getFileId(c.pedigreeFileId);
                         File pedigreeFile = catalogManager.getFile(fileId, sessionId).first();
 
                         QueryResult<Sample> sampleQueryResult = catalogSampleAnnotationsLoader.loadSampleAnnotations(pedigreeFile, c.variableSetId == 0 ? null : c.variableSetId, sessionId);
@@ -753,7 +753,7 @@ public class OpenCGAMain {
                         OptionsParser.CohortCommands.CreateCommand c = optionsParser.cohortCommands.createCommand;
 
                         Map<String, List<Sample>> cohorts = new HashMap<>();
-                        int studyId = catalogManager.getStudyId(c.studyId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
 
                         if (c.sampleIds != null && !c.sampleIds.isEmpty()) {
                             QueryOptions queryOptions = new QueryOptions("include", "projects.studies.samples.id");
@@ -799,7 +799,7 @@ public class OpenCGAMain {
                         } else {
                             List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
-                                List<Integer> sampleIds = new LinkedList<>();
+                                List<Long> sampleIds = new LinkedList<>();
                                 for (Sample sample : entry.getValue()) {
                                     sampleIds.add(sample.getId());
                                 }
@@ -818,7 +818,7 @@ public class OpenCGAMain {
 
                         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-                        int outdirId = catalogManager.getFileId(c.outdir);
+                        long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         if (c.enqueue) {
                             queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
@@ -903,7 +903,7 @@ public class OpenCGAMain {
                     case "status": {
                         OptionsParser.JobsCommands.StatusCommand c = optionsParser.getJobsCommands().statusCommand;
 
-                        final List<Integer> studyIds;
+                        final List<Long> studyIds;
                         if (c.studyId == null || c.studyId.isEmpty()) {
                             studyIds = catalogManager.getAllStudies(new Query(), new QueryOptions("include", "id"), sessionId)
                                     .getResult().stream().map(Study::getId).collect(Collectors.toList());
@@ -913,7 +913,7 @@ public class OpenCGAMain {
                                 studyIds.add(catalogManager.getStudyId(s));
                             }
                         }
-                        for (Integer studyId : studyIds) {
+                        for (Long studyId : studyIds) {
                             QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
                                     new Query(CatalogJobDBAdaptor.QueryParams.JOB_STATUS.key(),
                                             Collections.singletonList(Job.JobStatus.RUNNING.toString())), new QueryOptions(), sessionId);
@@ -993,14 +993,14 @@ public class OpenCGAMain {
         return returnValue;
     }
 
-    private static List<QueryResult<Cohort>> createCohorts(String sessionId, int studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
+    private static List<QueryResult<Cohort>> createCohorts(String sessionId, long studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
         List<QueryResult<Cohort>> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
         Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.<Integer>emptyList(), null, sessionId);
+                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
                 queryResults.add(cohort);
             } else {
                 logger.warn("cohort {} was already created", cohortName);
@@ -1166,7 +1166,7 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listStudies(int projectId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(long projectId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<Study> studies = catalogManager.getAllStudiesInProject(projectId,
                     new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias")),
@@ -1188,7 +1188,7 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listFiles(int studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), path),
                     sessionId).getResult();
@@ -1197,7 +1197,7 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listFiles(List<File> files, int studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
         if (level > 0) {
             files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
 //            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));

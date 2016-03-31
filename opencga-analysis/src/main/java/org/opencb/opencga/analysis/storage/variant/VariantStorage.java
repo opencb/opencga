@@ -218,7 +218,7 @@ public class VariantStorage {
                 attributes, new HashMap<>());
     }
 
-    public QueryResult<Job> annotateVariants(int studyId, int outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
