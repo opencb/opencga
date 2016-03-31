@@ -13,8 +13,6 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
-import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.io.DataWriter;
@@ -36,8 +34,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
@@ -65,12 +62,15 @@ public abstract class VariantStorageETL implements StorageETL {
     protected final String storageEngineId;
     protected final Logger logger;
     protected final VariantDBAdaptor dbAdaptor;
+    protected final VariantReaderUtils variantReaderUtils;
 
-    public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor) {
+    public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
+                             VariantReaderUtils variantReaderUtils) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.logger = logger;
         this.dbAdaptor = dbAdaptor;
+        this.variantReaderUtils = variantReaderUtils;
     }
 
     @Override
@@ -232,7 +232,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
         } else if (format.equals("avro")) {
             //Read VariantSource
-            source = readVariantSource(input, source);
+            source = VariantStorageManager.readVariantSource(input, source);
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -296,7 +296,7 @@ public abstract class VariantStorageETL implements StorageETL {
             end = System.currentTimeMillis();
         } else if (format.equals("json")) {
             //Read VariantSource
-            source = readVariantSource(input, source);
+            source = VariantStorageManager.readVariantSource(input, source);
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -389,7 +389,6 @@ public abstract class VariantStorageETL implements StorageETL {
             options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         }
 
-        //TODO: Expect JSON file
         VariantSource source = readVariantSource(input, options);
 
         /*
@@ -673,71 +672,7 @@ public abstract class VariantStorageETL implements StorageETL {
     }
 
     protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
-        if (input.getScheme() == null || input.getScheme().equals("file")) {
-            return readVariantSource(Paths.get(input.getPath()), null);
-        } else {
-            throw new StorageManagerException("Can not read files from " + input.getScheme());
-        }
-    }
-
-    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
-        if (source == null) {
-            source = new VariantSource("", "", "", "");
-        }
-
-        VariantReader reader = getVariantReader(input, source);
-        try {
-            reader.open();
-            reader.pre();
-            String variantFileHeader = reader.getHeader();
-            source.addMetadata("variantFileHeader", variantFileHeader);
-            if (source.getHeader() == null) {
-                VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(variantFileHeader);
-                source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
-            }
-            reader.post();
-            reader.close();
-        } catch (Exception e) {
-            throw new StorageManagerException("Unable to read VariantSource", e);
-        }
-
-        return source;
-    }
-
-    protected static VariantReader getVariantReader(Path input, VariantSource source) throws StorageManagerException {
-        String fileName = input.getFileName().toString();
-        if (fileName.contains("json")) {
-            return getVariantJsonReader(input, source);
-        } else if (fileName.contains("avro")) {
-            return getVariantAvroReader(input, source);
-        } else if (fileName.endsWith("vcf") || fileName.endsWith("vcf.gz")) {
-            return new VariantVcfReader(source, input.toAbsolutePath().toString());
-        } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
-        }
-    }
-
-    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageManagerException {
-        VariantJsonReader variantJsonReader;
-        if (input.toString().endsWith(".json") || input.toString().endsWith(".json.gz")
-                || input.toString().endsWith(".json.snappy") || input.toString().endsWith(".json.snz")) {
-            String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
-            variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
-        } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
-        }
-        return variantJsonReader;
-    }
-
-    protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
-        VariantAvroReader variantAvroReader;
-        if (input.toString().matches(".*avro(\\..*)?$")) {
-            String sourceFile = input.toAbsolutePath().toString().replace("variants.avro", "file.json");
-            variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), source);
-        } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
-        }
-        return variantAvroReader;
+        return variantReaderUtils.readVariantSource(input);
     }
 
     /* --------------------------------------- */

@@ -19,7 +19,6 @@ import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -64,7 +63,7 @@ public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUti
             );
 
 
-            source = variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
+            source = variantStorageManager.readVariantSource(etlResult.transformResult);
             VariantGlobalStats stats = source.getStats();
             Assert.assertNotNull(stats);
         }

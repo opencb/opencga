@@ -88,7 +88,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         ETLResult etlResult = runETL(variantStorageManager, fileInputUri, outputUri, params, params, params,
                 params, params, params, params, true, doTransform, true);
 
-        return variantStorageManager.readVariantSource(doTransform? etlResult.transformResult : inputUri, new ObjectMap());
+        return variantStorageManager.readVariantSource(doTransform? etlResult.transformResult : inputUri);
     }
 
     @Test

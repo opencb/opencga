@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +75,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     public MongoDBVariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger,
                                     VariantMongoDBAdaptor dbAdaptor) {
-        super(configuration, storageEngineId, logger, dbAdaptor);
+        super(configuration, storageEngineId, logger, dbAdaptor, new VariantReaderUtils());
         this.dbAdaptor = dbAdaptor;
     }
 
@@ -104,7 +105,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 }
             }
             if (!studyConfiguration.getAttributes().containsKey(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
-                VariantSource source = readVariantSource(Paths.get(input.getPath()), null);
+                VariantSource source = VariantStorageManager.readVariantSource(Paths.get(input.getPath()), null);
                 List<String> extraFieldsType = new ArrayList<>(extraFields.size());
                 for (String extraField : extraFields) {
                     List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
@@ -241,7 +242,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         //Reader
         VariantReader variantReader;
-        variantReader = getVariantReader(input, source);
+        variantReader = VariantReaderUtils.getVariantReader(input, source);
 
         //Tasks
         List<Task<Variant>> taskList = new SortedList<>();
@@ -381,7 +382,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     @Override
     protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
             StorageManagerException {
-        VariantSource variantSource = readVariantSource(Paths.get(input.getPath()), null);
+        VariantSource variantSource = VariantStorageManager.readVariantSource(Paths.get(input.getPath()), null);
 
 //        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()

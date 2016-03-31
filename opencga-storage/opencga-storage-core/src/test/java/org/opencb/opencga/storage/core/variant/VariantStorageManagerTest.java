@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
@@ -613,7 +614,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             throws StorageManagerException {
         long start = System.currentTimeMillis();
         VariantSource source = new VariantSource(VCF_TEST_FILE_NAME, "6", "", "");
-        VariantReader variantReader = VariantStorageETL.getVariantReader(Paths.get(variantsJson.getPath()), source);
+        VariantReader variantReader = VariantReaderUtils.getVariantReader(Paths.get(variantsJson.getPath()), source);
 
         variantReader.open();
         variantReader.pre();

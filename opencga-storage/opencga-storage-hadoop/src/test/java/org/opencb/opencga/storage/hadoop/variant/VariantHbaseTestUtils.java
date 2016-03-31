@@ -5,12 +5,9 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.hadoop.hbase.client.Result;
-import org.junit.Assert;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
@@ -80,7 +77,7 @@ public class VariantHbaseTestUtils {
         ETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, params, params,
                 params, params, params, params, true, true, true);
 
-        return variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
+        return variantStorageManager.readVariantSource(etlResult.transformResult);
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,

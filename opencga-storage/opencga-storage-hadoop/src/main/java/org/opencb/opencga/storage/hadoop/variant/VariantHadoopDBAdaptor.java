@@ -56,6 +56,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final Connection hbaseCon;
     private final String variantTable;
     private final VariantPhoenixHelper phoenixHelper;
+    private final HadoopCredentials credentials;
     private StudyConfigurationManager studyConfigurationManager;
     private final Configuration configuration;
     private GenomeHelper genomeHelper;
@@ -65,6 +66,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
+        this.credentials = credentials;
         conf = getHbaseConfiguration(conf, credentials);
 
         this.configuration = conf;
@@ -90,6 +92,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public GenomeHelper getGenomeHelper() {
         return genomeHelper;
+    }
+
+    public HadoopCredentials getCredentials() {
+        return credentials;
     }
 
     static Configuration getHbaseConfiguration(Configuration configuration, HadoopCredentials credentials) {
