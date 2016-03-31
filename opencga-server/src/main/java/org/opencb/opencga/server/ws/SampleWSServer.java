@@ -69,7 +69,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/info")
     @ApiOperation(value = "Get sample information", position = 2)
-    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
+    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId) {
         try {
             QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -83,7 +83,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Load samples from a ped file", position = 3)
     public Response loadSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
-                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Integer variableSetId) {
+                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId) {
         try {
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             File pedigreeFile = catalogManager.getFile(catalogManager.getFileId(fileIdStr), sessionId).first();
@@ -126,9 +126,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
-    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") int sampleId,
+    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") long sampleId,
                                        @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") int variableSetId,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
                                        @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                        @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
@@ -154,9 +154,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "annotate sample", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
         try {
@@ -198,7 +198,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/update")
     @ApiOperation(value = "Update some sample attributes using GET method", position = 6)
-    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
                            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = true) @QueryParam("source") String source,
                            @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId) {
@@ -213,7 +213,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public static class UpdateSample {
         public String description;
         public String source;
-        public int individualId;
+        public long individualId;
         public Map<String, Object> attributes;
     }
 
@@ -221,7 +221,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId,
+    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
                                  @ApiParam(value = "params", required = true) UpdateSample params) {
         try {
             QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
@@ -260,7 +260,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete a sample", position = 8)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") int sampleId) {
+    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId) {
         try {
             QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);

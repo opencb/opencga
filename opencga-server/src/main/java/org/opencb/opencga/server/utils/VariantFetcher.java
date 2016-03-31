@@ -46,7 +46,7 @@ public class VariantFetcher {
     public org.opencb.datastore.core.QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
             throws Exception {
         org.opencb.datastore.core.QueryResult result;
-        int fileIdNum;
+        long fileIdNum;
 
         fileIdNum = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
@@ -60,16 +60,16 @@ public class VariantFetcher {
                     " is not a Variant file.");
         }
 
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
         result = variantsStudy(studyId, region, histogram, groupBy, interval, fileIdNum, sessionId, queryOptions);
         return result;
     }
 
-    public org.opencb.datastore.core.QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
+    public org.opencb.datastore.core.QueryResult variantsStudy(long studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
         return variantsStudy(studyId, region, histogram, groupBy, interval, null, sessionId, queryOptions);
     }
 
-    public org.opencb.datastore.core.QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum, String sessionId, QueryOptions queryOptions)
+    public org.opencb.datastore.core.QueryResult variantsStudy(long studyId, String regionStr, boolean histogram, String groupBy, int interval, Long fileIdNum, String sessionId, QueryOptions queryOptions)
             throws Exception {
 //        QueryResult result;
         org.opencb.datastore.core.QueryResult result;

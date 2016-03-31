@@ -26,7 +26,7 @@ public class JobWSServerTest {
 
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
-    private int studyId;
+    private long studyId;
     private String sessionId;
 
     @Rule
@@ -60,12 +60,12 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        int outDirId = folder.getId();
+        long outDirId = folder.getId();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
+                        status, outDirId, Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
@@ -87,12 +87,12 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.ERROR;
-        int outDirId = folder.getId();
+        long outDirId = folder.getId();
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
+                        status, outDirId, Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
@@ -115,14 +115,14 @@ public class JobWSServerTest {
         String description = "A job";
         String commandLine = "samtools --do-magic";
         JobWSServer.InputJob.Status status = JobWSServer.InputJob.Status.READY;
-        int outDirId = folder.getId();
+        long outDirId = folder.getId();
 
         thrown.expect(Exception.class);
         String json = webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.<Integer>emptyList(), null, null)), String.class);
+                        status, outDirId, Collections.emptyList(), null, null)), String.class);
     }
 
 }

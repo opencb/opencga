@@ -58,7 +58,7 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(Integer outDirId, List<Long> cohortIds, String sessionId, QueryOptions options)
+    public QueryResult<Job> calculateStats(Long outDirId, List<Long> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException, IOException {
         if (options == null) {
             options = new QueryOptions();

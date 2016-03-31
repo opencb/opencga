@@ -73,7 +73,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
                                 @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
-            int projectId = catalogManager.getProjectId(projectIdStr);
+            long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
                     creationDate, description, new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -100,7 +100,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                     @ApiParam(value="studies", required = true) List<Study> studies) {
 //        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
-        int projectId;
+        long projectId;
         try {
             projectId = catalogManager.getProjectId(projectIdStr);
         } catch (CatalogException e) {
@@ -144,7 +144,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             String[] studyIdArray = studyIdsStr.split(",");
             List<QueryResult<Study>> queryResults = new LinkedList<>();
             for (String studyIdStr : studyIdArray) {
-                int studyId = catalogManager.getStudyId(studyIdStr);
+                long studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(catalogManager.getStudy(studyId, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
@@ -185,7 +185,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study files information", position = 3)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
@@ -200,7 +200,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get all jobs", position = 4)
     public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -212,7 +212,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study samples information", position = 5)
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
@@ -269,7 +269,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             List<org.opencb.datastore.core.QueryResult> queryResults = new LinkedList<>();
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
-                int studyId = catalogManager.getStudyId(studyIdStr);
+                long studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
@@ -300,8 +300,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
         // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
 
-        int studyId = 4;
-        int sampleId = 33;
+        long studyId = 4;
+        long sampleId = 33;
         QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
             File file = catalogManager.getAllFiles(studyId, query
@@ -314,7 +314,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
         }
 
         for (String fileId : fileIds.split(",")) {
-            int fileIdNum;
+            long fileIdNum;
             File file;
             URI fileUri;
             try {
@@ -345,7 +345,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
             int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
             QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Integer.toString(fileIdNum));
+            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Long.toString(fileIdNum));
             queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
             queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
             queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
@@ -393,7 +393,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 8)
     public Response status(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             Study study = catalogManager.getStudy(studyId, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
@@ -455,7 +455,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 //            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             ObjectMap objectMap = new ObjectMap();
             if(!name.isEmpty()) {
                 objectMap.put("name", name);
@@ -502,7 +502,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -518,7 +518,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "User to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUser") String addUser,
                            @ApiParam(value = "User to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUser") String removeUser) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             List<QueryResult> queryResults = new LinkedList<>();
             if (!addUser.isEmpty() && !removeUser.isEmpty()) {
                 return createErrorResponse("groups", "Must specify only one user to add or remove from one group");

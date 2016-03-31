@@ -97,7 +97,7 @@ public class AnalysisFileIndexer {
      * @throws CatalogException
      * @throws AnalysisExecutionException
      */
-    public QueryResult<Job> index(int fileId, int outDirId, String sessionId, QueryOptions options)
+    public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options)
             throws IOException, CatalogException, AnalysisExecutionException {
 
         if (options == null) {

@@ -281,7 +281,7 @@ public class CatalogFileUtils {
      * @return Created folder
      * @throws CatalogException CatalogException
      */
-    public File linkFolder(int studyId, String filePath, boolean parents, String description, boolean calculateChecksum,
+    public File linkFolder(long studyId, String filePath, boolean parents, String description, boolean calculateChecksum,
                            URI externalUri, boolean createFoundFiles, boolean relink, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(externalUri, "externalUri");

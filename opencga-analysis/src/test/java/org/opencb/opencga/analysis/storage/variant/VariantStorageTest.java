@@ -184,24 +184,24 @@ public class VariantStorageTest {
         VariantStorage variantStorage = new VariantStorage(catalogManager);
         Map<String, Cohort> cohorts = new HashMap<>();
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
 //        cohorts.put("all", null);
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Collections.singletonList(coh2), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Collections.singletonList(coh3), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh3), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh3", catalogManager.getCohort(coh3, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Collections.singletonList(coh4), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh4), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh4", catalogManager.getCohort(coh4, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Collections.singletonList(coh5), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh5), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh5", catalogManager.getCohort(coh5, null, sessionId).first());
         checkCalculatedStats(cohorts);
     }
@@ -213,14 +213,14 @@ public class VariantStorageTest {
         VariantStorage variantStorage = new VariantStorage(catalogManager);
         Map<String, Cohort> cohorts = new HashMap<>();
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Arrays.asList(coh1, coh2, coh3), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(coh1, coh2, coh3), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         cohorts.put("coh3", catalogManager.getCohort(coh3, null, sessionId).first());
         checkCalculatedStats(cohorts);
 
         try {
-            runStorageJob(variantStorage.calculateStats((int) outputId, Arrays.asList(all, coh4, -coh5), sessionId, new QueryOptions()).first(), sessionId);
+            runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, -coh5), sessionId, new QueryOptions()).first(), sessionId);
             fail();
         } catch (CatalogException e) {
             logger.info("received expected exception. this is OK, there is no cohort " + (-coh5) + "\n");
@@ -229,7 +229,7 @@ public class VariantStorageTest {
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh4, null, sessionId).first().getCohortStatus());
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh5, null, sessionId).first().getCohortStatus());
 
-        runStorageJob(variantStorage.calculateStats((int) outputId, Arrays.asList(all, coh4, coh5), sessionId, new QueryOptions()).first(), sessionId);
+        runStorageJob(variantStorage.calculateStats(outputId, Arrays.asList(all, coh4, coh5), sessionId, new QueryOptions()).first(), sessionId);
         cohorts.put(DEFAULT_COHORT, catalogManager.getCohort(all, null, sessionId).first());
         cohorts.put("coh4", catalogManager.getCohort(coh4, null, sessionId).first());
         cohorts.put("coh5", catalogManager.getCohort(coh5, null, sessionId).first());
@@ -244,7 +244,7 @@ public class VariantStorageTest {
 
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh1, null, sessionId).first().getCohortStatus());
 
-        Job job = variantStorage.calculateStats((int) outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first();
+        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first();
         assertEquals(Cohort.CohortStatus.CALCULATING, catalogManager.getCohort(coh1, null, sessionId).first().getCohortStatus());
 
         runStorageJob(job, sessionId);
@@ -261,7 +261,7 @@ public class VariantStorageTest {
                 .getSamples().subList(0, 100)), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohort(coh1, null, sessionId).first().getCohortStatus());
 
-        job = variantStorage.calculateStats((int) outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first();
+        job = variantStorage.calculateStats(outputId, Collections.singletonList(coh1), sessionId, new QueryOptions()).first();
         runStorageJob(job, sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohort(coh1, null, sessionId).first().getCohortStatus());
         cohorts.put("coh1", catalogManager.getCohort(coh1, null, sessionId).first());
@@ -279,7 +279,7 @@ public class VariantStorageTest {
 
         runStorageJob(
                 variantStorage.calculateStats(
-                        (int) outputId,
+                        outputId,
                         Arrays.asList(catalogManager.getAllCohorts(studyId, null, null, sessionId).first().getId()),
                         sessionId,
                         new QueryOptions()
@@ -304,7 +304,7 @@ public class VariantStorageTest {
 
         runStorageJob(
                 variantStorage.calculateStats(
-                        (int) outputId,
+                        outputId,
                         Arrays.asList(catalogManager.getAllCohorts(studyId, null, null, sessionId).first().getId()),
                         sessionId,
                         new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap)

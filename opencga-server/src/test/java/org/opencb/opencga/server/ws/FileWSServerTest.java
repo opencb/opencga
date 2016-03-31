@@ -45,7 +45,7 @@ public class FileWSServerTest {
     private WebTarget webTarget;
     private static WSServerTestUtils serverTestUtils;
     private String sessionId;
-    private int studyId;
+    private long studyId;
     public static final Path ROOT_DIR = Paths.get("/tmp/opencga-server-FileWSServerTest-folder");
 
     public FileWSServerTest() {
@@ -141,7 +141,7 @@ public class FileWSServerTest {
 
 
         fileUri = ROOT_DIR.resolve("file2.txt").toUri();
-        json = webTarget.path("files").path(Integer.toString(file.getId())).path("relink")
+        json = webTarget.path("files").path(Long.toString(file.getId())).path("relink")
                 .queryParam("sid", sessionId)
                 .queryParam("uri", fileUri).request().get(String.class);
 
@@ -158,7 +158,7 @@ public class FileWSServerTest {
 
         FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();
         updateFile.description = "Change description";
-        String json = webTarget.path("files").path(Integer.toString(file.getId())).path("update")
+        String json = webTarget.path("files").path(Long.toString(file.getId())).path("update")
                 .queryParam("sid", sessionId).request().post(Entity.json(updateFile), String.class);
 
         QueryResponse<QueryResult<Object>> response = WSServerTestUtils.parseResult(json, Object.class);
@@ -222,21 +222,21 @@ public class FileWSServerTest {
 
     }
 
-    public File uploadVcf(int studyId, String sessionId) throws IOException, CatalogException {
+    public File uploadVcf(long studyId, String sessionId) throws IOException, CatalogException {
         String fileName = "variant-test-file.vcf.gz";
 //        String fileName = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
         InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
         return upload(studyId, fileName, File.Bioformat.VARIANT, is, sessionId);
     }
 
-    public File uploadBam(int studyId, String sessionId) throws IOException, CatalogException {
+    public File uploadBam(long studyId, String sessionId) throws IOException, CatalogException {
         String fileName = "HG00096.chrom20.small.bam";
         InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
 
         return upload(studyId, fileName, File.Bioformat.ALIGNMENT, is, sessionId);
     }
 
-    public File upload(int studyId, String fileName, File.Bioformat bioformat, InputStream is, String sessionId) throws IOException, CatalogException {
+    public File upload(long studyId, String fileName, File.Bioformat bioformat, InputStream is, String sessionId) throws IOException, CatalogException {
         System.out.println("\nTesting file upload...");
         System.out.println("------------------------");
 
@@ -263,7 +263,7 @@ public class FileWSServerTest {
             multiPart.bodyPart(new FormDataBodyPart("chunk_total", Integer.toString(totalSize)));
             multiPart.bodyPart(new FormDataBodyPart("last_chunk", Boolean.toString(is.available() == 0)));
             multiPart.bodyPart(new FormDataBodyPart("filename", fileName));
-            multiPart.bodyPart(new FormDataBodyPart("studyId", Integer.toString(studyId)));
+            multiPart.bodyPart(new FormDataBodyPart("studyId", Long.toString(studyId)));
             multiPart.bodyPart(new FormDataBodyPart("fileFormat", File.Format.PLAIN.toString()));
             multiPart.bodyPart(new FormDataBodyPart("bioFormat", bioformat.toString()));
             multiPart.bodyPart(new FormDataBodyPart("relativeFilePath", "data/" + fileName));
@@ -291,7 +291,7 @@ public class FileWSServerTest {
     }
 
 
-    public Job index(int fileId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+    public Job index(long fileId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
         System.out.println("\nTesting file index...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
@@ -315,7 +315,7 @@ public class FileWSServerTest {
 
     }
 
-    public Job calculateVariantStats(int cohortId, int outdirId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
+    public Job calculateVariantStats(long cohortId, long outdirId, String sessionId) throws IOException, AnalysisExecutionException, CatalogException {
 
         String json = webTarget.path("cohorts").path(String.valueOf(cohortId)).path("stats")
                 .queryParam("sid", sessionId)
@@ -336,7 +336,7 @@ public class FileWSServerTest {
 
     }
 
-    public List<Variant> fetchVariants(int fileId, String sessionId, QueryOptions queryOptions) throws IOException {
+    public List<Variant> fetchVariants(long fileId, String sessionId, QueryOptions queryOptions) throws IOException {
         System.out.println("\nTesting file fetch variants...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
@@ -366,7 +366,7 @@ public class FileWSServerTest {
         return variants;
     }
 
-    public List<ObjectMap> fetchAlignments(int fileId, String sessionId, QueryOptions queryOptions) throws IOException {
+    public List<ObjectMap> fetchAlignments(long fileId, String sessionId, QueryOptions queryOptions) throws IOException {
         System.out.println("\nTesting file fetch alignments...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");

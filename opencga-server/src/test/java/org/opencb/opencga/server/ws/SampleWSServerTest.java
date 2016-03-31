@@ -28,9 +28,9 @@ public class SampleWSServerTest {
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
     private String sessionId;
-    private int studyId;
-    private int in1;
-    private int s1, s2, s3, s4;
+    private long studyId;
+    private long in1;
+    private long s1, s2, s3, s4;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -74,7 +74,7 @@ public class SampleWSServerTest {
 
     @Test
     public void updateGet() throws IOException {
-        String json = webTarget.path("samples").path(Integer.toString(s1)).path("update")
+        String json = webTarget.path("samples").path(Long.toString(s1)).path("update")
                 .queryParam("individualId", in1).queryParam("sid", sessionId)
                 .request().get(String.class);
 
@@ -87,7 +87,7 @@ public class SampleWSServerTest {
         SampleWSServer.UpdateSample entity = new SampleWSServer.UpdateSample();
         entity.individualId = in1;
         entity.attributes = Collections.singletonMap("key", "value");
-        String json = webTarget.path("samples").path(Integer.toString(s1)).path("update").queryParam("sid", sessionId)
+        String json = webTarget.path("samples").path(Long.toString(s1)).path("update").queryParam("sid", sessionId)
                 .request().post(Entity.json(entity), String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();

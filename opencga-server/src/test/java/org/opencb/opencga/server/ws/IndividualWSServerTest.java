@@ -23,11 +23,11 @@ public class IndividualWSServerTest {
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
     private String sessionId;
-    private int studyId;
-    private int in1;
-    private int in2;
-    private int in3;
-    private int in4;
+    private long studyId;
+    private long in1;
+    private long in2;
+    private long in3;
+    private long in4;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -76,7 +76,7 @@ public class IndividualWSServerTest {
 
     @Test
     public void getIndividualTest() throws IOException {
-        String json = webTarget.path("individuals").path(Integer.toString(in1)).path("info")
+        String json = webTarget.path("individuals").path(Long.toString(in1)).path("info")
                 .queryParam("studyId", studyId)
                 .queryParam("exclude", "projects.studies.individuals.gender")
                 .queryParam("sid", sessionId).request().get(String.class);
@@ -111,7 +111,7 @@ public class IndividualWSServerTest {
 
     @Test
     public void updateIndividualTest() throws IOException {
-        String json = webTarget.path("individuals").path(Integer.toString(in1)).path("update")
+        String json = webTarget.path("individuals").path(Long.toString(in1)).path("update")
                 .queryParam("family", "f3")
                 .queryParam("sid", sessionId).request().get(String.class);
 
@@ -123,7 +123,7 @@ public class IndividualWSServerTest {
 
     @Test
     public void deleteIndividualTest() throws IOException, CatalogException {
-        String json = webTarget.path("individuals").path(Integer.toString(in1)).path("delete")
+        String json = webTarget.path("individuals").path(Long.toString(in1)).path("delete")
                 .queryParam("sid", sessionId).request().get(String.class);
 
         QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);

@@ -2,15 +2,12 @@ package org.opencb.opencga.server.ws;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
 import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -21,9 +18,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.STUDIES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
  * Created on 09/10/15
@@ -54,7 +49,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             }
             queryOptions.append(STUDIES.key(), request.getVariantSetIds());
             String studyIdStr = queryOptions.getAsStringList(STUDIES.key()).get(0);
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
 
 //        queryOptions.append(, request.getVariantName()); //TODO
             if (request.getCallSetIds() != null) {
@@ -96,7 +91,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             SearchVariantsResponse response = new SearchVariantsResponse();
 
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-            List<Variant> variants = variantFetcher.variantsStudy(studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
+            List<Variant> variants = variantFetcher.variantsStudy((int) studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
             response.setNextPageToken(Integer.toString(++page));
             response.setVariants(variants);
             return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));

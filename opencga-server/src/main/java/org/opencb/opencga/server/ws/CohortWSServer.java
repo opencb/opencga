@@ -27,7 +27,6 @@ import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -64,7 +63,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
-                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
                                  @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
@@ -75,7 +74,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
                 Query samplesQuery = new Query("id", sampleIdsStr);
@@ -103,7 +102,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(catalogManager.createCohort(studyId, cohortName, type, cohortDescription, Collections.<Integer>emptyList(), null, sessionId));
+                cohorts.add(catalogManager.createCohort(studyId, cohortName, type, cohortDescription, Collections.emptyList(), null, sessionId));
             }
             return createOkResponse(cohorts);
         } catch (Exception e) {
@@ -114,7 +113,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/info")
     @ApiOperation(value = "Get cohort information", position = 2)
-    public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
+    public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -127,11 +126,11 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/samples")
     @ApiOperation(value = "Get samples from cohort", position = 3)
-    public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
+    public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
             query.put("id", cohort.getSamples());
-            int studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            long studyId = catalogManager.getStudyIdByCohortId(cohortId);
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             allSamples.setId("getCohortSamples");
             return createOkResponse(allSamples);
@@ -140,10 +139,10 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(int studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
+    private QueryResult<Cohort> createCohort(long studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
-        List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
+        List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
@@ -181,7 +180,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4)
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
@@ -197,7 +196,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
-    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId,
+    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
             return createOkResponse(catalogManager.modifyCohort(cohortId, new ObjectMap(params), queryOptions, sessionId));
@@ -217,13 +216,13 @@ public class CohortWSServer extends OpenCGAWSServer {
                           ) {
         try {
             String[] split = cohortIdsCsv.split(",");
-            List<Integer> cohortIds = new ArrayList<>(split.length);
+            List<Long> cohortIds = new ArrayList<>(split.length);
             for (String cohortIdStr : split) {
-                cohortIds.add(Integer.parseInt(cohortIdStr));
+                cohortIds.add(Long.parseLong(cohortIdStr));
             }
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
-                Integer outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
+                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
                 queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult =
@@ -231,12 +230,12 @@ public class CohortWSServer extends OpenCGAWSServer {
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
                 List<QueryResult<Cohort>> results = new LinkedList<>();
-                for (Integer cohortId : cohortIds) {
+                for (Long cohortId : cohortIds) {
                     results.add(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
                 }
                 return createOkResponse(results);
             } else {
-                int studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
+                long studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
                 return createOkResponse(catalogManager.getAllCohorts(studyId,
                         new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
             }
@@ -249,7 +248,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/delete")
     @ApiOperation(value = "Delete cohort.", position = 5)
-    public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") int cohortId) {
+    public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
