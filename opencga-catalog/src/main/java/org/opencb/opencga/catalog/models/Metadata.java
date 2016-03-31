@@ -27,7 +27,7 @@ public class Metadata {
     private String date;
     private String open;
 
-    private int idCounter;
+    private long idCounter;
 
 
     public Metadata() {
@@ -38,7 +38,7 @@ public class Metadata {
         this(version, date, open, 0);
     }
 
-    public Metadata(String version, String date, String open, int idCounter) {
+    public Metadata(String version, String date, String open, long idCounter) {
         this.version = version;
         this.date = date;
         this.open = open;
@@ -80,11 +80,11 @@ public class Metadata {
         this.open = open;
     }
 
-    public int getIdCounter() {
+    public long getIdCounter() {
         return idCounter;
     }
 
-    public void setIdCounter(int idCounter) {
+    public void setIdCounter(long idCounter) {
         this.idCounter = idCounter;
     }
 }

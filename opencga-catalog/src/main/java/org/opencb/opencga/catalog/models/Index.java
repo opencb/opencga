@@ -27,7 +27,7 @@ public class Index {
     private String userId;
     private String date;
     private Status status;
-    private int jobId;
+    private long jobId;
 
     private Map<String, Object> attributes;
 
@@ -35,7 +35,7 @@ public class Index {
     }
 
 
-    public Index(String userId, String date, Status status, int jobId, Map<String, Object> attributes) {
+    public Index(String userId, String date, Status status, long jobId, Map<String, Object> attributes) {
         this.userId = userId;
         this.date = date;
         this.status = status;
@@ -59,11 +59,11 @@ public class Index {
         this.date = date;
     }
 
-    public int getJobId() {
+    public long getJobId() {
         return jobId;
     }
 
-    public void setJobId(int jobId) {
+    public void setJobId(long jobId) {
         this.jobId = jobId;
     }
 

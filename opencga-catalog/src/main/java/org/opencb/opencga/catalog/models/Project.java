@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public class Project {
 
-    private int id;
+    private long id;
     private String name;
     private String alias;
     private String creationDate;
@@ -57,7 +57,7 @@ public class Project {
                 new HashMap<String, Object>());
     }
 
-    public Project(int id, String name, String alias, String creationDate, String description, String organization, Status status,
+    public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
                    String lastActivity, long diskUsage, List<Study> studies, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -92,11 +92,11 @@ public class Project {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

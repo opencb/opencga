@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class Cohort {
 
-    private int id;
+    private long id;
     private String name;
     private Type type;
     private String creationDate;
@@ -35,7 +35,7 @@ public class Cohort {
     private CohortStatus cohortStatus;
     private String description;
 
-    private List<Integer> samples;
+    private List<Long> samples;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -43,12 +43,12 @@ public class Cohort {
     public Cohort() {
     }
 
-    public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
+    public Cohort(String name, Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) {
         this(-1, name, type, creationDate, CohortStatus.NONE, description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Integer> samples,
+    public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Long> samples,
                   Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -79,11 +79,11 @@ public class Cohort {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -135,11 +135,11 @@ public class Cohort {
         this.description = description;
     }
 
-    public List<Integer> getSamples() {
+    public List<Long> getSamples() {
         return samples;
     }
 
-    public void setSamples(List<Integer> samples) {
+    public void setSamples(List<Long> samples) {
         this.samples = samples;
     }
 

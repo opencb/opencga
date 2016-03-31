@@ -24,19 +24,19 @@ import java.util.Map;
  */
 public class Dataset {
 
-    private int id;
+    private long id;
     private String name;
     private String creationDate;
     private String description;
 
-    private List<Integer> files;
+    private List<Long> files;
 
     private Map<String, Object> attributes;
 
     public Dataset() {
     }
 
-    public Dataset(int id, String name, String creationDate, String description, List<Integer> files,
+    public Dataset(int id, String name, String creationDate, String description, List<Long> files,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -59,11 +59,11 @@ public class Dataset {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -91,11 +91,11 @@ public class Dataset {
         this.description = description;
     }
 
-    public List<Integer> getFiles() {
+    public List<Long> getFiles() {
         return files;
     }
 
-    public void setFiles(List<Integer> files) {
+    public void setFiles(List<Long> files) {
         this.files = files;
     }
 

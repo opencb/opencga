@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class Tool {
 
-    private int id;
+    private long id;
     private String alias;
     private String name;
     private String description;
@@ -41,7 +41,7 @@ public class Tool {
         this(-1, alias, name, description, manifest, result, path, new LinkedList());
     }
 
-    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -67,11 +67,11 @@ public class Tool {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

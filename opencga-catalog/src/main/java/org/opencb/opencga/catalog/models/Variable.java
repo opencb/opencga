@@ -41,7 +41,7 @@ public class Variable {
      * Example for categorical values: T,F
      */
     private List<String> allowedValues;
-    private int rank;
+    private long rank;
     private String dependsOn;
     private String description;
     /**
@@ -54,7 +54,7 @@ public class Variable {
     }
 
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    boolean multiValue, List<String> allowedValues, int rank, String dependsOn, String description,
+                    boolean multiValue, List<String> allowedValues, long rank, String dependsOn, String description,
                     Set<Variable> variableSet, Map<String, Object> attributes) {
         this.id = id;
         this.category = category;
@@ -168,11 +168,11 @@ public class Variable {
         this.allowedValues = allowedValues;
     }
 
-    public int getRank() {
+    public long getRank() {
         return rank;
     }
 
-    public void setRank(int rank) {
+    public void setRank(long rank) {
         this.rank = rank;
     }
 

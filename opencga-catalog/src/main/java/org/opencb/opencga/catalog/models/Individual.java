@@ -19,15 +19,16 @@ package org.opencb.opencga.catalog.models;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Math.toIntExact;
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Individual {
 
-    private int id;
+    private long id;
     private String name;
-    private int fatherId;
-    private int motherId;
+    private long fatherId;
+    private long motherId;
     private String family;
     private Gender gender;
     private String race;
@@ -40,7 +41,7 @@ public class Individual {
     public Individual() {
     }
 
-    public Individual(int id, String name, int fatherId, int motherId, String family, Gender gender, String race, Species species,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -74,11 +75,11 @@ public class Individual {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public Individual setId(int id) {
+    public Individual setId(long id) {
         this.id = id;
         return this;
     }
@@ -149,7 +150,7 @@ public class Individual {
 
     @Override
     public int hashCode() {
-        int result = id;
+        long result = id;
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + fatherId;
         result = 31 * result + motherId;
@@ -159,23 +160,23 @@ public class Individual {
         result = 31 * result + (species != null ? species.hashCode() : 0);
         result = 31 * result + (population != null ? population.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
-        return result;
+        return toIntExact(result);
     }
 
-    public int getFatherId() {
+    public long getFatherId() {
         return fatherId;
     }
 
-    public Individual setFatherId(int fatherId) {
+    public Individual setFatherId(long fatherId) {
         this.fatherId = fatherId;
         return this;
     }
 
-    public int getMotherId() {
+    public long getMotherId() {
         return motherId;
     }
 
-    public Individual setMotherId(int motherId) {
+    public Individual setMotherId(long motherId) {
         this.motherId = motherId;
         return this;
     }

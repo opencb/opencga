@@ -53,7 +53,7 @@ public class Job {
     /**
      * Catalog unique identifier.
      */
-    private int id;
+    private long id;
     /**
      * User given job name.
      */
@@ -83,14 +83,14 @@ public class Job {
     private String execution;
     private Map<String, String> params;
     private String commandLine;
-    private int visits;
+    private long visits;
     private Status status;
     private JobStatus jobStatus;
     private long diskUsage;
-    private int outDirId;
+    private long outDirId;
     private URI tmpOutDirUri;
-    private List<Integer> input;    // input files to this job
-    private List<Integer> output;   // output files of this job
+    private List<Long> input;    // input files to this job
+    private List<Long> output;   // output files of this job
     private List<String> tags;
     private Map<String, Object> attributes;
     private Map<String, Object> resourceManagerAttributes;
@@ -100,18 +100,18 @@ public class Job {
     public Job() {
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
-               URI tmpOutDirUri, List<Integer> input) {
+    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
+               URI tmpOutDirUri, List<Long> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, JobStatus
                         .PREPARED, 0,
                 outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
 
-    public Job(int id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, int visits, JobStatus jobStatus,
-               long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
-               List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+    public Job(long id, String name, String userId, String toolName, String date, String description,
+               long startTime, long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus,
+               long diskUsage, long outDirId, URI tmpOutDirUri, List<Long> input,
+               List<Long> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -181,11 +181,11 @@ public class Job {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -261,11 +261,11 @@ public class Job {
         this.commandLine = commandLine;
     }
 
-    public int getVisits() {
+    public long getVisits() {
         return visits;
     }
 
-    public void setVisits(int visits) {
+    public void setVisits(long visits) {
         this.visits = visits;
     }
 
@@ -311,11 +311,11 @@ public class Job {
         return this;
     }
 
-    public int getOutDirId() {
+    public long getOutDirId() {
         return outDirId;
     }
 
-    public void setOutDirId(int outDirId) {
+    public void setOutDirId(long outDirId) {
         this.outDirId = outDirId;
     }
 
@@ -327,19 +327,19 @@ public class Job {
         this.tmpOutDirUri = tmpOutDirUri;
     }
 
-    public List<Integer> getInput() {
+    public List<Long> getInput() {
         return input;
     }
 
-    public void setInput(List<Integer> input) {
+    public void setInput(List<Long> input) {
         this.input = input;
     }
 
-    public List<Integer> getOutput() {
+    public List<Long> getOutput() {
         return output;
     }
 
-    public void setOutput(List<Integer> output) {
+    public void setOutput(List<Long> output) {
         this.output = output;
     }
 

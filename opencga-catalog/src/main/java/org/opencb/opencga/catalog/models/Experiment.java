@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Experiment {
 
-    private int id;
+    private long id;
     private String name;
     private String type;
     private String platform;
@@ -80,11 +80,11 @@ public class Experiment {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class Study {
 
-    private int id;
+    private long id;
     private String name;
     private String alias;
     private Type type;
@@ -68,7 +68,7 @@ public class Study {
                 uri, new HashMap<File.Bioformat, DataStore>(), new HashMap<String, Object>(), new HashMap<String, Object>());
     }
 
-    public Study(int id, String name, String alias, Type type, String creatorId, String creationDate,
+    public Study(long id, String name, String alias, Type type, String creatorId, String creationDate,
                  String description, Status status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
                  List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples, List<Dataset> datasets,
                  List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
@@ -129,11 +129,11 @@ public class Study {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

@@ -31,7 +31,7 @@ public class File {
 
     /* Attributes known values */
     public static final String DELETE_DATE = "deleteDate";      //Long
-    private int id;
+    private long id;
     /**
      * File name.
      */
@@ -60,13 +60,13 @@ public class File {
     private Status status;
     private FileStatus fileStatus;
     private long diskUsage;
-    //private int studyId;
-    private int experimentId;
-    private List<Integer> sampleIds;
+    //private long studyId;
+    private long experimentId;
+    private List<Long> sampleIds;
     /**
      * This field values -1 when file has been uploaded.
      */
-    private int jobId;
+    private long jobId;
     private List<AclEntry> acl;
     private Index index;
     private List<AnnotationSet> annotationSets;
@@ -84,20 +84,20 @@ public class File {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String description, FileStatus fileStatus, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, fileStatus, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                -1, new LinkedList<Long>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus fileStatus, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, fileStatus, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                -1, new LinkedList<Long>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<String, Object>());
     }
 
-    public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus fileStatus, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<AclEntry> acl, Map<String, Object> stats,
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, FileStatus fileStatus, long diskUsage, long experimentId,
+                List<Long> sampleIds, long jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -152,11 +152,11 @@ public class File {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -264,27 +264,27 @@ public class File {
         this.diskUsage = diskUsage;
     }
 
-    public int getExperimentId() {
+    public long getExperimentId() {
         return experimentId;
     }
 
-    public void setExperimentId(int experimentId) {
+    public void setExperimentId(long experimentId) {
         this.experimentId = experimentId;
     }
 
-    public List<Integer> getSampleIds() {
+    public List<Long> getSampleIds() {
         return sampleIds;
     }
 
-    public void setSampleIds(List<Integer> sampleIds) {
+    public void setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
     }
 
-    public int getJobId() {
+    public long getJobId() {
         return jobId;
     }
 
-    public void setJobId(int jobId) {
+    public void setJobId(long jobId) {
         this.jobId = jobId;
     }
 

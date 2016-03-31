@@ -23,10 +23,10 @@ import java.util.*;
  */
 public class Sample {
 
-    private int id;
+    private long id;
     private String name;
     private String source;
-    private int individualId;
+    private long individualId;
     private String description;
 
     private List<AclEntry> acl;
@@ -39,12 +39,12 @@ public class Sample {
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, int individualId, String description) {
+    public Sample(long id, String name, String source, long individualId, String description) {
         this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new
                 HashMap<String, Object>());
     }
 
-    public Sample(int id, String name, String source, int individualId, String description,
+    public Sample(long id, String name, String source, long individualId, String description,
                   List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -73,11 +73,11 @@ public class Sample {
         return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public Sample setId(int id) {
+    public Sample setId(long id) {
         this.id = id;
         return this;
     }
@@ -108,11 +108,11 @@ public class Sample {
         this.status = status;
     }
 
-    public int getIndividualId() {
+    public long getIndividualId() {
         return individualId;
     }
 
-    public Sample setIndividualId(int individualId) {
+    public Sample setIndividualId(long individualId) {
         this.individualId = individualId;
         return this;
     }
