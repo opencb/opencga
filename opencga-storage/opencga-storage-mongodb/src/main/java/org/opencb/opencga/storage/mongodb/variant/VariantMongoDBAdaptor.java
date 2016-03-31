@@ -73,6 +73,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final StorageEngineConfiguration storageEngineConfiguration;
     private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
     private final VariantDBAdaptorUtils utils;
+    private final MongoCredentials credentials;
 
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -92,6 +93,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
             throws UnknownHostException {
+        this.credentials = credentials;
         // MongoDB configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
@@ -108,6 +110,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected MongoDBCollection getVariantsCollection() {
         return variantsCollection;
+    }
+
+    protected MongoCredentials getCredentials() {
+        return credentials;
     }
 
     @Override
@@ -1783,7 +1789,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      */
     private QueryBuilder addFrequencyFilter(String key, String value, QueryBuilder builder, VariantQueryParams queryParam,
                                             BiConsumer<String, QueryBuilder> addFilter) {
-
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
@@ -2076,7 +2081,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         logger.debug("sent order to create indices");
     }
 
-
     /**
      * This method split a typical key-value param such as 'sift<=0.2' in an array ["sift", "<=0.2"].
      * This implementation can and probably should be improved.
@@ -2131,9 +2135,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private int getChunkEnd(int id, int chunksize) {
         return (id * chunksize) + chunksize - 1;
     }
-
-
-
 
     /* OLD METHODS*/
     @Deprecated

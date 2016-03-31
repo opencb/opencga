@@ -437,7 +437,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         Integer fileId = 5;
         VariantSource source = createVariantSource(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap();
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertTrue(studyConfiguration.getSamplesInFiles().get(fileId).stream()
                 .map(s -> studyConfiguration.getSampleIds().inverse().get(s))
@@ -456,7 +456,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         VariantSource source = createVariantSource(studyConfiguration, fileId);
         studyConfiguration.getSampleIds().put("s10", 4);
         ObjectMap options = new ObjectMap(VariantStorageManager.Options.SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
         assertTrue(studyConfiguration.getSampleIds().keySet().containsAll(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5")));
         assertEquals(Arrays.asList("s0", "s1", "s2", "s3", "s4", "s5"),
                 studyConfiguration.getSamplesInFiles().get(fileId).stream()
@@ -481,7 +481,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         VariantSource source = createVariantSource(studyConfiguration, fileId);
         ObjectMap options = new ObjectMap(VariantStorageManager.Options.SAMPLE_IDS.key(), "s0:20,s1:21,s2:22,s3:23,s4:24,s5:25");
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25)));
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -494,7 +494,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("s0:20");   //Already present
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -507,7 +507,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("UNEXISTING_SAMPLE");   //Not in file
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -519,7 +519,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("NaN");   //Not a number
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -531,7 +531,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("s5:");   //Malformed
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -543,7 +543,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("s3");   //Malformed
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -555,7 +555,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("[s1, s2, s3, s4, s5]");   //Missing samples
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -567,7 +567,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24)));
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("s5");
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     @Test
@@ -579,7 +579,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         studyConfiguration.getSampleIds().put("GhostSample", 0);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(20, 21, 22, 23, 24, 25, 0)));
         thrown.expect(StorageManagerException.class);
-        VariantStorageManager.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
+        VariantStorageETL.checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
     }
 
     protected VariantSource createVariantSource(StudyConfiguration studyConfiguration, Integer fileId) {
@@ -610,7 +610,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             throws StorageManagerException {
         long start = System.currentTimeMillis();
         VariantSource source = new VariantSource(VCF_TEST_FILE_NAME, "6", "", "");
-        VariantReader variantReader = VariantStorageManager.getVariantReader(Paths.get(variantsJson.getPath()), source);
+        VariantReader variantReader = VariantStorageETL.getVariantReader(Paths.get(variantsJson.getPath()), source);
 
         variantReader.open();
         variantReader.pre();

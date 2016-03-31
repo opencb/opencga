@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -108,6 +107,6 @@ public abstract class StorageManager<DBADAPTOR> {
     // TODO: Pending implementation
     public abstract void testConnection() throws StorageManagerException;
 
-    protected abstract StorageETL newStorageETL();
+    public abstract StorageETL newStorageETL() throws StorageManagerException;
 
 }

@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.net.URI;

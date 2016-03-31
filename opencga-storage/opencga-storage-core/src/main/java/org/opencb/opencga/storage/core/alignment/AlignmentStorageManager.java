@@ -40,7 +40,6 @@ import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -256,7 +255,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
     }
 
     @Override
-    protected StorageETL newStorageETL() {
+    public StorageETL newStorageETL() {
         return this;
     }
 

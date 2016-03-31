@@ -50,8 +50,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
+import static org.opencb.opencga.storage.core.variant.VariantStorageETL.checkStudyConfiguration;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManager.checkStudyConfiguration;
 
 /**
  * Created by jmmut on 12/02/15.

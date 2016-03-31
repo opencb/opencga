@@ -49,26 +49,26 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     @Test
     public void checkCanLoadSampleBatchTest() throws StorageManagerException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 1);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 1);
         studyConfiguration.getIndexedFiles().add(1);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 2);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 2);
         studyConfiguration.getIndexedFiles().add(2);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 3);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 3);
         studyConfiguration.getIndexedFiles().add(3);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 4);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 4);
         studyConfiguration.getIndexedFiles().add(4);
     }
 
     @Test
     public void checkCanLoadSampleBatch2Test() throws StorageManagerException {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 4);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 4);
         studyConfiguration.getIndexedFiles().add(4);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 3);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 3);
         studyConfiguration.getIndexedFiles().add(3);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 2);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 2);
         studyConfiguration.getIndexedFiles().add(2);
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 1);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 1);
         studyConfiguration.getIndexedFiles().add(1);
     }
 
@@ -78,7 +78,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         studyConfiguration.getIndexedFiles().addAll(Arrays.asList(1, 3, 4));
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("Another sample batch has been loaded");
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 2);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 2);
     }
 
     @Test
@@ -87,7 +87,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         studyConfiguration.getIndexedFiles().addAll(Arrays.asList(1, 2));
         thrown.expect(StorageManagerException.class);
         thrown.expectMessage("There was some already indexed samples, but not all of them");
-        MongoDBVariantStorageManager.checkCanLoadSampleBatch(studyConfiguration, 5);
+        MongoDBVariantStorageETL.checkCanLoadSampleBatch(studyConfiguration, 5);
     }
 
     @SuppressWarnings("unchecked")

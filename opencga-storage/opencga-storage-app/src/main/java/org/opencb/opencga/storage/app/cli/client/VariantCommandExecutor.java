@@ -227,36 +227,8 @@ public class VariantCommandExecutor extends CommandExecutor {
             load = indexVariantsCommandOptions.load;
         }
 
-        // Check the database connection before we start
-        if (load) {
-            if (!variantStorageManager.testConnection(variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()))) {
-                logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
-                throw new ParameterException("Database connection test failed");
-            }
-        }
+        variantStorageManager.index(Collections.singletonList(variantsUri), outdirUri, extract, transform, load);
 
-        if (extract) {
-            logger.info("Extract variants '{}'", variantsUri);
-            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
-        }
-
-        if (transform) {
-            logger.info("PreTransform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.preTransform(nextFileUri);
-            logger.info("Transform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
-            logger.info("PostTransform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.postTransform(nextFileUri);
-        }
-
-        if (load) {
-            logger.info("PreLoad variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
-            logger.info("Load variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.load(nextFileUri);
-            logger.info("PostLoad variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
-        }
     }
 
     private void query() throws Exception {
@@ -537,7 +509,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
 // remove fileId
-        StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(options);
+        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+                .getStudyConfiguration(statsVariantsCommandOptions.studyId, new QueryOptions(options)).first();
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
         }

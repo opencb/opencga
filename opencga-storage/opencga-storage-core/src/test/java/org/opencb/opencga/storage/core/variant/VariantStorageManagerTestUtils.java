@@ -6,6 +6,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -191,27 +192,27 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         if (doExtract) {
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(extractParams);
-            inputUri = variantStorageManager.extract(inputUri, outputUri);
+            inputUri = variantStorageManager.newStorageETL().extract(inputUri, outputUri);
             etlResult.extractResult = inputUri;
         }
 
         if (doTransform) {
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(preTransformParams);
-            inputUri = variantStorageManager.preTransform(inputUri);
+            inputUri = variantStorageManager.newStorageETL().preTransform(inputUri);
             etlResult.preTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(transformParams);
-            inputUri = variantStorageManager.transform(inputUri, null, outputUri);
+            inputUri = variantStorageManager.newStorageETL().transform(inputUri, null, outputUri);
             etlResult.transformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(postTransformParams);
-            inputUri = variantStorageManager.postTransform(inputUri);
+            inputUri = variantStorageManager.newStorageETL().postTransform(inputUri);
             etlResult.postTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
         }
@@ -220,21 +221,21 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(preLoadParams);
-            inputUri = variantStorageManager.preLoad(inputUri, outputUri);
+            inputUri = variantStorageManager.newStorageETL().preLoad(inputUri, outputUri);
             etlResult.preLoadResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(loadParams);
-            inputUri = variantStorageManager.load(inputUri);
+            inputUri = variantStorageManager.newStorageETL().load(inputUri);
             etlResult.loadResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
             variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
                     ().putAll(postLoadParams);
-            variantStorageManager.postLoad(inputUri, outputUri);
+            variantStorageManager.newStorageETL().postLoad(inputUri, outputUri);
         }
         return etlResult;
     }
