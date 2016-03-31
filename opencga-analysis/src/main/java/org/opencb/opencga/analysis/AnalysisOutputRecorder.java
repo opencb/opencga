@@ -25,7 +25,6 @@ import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
@@ -84,7 +83,7 @@ public class AnalysisOutputRecorder {
 
             FileScanner fileScanner = new FileScanner(catalogManager);
             List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
-            List<Integer> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
+            List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
             if (!ioManager.exists(tmpOutDirUri)) {
                 logger.warn("Output folder doesn't exist");

@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static java.lang.Math.toIntExact;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -78,17 +79,17 @@ public class CatalogStudyConfigurationFactory {
         objectMapper = new ObjectMapper();
     }
 
-    public StudyConfiguration getStudyConfiguration(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         return getStudyConfiguration(studyId, null, options, sessionId);
     }
 
-    public StudyConfiguration getStudyConfiguration(int studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
+    public StudyConfiguration getStudyConfiguration(long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
         StudyConfiguration studyConfiguration = null;
         org.opencb.datastore.core.QueryOptions qOpts = new org.opencb.datastore.core.QueryOptions(options);
 
         if (studyConfigurationManager != null) {
-            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, qOpts).first();
+            studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, qOpts).first();
         }
         studyConfiguration = fillStudyConfiguration(studyConfiguration, study, sessionId);
 
@@ -96,14 +97,14 @@ public class CatalogStudyConfigurationFactory {
     }
 
     private StudyConfiguration fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
-        int studyId = study.getId();
+        long studyId = study.getId();
         boolean newStudyConfiguration = false;
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(0, "");
             newStudyConfiguration = true;
         }
-        studyConfiguration.setStudyId(study.getId());
-        int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+        studyConfiguration.setStudyId((int) study.getId());
+        long projectId = catalogManager.getProjectIdByStudyId(study.getId());
         String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
         String userId = catalogManager.getUserIdByProjectId(projectId);
         studyConfiguration.setStudyName(userId + "@" + projectAlias + ":" + study.getAlias());
@@ -135,7 +136,7 @@ public class CatalogStudyConfigurationFactory {
         // *** Except if it is a new StudyConfiguration...
         if (newStudyConfiguration) {
             for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
-                studyConfiguration.getIndexedFiles().add(file.getId());
+                studyConfiguration.getIndexedFiles().add((int) file.getId());
             }
         }
 
@@ -143,8 +144,12 @@ public class CatalogStudyConfigurationFactory {
         QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY, ALL_FILES_QUERY_OPTIONS, sessionId);
         for (File file : files.getResult()) {
 
-            studyConfiguration.getFileIds().forcePut(file.getName(), file.getId());
-            studyConfiguration.getSamplesInFiles().put(file.getId(), new LinkedHashSet<>(file.getSampleIds()));
+            studyConfiguration.getFileIds().forcePut(file.getName(), (int) file.getId());
+            List<Integer> sampleIds = new ArrayList<>(file.getSampleIds().size());
+            for (Long sampleId : file.getSampleIds()) {
+                sampleIds.add(toIntExact(sampleId));
+            }
+            studyConfiguration.getSamplesInFiles().put((int) file.getId(), new LinkedHashSet<>(sampleIds));
 
 
             if (studyConfiguration.getIndexedFiles().contains(file.getId()) && file.getAttributes().containsKey("variantSource")) {
@@ -157,7 +162,7 @@ public class CatalogStudyConfigurationFactory {
                         Map metadata = (Map) object;
                         if (metadata.containsKey("variantFileHeader")) {
                             String variantFileHeader = metadata.get("variantFileHeader").toString();
-                            studyConfiguration.getHeaders().put(file.getId(), variantFileHeader);
+                            studyConfiguration.getHeaders().put((int) file.getId(), variantFileHeader);
                         }
                     }
                 }
@@ -168,21 +173,25 @@ public class CatalogStudyConfigurationFactory {
         QueryResult<Sample> samples = catalogManager.getAllSamples(studyId, new Query(), SAMPLES_QUERY_OPTIONS, sessionId);
 
         for (Sample sample : samples.getResult()) {
-            studyConfiguration.getSampleIds().forcePut(sample.getName(), sample.getId());
+            studyConfiguration.getSampleIds().forcePut(sample.getName(), (int) sample.getId());
         }
 
         logger.debug("Get Cohorts");
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyId, COHORTS_QUERY, COHORTS_QUERY_OPTIONS, sessionId);
 
         for (Cohort cohort : cohorts.getResult()) {
-            studyConfiguration.getCohortIds().forcePut(cohort.getName(), cohort.getId());
-            studyConfiguration.getCohorts().put(cohort.getId(), new HashSet<>(cohort.getSamples()));
+            studyConfiguration.getCohortIds().forcePut(cohort.getName(), (int) cohort.getId());
+            List<Integer> sampleIds = new ArrayList<>(cohort.getSamples().size());
+            for (Long sampleId : cohort.getSamples()) {
+                sampleIds.add(toIntExact(sampleId));
+            }
+            studyConfiguration.getCohorts().put((int) cohort.getId(), new HashSet<>(sampleIds));
             if (cohort.getCohortStatus() == Cohort.CohortStatus.READY) {
-                studyConfiguration.getCalculatedStats().add(cohort.getId());
+                studyConfiguration.getCalculatedStats().add((int) cohort.getId());
                 studyConfiguration.getInvalidStats().remove(cohort.getId());
             } else if (cohort.getCohortStatus() == Cohort.CohortStatus.INVALID) {
                 studyConfiguration.getCalculatedStats().remove(cohort.getId());
-                studyConfiguration.getInvalidStats().add(cohort.getId());
+                studyConfiguration.getInvalidStats().add((int) cohort.getId());
             } else { //CALCULATING || NONE
                 studyConfiguration.getCalculatedStats().remove(cohort.getId());
                 studyConfiguration.getInvalidStats().remove(cohort.getId());
@@ -213,7 +222,7 @@ public class CatalogStudyConfigurationFactory {
         }
     }
 
-    public void updateStudyConfigurationFromCatalog(int studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
+    public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
         studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new org.opencb.datastore.core.QueryOptions());
     }

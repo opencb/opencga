@@ -159,7 +159,7 @@ public class FileMetadataReaderTest extends TestCase {
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get("variantSource")).get("samples"));
         List<Sample> samples = catalogManager.getAllSamples(study.getId(), new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds()),
                 new QueryOptions(), sessionIdUser).getResult();
-        Map<Integer, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
+        Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
         assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSampleIds().get(0)).getName());
         assertEquals(expectedSampleNames.get(1), sampleMap.get(file.getSampleIds().get(1)).getName());
         assertEquals(expectedSampleNames.get(2), sampleMap.get(file.getSampleIds().get(2)).getName());
@@ -205,7 +205,7 @@ public class FileMetadataReaderTest extends TestCase {
                 upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
 
         //Add a sampleId
-        int sampleId = catalogManager.createSample(study.getId(), "Bad_Sample", "Air", "", null, null, sessionIdUser).first().getId();
+        long sampleId = catalogManager.createSample(study.getId(), "Bad_Sample", "Air", "", null, null, sessionIdUser).first().getId();
         catalogManager.modifyFile(file.getId(), new ObjectMap("sampleIds", Collections.singletonList(sampleId)), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), null, sessionIdUser).first();

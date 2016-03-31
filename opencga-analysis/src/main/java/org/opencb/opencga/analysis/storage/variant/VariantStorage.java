@@ -58,7 +58,7 @@ public class VariantStorage {
     }
 
 
-    public QueryResult<Job> calculateStats(Integer outDirId, List<Integer> cohortIds, String sessionId, QueryOptions options)
+    public QueryResult<Job> calculateStats(Integer outDirId, List<Long> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException, IOException {
         if (options == null) {
             options = new QueryOptions();
@@ -67,7 +67,7 @@ public class VariantStorage {
         final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
         String fileIdStr = options.getString(VariantStorageManager.Options.FILE_ID.key(), null);
         boolean updateStats = options.getBoolean(VariantStorageManager.Options.UPDATE_STATS.key(), false);
-        final Integer fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
+        final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
         final long start = System.currentTimeMillis();
 
         if ((cohortIds == null || cohortIds.isEmpty()) 
@@ -77,12 +77,12 @@ public class VariantStorage {
 
         StringBuilder outputFileName = new StringBuilder();
         Map<Cohort, List<Sample>> cohorts = new HashMap<>(cohortIds.size());
-        Set<Integer> studyIdSet = new HashSet<>();
-        Map<Integer, Cohort> cohortMap = new HashMap<>(cohortIds.size());
+        Set<Long> studyIdSet = new HashSet<>();
+        Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
 
-        for (Integer cohortId : cohortIds) {
+        for (Long cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
-            int studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            long studyId = catalogManager.getStudyIdByCohortId(cohortId);
             studyIdSet.add(studyId);
             switch (cohort.getCohortStatus()) {
                 case NONE:
@@ -102,7 +102,7 @@ public class VariantStorage {
             cohorts.put(cohort, sampleQueryResult.getResult());
             cohortMap.put(cohortId, cohort);
         }
-        for (Integer cohortId : cohortIds) {
+        for (Long cohortId : cohortIds) {
             if (outputFileName.length() > 0) {
                 outputFileName.append('_');
             }
@@ -114,7 +114,7 @@ public class VariantStorage {
         }
 
         // Check that all cohorts are from the same study
-        int studyId;
+        long studyId;
         if (studyIdSet.size() == 1) {
             studyId = studyIdSet.iterator().next();
         } else {
@@ -213,7 +213,7 @@ public class VariantStorage {
         attributes.put(Job.TYPE, Job.Type.COHORT_STATS);
         attributes.put("cohortIds", cohortIds);
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
-                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
+                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 attributes, new HashMap<>());
     }
@@ -274,7 +274,7 @@ public class VariantStorage {
         String jobDescription = "Variant annotation";
         String jobName = "annotate-stats";
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
-                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.<Integer>emptyList(),
+                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 new HashMap<String, Object>(), new HashMap<String, Object>());
     }

@@ -59,7 +59,7 @@ public class FileMetadataReader {
      * @return The created file with status <b>STAGE</b>
      * @throws CatalogException
      */
-    public QueryResult<File> create(int studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> create(long studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.FOLDER : File.Type.FILE;
         File.Format format = FormatDetector.detect(fileUri);
@@ -104,7 +104,7 @@ public class FileMetadataReader {
      */
     public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
             throws CatalogException, StorageManagerException {
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
         }
@@ -340,7 +340,7 @@ public class FileMetadataReader {
             sampleList = catalogManager.getAllSamples(study.getId(), query, options, sessionId).getResult();
         }
 
-        List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
+        List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put("sampleIds", sampleIdsList);
         if (!attributes.isEmpty()) {
             fileModifyParams.put("attributes", attributes);
@@ -373,7 +373,7 @@ public class FileMetadataReader {
             throws StorageManagerException {
         if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
             //TODO: Fix aggregate and studyType
-            VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
+            VariantSource source = new VariantSource(file.getName(), Long.toString(file.getId()), Long.toString(study.getId()), study.getName());
             return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
         } else {
             return null;
@@ -406,7 +406,7 @@ public class FileMetadataReader {
      * @throws CatalogException
      */
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
-        int studyId = catalogManager.getStudyIdByJobId(job.getId());
+        long studyId = catalogManager.getStudyIdByJobId(job.getId());
         Query query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getInput())
                 .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);

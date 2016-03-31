@@ -49,7 +49,7 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     private static VariantDBAdaptor buildDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
-        int id = catalogManager.getFileId(fileId);
+        long id = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();

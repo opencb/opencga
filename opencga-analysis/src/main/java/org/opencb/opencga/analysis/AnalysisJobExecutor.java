@@ -222,14 +222,15 @@ public class AnalysisJobExecutor {
     }
 
     public QueryResult<Job> createJob(Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, long studyId, String jobName, String description, File outDir,
+                                      List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
 
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
-                                      List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, long studyId, String jobName, String description, File outDir,
+                                      List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
 
         // Create temporal Outdir
@@ -251,8 +252,8 @@ public class AnalysisJobExecutor {
     }
 
     @Deprecated
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, long studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Long> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
                                              Map<String, Object> resourceManagerAttributes)
@@ -276,8 +277,8 @@ public class AnalysisJobExecutor {
                 randomString, temporalOutDirUri, "", params, commandLine, execute, simulate, attributes, resourceManagerAttributes);
     }
 
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, long studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Long> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri,
                                              String executor, Map<String, String> params, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
@@ -295,7 +296,7 @@ public class AnalysisJobExecutor {
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.JobStatus.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
+                            Job.JobStatus.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.emptyList(),
                             null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {
@@ -325,7 +326,7 @@ public class AnalysisJobExecutor {
         URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
         com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
 
-        final int jobId = job.getId();
+        final long jobId = job.getId();
         Thread hook = new Thread(() -> {
             try {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");

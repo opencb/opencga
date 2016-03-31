@@ -123,7 +123,7 @@ public class AnalysisFileIndexer {
         File inputFile = catalogManager.getFile(fileId, sessionId).first();
         File originalFile;
         File outDir = catalogManager.getFile(outDirId, sessionId).first();
-        int studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
+        long studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
         Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
 
         if (inputFile.getType() != File.Type.FILE) {
@@ -137,12 +137,12 @@ public class AnalysisFileIndexer {
                         "Only transformed files can be loaded.");
             }
             Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
-            int indexedFileId;
+            long indexedFileId;
             if (job.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
                 indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
             } else {
                 logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
-                List<Integer> jobInputFiles = job.getInput();
+                List<Long> jobInputFiles = job.getInput();
                 if (jobInputFiles.size() != 1) {
                     throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
                 }
@@ -219,13 +219,13 @@ public class AnalysisFileIndexer {
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.<Integer>emptyList(), null, sessionId).first();
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
 
             //Samples are the already indexed plus those that are going to be indexed
-            Set<Integer> samples = new HashSet<>(defaultCohort.getSamples());
+            Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
             samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
@@ -322,7 +322,7 @@ public class AnalysisFileIndexer {
     }
 
 
-    private void modifyIndexJobId(int fileId, int jobId, boolean transform, boolean load, String sessionId) throws CatalogException {
+    private void modifyIndexJobId(long fileId, long jobId, boolean transform, boolean load, String sessionId) throws CatalogException {
         File file = catalogManager.getFile(fileId, sessionId).first();
         Index index = file.getIndex();
         index.setJobId(jobId);
@@ -336,13 +336,13 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, int studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
+    public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId).first();
         DataStore dataStore;
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
         } else {
-            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            long projectId = catalogManager.getProjectIdByStudyId(study.getId());
             Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("projects.alias", "projects.dataStores")), sessionId).first();
             if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
                 dataStore = project.getDataStores().get(bioformat);
@@ -409,7 +409,7 @@ public class AnalysisFileIndexer {
 //                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
 //            }
 
-            int projectId = catalogManager.getProjectIdByStudyId(study.getId());
+            long projectId = catalogManager.getProjectIdByStudyId(study.getId());
             String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
             String userId = catalogManager.getUserIdByProjectId(projectId);
 

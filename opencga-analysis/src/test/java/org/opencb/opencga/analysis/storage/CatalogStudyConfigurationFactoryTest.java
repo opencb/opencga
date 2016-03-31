@@ -36,11 +36,11 @@ public class CatalogStudyConfigurationFactoryTest {
 
     static private CatalogManager catalogManager;
     static private String sessionId;
-    static private int projectId;
-    static private int studyId;
+    static private long projectId;
+    static private long studyId;
     static private FileMetadataReader fileMetadataReader;
     static private CatalogFileUtils catalogFileUtils;
-    static private int outputId;
+    static private long outputId;
     static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
     static private String catalogPropertiesFile;
     static private final String userId = "user";
@@ -86,7 +86,7 @@ public class CatalogStudyConfigurationFactoryTest {
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
             catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today", Index.Status.READY, 1234, Collections.emptyMap())), sessionId);
-            indexedFiles.add(file.getId());
+            indexedFiles.add((int) file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
@@ -100,7 +100,7 @@ public class CatalogStudyConfigurationFactoryTest {
             protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {return null;}
             protected org.opencb.datastore.core.QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.datastore.core.QueryOptions options) {return null;}
             protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {
-                StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
+                StudyConfiguration studyConfiguration = new StudyConfiguration((int) study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new org.opencb.datastore.core.QueryResult<>("", 0, 0, 0, "", "", Collections.emptyList());
             }
@@ -129,7 +129,7 @@ public class CatalogStudyConfigurationFactoryTest {
             protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {return null;}
             protected org.opencb.datastore.core.QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.datastore.core.QueryOptions options) {return null;}
             protected org.opencb.datastore.core.QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, org.opencb.datastore.core.QueryOptions options) {
-                StudyConfiguration studyConfiguration = new StudyConfiguration(study.getId(), "user@p1:s1");
+                StudyConfiguration studyConfiguration = new StudyConfiguration((int) study.getId(), "user@p1:s1");
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new org.opencb.datastore.core.QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }

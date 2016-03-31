@@ -78,7 +78,7 @@ public class FileScanner {
      */
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
-        int studyId = study.getId();
+        long studyId = study.getId();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
@@ -103,7 +103,7 @@ public class FileScanner {
      */
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
-        int studyId = study.getId();
+        long studyId = study.getId();
         URI studyUri = catalogManager.getStudyUri(studyId);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
@@ -162,7 +162,7 @@ public class FileScanner {
      * @return found and new files.
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
-                           boolean calculateChecksum, boolean deleteSource, int jobId, String sessionId)
+                           boolean calculateChecksum, boolean deleteSource, long jobId, String sessionId)
             throws IOException, CatalogException {
         if (directoryToScan == null) {
             directoryToScan = catalogManager.getFileUri(directory);
@@ -173,7 +173,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.FOLDER)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
-        int studyId = catalogManager.getStudyIdByFileId(directory.getId());
+        long studyId = catalogManager.getStudyIdByFileId(directory.getId());
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
