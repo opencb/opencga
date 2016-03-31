@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
  * Created on 01/12/15.
@@ -47,10 +47,11 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Set<String> transcript = new HashSet<>();
         Set<Integer> so = new HashSet<>();
         Set<String> biotype = new HashSet<>();
+        Set<Double> polyphen = new HashSet<>();
+        Set<Double> sift = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
-            String value = consequenceType.getGeneName();
-            addNotNull(genes, value);
+            addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
@@ -58,12 +59,25 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
                 String accession = sequenceOntologyTerm.getAccession();
                 addNotNull(so, Integer.parseInt(accession.substring(3)));
             }
+            if (consequenceType.getProteinVariantAnnotation() != null) {
+                if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                    for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                        if (score.getSource().equalsIgnoreCase("sift")) {
+                            addNotNull(sift, score.getScore());
+                        } else if (score.getSource().equalsIgnoreCase("polyphen")) {
+                            addNotNull(polyphen, score.getScore());
+                        }
+                    }
+                }
+            }
         }
 
         addVarcharArray(put, GENES.bytes(), genes);
         addVarcharArray(put, TRANSCRIPTS.bytes(), transcript);
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
+        addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
+        addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
@@ -71,17 +85,23 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
             }
         }
 
-//        for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-//            put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
-//                    PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
-//        }
+        if (variantAnnotation.getPopulationFrequencies() != null) {
+            for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
+                put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
+                        PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
+            }
+        }
 
         return put;
     }
 
     private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
-        return Bytes.toBytes(populationFrequency.getStudy()
-                + "_" + populationFrequency.getPopulation());
+        return Bytes.toBytes(getPopulationFrequencyColumnName(populationFrequency.getStudy(),
+                populationFrequency.getPopulation()));
+    }
+
+    private String getPopulationFrequencyColumnName(String study, String population) {
+        return (study + ":" + population).toUpperCase();
     }
 
     private byte[] getConservationColumnName(Score score) {

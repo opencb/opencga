@@ -21,12 +21,12 @@ public class VariantQueryException extends IllegalArgumentException {
     }
 
     public static VariantQueryException malformedParam(VariantQueryParams queryParam, String value) {
-        return malformedParam(queryParam, value, queryParam.description());
+        return malformedParam(queryParam, value, "Expected: " + queryParam.description());
     }
 
-    public static VariantQueryException malformedParam(VariantQueryParams queryParam, String value, String expected) {
+    public static VariantQueryException malformedParam(VariantQueryParams queryParam, String value, String message) {
         return new VariantQueryException("Malformed \"" + queryParam.key() + "\" query : \"" + value + "\". "
-                + "Expected: " + expected);
+                +  message);
     }
 
     public static VariantQueryException studyNotFound(String study) {

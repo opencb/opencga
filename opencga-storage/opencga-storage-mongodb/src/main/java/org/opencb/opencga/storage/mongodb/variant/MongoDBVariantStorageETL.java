@@ -83,7 +83,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         return new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
     }
 
-    @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         URI uri = super.preLoad(input, output);
 
@@ -91,17 +90,16 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
+        int fileId = options.getInt(Options.FILE_ID.key());
 
         boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId);
 
-        if (options.containsKey(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key())) {
-            List<String> extraFields = options.getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())) {
+            List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
             if (studyConfiguration.getIndexedFiles().isEmpty()) {
-                studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
             } else {
-                if (!extraFields.equals(studyConfiguration.getAttributes()
-                        .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+                if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
                     throw new StorageManagerException("Unable to change Stored Extra Fields if there are already indexed files.");
                 }
             }
@@ -166,7 +164,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 //            }
         }
 
-//        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
+//        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(Options.DB_NAME.key()));
         QueryResult<Long> countResult = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration
                 .getStudyId())
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId));
@@ -190,8 +188,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         Path input = Paths.get(inputUri.getPath());
 
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
-        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(),
-                VariantStorageManager.Options.INCLUDE_STATS.defaultValue());
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), Options.INCLUDE_STATS.defaultValue());
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
 
         Set<String> defaultGenotype;
@@ -202,8 +199,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             if (options.containsKey(DEFAULT_GENOTYPE)) {
                 defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE));
             } else {
-                VariantStudy.StudyType studyType = options.get(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.class,
-                        VariantStorageManager.Options.STUDY_TYPE
+                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE
                         .defaultValue());
                 switch (studyType) {
                     case FAMILY:
@@ -228,14 +224,14 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be
         // filled at the VariantJsonReader in the pre()
 //        params.put(VARIANT_SOURCE, source);
-        String dbName = options.getString(VariantStorageManager.Options.DB_NAME.key(), null);
+        String dbName = options.getString(Options.DB_NAME.key(), null);
 
 //        VariantSource variantSource = readVariantSource(input, null);
 //        new StudyInformation(variantSource.getStudyId())
 
-        int batchSize = options.getInt(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100);
         int bulkSize = options.getInt(BULK_SIZE, batchSize);
-        int loadThreads = options.getInt(VariantStorageManager.Options.LOAD_THREADS.key(), 8);
+        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), 8);
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty
 // (OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
@@ -272,7 +268,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         }
 
 
-        final String fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
+        final String fileId = options.getString(Options.FILE_ID.key());
         Task<Variant> remapIdsTask = new Task<Variant>() {
             @Override
             public boolean apply(List<Variant> variants) {

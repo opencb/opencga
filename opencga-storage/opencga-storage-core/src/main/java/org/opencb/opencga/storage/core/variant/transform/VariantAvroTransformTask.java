@@ -30,9 +30,10 @@ public class VariantAvroTransformTask extends VariantTransformTask<ByteBuffer> {
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
-    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc);
+    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source,
+                                    Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc,
+                                    boolean generateReferenceBlocks) {
+        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 

@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,20 +33,15 @@ public class ArchiveHelper extends GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(ArchiveHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
     private final byte[] column;
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
 
 
-    public Logger getLogger() {
-        return logger;
-    }
-
     public ArchiveHelper(Configuration conf) throws IOException {
         super(conf);
-        int fileId = conf.getInt(CONFIG_FILE_ID, 0);
-        String archiveTable = conf.get(CONFIG_ARCHIVE_TABLE);
+        int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
+        String archiveTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
         try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf, new ObjectMap())) {
             VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
             this.meta.set(meta);
@@ -64,7 +58,6 @@ public class ArchiveHelper extends GenomeHelper {
     public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
         super(helper);
         this.meta.set(meta);
-        System.out.println("meta = " + meta);
         column = Bytes.toBytes(getColumnName(meta.getVariantSource()));
     }
 
@@ -79,16 +72,6 @@ public class ArchiveHelper extends GenomeHelper {
         super(helper);
         this.meta.set(new VcfMeta(source));
         column = Bytes.toBytes(getColumnName(source));
-    }
-
-    /**
-     * Get the archive table name given a StudyId.
-     *
-     * @param studyId Numerical study identifier
-     * @return Table name
-     */
-    public static String getTableName(int studyId) {
-        return ARCHIVE_TABLE_PREFIX + Integer.toString(studyId);
     }
 
     /**
@@ -121,11 +104,6 @@ public class ArchiveHelper extends GenomeHelper {
         return variantSource.getFileId();
     }
 
-    @Deprecated
-    public static void setMetaProtoFile(Configuration conf, URI filePath) {
-        conf.set(CONFIG_VCF_META_PROTO_FILE, filePath.toString());
-    }
-
     public VcfMeta getMeta() {
         return meta.get();
     }
@@ -134,12 +112,12 @@ public class ArchiveHelper extends GenomeHelper {
         return column;
     }
 
-    public VcfSlice join(byte[] key, Iterable<Put> input) throws InvalidProtocolBufferException {
+    @Deprecated
+    public VcfSlice join(byte[] key, Iterable<VcfSlice> input) throws InvalidProtocolBufferException {
         Builder sliceBuilder = VcfSlice.newBuilder();
         boolean isFirst = true;
         List<VcfRecord> vcfRecordLst = new ArrayList<VcfRecord>();
-        for (Put p : input) {
-            VcfSlice slice = extractSlice(p);
+        for (VcfSlice slice : input) {
 
             byte[] skey = generateBlockIdAsBytes(slice.getChromosome(), slice.getPosition());
             // Consistency check
@@ -159,9 +137,9 @@ public class ArchiveHelper extends GenomeHelper {
         try {
             Collections.sort(vcfRecordLst, getVcfComparator());
         } catch (IllegalArgumentException e) {
-            getLogger().error("Issue with comparator: ");
+            logger.error("Issue with comparator: ");
             for (VcfRecord r : vcfRecordLst) {
-                getLogger().error(r.toString());
+                logger.error(r.toString());
             }
             throw e;
         }

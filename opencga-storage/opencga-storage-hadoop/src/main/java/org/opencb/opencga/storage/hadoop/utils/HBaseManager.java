@@ -3,15 +3,18 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Created on 13/11/15.
@@ -20,6 +23,7 @@ import java.io.IOException;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HBaseManager extends Configured {
+
 
 
     @FunctionalInterface
@@ -40,10 +44,6 @@ public class HBaseManager extends Configured {
 
     public HBaseManager(Configuration configuration) {
         super(configuration);
-    }
-
-    public HBaseManager() {
-        super(new Configuration());
     }
 
     /**
@@ -201,6 +201,18 @@ public class HBaseManager extends Configured {
     }
 
     /**
+     * Checks if the required table exists.
+     *
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @return boolean True if the table exists
+     * @throws IOException throws {@link IOException}
+     **/
+    public boolean tableExists(Connection con, String tableName) throws IOException {
+        return act(con, tableName, (table, admin) -> admin.tableExists(table.getName()));
+    }
+
+    /**
      * Create default HBase table layout with one column family.
      *
      * @param con HBase connection object
@@ -210,11 +222,30 @@ public class HBaseManager extends Configured {
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
     public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
+        return createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.SNAPPY);
+    }
+
+    /**
+     * Create default HBase table layout with one column family.
+     *
+     * @param con HBase connection object
+     * @param tableName    HBase table name
+     * @param columnFamily Column Family
+     * @param compressionType Compression Algorithm
+     * @return boolean True if a new table was created
+     * @throws IOException throws {@link IOException} from creating a connection / table
+     **/
+    public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
+            throws IOException {
         TableName tName = TableName.valueOf(tableName);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);
-                descr.addFamily(new HColumnDescriptor(columnFamily));
+                HColumnDescriptor family = new HColumnDescriptor(columnFamily);
+                if (compressionType != null) {
+                    family.setCompressionType(compressionType);
+                }
+                descr.addFamily(family);
                 admin.createTable(descr);
                 return true;
             }
@@ -222,4 +253,12 @@ public class HBaseManager extends Configured {
         });
     }
 
+    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException {
+        String[] hostPort = hostPortString.split(":");
+        String server = hostPort[0];
+        String port = hostPort.length > 0 ? hostPort[1] : "60000";
+        String master = String.join(":", server, port);
+//        conf.set(HBASE_MASTER, master);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, master);
+    }
 }

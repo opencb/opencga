@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -8,10 +9,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.core.exec.Command;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
@@ -20,7 +20,8 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
@@ -32,7 +33,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -46,55 +50,42 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
+    public static final String HADOOP_DELETE_FILE = "hadoop.delete.file";
+    //Other files to be loaded from Archive to Variant
+    public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
+
+    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
     protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
 
+    protected MRExecutor mrExecutor = null;
+    protected Configuration conf = null;
+
     @Override
-    public URI preLoad(URI input, URI output) throws StorageManagerException {
-        getLogger().info("Pre input: " + input);
-        getLogger().info("Pre output: " + output);
+    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
+        logger.info("PreTransform: " + input);
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        options.put(Options.TRANSFORM_FORMAT.key(), "avro");
+        options.put(Options.GVCF.key(), true);
+        return super.preTransform(input);
+    }
+
+    @Override
+    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
+        super.preLoad(input, output);
 
         ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            studyConfiguration = new StudyConfiguration(options.getInt(Options.STUDY_ID.key()),
-                    options.getString(Options.STUDY_NAME.key()));
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        }
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (!loadArch && !loadVar) {
-            options.put(HADOOP_LOAD_ARCHIVE, true);
-            options.put(HADOOP_LOAD_VARIANT, true);
             loadArch = true;
             loadVar = true;
+            options.put(HADOOP_LOAD_ARCHIVE, loadArch);
+            options.put(HADOOP_LOAD_VARIANT, loadVar);
         }
-
-//        VariantSource variantSource = readVariantSource(Paths.get(input), null);
-        VariantSource source = readVariantSource(input, options);
-
-        int fileId;
-        String fileName = source.getFileName();
-        try {
-            fileId = Integer.parseInt(source.getFileId());
-        } catch (NumberFormatException e) {
-            throw new StorageManagerException("FileId " + source.getFileId() + " is not an integer", e);
-        }
-        options.put(Options.FILE_ID.key(), fileId);
-        checkNewFile(studyConfiguration, fileId, fileName);
-        studyConfiguration.getFileIds().put(fileName, fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
-
-        // updates object with file ID and generate sample IDs
-        checkAndUpdateStudyConfiguration(studyConfiguration, options.getInt(Options.FILE_ID.key()), source, options);
-        buildStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
 
         if (loadArch) {
 
@@ -103,21 +94,25 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 if (!StringUtils.isEmpty(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY))) {
                     output = URI.create(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY));
                 }
-                if (!output.getScheme().equals("hdfs")) {
+                if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
                     throw new StorageManagerException("Output must be in HDFS");
                 }
 
                 try {
+                    long startTime = System.currentTimeMillis();
                     Configuration conf = getHadoopConfiguration(options);
                     FileSystem fs = FileSystem.get(conf);
                     Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
                     fs.copyFromLocalFile(false, new Path(input), variantsOutputPath);
+                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
-                    URI fileInput = URI.create(input.toString().replace("variants.avro", "file.json"));
+                    startTime = System.currentTimeMillis();
+                    URI fileInput = URI.create(getMetaFromInputFile(input.toString()));
                     Path fileOutputPath = new Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new Path(fileInput).toUri(), fileOutputPath.toUri());
                     fs.copyFromLocalFile(false, new Path(fileInput), fileOutputPath);
+                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                     input = variantsOutputPath.toUri();
                 } catch (IOException e) {
@@ -128,23 +123,87 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 //            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
         }
 
-        // TODO
-//        if (loadVar) {
-//        }
+        if (loadVar) {
+            // Load into variant table
+            // Update the studyConfiguration with data from the Archive Table.
+            // Reads the VcfMeta documents, and populates the StudyConfiguration if needed.
+            // Obtain the list of pending files.
+
+            int studyId = options.getInt(Options.STUDY_ID.key());
+            int fileId = options.getInt(Options.FILE_ID.key());
+            HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
+            boolean missingFilesDetected = false;
+
+            ArchiveFileMetadataManager fileMetadataManager = buildArchiveFileMetaManager(archiveTable, options);
+            Set<Integer> files = fileMetadataManager.getLoadedFiles();
+            StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+            List<Integer> pendingFiles = new LinkedList<>();
+
+            for (Integer loadedFileId : files) {
+                VcfMeta meta = fileMetadataManager.getVcfMeta(loadedFileId, options).first();
+
+                VariantSource source = meta.getVariantSource();
+                Integer fileId1 = Integer.parseInt(source.getFileId());
+                if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
+                    checkNewFile(studyConfiguration, fileId1, source.getFileName());
+                    studyConfiguration.getFileIds().put(source.getFileName(), fileId1);
+                    studyConfiguration.getHeaders().put(fileId1, source.getMetadata().get("variantFileHeader").toString());
+                    checkAndUpdateStudyConfiguration(studyConfiguration, fileId1, source, options);
+                    missingFilesDetected = true;
+                }
+                if (!studyConfiguration.getIndexedFiles().contains(fileId1)) {
+                    pendingFiles.add(fileId1);
+                }
+            }
+            if (missingFilesDetected) {
+                getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
+            }
+
+            if (!loadArch) {
+                //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
+                if (!pendingFiles.contains(fileId)) {
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
+                }
+            } else {
+                //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
+                if (pendingFiles.contains(fileId)) {
+                    // set loadArch to false?
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
+                } else {
+                    pendingFiles.add(fileId);
+                }
+            }
+
+            //If there are some given pending files, load only those files, not all pending files
+            List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            if (!givenPendingFiles.isEmpty()) {
+                for (Integer pendingFile : givenPendingFiles) {
+                    if (!pendingFiles.contains(pendingFile)) {
+                        throw new StorageManagerException("File " + fileId + " is not pending to be loaded in variant table");
+                    }
+                }
+            } else {
+                options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
+            }
+        }
 
         return input;
     }
 
-    //TODO: Generalize this
-    VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+    public String getMetaFromInputFile(String input) {
+        return input.replace("variants.", "file.").replace("file.avro", "file.json");
+    }
+
+    @Override
+    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         VariantSource source;
 
-        if (input.getScheme().startsWith("file")) {
+        if (input.getScheme() == null || input.getScheme().startsWith("file")) {
             return readVariantSource(Paths.get(input.getPath()), null);
         }
 
         Configuration conf = getHadoopConfiguration(options);
-        Path metaPath = new Path(input.toString().replace("variants.avro", "file.json"));
+        Path metaPath = new Path(getMetaFromInputFile(input.toString()));
         logger.debug("Loading meta file: {}", metaPath.toString());
         try (
                 FileSystem fs = FileSystem.get(conf);
@@ -158,28 +217,52 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return source;
     }
 
-    @Override
-    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        logger.info("PreTransform: " + input);
+    public void remove() throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        options.put(Options.TRANSFORM_FORMAT.key(), "avro");
-        return super.preTransform(input);
-    }
+        int studyId = options.getInt(Options.STUDY_ID.key());
+        Integer fileId = options.getInt(Options.FILE_ID.key());
 
+        HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
+        HadoopCredentials variantsTable = getDbCredentials();
+        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+
+        Class execClass = VariantTableDeletionDriver.class;
+        String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable.getTable(),
+                variantsTable.getTable(), studyId, Collections.singletonList(fileId), options);
+        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
+
+        long startTime = System.currentTimeMillis();
+        logger.info("------------------------------------------------------");
+        logger.info("Remove file IDs {} in analysis {} and archive table '{}'", fileId, archiveTable.getTable(), variantsTable.getTable());
+        logger.debug(executable + " " + args);
+        logger.info("------------------------------------------------------");
+        int exitValue = getMRExecutor(options).run(executable, args);
+        logger.info("------------------------------------------------------");
+        logger.info("Exit value: {}", exitValue);
+        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+        if (exitValue != 0) {
+            throw new StorageManagerException("Error removing fileId " + fileId + " from tables ");
+        }
+    }
 
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        URI vcfMeta = URI.create(input.toString().replace("variants.avro", "file.json"));
+        URI vcfMeta = URI.create(getMetaFromInputFile(input.toString()));
 
-        HadoopCredentials archiveTable = buildCredentials(ArchiveHelper.getTableName(options.getInt(Options.STUDY_ID.key())));
+        int studyId = options.getInt(Options.STUDY_ID.key());
+        int fileId = options.getInt(Options.FILE_ID.key());
+        HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
         HadoopCredentials variantsTable = getDbCredentials();
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jarOption = OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES;
-        String jar = options.getString(jarOption, null);
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
         if (jar == null) {
-            throw new StorageManagerException("Missing option " + jarOption);
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
         }
 
 
@@ -187,40 +270,57 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (loadArch) {
-            // "Usage: %s [generic options] <avro> <avro-meta> <server> <output-table>
             Class execClass = ArchiveDriver.class;
-            String commandLine = hadoopRoute + " jar " + jar + " " + execClass.getName()
-                    + " " + input
-                    + " " + vcfMeta
-                    + " " + archiveTable.getHostAndPort()
-                    + " " + archiveTable.getTable();
+            String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
+            String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta, archiveTable.getHostAndPort(),
+                    archiveTable.getTable(), studyId, fileId, options);
 
-            logger.debug("------------------------------------------------------");
-            logger.debug(commandLine);
-            logger.debug("------------------------------------------------------");
-            Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
-            command.run();
-            logger.debug("------------------------------------------------------");
-            logger.debug("Exit value: {}", command.getExitValue());
+            long startTime = System.currentTimeMillis();
+            logger.info("------------------------------------------------------");
+            logger.info("Loading file {} into archive table '{}'", fileId, archiveTable.getTable());
+            logger.debug(executable + " " + args);
+            logger.info("------------------------------------------------------");
+            int exitValue = getMRExecutor(options).run(executable, args);
+            logger.info("------------------------------------------------------");
+            logger.info("Exit value: {}", exitValue);
+            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+            if (exitValue != 0) {
+                throw new StorageManagerException("Error loading file " + input + " into archive table \""
+                        + archiveTable.getTable() + "\"");
+            }
         }
 
         if (loadVar) {
-            // "Usage: %s [generic options] <server> <input-table> <output-table> <column>
+            List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
             Class execClass = VariantTableDriver.class;
             String args = VariantTableDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable.getTable(),
-                    variantsTable.getTable(), options.getInt(Options.STUDY_ID.key()), options.getInt(Options.FILE_ID.key()));
-            String commandLine = hadoopRoute + " jar " + jar + ' ' + execClass.getName() + ' ' + args;
+                    variantsTable.getTable(), studyId, pendingFiles, options);
+            String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
-            logger.debug("------------------------------------------------------");
-            logger.debug(commandLine);
-            logger.debug("------------------------------------------------------");
-            Command command = new Command(commandLine, options.getAsStringList(HADOOP_ENV));
-            command.run();
-            logger.debug("------------------------------------------------------");
-            logger.debug("Exit value: {}", command.getExitValue());
+            long startTime = System.currentTimeMillis();
+            logger.info("------------------------------------------------------");
+            logger.info("Loading file {} into analysis table '{}'", pendingFiles, variantsTable.getTable());
+            logger.debug(executable + " " + args);
+            logger.info("------------------------------------------------------");
+            int exitValue = getMRExecutor(options).run(executable, args);
+            logger.info("------------------------------------------------------");
+            logger.info("Exit value: {}", exitValue);
+            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+            if (exitValue != 0) {
+                throw new StorageManagerException("Error loading file " + input + " into variant table \""
+                        + variantsTable.getTable() + "\"");
+            }
         }
 
         return input; // TODO  change return value?
+    }
+
+    public MRExecutor getMRExecutor(ObjectMap options) {
+        if (mrExecutor == null) {
+            return new ExternalMRExecutor(options);
+        } else {
+            return mrExecutor;
+        }
     }
 
     private HadoopCredentials getDbCredentials() throws StorageManagerException {
@@ -277,6 +377,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            // Current StudyConfiguration may be outdated. Remove it.
+            options.remove(Options.STUDY_CONFIGURATION.key());
+
             HadoopCredentials dbCredentials = getDbCredentials();
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
             int studyId = options.getInt(Options.STUDY_ID.key());
@@ -288,6 +391,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 throw new StorageManagerException("Unable to register study in Phoenix", e);
             }
 
+            options.put(Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
 
             return super.postLoad(input, output);
         } else {
@@ -298,18 +402,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
             StorageManagerException {
-        // TODO
+        logger.warn("Skip check loaded variants");
     }
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-        return input; // TODO
-    }
-
-    @Override
-    @Deprecated
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
-        return null;
+        return super.postTransform(input);
     }
 
     public static Logger getLogger() {
@@ -328,8 +426,24 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
     }
 
+    private ArchiveFileMetadataManager buildArchiveFileMetaManager(String archiveTableName, ObjectMap options)
+            throws StorageManagerException {
+        return buildArchiveFileMetaManager(buildCredentials(archiveTableName), options);
+    }
+
+    private ArchiveFileMetadataManager buildArchiveFileMetaManager(HadoopCredentials archiveTableCredentials, ObjectMap options)
+            throws StorageManagerException {
+        try {
+            Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options),
+                    archiveTableCredentials);
+            return new ArchiveFileMetadataManager(archiveTableCredentials, configuration, options);
+        } catch (IOException e) {
+            throw new StorageManagerException("Unable to build ArchiveFileMetaManager", e);
+        }
+    }
+
     private Configuration getHadoopConfiguration(ObjectMap options) throws StorageManagerException {
-        Configuration conf = new HdfsConfiguration();
+        Configuration conf = this.conf == null ? new HdfsConfiguration() : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //
@@ -344,4 +458,15 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 .forEach(entry -> conf.set(entry.getKey(), options.getString(entry.getKey())));
         return conf;
     }
+
+    /**
+     * Get the archive table name given a StudyId.
+     *
+     * @param studyId Numerical study identifier
+     * @return Table name
+     */
+    public static String getTableName(int studyId) {
+        return ARCHIVE_TABLE_PREFIX + Integer.toString(studyId);
+    }
+
 }

@@ -3,9 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -16,7 +15,11 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
@@ -25,7 +28,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
+public class HBaseStudyConfigurationManager extends StudyConfigurationManager implements Closeable {
 
     private final byte[] studiesRow;
     private final byte[] studiesSummaryColumn;
@@ -54,8 +57,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         connection = null; // lazy load
         objectMapper = new ObjectMapper();
         hBaseManager = new HBaseManager(configuration);
-        studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
-        studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_META_ROW_KEY, 0);
+        studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
+        studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
     }
 
     @Override
@@ -69,6 +72,10 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
         logger.info("Get StudyConfiguration {} from DB {}", studyName, tableName);
+        if (StringUtils.isEmpty(studyName)) {
+            return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
+                    studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
+        }
         Get get = new Get(studiesRow);
         byte[] columnQualifier = Bytes.toBytes(studyName);
         get.addColumn(genomeHelper.getColumnFamily(), columnQualifier);
@@ -76,7 +83,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             try {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
             } catch (IOException e) {
-                //This should not happen never.
+                //This should not happen ever.
                 throw new IllegalArgumentException(e);
             }
         }
@@ -168,7 +175,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     private void updateStudiesSummary(BiMap<String, Integer> studies, QueryOptions options) {
         try {
-            createTableIfMissing();
+            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, getConnection());
             try (Table table = getConnection().getTable(TableName.valueOf(tableName))) {
                 byte[] bytes = objectMapper.writeValueAsBytes(studies);
                 Put put = new Put(studiesRow);
@@ -182,19 +189,6 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         }
     }
 
-    private boolean createTableIfMissing() throws IOException {
-        return hBaseManager.act(getConnection(), tableName, (table, admin) -> {
-            if (admin.tableExists(table.getName())) {
-                return true;
-            } else {
-                HTableDescriptor hTableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
-                hTableDescriptor.addFamily(new HColumnDescriptor(genomeHelper.getColumnFamily()));
-                admin.createTable(hTableDescriptor);
-                return false;
-            }
-        });
-    }
-
     public Connection getConnection() throws IOException {
         if (null == connection) {
             connection = ConnectionFactory.createConnection(configuration);
@@ -202,4 +196,29 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         return connection;
     }
 
+    public HBaseVariantStudyConfiguration toHBaseStudyConfiguration(StudyConfiguration studyConfiguration) throws IOException {
+        if (studyConfiguration instanceof HBaseVariantStudyConfiguration) {
+            return ((HBaseVariantStudyConfiguration) studyConfiguration);
+        } else {
+            List<BatchFileOperation> batches = new ArrayList<>();
+
+            if (studyConfiguration.getAttributes() != null) {
+                List<Object> batchesObj = studyConfiguration.getAttributes().getList(HBaseVariantStudyConfiguration.BATCHES_FIELD,
+                        Collections.emptyList());
+                for (Object o : batchesObj) {
+                    batches.add(objectMapper.readValue(objectMapper.writeValueAsString(o), BatchFileOperation.class));
+                }
+                studyConfiguration.getAttributes().remove(HBaseVariantStudyConfiguration.BATCHES_FIELD);
+            }
+
+            return new HBaseVariantStudyConfiguration(studyConfiguration).setBatches(batches);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (null != connection) {
+            connection.close();
+        }
+    }
 }

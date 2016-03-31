@@ -3,7 +3,6 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 
@@ -14,7 +13,7 @@ import java.util.Comparator;
  * <ul>
  * <li>first {@link VcfRecord#getRelativeStart()}
  * <li>first {@link VcfRecord#getRelativeEnd()()}
- * <li>string compare {@link VcfRecord#getAlternateList()}
+ * <li>string compare {@link VcfRecord#getAlternate()}
  * </ul>
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -33,7 +32,7 @@ public class VcfRecordComparator implements Comparator<VcfRecord> {
             return compare;
         }
 
-        compare = StringUtils.join(o1.getAlternateList(), ";").compareTo(StringUtils.join(o2.getAlternateList(), ";"));
+        compare = o1.getAlternate().compareTo(o2.getAlternate());
         if (compare != 0) {
             return compare;
         }

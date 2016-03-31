@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
@@ -35,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -42,14 +44,14 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.BIOTYPE;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Columns.GENES;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.BIOTYPE;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.GENES;
 
 /**
  * Created by mh719 on 16/06/15.
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
-    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
+    protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
 
     private final Connection hbaseCon;
     private final String variantTable;
@@ -72,12 +74,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         variantTable = credentials.getTable();
         studyConfigurationManager = new HBaseStudyConfigurationManager(credentials, conf, configuration.getVariant().getOptions());
 
-        queryParser = new VariantSqlQueryParser(genomeHelper, variantTable);
+        queryParser = new VariantSqlQueryParser(genomeHelper, variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
         try {
-            phoenixCon = phoenixHelper.newJdbcConnection(credentials);
-        } catch (SQLException e) {
+            phoenixCon = phoenixHelper.newJdbcConnection(conf);
+        } catch (SQLException | ClassNotFoundException e) {
             throw new IOException(e);
         }
     }
@@ -102,7 +104,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws IOException {
-        VcfMeta vcfMeta = getVcfMeta(ArchiveHelper.getTableName(studyId), fileId, null).first();
+        VcfMeta vcfMeta = getVcfMeta(HadoopVariantStorageManager.getTableName(studyId), fileId, null).first();
         if (vcfMeta == null) {
             throw new IOException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
@@ -117,7 +119,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * @param tableName Use {@link ArchiveHelper#getTableName(int)} to get the table
+     * @param tableName Use {@link HadoopVariantStorageManager#getTableName(int)} to get the table
      * @param options   Extra options
      * @return A valid ArchiveFileMetadataManager object
      * @throws IOException If any IO problem occurs
@@ -175,55 +177,78 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult delete(Query query, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteSamples(String studyName, List<String> sampleNames, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteFile(String studyName, String fileName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteStudy(String studyName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult<Variant> get(Query query, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
+
+        List<Variant> variants = new LinkedList<>();
+        VariantDBIterator iterator = iterator(query, options);
+        iterator.forEachRemaining(variants::add);
+        long numTotalResults = -1;
+        if (options != null && !options.getBoolean("skipCount")) {
+            numTotalResults = count(query).first();
+        }
+        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
     }
 
     @Override
     public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        // TODO Auto-generated method stub
-        return null;
+        List<QueryResult<Variant>> results = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            results.add(get(query, options));
+        }
+        return results;
     }
 
     @Override
     public QueryResult<Long> count(Query query) {
-        // TODO Auto-generated method stub
-        return null;
+        if (query == null) {
+            query = new Query();
+        }
+        long startTime = System.currentTimeMillis();
+        String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
+        try {
+            Statement statement = phoenixCon.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+            resultSet.next();
+            long count = resultSet.getLong(1);
+            return new QueryResult<>("count", ((int) (System.currentTimeMillis() - startTime)),
+                    1, 1, "", "", Collections.singletonList(count));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public QueryResult distinct(Query query, String field) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -234,13 +259,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
 
-        if (query.getBoolean("archive", false)) {
+        if (options.getBoolean("archive", false)) {
             String study = query.getString(STUDIES.key());
-            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+            StudyConfiguration studyConfiguration;
             int studyId;
             if (StringUtils.isNumeric(study)) {
                 studyId = Integer.parseInt(study);
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
             } else {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
                 studyId = studyConfiguration.getStudyId();
             }
 
@@ -261,11 +288,19 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 region = Region.parseRegion(query.getString(REGION.key()));
             }
 
+            //Get the ArchiveHelper related with the requested file.
+            ArchiveHelper archiveHelper;
+            try {
+                archiveHelper = getArchiveHelper(studyId, fileId);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
             Scan scan = new Scan();
-            scan.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
-            addArchiveRegionFilter(scan, region);
+            scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
+            addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = ArchiveHelper.getTableName(studyId);
+            String tableName = HadoopVariantStorageManager.getTableName(studyId);
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);
@@ -274,12 +309,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("MaxResultSize = " + scan.getMaxResultSize());
             logger.debug("region = " + region);
             logger.debug("Column name = " + fileId);
+            logger.debug("Chunk size = " + archiveHelper.getChunkSize());
 
             try {
-                ArchiveHelper archiveHelper = getArchiveHelper(studyId, fileId);
                 Table table = hbaseCon.getTable(TableName.valueOf(tableName));
                 ResultScanner resScan = table.getScanner(scan);
-                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options);
+                return new VariantHadoopArchiveDBIterator(resScan, archiveHelper, options).setRegion(region);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -287,7 +322,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
-            logger.debug(sql);
+            logger.info(sql);
 
 //            try (Statement statement = phoenixCon.createStatement()) {
 //                ResultSet resultSet = statement.executeQuery(sql);
@@ -317,74 +352,84 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public void forEach(Consumer<? super Variant> action) {
-        // TODO Auto-generated method stub
-
+        iterator().forEachRemaining(action);
     }
 
     @Override
     public void forEach(Query query, Consumer<? super Variant> action, QueryOptions options) {
-        // TODO Auto-generated method stub
-
+        iterator(query, options).forEachRemaining(action);
     }
 
     @Override
     public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public QueryResult deleteStats(String studyName, String cohortName, QueryOptions options) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    /**
+     * Ensure that all the annotation fields exist are defined.
+     */
+    public void preUpdateAnnotations() throws IOException {
+        try {
+            phoenixHelper.updateAnnotationFields(phoenixCon, variantTable);
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
     public QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions) {
         // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -493,12 +538,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, valueFilters));
     }
 
-    public void addArchiveRegionFilter(Scan scan, Region region) {
+    public void addArchiveRegionFilter(Scan scan, Region region, ArchiveHelper archiveHelper) {
         if (region == null) {
             addDefaultRegionFilter(scan);
         } else {
-            scan.setStartRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
-            scan.setStopRow(genomeHelper.generateBlockIdAsBytes(region.getChromosome(), region.getEnd()));
+            scan.setStartRow(archiveHelper.generateBlockIdAsBytes(region.getChromosome(), region.getStart()));
+            long endSlice = archiveHelper.getSliceId(region.getEnd()) + 1;
+            // +1 because the stop row is exclusive
+            scan.setStopRow(Bytes.toBytes(archiveHelper.generateBlockIdFromSlice(region.getChromosome(), endSlice)));
         }
     }
 

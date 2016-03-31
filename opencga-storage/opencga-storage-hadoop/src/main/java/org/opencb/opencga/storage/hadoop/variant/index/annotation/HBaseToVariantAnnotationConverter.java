@@ -31,7 +31,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     @Override
     public VariantAnnotation convert(Result result) {
 
-        byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantPhoenixHelper.Columns.FULL_ANNOTATION.bytes());
+        byte[] value = result.getValue(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
         if (value != null && value.length > 0) {
             try {
                 return objectMapper.readValue(value, VariantAnnotation.class);
@@ -46,7 +46,7 @@ public class HBaseToVariantAnnotationConverter implements Converter<Result, Vari
     public VariantAnnotation convert(ResultSet resultSet) {
         int column;
         try {
-            column = resultSet.findColumn(VariantPhoenixHelper.Columns.FULL_ANNOTATION.column());
+            column = resultSet.findColumn(VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column());
         } catch (SQLException e) {
             //Column not found
             return null;

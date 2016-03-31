@@ -200,6 +200,7 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
 
+        dbAdaptor.preUpdateAnnotations();
 
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
         DataReader<VariantAnnotation> reader;

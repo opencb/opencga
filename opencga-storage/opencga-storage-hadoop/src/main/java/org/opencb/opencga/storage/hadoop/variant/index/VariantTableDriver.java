@@ -3,195 +3,125 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.util.GenericOptionsParser;
-import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.Arrays;
+import java.util.Calendar;
+import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public class VariantTableDriver extends Configured implements Tool {
-    private static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
+public class VariantTableDriver extends AbstractVariantTableDriver {
 
-    public static final String OPENCGA_VARIANT_TRANSFORM_FILE_ARR = "opencga.variant.transform.file_arr";
-    public static final String OPENCGA_VARIANT_TRANSFORM_STUDY = "opencga.variant.transform.study";
-    public static final String OPENCGA_VARIANT_TRANSFORM_OUTPUT = "opencga.variant.transform.output";
-    public static final String OPENCGA_VARIANT_TRANSFORM_INPUT = "opencga.variant.transform.input";
-    public static final String HBASE_MASTER = "hbase.master";
+    private HBaseVariantStudyConfiguration studyConfiguration;
 
-    public VariantTableDriver() { /* nothing */}
+    public VariantTableDriver() { /* nothing */ }
 
     public VariantTableDriver(Configuration conf) {
         super(conf);
     }
 
+    @SuppressWarnings ("rawtypes")
     @Override
-    public int run(String[] args) throws Exception {
+    protected Class<? extends TableMapper> getMapperClass() {
+        return VariantTableMapper.class;
+    }
+
+    @Override
+    protected void check(List<Integer> fileIds) throws StorageHadoopException, IOException {
         Configuration conf = getConf();
-        String inTablePrefix = conf.get(OPENCGA_VARIANT_TRANSFORM_INPUT, StringUtils.EMPTY);
-        String outTable = conf.get(OPENCGA_VARIANT_TRANSFORM_OUTPUT, StringUtils.EMPTY);
-        String[] fileArr = conf.getStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, new String[0]);
-        Integer studyId = conf.getInt(OPENCGA_VARIANT_TRANSFORM_STUDY, -1);
+        HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+        StudyConfiguration s = loadStudyConfiguration();
+        this.studyConfiguration = scm.toHBaseStudyConfiguration(s);
 
-        /* -------------------------------*/
-        // Validate parameters CHECK
-        if (StringUtils.isEmpty(inTablePrefix)) {
-            throw new IllegalArgumentException("No input hbase table basename specified!!!");
+        List<BatchFileOperation> batches = this.studyConfiguration.getBatches();
+        BatchFileOperation batchFileOperation;
+        if (!batches.isEmpty()) {
+            batchFileOperation = batches.get(batches.size() - 1);
+            BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
+            if (currentStatus != null) {
+                switch (currentStatus) {
+                    case RUNNING:
+                        throw new StorageHadoopException("Unable to load a new batch. Already loading batch: "
+                                + batchFileOperation);
+                    case READY:
+                        batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, batchFileOperation.getTimestamp() + 1);
+                        break;
+                    case ERROR:
+                        if (batchFileOperation.getFileIds().equals(fileIds)) {
+                            LOG.info("Resuming Last batch loading due to error.");
+                        } else {
+                            throw new StorageHadoopException("Unable to resume last batch loading. Must load the same "
+                                    + "files from the previous batch: " + batchFileOperation);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown Status " + currentStatus);
+                }
+            }
+        } else {
+            batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, 1);
         }
-        if (StringUtils.isEmpty(outTable)) {
-            throw new IllegalArgumentException("No output hbase table specified!!!");
-        }
-        if (inTablePrefix.equals(outTable)) {
-            throw new IllegalArgumentException("Input and Output tables must be different");
-        }
-        if (studyId < 0) {
-            throw new IllegalArgumentException("No Study id specified!!!");
-        }
-        int fileCnt = fileArr.length;
-        if (fileCnt == 0) {
-            throw new IllegalArgumentException("No files specified");
-        }
+        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        batches.add(batchFileOperation);
 
-//        String inTable = GenomeHelper.getArchiveTableName(inTablePrefix, studyId);
-//        String inTable = ArchiveHelper.getTableName(studyId);
-        String inTable = inTablePrefix;
-        LOG.info(String.format("Use table %s as input", inTable));
-
-        GenomeHelper.setStudyId(conf, studyId);
-        GenomeHelper.setChunkSize(conf, 1000);
-        VariantTableHelper.setOutputTableName(conf, outTable);
-        VariantTableHelper.setInputTableName(conf, inTable);
-
-        VariantTableHelper gh = new VariantTableHelper(conf);
-
-
-        /* -------------------------------*/
-        // Validate input CHECK
-        HBaseManager.HBaseTableAdminFunction<Boolean> func = ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin));
-        if (!gh.getHBaseManager().act(inTable, func)) {
-            throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
-        }
-
-        /* -------------------------------*/
-        // INIT META Data
-        StudyConfiguration sconf = loadStudyConfiguration(conf, gh, studyId); // needed for query (column names)
-        // TODO check if this needs further work
-
-        /* -------------------------------*/
-        // JOB setup
-        Job job = Job.getInstance(conf, "Genome Variant Transform from & to HBase");
-        job.setJarByClass(VariantTableMapper.class);    // class that contains mapper
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-
-        // QUERY design
-        Scan scan = new Scan();
-        scan.setCaching(100);        // 1 is the default in Scan, which will be bad for MapReduce jobs
-        scan.setCacheBlocks(false);  // don't set to true for MR jobs
-
-        // specify return columns (file IDs)
-        for (String fileIdStr : fileArr) {
-            int id = Integer.parseInt(fileIdStr);
-            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
-        }
-
-        // set other scan attrs
-        TableMapReduceUtil.initTableMapperJob(
-                inTable,      // input table
-                scan,             // Scan instance to control CF and attribute selection
-                VariantTableMapper.class,   // mapper class
-                null,             // mapper output key
-                null,             // mapper output value
-                job);
-        TableMapReduceUtil.initTableReducerJob(
-                outTable,      // output table
-                null,             // reducer class
-                job);
-        job.setNumReduceTasks(0);
-
-        boolean b = job.waitForCompletion(true);
-        if (!b) {
-            LOG.error("error with job!");
-        }
-        return b ? 0 : 1;
+        scm.updateStudyConfiguration(this.studyConfiguration, new QueryOptions());
+        conf.setLong(TIMESTAMP, batchFileOperation.getTimestamp());
     }
 
-    private StudyConfiguration loadStudyConfiguration(Configuration conf, VariantTableHelper gh, int studyId) throws IOException {
-        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(Bytes.toString(gh.getOutputTable()), conf, null);
-        QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
-        if (res.getResult().size() != 1) {
-            throw new NotSupportedException();
+    @Override
+    protected void onError() {
+        super.onError();
+        try {
+            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return res.first();
+
     }
 
-    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException {
-        String[] hostPort = hostPortString.split(":");
-        String server = hostPort[0];
-        String port = hostPort.length > 0 ? hostPort[1] : "60000";
-        String master = String.join(":", server, port);
-        conf.set(HConstants.ZOOKEEPER_QUORUM, server);
-        conf.set(HBASE_MASTER, master);
+    @Override
+    protected void onSuccess() {
+        super.onSuccess();
+        try {
+            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static String buildCommandLineArgs(String server, String inputTable, String outputTable, int studyId, int fileId,
-                                              int... fileIds) {
-        StringBuilder stringBuilder = new StringBuilder().append(server).append(' ').append(inputTable).append(' ')
-                .append(outputTable).append(' ').append(studyId).append(' ').append(fileId);
-
-        for (int otherFileId : fileIds) {
-            stringBuilder.append(',').append(otherFileId);
-        }
-        return stringBuilder.toString();
+    @Override
+    protected String getJobOperationName() {
+        return "Load";
     }
 
     public static void main(String[] args) throws Exception {
+        System.exit(privateMain(args, null, new VariantTableDriver()));
+    }
+
+    public static int privateMain(String[] args, Configuration conf, VariantTableDriver driver) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        Configuration conf = new Configuration();
-        VariantTableDriver driver = new VariantTableDriver();
-        GenericOptionsParser parser = new GenericOptionsParser(conf, args);
-
-        //get the args w/o generic hadoop args
-        String[] toolArgs = parser.getRemainingArgs();
-
-        if (toolArgs.length != 5) {
-            System.err.printf("Usage: %s [generic options] <server> <input-table> <output-table> <studyId> <fileIds>\n",
-                    VariantTableDriver.class.getSimpleName());
-            System.err.println("Found " + Arrays.toString(toolArgs));
-            ToolRunner.printGenericCommandUsage(System.err);
-            System.exit(-1);
+        if (conf == null) {
+            conf = new Configuration();
         }
-
-        addHBaseSettings(conf, toolArgs[0]);
-        /** FIXME : Should we get the input table from the studyId with {@link ArchiveHelper#getTableName(int)} ? */
-        conf.set(OPENCGA_VARIANT_TRANSFORM_INPUT, toolArgs[1]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_OUTPUT, toolArgs[2]);
-        conf.set(OPENCGA_VARIANT_TRANSFORM_STUDY, toolArgs[3]);
-        conf.setStrings(OPENCGA_VARIANT_TRANSFORM_FILE_ARR, toolArgs[4].split(","));
+        String[] toolArgs = configure(args, conf);
+        if (null == toolArgs) {
+            return -1;
+        }
 
         //set the configuration back, so that Tool can configure itself
         driver.setConf(conf);
@@ -199,8 +129,7 @@ public class VariantTableDriver extends Configured implements Tool {
         /* Alternative to using tool runner */
 //      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
         int exitCode = driver.run(toolArgs);
-
-        System.exit(exitCode);
+        return exitCode;
     }
 
 }

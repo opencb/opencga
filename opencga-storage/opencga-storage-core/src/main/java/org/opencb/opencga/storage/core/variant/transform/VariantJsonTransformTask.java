@@ -23,7 +23,6 @@ import org.opencb.biodata.models.variant.VariantFactory;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +38,8 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
     }
 
     public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc);
+                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
+        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
     }
 
     @Override

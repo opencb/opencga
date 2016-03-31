@@ -54,6 +54,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         FILE_ID("fileId", -1),
         OVERRIDE_FILE_ID("overrideFileId", false),
         SAMPLE_IDS("sampleIds", ""),
+        GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
 
         COMPRESS_METHOD("compressMethod", "gzip"),

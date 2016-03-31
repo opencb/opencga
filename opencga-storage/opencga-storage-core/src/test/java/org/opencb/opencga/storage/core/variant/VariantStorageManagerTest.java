@@ -309,8 +309,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
 
-        VariantReader reader = new VariantJsonReader(new VariantSource("", "2", STUDY_NAME, STUDY_NAME), etlResult.transformResult.getPath(), etlResult.transformResult.getPath().replace("variants", "file"));
-//        VariantReader reader = new VariantAvroReader(Paths.get(etlResult.transformResult.getPath()).toFile(), Paths.get(etlResult.transformResult.getPath().replace("variants.avro", "file.json")).toFile(), new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
+        VariantReader reader = new VariantJsonReader(new VariantSource("", "2", STUDY_NAME, STUDY_NAME),
+                etlResult.transformResult.getPath(), etlResult.transformResult.getPath().replace("variants", "file"));
+//        VariantReader reader = new VariantAvroReader(Paths.get(etlResult.transformResult.getPath()).toFile(),
+// Paths.get(etlResult.transformResult.getPath().replace("variants.avro", "file.json")).toFile(),
+// new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
         reader.open();
         reader.pre();
         for (Variant variant : reader.read(999)) {

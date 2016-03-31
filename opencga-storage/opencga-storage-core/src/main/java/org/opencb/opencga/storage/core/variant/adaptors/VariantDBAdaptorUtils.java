@@ -9,6 +9,8 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created on 29/01/16 .
@@ -17,7 +19,28 @@ import java.util.List;
  */
 public class VariantDBAdaptorUtils {
 
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+
+    public static final String OR = ",";
+    public static final String AND = ";";
+    public static final String IS = ":";
+
     private VariantDBAdaptor adaptor;
+
+    public enum QueryOperation {
+        AND(VariantDBAdaptorUtils.AND),
+        OR(VariantDBAdaptorUtils.OR);
+
+        private final String separator;
+
+        QueryOperation(String separator) {
+            this.separator = separator;
+        }
+
+        public String separator() {
+            return separator;
+        }
+    }
 
     public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
         adaptor = variantDBAdaptor;
@@ -27,6 +50,9 @@ public class VariantDBAdaptorUtils {
         return adaptor.getStudyConfigurationManager();
     }
 
+    public List<Integer> getStudyIds(QueryOptions options) {
+        return getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+    }
     public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
         List<Integer> studiesIds;
         if (studiesNames == null) {
@@ -92,6 +118,44 @@ public class VariantDBAdaptorUtils {
             }
         }
         return sampleId;
+    }
+
+    /**
+     * Checks that the filter value list contains only one type of operations.
+     *
+     * @param value List of values to check
+     * @return  The used operator. Null if no operator is used.
+     * @throws VariantQueryException if the list contains different operators.
+     */
+    public static QueryOperation checkOperator(String value) throws VariantQueryException {
+        boolean containsOr = value.contains(OR);
+        boolean containsAnd = value.contains(AND);
+        if (containsAnd && containsOr) {
+            throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
+        } else if (containsAnd && !containsOr) {
+            return QueryOperation.AND;
+        } else if (containsOr && !containsAnd) {
+            return QueryOperation.OR;
+        } else {    // !containsOr && !containsAnd
+            return null;
+        }
+    }
+
+    public static String[] splitOperator(String value) {
+        Matcher matcher = OPERATION_PATTERN.matcher(value);
+        String key;
+        String operator;
+        String filter;
+
+        if (matcher.find()) {
+            key = matcher.group(1);
+            operator = matcher.group(2);
+            filter = matcher.group(3);
+        } else {
+            return new String[]{null, "=", value};
+        }
+
+        return new String[]{key.trim(), operator.trim(), filter.trim()};
     }
 
 }

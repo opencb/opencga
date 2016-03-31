@@ -3,7 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
+import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
@@ -33,13 +36,18 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     private final byte[] columnFamily;
     private final byte[] fileIdBytes;
     private ResultScanner resultScanner;
+    private int startPosition = 0;
+    private int endPosition = Integer.MAX_VALUE;
+    private VcfSliceProtos.VcfRecord nextVcfRecord = null;
 
     public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = archiveHelper.getColumnFamily();
         this.fileIdBytes = archiveHelper.getColumn();
-        converter = new VcfRecordToVariantConverter(archiveHelper.getMeta());
+        VariantSource variantSource = archiveHelper.getMeta().getVariantSource();
+        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+                variantSource.getStudyId(), variantSource.getFileId());
         setLimit(options.getLong("limit"));
     }
 
@@ -48,31 +56,39 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.iterator = this.resultScanner.iterator();
         this.columnFamily = columnFamily;
         this.fileIdBytes = fileIdBytes;
-        converter = new VcfRecordToVariantConverter(meta);
+        VariantSource variantSource = meta.getVariantSource();
+        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+                variantSource.getStudyId(), variantSource.getFileId());
     }
 
     @Override
     public boolean hasNext() {
-        return count < limit && (vcfRecordIterator.hasNext() || iterator.hasNext());
+        if (nextVcfRecord != null) {
+            return true;
+        } else {
+            nextVcfRecord = nextVcfRecord();
+            return nextVcfRecord != null;
+        }
     }
 
     @Override
     public Variant next() {
-        if (!hasNext()) {
+        if (!(count < limit)) {
             throw new NoSuchElementException("Limit reached");
         }
-        if (!vcfRecordIterator.hasNext()) {
-            Result result = fetch(iterator::next);
-            byte[] rid = result.getRow();
-            try {
-                byte[] value = result.getValue(columnFamily, fileIdBytes);
-                vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
-                vcfRecordIterator = vcfSlice.getRecordsList().iterator();
-            } catch (InvalidProtocolBufferException e) {
-                throw new RuntimeException(e);
-            }
+
+        final VcfSliceProtos.VcfRecord vcfRecord;
+
+        if (nextVcfRecord != null) {
+            vcfRecord = nextVcfRecord;
+            nextVcfRecord = null;
+        } else {
+            vcfRecord = nextVcfRecord();
         }
-        VcfSliceProtos.VcfRecord vcfRecord = vcfRecordIterator.next();
+
+        if (vcfRecord == null) {
+            throw new NoSuchElementException("Limit reached");
+        }
 
         Variant variant;
         try {
@@ -84,12 +100,37 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
             System.err.println("vcfRecord.getRelativeStart() = " + vcfRecord.getRelativeStart());
             System.err.println("vcfRecord.getRelativeEnd() = " + vcfRecord.getRelativeEnd());
             variant = new Variant(vcfSlice.getChromosome(), vcfRecord.getRelativeStart() + vcfSlice.getPosition(),
-                    vcfRecord.getReference(), vcfRecord.getAlternate(0));
+                    vcfRecord.getReference(), vcfRecord.getAlternate());
             logger.debug("variant: {}", variant.toString());
         }
         return variant;
     }
 
+    private VcfSliceProtos.VcfRecord nextVcfRecord() {
+        VcfSliceProtos.VcfRecord vcfRecord;
+        int variantStart;
+        do {
+            if (!vcfRecordIterator.hasNext()) {
+                if (!iterator.hasNext()) {
+                    return null;
+                }
+                Result result = fetch(iterator::next);
+                byte[] rid = result.getRow();
+                try {
+                    byte[] value = result.getValue(columnFamily, fileIdBytes);
+                    vcfSlice = convert(() -> VcfSliceProtos.VcfSlice.parseFrom(value));
+                    vcfRecordIterator = vcfSlice.getRecordsList().iterator();
+                    converter.setFields(vcfSlice.getFields());
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            vcfRecord = vcfRecordIterator.next();
+            variantStart = vcfSlice.getPosition() + vcfRecord.getRelativeStart();
+        } while (vcfRecord.getRelativeStart() < 0 || variantStart < this.startPosition || variantStart > this.endPosition);
+        //Skip duplicated variant!
+        return vcfRecord;
+    }
 
     @Override
     public void close() {
@@ -98,8 +139,18 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         resultScanner.close();
     }
 
-    protected void setLimit(long limit) {
+    protected VariantHadoopArchiveDBIterator setLimit(long limit) {
         this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
+        return this;
+    }
+
+    public VariantHadoopArchiveDBIterator setRegion(Region region) {
+        if (region == null) {
+            return this;
+        }
+        this.startPosition = region.getStart();
+        this.endPosition = region.getEnd();
+        return this;
     }
 
 }

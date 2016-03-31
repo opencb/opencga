@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -258,6 +259,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
+
+    default void preUpdateAnnotations() throws IOException {}
 
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 

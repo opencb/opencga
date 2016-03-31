@@ -360,16 +360,24 @@ public class VariantVcfExporter {
                                 .map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
                         break;
                     case "gene":
-                        stringBuilder.append(consequenceType.getGeneName());
+                        if (consequenceType.getGeneName() != null) {
+                            stringBuilder.append(consequenceType.getGeneName());
+                        }
                         break;
                     case "ensemblGene":
-                        stringBuilder.append(consequenceType.getEnsemblGeneId());
+                        if (consequenceType.getEnsemblGeneId() != null) {
+                            stringBuilder.append(consequenceType.getEnsemblGeneId());
+                        }
                         break;
                     case "ensemblTranscript":
-                        stringBuilder.append(consequenceType.getEnsemblTranscriptId());
+                        if (consequenceType.getEnsemblTranscriptId() != null) {
+                            stringBuilder.append(consequenceType.getEnsemblTranscriptId());
+                        }
                         break;
                     case "biotype":
-                        stringBuilder.append(consequenceType.getBiotype());
+                        if (consequenceType.getBiotype() != null) {
+                            stringBuilder.append(consequenceType.getBiotype());
+                        }
                         break;
                     case "phastCons":
                         List<Double> phastCons = variant.getAnnotation().getConservation().stream()
@@ -401,24 +409,32 @@ public class VariantVcfExporter {
                         stringBuilder.append(consequenceType.getCdsPosition());
                         break;
                     case "proteinPosition":
-                        stringBuilder.append(consequenceType.getProteinVariantAnnotation().getPosition());
+                        if (consequenceType.getProteinVariantAnnotation() != null) {
+                            stringBuilder.append(consequenceType.getProteinVariantAnnotation().getPosition());
+                        }
                         break;
                     case "sift":
-                        List<Double> sift = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("sift"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (sift.size() > 0) {
-                            stringBuilder.append(df3.format(sift.get(0)));
+                        if (consequenceType.getProteinVariantAnnotation() != null
+                                && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            List<Double> sift = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("sift"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (sift.size() > 0) {
+                                stringBuilder.append(df3.format(sift.get(0)));
+                            }
                         }
                         break;
                     case "polyphen":
-                        List<Double> polyphen = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("polyphen"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (polyphen.size() > 0) {
-                            stringBuilder.append(df3.format(polyphen.get(0)));
+                        if (consequenceType.getProteinVariantAnnotation() != null
+                                && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            List<Double> polyphen = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("polyphen"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (polyphen.size() > 0) {
+                                stringBuilder.append(df3.format(polyphen.get(0)));
+                            }
                         }
                         break;
                     case "clinvar":
