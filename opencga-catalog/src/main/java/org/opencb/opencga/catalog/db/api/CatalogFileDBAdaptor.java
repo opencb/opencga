@@ -34,11 +34,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
-    default boolean fileExists(int fileId) throws CatalogDBException {
+    default boolean fileExists(long fileId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
     }
 
-    default void checkFileId(int fileId) throws CatalogDBException {
+    default void checkFileId(long fileId) throws CatalogDBException {
         if (fileId < 0) {
             throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
         }
@@ -51,13 +51,13 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         }
     }
 
-    int getFileId(int studyId, String path) throws CatalogDBException;
+    long getFileId(long studyId, String path) throws CatalogDBException;
 
-    int getStudyIdByFileId(int fileId) throws CatalogDBException;
+    long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
-    List<Integer> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
+    List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
 
-    String getFileOwnerId(int fileId) throws CatalogDBException;
+    String getFileOwnerId(long fileId) throws CatalogDBException;
 
     /***
      * Inserts the passed file in the database.
@@ -68,7 +68,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A QueryResult object containing information regarding the inserted file.
      * @throws CatalogDBException when the file could not be inserted due to different reasons.
      */
-    QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> createFile(long studyId, File file, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves the file from the database containing the fileId given.
@@ -78,7 +78,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A QueryResult object containing the required file.
      * @throws CatalogDBException when the file could not be found in the database.
      */
-    QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files belonging to the given study.
@@ -88,7 +88,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A QueryResult object containing all the files belonging to the study.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> getAllFilesInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     /***
      * Retrieves all the files present in the folder.
@@ -99,7 +99,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A QueryResult object containing the files present in the folder of the given study.
      * @throws CatalogDBException when the study or the path does not exist.
      */
-    QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
 
     /***
      * Renames the file.
@@ -111,7 +111,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      *
      * @throws CatalogDBException when the filePath already exists.
      */
-    QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
 
 
 
@@ -128,7 +128,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return AclEntry of the user in the file if any.
      * @throws CatalogDBException when the userId or the fileId does not exist.
      */
-    QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException;
 
     /***
      * Retrieves the AclEntries of the files and users given.
@@ -139,23 +139,23 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A map of files containing a map of user - AclEntries.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds)
+    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
 
-    QueryResult<AclEntry> setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException;
+    QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException;
 
-    QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
 
     /*
      * Dataset methods
      * ***************************
      */
 
-    int getStudyIdByDatasetId(int datasetId) throws CatalogDBException;
+    long getStudyIdByDatasetId(long datasetId) throws CatalogDBException;
 
-    QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
+    QueryResult<Dataset> createDataset(long studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
@@ -318,8 +318,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
 
     @Deprecated
-    QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<File> modifyFile(long fileId, ObjectMap parameters) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<File> deleteFile(int fileId) throws CatalogDBException;
+    QueryResult<File> deleteFile(long fileId) throws CatalogDBException;
 }

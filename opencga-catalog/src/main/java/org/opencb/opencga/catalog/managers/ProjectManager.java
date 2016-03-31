@@ -36,12 +36,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public String getUserId(int projectId) throws CatalogException {
+    public String getUserId(long projectId) throws CatalogException {
         return projectDBAdaptor.getProjectOwnerId(projectId);
     }
 
     @Override
-    public int getProjectId(String projectId) throws CatalogException {
+    public long getProjectId(String projectId) throws CatalogException {
         try {
             return Integer.parseInt(projectId);
         } catch (NumberFormatException e) {
@@ -80,7 +80,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(ownerId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
             projectDBAdaptor.delete(project.getId(), false);
@@ -104,7 +104,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> read(Integer projectId, QueryOptions options, String sessionId)
+    public QueryResult<Project> read(Long projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -138,7 +138,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> update(Integer projectId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Project> update(Long projectId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -164,7 +164,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return queryResult;
     }
 
-    public QueryResult rename(int projectId, String newProjectAlias, String sessionId)
+    public QueryResult rename(long projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -180,7 +180,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Project> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 }

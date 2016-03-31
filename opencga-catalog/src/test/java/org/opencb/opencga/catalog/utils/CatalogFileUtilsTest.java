@@ -57,7 +57,7 @@ public class CatalogFileUtilsTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     CatalogFileUtils catalogFileUtils;
-    private int studyId;
+    private long studyId;
     private String userSessionId;
     private String adminSessionId;
     private CatalogManager catalogManager;
@@ -88,7 +88,7 @@ public class CatalogFileUtilsTest {
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
         adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
-        int projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
+        long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 
         catalogFileUtils = new CatalogFileUtils(catalogManager);

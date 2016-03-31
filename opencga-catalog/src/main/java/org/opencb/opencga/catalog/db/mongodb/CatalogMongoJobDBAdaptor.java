@@ -48,7 +48,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
 
     @Override
-    public QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -81,7 +81,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //        }
 //    }
     @Override
-    public QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 //        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(PRIVATE_ID, jobId),
 //                          filterOptions(options, FILTER_ROUTE_JOBS));
@@ -95,7 +95,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Job> getAllJobsInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         // Check the studyId first and throw an Exception is not found
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
@@ -105,12 +105,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public String getJobStatus(int jobId, String sessionId) throws CatalogDBException {   // TODO remove?
+    public String getJobStatus(long jobId, String sessionId) throws CatalogDBException {   // TODO remove?
         throw new UnsupportedOperationException("Not implemented method");
     }
 
     @Override
-    public QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException {
+    public QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException {
         long startTime = startQuery();
 
 //        BasicDBObject query = new BasicDBObject(PRIVATE_ID, jobId);
@@ -119,7 +119,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         Job job = getJob(jobId, new QueryOptions(MongoDBCollection.INCLUDE, "visits")).first();
         //Job job = parseJob(jobCollection.<DBObject>find(query, Projections.include("visits"), null));
-        int visits;
+        long visits;
         if (job != null) {
             visits = job.getVisits() + 1;
 //            BasicDBObject set = new BasicDBObject("$set", new BasicDBObject("visits", visits));
@@ -133,7 +133,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Deprecated
     @Override
-    public QueryResult modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException {
         throw new UnsupportedOperationException("Deprecated method. Use update instead.");
         /*
         long startTime = startQuery();
@@ -178,14 +178,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public int getStudyIdByJobId(int jobId) throws CatalogDBException {
+    public long getStudyIdByJobId(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), jobId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
             Object id = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
+            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Job", jobId);
         }
@@ -266,7 +266,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         return endQuery("Create tool", startTime, getTool(tool.getId()).getResult());
     }
 
-    public QueryResult<Tool> getTool(int id) throws CatalogDBException {
+    @Override
+    public QueryResult<Tool> getTool(long id) throws CatalogDBException {
         long startTime = startQuery();
 
 //        DBObject query = new BasicDBObject("tools.id", id);
@@ -292,7 +293,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public int getToolId(String userId, String toolAlias) throws CatalogDBException {
+    public long getToolId(String userId, String toolAlias) throws CatalogDBException {
 //        DBObject query = BasicDBObjectBuilder
 //                .start(PRIVATE_ID, userId)
 //                .append("tools.alias", toolAlias).get();
@@ -346,7 +347,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public boolean experimentExists(int experimentId) {
+    public boolean experimentExists(long experimentId) {
         return false;
     }
 
@@ -468,7 +469,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         checkJobId(id);
         Query query = new Query(QueryParams.ID.key(), id);
@@ -495,7 +496,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Job> delete(long id, boolean force) throws CatalogDBException {
         long timeStart = startQuery();
         if (id > 0) {
             Query query = new Query(QueryParams.ID.key(), id);

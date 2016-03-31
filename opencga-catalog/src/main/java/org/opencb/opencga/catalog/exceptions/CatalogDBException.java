@@ -46,7 +46,7 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + " { id: \"" + id + "\" } not found.");
     }
 
-    public static CatalogDBException idNotFound(String name, int id) {
+    public static CatalogDBException idNotFound(String name, long id) {
         return new CatalogDBException(name + " { id: " + id + " } not found.");
     }
 
@@ -54,7 +54,7 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + " { " + key + ":\"" + value + "\"} already exists");
     }
 
-    public static CatalogDBException alreadyExists(String name, int id) {
+    public static CatalogDBException alreadyExists(String name, long id) {
         return new CatalogDBException(name + " { id:" + id + "} already exists");
     }
 
@@ -70,11 +70,11 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + ": The query used to delete did not report any result.");
     }
 
-    public static CatalogDBException fileInUse(int id, int count) {
+    public static CatalogDBException fileInUse(long id, long count) {
         return new CatalogDBException("The file { id: " + id + "} cannot be removed as it is being used as input in " + count + " job(s).");
     }
 
-    public static CatalogDBException sampleIdIsParentOfOtherIndividual(int id) {
+    public static CatalogDBException sampleIdIsParentOfOtherIndividual(long id) {
         return new CatalogDBException("The sample { id: " + id + "} cannot be removed as it is already the parent of other individual(s).");
     }
 }

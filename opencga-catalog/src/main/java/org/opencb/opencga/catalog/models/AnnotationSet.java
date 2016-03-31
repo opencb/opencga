@@ -19,13 +19,15 @@ package org.opencb.opencga.catalog.models;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Math.toIntExact;
+
 /**
  * Created by imedina on 25/11/14.
  */
 public class AnnotationSet {
 
     private String id;
-    private int variableSetId;
+    private long variableSetId;
     private Set<Annotation> annotations;
     private String date;
 
@@ -35,7 +37,7 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String id, int variableSetId, Set<Annotation> annotations, String date,
+    public AnnotationSet(String id, long variableSetId, Set<Annotation> annotations, String date,
                          Map<String, Object> attributes) {
         this.id = id;
         this.variableSetId = variableSetId;
@@ -86,7 +88,7 @@ public class AnnotationSet {
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + variableSetId;
+        result = 31 * result + toIntExact(variableSetId);
         result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
         result = 31 * result + (date != null ? date.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
@@ -101,11 +103,11 @@ public class AnnotationSet {
         this.id = id;
     }
 
-    public int getVariableSetId() {
+    public long getVariableSetId() {
         return variableSetId;
     }
 
-    public void setVariableSetId(int variableSetId) {
+    public void setVariableSetId(long variableSetId) {
         this.variableSetId = variableSetId;
     }
 

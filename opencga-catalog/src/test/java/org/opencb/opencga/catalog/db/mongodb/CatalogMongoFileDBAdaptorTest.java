@@ -25,7 +25,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void createFileToStudyTest() throws CatalogDBException, IOException {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File
@@ -90,7 +90,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void getAllFilesTest() throws CatalogDBException {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         QueryResult<File> allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
         List<File> files = allFiles.getResult();
         List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
@@ -110,7 +110,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void modifyFileTest() throws CatalogDBException, IOException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        int fileId = file.getId();
+        long fileId = file.getId();
 
         Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils
                 .randomString(20));
@@ -130,7 +130,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void renameFileTest() throws CatalogDBException {
         String newName = "newFile.bam";
         String parentPath = "data/";
-        int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName, null));
 
         File file = catalogFileDBAdaptor.getFile(fileId, null).first();
@@ -144,7 +144,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
 
-        int folderId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
+        long folderId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
         String folderName = "folderName";
         catalogFileDBAdaptor.renameFile(folderId, folderName, null);
         assertTrue(catalogFileDBAdaptor.getFile(fileId, null).first().getPath().equals(folderName + "/" + newName));
@@ -153,7 +153,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteFileTest() throws CatalogDBException, IOException {
-        int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, false);
         System.out.println(delete);
         assertTrue(delete.getNumResults() == 1);
@@ -168,7 +168,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void fileAclsTest() throws CatalogDBException {
-        int fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
 
         AclEntry granted = new AclEntry("jmmut", true, true, true, false);

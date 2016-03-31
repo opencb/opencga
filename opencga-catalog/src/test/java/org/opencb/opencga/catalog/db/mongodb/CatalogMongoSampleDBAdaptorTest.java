@@ -59,7 +59,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         acl_s1_user1 = new AclEntry(user1.getId(), false, false, false, false);
         acl_s1_user2 = new AclEntry(user2.getId(), true, true, true, true);
         s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(
@@ -77,7 +77,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void testAnnotateSample() throws Exception {
-        int sampleId = s1.getId();
+        long sampleId = s1.getId();
 
         Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
                 ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
@@ -106,7 +106,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void testOverwriteAnnotateSample() throws Exception {
-        int sampleId = s1.getId();
+        long sampleId = s1.getId();
 
         Set<Annotation> annotationSet = Arrays.asList(
                 new Annotation("key", "value"),
@@ -182,7 +182,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void createSampleTest() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
@@ -194,7 +194,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void deleteSampleTest() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
@@ -214,8 +214,8 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void deleteSampleFail2Test() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileId(user3.getProjects().get(0).getStudies().get(0).getId(),
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileId(user3.getProjects().get(0).getStudies().get(0).getId(),
                 "data/file.vcf");
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
@@ -228,7 +228,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void deleteSampleFail3Test() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
@@ -241,7 +241,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void createMultipleCohorts() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         AtomicInteger numFailures = new AtomicInteger();
         Function<Integer, String> getCohortName = c -> "Cohort_" + c;

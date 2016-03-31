@@ -39,7 +39,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> createCohort(long studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -62,32 +62,32 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException {
         return get(new Query(QueryParams.ID.key(), cohortId), options);
     }
 
     @Override
-    public QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> getAllCohorts(long studyId, QueryOptions options) throws CatalogDBException {
         return get(new Query(QueryParams.STUDY_ID.key(), studyId), options);
     }
 
     @Override
-    public QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         update(new Query(QueryParams.ID.key(), cohortId), parameters);
         return endQuery("Modify cohort", startTime, getCohort(cohortId, options));
     }
 
     @Override
-    public QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException {
         return delete(cohortId, false);
     }
 
     @Override
-    public int getStudyIdByCohortId(int cohortId) throws CatalogDBException {
+    public long getStudyIdByCohortId(long cohortId) throws CatalogDBException {
         Document myCohort = (Document) nativeGet(new Query(QueryParams.ID.key(), cohortId),
                 new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID)).first();
-        return (int) myCohort.get(PRIVATE_STUDY_ID);
+        return (long) myCohort.get(PRIVATE_STUDY_ID);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Cohort> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         update(new Query(QueryParams.ID.key(), id), parameters);
         return endQuery("Update cohort", startTime, getCohort(id, new QueryOptions()));
@@ -180,7 +180,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Cohort> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Cohort> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkCohortId(id);
         delete(new Query(QueryParams.ID.key(), id), force);
@@ -240,7 +240,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         catalogDBIterator.close();
     }
 
-    private void checkCohortNameExists(int studyId, String cohortName) throws CatalogDBException {
+    private void checkCohortNameExists(long studyId, String cohortName) throws CatalogDBException {
         QueryResult<Long> count = cohortCollection.count(Filters.and(
                 Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.eq(QueryParams.NAME.key(), cohortName)));
         if (count.getResult().get(0) > 0) {

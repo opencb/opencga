@@ -47,10 +47,10 @@ public class CatalogSampleAnnotationsLoader {
         this.catalogManager = null;
     }
 
-    public QueryResult<Sample> loadSampleAnnotations(File pedFile, Integer variableSetId, String sessionId) throws CatalogException {
+    public QueryResult<Sample> loadSampleAnnotations(File pedFile, Long variableSetId, String sessionId) throws CatalogException {
 
         URI fileUri = catalogManager.getFileUri(pedFile);
-        int studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
+        long studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
         long auxTime;
         long startTime = System.currentTimeMillis();
 

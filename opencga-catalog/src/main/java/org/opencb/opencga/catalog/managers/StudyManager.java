@@ -42,35 +42,35 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public String getUserId(int studyId) throws CatalogException {
+    public String getUserId(long studyId) throws CatalogException {
         return studyDBAdaptor.getStudyOwnerId(studyId);
     }
 
     @Override
-    public Integer getProjectId(int studyId) throws CatalogException {
+    public Long getProjectId(long studyId) throws CatalogException {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
     @Override
-    public Integer getStudyId(String studyId) throws CatalogException {
+    public Long getStudyId(String studyId) throws CatalogException {
         if (StringUtils.isNumeric(studyId)) {
-            return Integer.parseInt(studyId);
+            return Long.parseLong(studyId);
         }
 
         String[] split = studyId.split("@");
         if (split.length != 2) {
-            return -1;
+            return -1L;
         }
         String[] projectStudy = split[1].replace(':', '/').split("/", 2);
         if (projectStudy.length != 2) {
-            return -2;
+            return -2L;
         }
-        int projectId = projectDBAdaptor.getProjectId(split[0], projectStudy[0]);
+        long projectId = projectDBAdaptor.getProjectId(split[0], projectStudy[0]);
         return studyDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
     @Override
-    public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type, String creatorId,
+    public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creatorId,
                                      String creationDate, String description, Status status, String cipher,
                                      String uriScheme, URI uri, Map<File.Bioformat, DataStore> datastores,
                                      Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options,
@@ -147,7 +147,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         //URI studyUri;
         if (uri == null) {
             try {
-                uri = catalogIOManager.createStudy(projectOwnerId, Integer.toString(projectId), Integer.toString(study.getId()));
+                uri = catalogIOManager.createStudy(projectOwnerId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
                 e.printStackTrace();
                 studyDBAdaptor.delete(study.getId(), false);
@@ -157,7 +157,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
         auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
-        int rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
+        long rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
         auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
@@ -166,7 +166,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException {
+    public QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -194,7 +194,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Study> read(Integer studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Study> read(Long studyId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
@@ -236,7 +236,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<Study> update(Integer studyId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Study> update(Long studyId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -264,7 +264,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return result;
     }
 
-    private QueryResult rename(int studyId, String newStudyAlias, String sessionId)
+    private QueryResult rename(long studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -288,7 +288,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
 
     @Override
-    public QueryResult<Study> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Study> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -299,7 +299,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
      */
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       List<Variable> variables, String sessionId)
             throws CatalogException {
@@ -313,7 +313,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique,
+    public QueryResult<VariableSet> createVariableSet(long studyId, String name, Boolean unique,
                                                       String description, Map<String, Object> attributes,
                                                       Set<Variable> variables, String sessionId)
             throws CatalogException {
@@ -347,25 +347,25 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> readVariableSet(long variableSet, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSet);
+        long studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSet);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
         return studyDBAdaptor.getVariableSet(variableSet, options);
     }
 
     @Override
-    public QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> readAllVariableSets(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
         return studyDBAdaptor.getAllVariableSets(studyId, options);
     }
 
     @Override
-    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws
+    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId) throws
             CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        long studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_SAMPLES);
         QueryResult<VariableSet> queryResult = studyDBAdaptor.deleteVariableSet(variableSetId, queryOptions);
         auditManager.recordDeletion(AuditRecord.Resource.variableSet, variableSetId, userId, queryResult.first(), null, null);

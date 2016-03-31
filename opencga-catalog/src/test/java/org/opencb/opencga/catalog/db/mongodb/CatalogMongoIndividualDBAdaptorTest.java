@@ -27,7 +27,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testCreateIndividual() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(), null);
     }
 
@@ -39,7 +39,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testCreateIndividualFatherNotFound() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 10, -1, "", null, "", null, null, Collections
                 .emptyList(), null), null);
@@ -47,7 +47,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testCreateIndividualAlreadyExists() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", -1, -1, "", null, "", null, null, Collections
                 .emptyList(), null), null);
         thrown.expect(CatalogDBException.class); //Name already exists
@@ -57,7 +57,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testGetIndividual() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Gender.MALE, "", null, new Individual
                 .Population(), Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();
@@ -67,7 +67,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testGetIndividualNoExists() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Gender.MALE, "", null, new Individual
                 .Population(), Collections.emptyList(), null);
         catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();
@@ -78,14 +78,14 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testGetAllIndividuals() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_1", -1, -1, "Family1", Individual.Gender.MALE, "",
                 null, new Individual.Population(), Collections.emptyList(), null), null);
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_2", -1, -1, "Family1", Individual.Gender.FEMALE, "",
                 null, new Individual.Population(), Collections.emptyList(), null), null);
-        int father = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_3", -1, -1, "Family2", Individual.Gender
+        long father = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_3", -1, -1, "Family2", Individual.Gender
                 .MALE, "", null, new Individual.Population(), Collections.emptyList(), null), null).first().getId();
-        int mother = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_4", -1, -1, "Family2", Individual.Gender
+        long mother = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_4", -1, -1, "Family2", Individual.Gender
                 .FEMALE, "", null, new Individual.Population(), Collections.emptyList(), null), null).first().getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "ind_5", father, mother, "Family2", Individual.Gender
                 .MALE, "", null, new Individual.Population(), Collections.emptyList(), null), null);
@@ -112,8 +112,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testModifyIndividual() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         ObjectMap params = new ObjectMap("family", "new Family");
@@ -127,8 +127,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testModifyIndividualBadGender() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
@@ -137,8 +137,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testModifyIndividualBadFatherId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
@@ -147,8 +147,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testModifyIndividualNegativeFatherId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         Individual individual = catalogIndividualDBAdaptor.update(individualId, new ObjectMap("fatherId", -1)).first();
@@ -157,8 +157,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testModifyIndividualExistingName() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
         catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, 0, "", Individual.Gender.UNKNOWN, "", null,
                 null, Collections.emptyList(), null), null).first().getId();
@@ -169,8 +169,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testAnnotateIndividual() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
@@ -200,8 +200,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testAnnotateIndividualExistingAnnotationId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         catalogIndividualDBAdaptor.annotateIndividual(individualId, new AnnotationSet("annot1", 3, Collections.<Annotation>emptySet(),
@@ -213,8 +213,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testAnnotateIndividualOverwriteExistingAnnotationId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
@@ -230,8 +230,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testAnnotateIndividualOverwriteNonExistingAnnotationId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, new HashSet<>(Arrays.asList(new Annotation("k", "v"), new Annotation("k2",
@@ -243,10 +243,10 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testDeleteIndividual() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
-        int individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual
+        long individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual
                 .Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         catalogIndividualDBAdaptor.deleteIndividual(individualId2, null);
@@ -256,10 +256,10 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testDeleteIndividualInUse() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
-        int individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual
+        long individualId2 = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in2", 0, individualId, "", Individual
                 .Gender.UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
 
         thrown.expect(CatalogDBException.class);
@@ -269,8 +269,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testDeleteIndividualInUseAsSample() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 0, 0, "", Individual.Gender
                 .UNKNOWN, "", null, null, Collections.emptyList(), null), null).first().getId();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().createSample(studyId, new Sample(0, "Sample", "", individualId, ""), null);
 
@@ -281,15 +281,15 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
     @Test
     public void testGetStudyIdByIndividualId() throws Exception {
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        int individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(), null).first().getId();
-        int studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long individualId = catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(), null).first().getId();
+        long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyIdByIndividualId(individualId);
         assertEquals(studyId, studyIdByIndividualId);
     }
 
     @Test
     public void testNativeGet() throws Exception {
-        int studyId = user4.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user4.getProjects().get(0).getStudies().get(0).getId();
         Individual individual = new Individual(0, "An Individual", -1, -1, "Family", Individual.Gender.MALE, "", null, new Individual
                 .Population(), Collections.emptyList(), null);
         individual = catalogIndividualDBAdaptor.createIndividual(studyId, individual, null).first();

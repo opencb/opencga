@@ -36,11 +36,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
  */
 public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
 
-    default boolean individualExists(int sampleId) throws CatalogDBException {
+    default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
     }
 
-    default void checkIndividualId(int individualId) throws CatalogDBException {
+    default void checkIndividualId(long individualId) throws CatalogDBException {
         if (individualId < 0) {
             throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
         }
@@ -50,26 +50,26 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         }
     }
 
-    QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> createIndividual(long studyId, Individual individual, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException;
+    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite) throws
+    QueryResult<AnnotationSet> annotateIndividual(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
             CatalogDBException;
 
-    QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException;
+    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException;
 
-    QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
-    int getStudyIdByIndividualId(int individualId) throws CatalogDBException;
+    long getStudyIdByIndividualId(long individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),

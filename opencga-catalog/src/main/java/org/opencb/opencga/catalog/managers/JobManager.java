@@ -43,12 +43,12 @@ public class JobManager extends AbstractManager implements IJobManager {
 
 
     @Override
-    public Integer getStudyId(int jobId) throws CatalogException {
+    public Long getStudyId(long jobId) throws CatalogException {
         return jobDBAdaptor.getStudyIdByJobId(jobId);
     }
 
     @Override
-    public QueryResult<ObjectMap> visit(int jobId, String sessionId) throws CatalogException {
+    public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkReadJob(userId, jobId);
@@ -60,7 +60,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(objectMap, "objectMap");
         try {
             return create(
-                    objectMap.getInt("studyId"),
+                    objectMap.getLong("studyId"),
                     objectMap.getString("name"),
                     objectMap.getString("toolName"),
                     objectMap.getString("description"),
@@ -68,9 +68,9 @@ public class JobManager extends AbstractManager implements IJobManager {
                     Collections.emptyMap(),
                     objectMap.getString("commandLine"),
                     objectMap.containsKey("tmpOutDirUri") ? new URI(null, objectMap.getString("tmpOutDirUri"), null) : null,
-                    objectMap.getInt("outDirId"),
-                    objectMap.getAsIntegerList("inputFiles"),
-                    objectMap.getAsIntegerList("outputFiles"),
+                    objectMap.getLong("outDirId"),
+                    objectMap.getAsLongList("inputFiles"),
+                    objectMap.getAsLongList("outputFiles"),
                     objectMap.getMap("attributes"),
                     objectMap.getMap("resourceManagerAttributes"),
                     Job.JobStatus.valueOf(options.getString("status")),
@@ -85,9 +85,9 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> create(int studyId, String name, String toolName, String description, String executor,
-                                   Map<String, String> params, String commandLine, URI tmpOutDirUri, int outDirId,
-                                   List<Integer> inputFiles, List<Integer> outputFiles, Map<String, Object> attributes,
+    public QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor,
+                                   Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
+                                   List<Long> inputFiles, List<Long> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -97,15 +97,15 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(commandLine, "commandLine");
         description = ParamUtils.defaultString(description, "");
         status = ParamUtils.defaultObject(status, Job.JobStatus.PREPARED);
-        inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Integer>emptyList());
-        outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Integer>emptyList());
+        inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
+        outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
 
         // FIXME check inputFiles? is a null conceptually valid?
 
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
         authorizationManager.checkFilePermission(outDirId, userId, CatalogPermission.WRITE);
-        for (Integer inputFile : inputFiles) {
+        for (Long inputFile : inputFiles) {
             authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
@@ -139,7 +139,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> read(Integer jobId, QueryOptions options, String sessionId)
+    public QueryResult<Job> read(Long jobId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -156,7 +156,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -183,11 +183,11 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> update(Integer jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
+        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
         }
@@ -197,10 +197,10 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> delete(Integer jobId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Job> delete(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
+        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
         QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, false);
@@ -219,7 +219,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public URI createJobOutDir(int studyId, String dirName, String sessionId) throws CatalogException {
+    public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(dirName, "dirName");
 
@@ -235,7 +235,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public int getToolId(String toolId) throws CatalogException {
+    public long getToolId(String toolId) throws CatalogException {
         try {
             return Integer.parseInt(toolId);
         } catch (NumberFormatException e) {
@@ -275,7 +275,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Tool> readTool(int id, String sessionId) throws CatalogException {
+    public QueryResult<Tool> readTool(long id, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         ParamUtils.checkParameter(sessionId, "sessionId");
 

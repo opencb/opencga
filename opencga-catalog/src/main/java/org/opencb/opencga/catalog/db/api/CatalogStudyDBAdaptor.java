@@ -39,11 +39,11 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
 
 
-    default Long studyExists(int studyId) throws CatalogDBException {
+    default Long studyExists(long studyId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), studyId)).first();
     }
 
-    default void checkStudyId(int studyId) throws CatalogDBException {
+    default void checkStudyId(long studyId) throws CatalogDBException {
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
@@ -55,54 +55,54 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
     }
 
-    QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> createStudy(long projectId, Study study, QueryOptions options) throws CatalogDBException;
 
     //@Deprecated
     //QueryResult<Study> getAllStudies(QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    void updateStudyLastActivity(int studyId) throws CatalogDBException;
+    void updateStudyLastActivity(long studyId) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<Study> modifyStudy(int studyId, ObjectMap params) throws CatalogDBException;
+    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
 
-//  QueryResult modifyStudy(int studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
+//  QueryResult modifyStudy(long studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
 // throws CatalogManagerException;
 
     @Deprecated
-    default QueryResult<Study> deleteStudy(int studyId) throws CatalogDBException {
+    default QueryResult<Study> deleteStudy(long studyId) throws CatalogDBException {
         return delete(studyId, false);
     }
 
-    int getStudyId(int projectId, String studyAlias) throws CatalogDBException;
+    long getStudyId(long projectId, String studyAlias) throws CatalogDBException;
 
-    int getProjectIdByStudyId(int studyId) throws CatalogDBException;
+    long getProjectIdByStudyId(long studyId) throws CatalogDBException;
 
-    String getStudyOwnerId(int studyId) throws CatalogDBException;
+    String getStudyOwnerId(long studyId) throws CatalogDBException;
 
-    QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+    QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException;
 
-    QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException;
+    QueryResult<Group> removeMemberFromGroup(long studyId, String groupId, String userId) throws CatalogDBException;
 
     /*
      * VariableSet Methods
      * ***************************
      */
 
-    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
+    QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
-    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> getAllVariableSets(long studyId, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 
-    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
+    long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

@@ -32,15 +32,15 @@ public interface AuthorizationManager {
                 new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
     }
 
-    void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException;
+    void checkProjectPermission(long projectId, String userId, CatalogPermission permission) throws CatalogException;
 
-    void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException;
+    void checkStudyPermission(long studyId, String userId, StudyPermission permission) throws CatalogException;
 
-    void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException;
+    void checkStudyPermission(long studyId, String userId, StudyPermission permission, String message) throws CatalogException;
 
-    void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException;
+    void checkFilePermission(long fileId, String userId, CatalogPermission permission) throws CatalogException;
 
-    void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException;
+    void checkSamplePermission(long sampleId, String userId, CatalogPermission permission) throws CatalogException;
 
     /**
      * Can read to an individual if.
@@ -53,9 +53,9 @@ public interface AuthorizationManager {
      * @param permission   Permission
      * @throws CatalogException CatalogException
      */
-    void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException;
+    void checkIndividualPermission(long individualId, String userId, CatalogPermission permission) throws CatalogException;
 
-    void checkReadJob(String userId, int jobId) throws CatalogException;
+    void checkReadJob(String userId, long jobId) throws CatalogException;
 
     void checkReadJob(String userId, Job job) throws CatalogException;
 
@@ -137,7 +137,7 @@ public interface AuthorizationManager {
      * @param files   Files list
      * @throws CatalogException CatalogException
      */
-    void filterFiles(String userId, int studyId, List<File> files) throws CatalogException;
+    void filterFiles(String userId, long studyId, List<File> files) throws CatalogException;
 
     /**
      * Removes from the list the samples that the user can not read.
@@ -147,7 +147,7 @@ public interface AuthorizationManager {
      * @param samples Samples
      * @throws CatalogException CatalogException
      */
-    void filterSamples(String userId, int studyId, List<Sample> samples) throws CatalogException;
+    void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException;
 
     /*--------------------------*/
     // Group management methods
@@ -155,19 +155,19 @@ public interface AuthorizationManager {
 
     void filterJobs(String userId, List<Job> jobs) throws CatalogException;
 
-    void filterJobs(String userId, List<Job> jobs, Integer studyId) throws CatalogException;
+    void filterJobs(String userId, List<Job> jobs, Long studyId) throws CatalogException;
 
-    void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException;
+    void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException;
 
-    void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException;
+    void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException;
 
-    Group getGroupBelonging(int studyId, String userId) throws CatalogException;
+    Group getGroupBelonging(long studyId, String userId) throws CatalogException;
 
 //    Group createGroup(int studyId, String groupId, GroupPermissions groupPermissions, String sessionId) throws CatalogException;
 
 //    void deleteGroup(int studyId, String groupId, String sessionId) throws CatalogException;
 
-    QueryResult<Group> addMember(int studyId, String groupId, String userId, String sessionId) throws CatalogException;
+    QueryResult<Group> addMember(long studyId, String groupId, String userId, String sessionId) throws CatalogException;
 
-    QueryResult<Group> removeMember(int studyId, String groupId, String userId, String sessionId) throws CatalogException;
+    QueryResult<Group> removeMember(long studyId, String groupId, String userId, String sessionId) throws CatalogException;
 }

@@ -22,9 +22,6 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -67,7 +64,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      */
 
     @Override
-    public QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> createSample(long studyId, Sample sample, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -96,7 +93,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
 
     @Override
-    public QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 
@@ -194,14 +191,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Sample> getAllSamplesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Sample> getAllSamplesInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return endQuery("Get all files", startTime, get(query, options).getResult());
     }
 
     @Override
-    public QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException {
+    public QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         Map<String, Object> sampleParams = new HashMap<>();
@@ -239,10 +236,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Modify sample", startTime, getSample(sampleId, parameters));
     }
 
-    public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
+    @Override
+    public QueryResult<AclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
-        int studyId = getStudyIdBySampleId(sampleId);
+        long studyId = getStudyIdBySampleId(sampleId);
         checkAclUserId(dbAdaptorFactory, userId, studyId);
 
 //        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
@@ -262,7 +260,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException {
+    public QueryResult<Map<String, AclEntry>> getSampleAcl(long sampleId, List<String> userIds) throws CatalogDBException {
 
         long startTime = startQuery();
         /*DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_ID, sampleId));
@@ -286,7 +284,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException {
+    public QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
 
         String userId = acl.getUserId();
@@ -314,10 +312,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
         if (aclList.isEmpty()) { // there is no acl for that user in that file. Push
-            query = new BsonDocument(PRIVATE_ID, new BsonInt32(sampleId));
+            query = new Document(PRIVATE_ID, sampleId);
             update = Updates.push("acl", newAclObject);
         } else {
-            query = new BsonDocument(PRIVATE_ID, new BsonInt32(sampleId)).append("acl.userId", new BsonString(userId));
+            query = new Document(PRIVATE_ID, sampleId).append("acl.userId", userId);
             update = Updates.set("acl.$", newAclObject);
         }
 
@@ -330,7 +328,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException {
 
         long startTime = startQuery();
 /*
@@ -344,8 +342,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
 
         if (!sampleAcl.getResult().isEmpty()) {
-            Bson query = new BsonDocument(PRIVATE_ID, new BsonInt32(sampleId));
-            Bson update = Updates.pull("acl", new BsonDocument("userId", new BsonString(userId)));
+            Bson query = new Document(PRIVATE_ID, sampleId);
+            Bson update = Updates.pull("acl", new Document("userId", userId));
             sampleCollection.update(query, update, null);
         }
 
@@ -414,27 +412,27 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //
 //    }
 
-
-    public int getStudyIdBySampleId(int sampleId) throws CatalogDBException {
+    @Override
+    public long getStudyIdBySampleId(long sampleId) throws CatalogDBException {
         /*DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
         BasicDBObject projection = new BasicDBObject(PRIVATE_STUDY_ID, true);
         QueryResult<DBObject> queryResult = sampleCollection.find(query, projection, null);*/
-        Bson query = new BsonDocument(PRIVATE_ID, new BsonInt32(sampleId));
+        Bson query = new Document(PRIVATE_ID, sampleId);
         Bson projection = Projections.include(PRIVATE_STUDY_ID);
         QueryResult<Document> queryResult = sampleCollection.find(query, projection, null);
 
         if (!queryResult.getResult().isEmpty()) {
             Object studyId = queryResult.getResult().get(0).get(PRIVATE_STUDY_ID);
-            return studyId instanceof Number ? ((Number) studyId).intValue() : (int) Double.parseDouble(studyId.toString());
+            return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
     }
 
     @Override
-    public List<Integer> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException {
+    public List<Long> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException {
         Bson query = parseQuery(new Query(QueryParams.ID.key(), sampleIds));
-        return sampleCollection.distinct(PRIVATE_STUDY_ID, query, Integer.class).getResult();
+        return sampleCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
     }
 
     /*
@@ -443,14 +441,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      */
 
     @Override
-    public QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws
+    public QueryResult<AnnotationSet> annotateSample(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws
             CatalogDBException {
         long startTime = startQuery();
 
         /*QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(PRIVATE_ID, sampleId));*/
-        QueryResult<Long> count = sampleCollection.count(new BsonDocument("annotationSets.id", new BsonString(annotationSet.getId()))
-                .append(PRIVATE_ID, new BsonInt32(sampleId)));
+        QueryResult<Long> count = sampleCollection.count(new Document("annotationSets.id", annotationSet.getId())
+                .append(PRIVATE_ID, sampleId));
         if (overwrite) {
             if (count.getResult().get(0) == 0) {
                 throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
@@ -499,7 +497,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException {
+    public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException {
 
         long startTime = startQuery();
 
@@ -530,8 +528,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
-    public void checkInUse(int sampleId) throws CatalogDBException {
-        int studyId = getStudyIdBySampleId(sampleId);
+    public void checkInUse(long sampleId) throws CatalogDBException {
+        long studyId = getStudyIdBySampleId(sampleId);
 
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_FILES + CatalogFileDBAdaptor
@@ -630,7 +628,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Sample> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Sample> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
         if (update.getNumTotalResults() != 1) {
@@ -640,7 +638,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     // TODO: Check clean
-    public QueryResult<Sample> clean(int id) throws CatalogDBException {
+    public QueryResult<Sample> clean(long id) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
         if (sampleQueryResult.getResult().size() == 1) {
@@ -656,8 +654,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return sampleQueryResult;
     }
 
+
+
+
+
     @Override
-    public QueryResult<Sample> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Sample> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(id);
         delete(new Query(QueryParams.ID.key(), id), force);
@@ -688,7 +690,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
                 .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
 
-        List<Integer> sampleIdsToRemove = new ArrayList<>();
+        List<Long> sampleIdsToRemove = new ArrayList<>();
         for (Sample sample : samples) {
             try {
                 checkInUse(sample.getId());

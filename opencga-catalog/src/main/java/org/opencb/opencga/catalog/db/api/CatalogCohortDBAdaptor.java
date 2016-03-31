@@ -79,11 +79,11 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         }
     }
 
-    default boolean cohortExists(int cohortId) throws CatalogDBException {
+    default boolean cohortExists(long cohortId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), cohortId)).first() > 0;
     }
 
-    default void checkCohortId(int cohortId) throws CatalogDBException {
+    default void checkCohortId(long cohortId) throws CatalogDBException {
         if (cohortId < 0) {
             throw CatalogDBException.newInstance("Cohort id '{}' is not valid: ", cohortId);
         }
@@ -93,16 +93,16 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         }
     }
 
-    QueryResult<Cohort> createCohort(int studyId, Cohort cohort, QueryOptions options) throws CatalogDBException;
+    QueryResult<Cohort> createCohort(long studyId, Cohort cohort, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> getCohort(int cohortId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> getAllCohorts(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Cohort> getAllCohorts(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> modifyCohort(int cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
+    QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> deleteCohort(int cohortId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException;
 
-    int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
+    long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
 
 }

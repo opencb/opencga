@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ParamUtils {
-    public static void checkId(int id, String name) throws CatalogParameterException {
+    public static void checkId(long id, String name) throws CatalogParameterException {
         if (id < 0) {
             throw new CatalogParameterException("Error in id: '" + name + "' is not valid: "
                     + id + ".");

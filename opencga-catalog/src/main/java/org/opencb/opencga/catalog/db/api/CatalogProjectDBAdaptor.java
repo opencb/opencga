@@ -31,11 +31,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
-    default boolean projectExists(int projectId) throws CatalogDBException {
+    default boolean projectExists(long projectId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), projectId)).first() > 0;
     }
 
-    default void checkProjectId(int projectId) throws CatalogDBException {
+    default void checkProjectId(long projectId) throws CatalogDBException {
         if (projectId < 0) {
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
@@ -49,25 +49,25 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     QueryResult<Project> getAllProjects(String userId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Project> getProject(int project, QueryOptions options) throws CatalogDBException;
+    QueryResult<Project> getProject(long project, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
-    default QueryResult<Project> deleteProject(int projectId) throws CatalogDBException {
+    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {
         return delete(projectId, false);
     }
 
-    QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
+    QueryResult renameProjectAlias(long projectId, String newProjectName) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;
 
-    int getProjectId(String userId, String projectAlias) throws CatalogDBException;
+    long getProjectId(String userId, String projectAlias) throws CatalogDBException;
 
-    String getProjectOwnerId(int projectId) throws CatalogDBException;
+    String getProjectOwnerId(long projectId) throws CatalogDBException;
 
-    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getProjectAcl(long projectId, String userId) throws CatalogDBException;
 
-    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
+    QueryResult setProjectAcl(long projectId, AclEntry newAcl) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

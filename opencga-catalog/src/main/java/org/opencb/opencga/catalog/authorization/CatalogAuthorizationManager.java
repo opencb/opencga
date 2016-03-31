@@ -53,7 +53,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkProjectPermission(int projectId, String userId, CatalogPermission permission) throws CatalogException {
+    public void checkProjectPermission(long projectId, String userId, CatalogPermission permission) throws CatalogException {
 //        if (isAdmin(userId) || userDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
         if (isAdmin(userId) || projectDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
             return;
@@ -79,12 +79,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * Check permission methods
      */
     @Override
-    public void checkStudyPermission(int studyId, String userId, StudyPermission permission) throws CatalogException {
+    public void checkStudyPermission(long studyId, String userId, StudyPermission permission) throws CatalogException {
         checkStudyPermission(studyId, userId, permission, permission.toString());
     }
 
     @Override
-    public void checkStudyPermission(int studyId, String userId, StudyPermission permission, String message) throws CatalogException {
+    public void checkStudyPermission(long studyId, String userId, StudyPermission permission, String message) throws CatalogException {
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -124,16 +124,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkFilePermission(int fileId, String userId, CatalogPermission permission) throws CatalogException {
+    public void checkFilePermission(long fileId, String userId, CatalogPermission permission) throws CatalogException {
         checkFilePermission(fileId, userId, permission, null);
     }
 
-    private void checkFilePermission(int fileId, String userId, CatalogPermission permission,
+    private void checkFilePermission(long fileId, String userId, CatalogPermission permission,
                                      StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (isAdmin(userId)) {
             return;
         }
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -149,8 +149,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkSamplePermission(int sampleId, String userId, CatalogPermission permission) throws CatalogException {
-        int studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+    public void checkSamplePermission(long sampleId, String userId, CatalogPermission permission) throws CatalogException {
+        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
         if (isAdmin(userId) || isStudyOwner(studyId, userId)) {
             return;
         }
@@ -163,8 +163,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkIndividualPermission(int individualId, String userId, CatalogPermission permission) throws CatalogException {
-        int studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+    public void checkIndividualPermission(long individualId, String userId, CatalogPermission permission) throws CatalogException {
+        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
         if (isAdmin(userId) || isStudyOwner(studyId, userId)) {  //User admin or owner
             return;
         }
@@ -196,7 +196,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     /**
      * This method don't check if the user {@link #isAdmin(String)} or {@link #isStudyOwner(int, String)}.
      */
-    private AclEntry resolveFileAcl(int fileId, String userId, int studyId, Group group,
+    private AclEntry resolveFileAcl(long fileId, String userId, long studyId, Group group,
                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         return resolveFileAcl(fileDBAdaptor.getFile(fileId, FILE_INCLUDE_QUERY_OPTIONS).first(), userId, studyId, group,
                 studyAuthenticationContext);
@@ -208,7 +208,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      *
      * @param file Must contain id, acl and path. Get file with with {@link #FILE_INCLUDE_QUERY_OPTIONS}
      */
-    private AclEntry resolveFileAcl(File file, String userId, int studyId, Group group,
+    private AclEntry resolveFileAcl(File file, String userId, long studyId, Group group,
                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         if (group == null) {
             return new AclEntry(userId, false, false, false, false);
@@ -246,7 +246,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId,
-                                                                 int studyId, String groupId, File file) throws CatalogDBException {
+                                                                 long studyId, String groupId, File file) throws CatalogDBException {
         return getFileAclEntries(studyAuthenticationContext, userId, studyId, groupId, FileManager.getParentPaths(file.getPath()));
     }
 
@@ -273,7 +273,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @throws CatalogDBException
      */
     private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId,
-                                                                 int studyId, String groupId, List<String> paths)
+                                                                 long studyId, String groupId, List<String> paths)
             throws CatalogDBException {
         for (Iterator<String> iterator = paths.iterator(); iterator.hasNext();) {
             String path = iterator.next();
@@ -341,7 +341,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @param group User belonging group.
      * @throws CatalogException
      */
-    private AclEntry resolveSampleAcl(int sampleId, String userId, Group group) throws CatalogException {
+    private AclEntry resolveSampleAcl(long sampleId, String userId, Group group) throws CatalogException {
         if (group == null) {
             return new AclEntry(userId, false, false, false, false);
         }
@@ -388,8 +388,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Integer> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
-        for (Integer studyId : studyIdsBySampleIds) {
+        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+        for (Long studyId : studyIdsBySampleIds) {
             checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
         }
 
@@ -418,8 +418,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkParameter(userIds, "userId");
 
         String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Integer> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
-        for (Integer studyId : studyIdsBySampleIds) {
+        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+        for (Long studyId : studyIdsBySampleIds) {
             checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
         }
 
@@ -449,8 +449,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Integer> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
-        for (Integer studyId : studyIdsBySampleIds) {
+        List<Long> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
+        for (Long studyId : studyIdsBySampleIds) {
             checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
         }
 
@@ -480,8 +480,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         ParamUtils.checkParameter(userIds, "userId");
 
         String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Integer> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
-        for (Integer studyId : studyIdsBySampleIds) {
+        List<Long> studyIdsBySampleIds = sampleDBAdaptor.getStudyIdsBySampleIds(sampleIds);
+        for (Long studyId : studyIdsBySampleIds) {
             checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
         }
 
@@ -559,11 +559,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterFiles(String userId, int studyId, List<File> files) throws CatalogException {
+    public void filterFiles(String userId, long studyId, List<File> files) throws CatalogException {
         filterFiles(userId, studyId, files, getGroupBelonging(studyId, userId), new StudyAuthenticationContext(studyId));
     }
 
-    private void filterFiles(String userId, int studyId, List<File> files, Group group, StudyAuthenticationContext
+    private void filterFiles(String userId, long studyId, List<File> files, Group group, StudyAuthenticationContext
             studyAuthenticationContext) throws CatalogException {
         if (files == null || files.isEmpty()) {
             return;
@@ -584,11 +584,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterSamples(String userId, int studyId, List<Sample> samples) throws CatalogException {
+    public void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException {
         filterSamples(userId, studyId, samples, getGroupBelonging(studyId, userId));
     }
 
-    public void filterSamples(String userId, int studyId, List<Sample> samples, Group group) throws CatalogException {
+    public void filterSamples(String userId, long studyId, List<Sample> samples, Group group) throws CatalogException {
         if (samples == null || samples.isEmpty()) {
             return;
         }
@@ -612,7 +612,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterJobs(String userId, List<Job> jobs, Integer studyId) throws CatalogException {
+    public void filterJobs(String userId, List<Job> jobs, Long studyId) throws CatalogException {
         filterJobs(userId, jobs, studyId == null ? null : new StudyAuthenticationContext(studyId));
     }
 
@@ -628,14 +628,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return;
             }
         }
-        Map<Integer, StudyAuthenticationContext> studyAuthContextMap = new HashMap<>();
+        Map<Long, StudyAuthenticationContext> studyAuthContextMap = new HashMap<>();
         if (studyAuthenticationContext != null) {
             studyAuthContextMap.put(studyAuthenticationContext.studyId, studyAuthenticationContext);
         }
 
         for (Iterator<Job> iterator = jobs.iterator(); iterator.hasNext();) {
             Job job = iterator.next();
-            int studyId;
+            long studyId;
             StudyAuthenticationContext specificStudyAuthenticationContext;
             if (studyAuthenticationContext == null) {
                 studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
@@ -656,10 +656,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 continue;
             }
             getFileAclEntries(specificStudyAuthenticationContext, userId, group, result);
-            Map<Integer, File> fileIdMap = result.stream().collect(Collectors.toMap(File::getId, f -> f));
+            Map<Long, File> fileIdMap = result.stream().collect(Collectors.toMap(File::getId, f -> f));
 
             boolean removed = false;
-            for (Integer fileId : job.getOutput()) {
+            for (Long fileId : job.getOutput()) {
                 if (!resolveFileAcl(fileIdMap.get(fileId), userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                     iterator.remove();
                     removed = true;
@@ -667,7 +667,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 }
             }
             if (!removed) {
-                for (Integer fileId : job.getInput()) {
+                for (Long fileId : job.getInput()) {
                     if (!resolveFileAcl(fileIdMap.get(fileId), userId, studyId, group, specificStudyAuthenticationContext).isRead()) {
                         iterator.remove();
                         break;
@@ -678,7 +678,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterCohorts(String userId, int studyId, List<Cohort> cohorts) throws CatalogException {
+    public void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException {
         if (cohorts == null || cohorts.isEmpty()) {
             return;
         }
@@ -687,11 +687,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         Group group = getGroupBelonging(studyId, userId);
 
-        Map<Integer, AclEntry> sampleAclMap = new HashMap<>();
+        Map<Long, AclEntry> sampleAclMap = new HashMap<>();
 
         for (Iterator<Cohort> iterator = cohorts.iterator(); iterator.hasNext();) {
             Cohort cohort = iterator.next();
-            for (Integer sampleId : cohort.getSamples()) {
+            for (Long sampleId : cohort.getSamples()) {
                 AclEntry sampleACL;
                 if (sampleAclMap.containsKey(sampleId)) {
                     sampleACL = sampleAclMap.get(sampleId);
@@ -708,7 +708,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void filterIndividuals(String userId, int studyId, List<Individual> individuals) throws CatalogException {
+    public void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException {
         if (individuals == null || individuals.isEmpty()) {
             return;
         }
@@ -727,7 +727,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkReadJob(String userId, int jobId) throws CatalogException {
+    public void checkReadJob(String userId, long jobId) throws CatalogException {
         privateCheckReadJob(userId, fetchJob(jobId));
     }
 
@@ -744,7 +744,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private void privateCheckReadJob(String userId, Job job) throws CatalogException {
-        int studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+        long studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
         StudyAuthenticationContext context = new StudyAuthenticationContext(studyId);
 
         //Make all the required queries once
@@ -753,11 +753,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         getFileAclEntries(context, userId, getGroupBelonging(studyId, userId), files);
         try {
             if (job.getOutput() != null) {
-                for (Integer fileId : job.getOutput()) {
+                for (Long fileId : job.getOutput()) {
                     checkFilePermission(fileId, userId, CatalogPermission.READ, context);
                 }
             }
-            for (Integer fileId : job.getInput()) {
+            for (Long fileId : job.getInput()) {
                 checkFilePermission(fileId, userId, CatalogPermission.READ, context);
             }
         } catch (CatalogAuthorizationException e) {
@@ -771,7 +771,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (cohort.getSamples() == null) {
                 cohort = cohortDBAdaptor.getCohort(cohort.getId(), new QueryOptions()).first();
             }
-            for (Integer sampleId : cohort.getSamples()) {
+            for (Long sampleId : cohort.getSamples()) {
                 checkSamplePermission(sampleId, userId, CatalogPermission.READ);
             }
         } catch (CatalogAuthorizationException e) {
@@ -780,7 +780,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public Group getGroupBelonging(int studyId, String userId) throws CatalogException {
+    public Group getGroupBelonging(long studyId, String userId) throws CatalogException {
         QueryResult<Group> queryResult = studyDBAdaptor.getGroup(studyId, userId, null, null);
         return queryResult.getNumResults() == 0 ? null : queryResult.first();
     }
@@ -790,7 +790,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      */
 
     @Override
-    public QueryResult<Group> addMember(int studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
+    public QueryResult<Group> addMember(long studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
@@ -807,7 +807,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<Group> removeMember(int studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
+    public QueryResult<Group> removeMember(long studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
@@ -825,7 +825,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     //TODO: Cache this?
-    private boolean isStudyOwner(int studyId, String userId) throws CatalogDBException {
+    private boolean isStudyOwner(long studyId, String userId) throws CatalogDBException {
 //        return userDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
         return projectDBAdaptor.getProjectOwnerId(studyDBAdaptor.getProjectIdByStudyId(studyId)).equals(userId);
     }
@@ -859,8 +859,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return auth;
     }
 
-    public List<Integer> getFileIds(Job job) {
-        List<Integer> fileIds = new ArrayList<>(job.getOutput().size() + job.getInput().size());
+    public List<Long> getFileIds(Job job) {
+        List<Long> fileIds = new ArrayList<>(job.getOutput().size() + job.getInput().size());
         fileIds.addAll(job.getOutput());
         fileIds.addAll(job.getInput());
         return fileIds;
@@ -871,7 +871,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      *
      * @return Job : { id, input, output, outDirId }
      */
-    private Job fetchJob(int jobId) throws CatalogDBException {
+    private Job fetchJob(long jobId) throws CatalogDBException {
         return jobDBAdaptor.getJob(jobId, new QueryOptions("include",
                         Arrays.asList("projects.studies.jobs.id",
                                 "projects.studies.jobs.status",
@@ -883,7 +883,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private List<File> fetchJobFiles(Job job) throws CatalogDBException {
-        List<Integer> fileIds = getFileIds(job);
+        List<Long> fileIds = getFileIds(job);
         if (fileIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -892,13 +892,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     static class StudyAuthenticationContext {
-        private final int studyId;
+        private final long studyId;
         /*
          * Map<Path, Map<UserId, AclEntry>>
          */
         private final Map<String, Map<String, AclEntry>> pathUserAclMap;
 
-        public StudyAuthenticationContext(int studyId) {
+        public StudyAuthenticationContext(long studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();
         }

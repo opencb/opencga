@@ -42,11 +42,11 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
      * Samples methods
      */
 
-    default boolean sampleExists(int sampleId) throws CatalogDBException {
+    default boolean sampleExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
     }
 
-    default void checkSampleId(int sampleId) throws CatalogDBException {
+    default void checkSampleId(long sampleId) throws CatalogDBException {
         if (sampleId < 0) {
             throw CatalogDBException.newInstance("Sample id '{}' is not valid: ", sampleId);
         }
@@ -56,9 +56,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
     }
 
-    QueryResult<Sample> createSample(int studyId, Sample sample, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> createSample(long studyId, Sample sample, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getSample(int sampleId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
@@ -66,20 +66,20 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> getAllSamplesInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Sample> getAllSamplesInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
+    QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
-    QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
+    QueryResult<Map<String, AclEntry>> getSampleAcl(long sampleId, List<String> userIds) throws CatalogDBException;
 
-    QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
+    QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
-    QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
     @Deprecated
-    default QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
+    default QueryResult<Sample> deleteSample(long sampleId) throws CatalogDBException {
         return delete(sampleId, false);
         /*
         // TODO check that the sample is not in use!
@@ -97,13 +97,13 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         return sampleQueryResult;*/
     }
 
-    int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
+    long getStudyIdBySampleId(long sampleId) throws CatalogDBException;
 
-    List<Integer> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException;
+    List<Long> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
+    QueryResult<AnnotationSet> annotateSample(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
+    QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

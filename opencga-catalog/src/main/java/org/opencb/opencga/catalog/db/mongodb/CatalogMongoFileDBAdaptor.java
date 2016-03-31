@@ -61,7 +61,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> createFile(int studyId, File file, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> createFile(long studyId, File file, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -121,14 +121,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> getFile(int fileId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
         Query query = new Query(QueryParams.ID.key(), fileId);
         return get(query, options);
     }
 
     @Override
-    public int getFileId(int studyId, String path) throws CatalogDBException {
+    public long getFileId(long studyId, String path) throws CatalogDBException {
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId).append(QueryParams.PATH.key(), path);
         QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, "id");
         QueryResult<File> fileQueryResult = get(query, options);
@@ -136,14 +136,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> getAllFilesInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getAllFilesInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return get(query, options);
     }
 
     @Override
-    public QueryResult<File> getAllFilesInFolder(int studyId, String path, QueryOptions options) throws CatalogDBException {
+    public QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
         List<File> fileResults = fileCollection.find(query, fileConverter, null).getResult();
@@ -151,7 +151,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<AclEntry> getFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         checkFileId(fileId);
         //dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
@@ -170,7 +170,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(int studyId, List<String> filePaths, List<String> userIds) throws
+    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds) throws
             CatalogDBException {
 
         long startTime = startQuery();
@@ -208,24 +208,24 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public int getStudyIdByFileId(int fileId) throws CatalogDBException {
+    public long getStudyIdByFileId(long fileId) throws CatalogDBException {
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), fileId), null);
 
         if (!queryResult.getResult().isEmpty()) {
-            return (int) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
+            return (long) ((Document) queryResult.getResult().get(0)).get(PRIVATE_STUDY_ID);
         } else {
             throw CatalogDBException.idNotFound("File", fileId);
         }
     }
 
     @Override
-    public List<Integer> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
+    public List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
         Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds));
-        return fileCollection.distinct(PRIVATE_STUDY_ID, query, Integer.class).getResult();
+        return fileCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
     }
 
     @Override
-    public String getFileOwnerId(int fileId) throws CatalogDBException {
+    public String getFileOwnerId(long fileId) throws CatalogDBException {
         return getFile(fileId, null).getResult().get(0).getOwnerId();
     }
 
@@ -244,7 +244,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         checkFileId(id);
         Query query = new Query(QueryParams.ID.key(), id);
@@ -325,7 +325,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 long newDiskUsage = parameters.getLong(QueryParams.DISK_USAGE.key());
                 for (Document file : (List<Document>) fileQueryResult.getResult()) {
                     long difDiskUsage = newDiskUsage - Long.parseLong(file.get(QueryParams.DISK_USAGE.key()).toString());
-                    int studyId = (int) file.get(PRIVATE_STUDY_ID);
+                    long studyId = (long) file.get(PRIVATE_STUDY_ID);
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
                 }
             }
@@ -335,7 +335,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> renameFile(int fileId, String filePath, QueryOptions options)
+    public QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -347,8 +347,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         Document fileDoc = (Document) nativeGet(new Query(QueryParams.ID.key(), fileId), null).getResult().get(0);
         File file = fileConverter.convertToDataModelType(fileDoc);
 
-        int studyId = (int) fileDoc.get(PRIVATE_STUDY_ID);
-        int collisionFileId = getFileId(studyId, filePath);
+        long studyId = (long) fileDoc.get(PRIVATE_STUDY_ID);
+        long collisionFileId = getFileId(studyId, filePath);
         if (collisionFileId >= 0) {
             throw new CatalogDBException("Can not rename: " + filePath + " already exists");
         }
@@ -373,7 +373,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<File> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         delete(new Query(QueryParams.ID.key(), id), force);
         return endQuery("Delete file", startTime, getFile(id, null));
@@ -383,7 +383,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
-        List<Integer> fileIdsToRemove = new ArrayList<>();
+        List<Long> fileIdsToRemove = new ArrayList<>();
         for (File file : files) {
             try {
                 checkFileNotInUse(file.getId());
@@ -418,7 +418,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
     }
 
-    public void checkFileNotInUse(int fileId) throws CatalogDBException {
+    public void checkFileNotInUse(long fileId) throws CatalogDBException {
         Query query = new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), fileId);
         QueryResult<Long> count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query);
 
@@ -488,7 +488,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<AclEntry> setFileAcl(int fileId, AclEntry newAcl) throws CatalogDBException {
+    public QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
 
@@ -522,7 +522,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<AclEntry> unsetFileAcl(int fileId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
         QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
@@ -589,7 +589,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
     }
 
-    private boolean filePathExists(int studyId, String path) {
+    private boolean filePathExists(long studyId, String path) {
         Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.PATH.key(), path);
         QueryResult<Long> count = fileCollection.count(query);
         return count.getResult().get(0) != 0;
@@ -598,7 +598,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     // TODO: Move the three dataset methods to CatalogStudyMongoDBAdaptor.
     @Override
-    public int getStudyIdByDatasetId(int datasetId) throws CatalogDBException {
+    public long getStudyIdByDatasetId(long datasetId) throws CatalogDBException {
         Document query = new Document("datasets.id", datasetId);
 //        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", 1), null);
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
@@ -607,12 +607,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw CatalogDBException.idNotFound("Dataset", datasetId);
         } else {
             Object id = queryResult.getResult().get(0).get("id");
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
+            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         }
     }
 
     @Override
-    public QueryResult<Dataset> createDataset(int studyId, Dataset dataset, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Dataset> createDataset(long studyId, Dataset dataset, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
@@ -644,7 +644,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Dataset> getDataset(int datasetId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
 //        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
@@ -670,14 +670,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Deprecated
     @Override
-    public QueryResult<File> deleteFile(int fileId) throws CatalogDBException {
+    public QueryResult<File> deleteFile(long fileId) throws CatalogDBException {
         throw new UnsupportedOperationException("Deprecated method. Use delete instead.");
         //return delete(fileId);
     }
 
     @Deprecated
     @Override
-    public QueryResult<File> modifyFile(int fileId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<File> modifyFile(long fileId, ObjectMap parameters) throws CatalogDBException {
         throw new UnsupportedOperationException("Deprecated method. Use update instead.");
         //return update(fileId, parameters);
     }

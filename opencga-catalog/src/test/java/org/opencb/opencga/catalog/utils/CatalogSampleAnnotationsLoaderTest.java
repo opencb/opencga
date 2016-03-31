@@ -46,7 +46,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     private static File pedFile;
     private static CatalogManager catalogManager;
     private static String userId;
-    private static int studyId;
+    private static long studyId;
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
@@ -107,7 +107,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigreeCatalog() throws Exception {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
-        int variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
+        long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
 //        int variableSetId ;//= sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 //        sessionId = "nIXANk1L8EmLCRhOwiZQ";

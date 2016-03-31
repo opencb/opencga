@@ -79,7 +79,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public URI getStudyUri(int studyId) throws CatalogException {
+    public URI getStudyUri(long studyId) throws CatalogException {
         return studyDBAdaptor.getStudy(studyId, INCLUDE_STUDY_URI).first().getUri();
     }
 
@@ -125,7 +125,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 : catalogIOManagerFactory.get(studyUri).getFileUri(studyUri, relativeFilePath);
     }
 
-    public URI getFileUri(int studyId, String filePath) throws CatalogException {
+    public URI getFileUri(long studyId, String filePath) throws CatalogException {
         ParamUtils.checkObj(filePath, "filePath");
 
         List<File> parents = getParents(false, new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri"),
@@ -144,33 +144,33 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public String getUserId(int fileId) throws CatalogException {
+    public String getUserId(long fileId) throws CatalogException {
         return fileDBAdaptor.getFileOwnerId(fileId);
     }
 
     @Override
-    public Integer getStudyId(int fileId) throws CatalogException {
+    public Long getStudyId(long fileId) throws CatalogException {
         return fileDBAdaptor.getStudyIdByFileId(fileId);
     }
 
     @Override
-    public Integer getFileId(String id) throws CatalogException {
+    public Long getFileId(String id) throws CatalogException {
         try {
-            return Integer.parseInt(id);
+            return Long.parseLong(id);
         } catch (NumberFormatException e) {
             e.printStackTrace();
         }
 
         String[] split = id.split("@", 2);
         if (split.length != 2) {
-            return -1;
+            return -1L;
         }
         String[] projectStudyPath = split[1].replace(':', '/').split("/", 3);
         if (projectStudyPath.length <= 2) {
-            return -2;
+            return -2L;
         }
-        int projectId = projectDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
-        int studyId = studyDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
+        long projectId = projectDBAdaptor.getProjectId(split[0], projectStudyPath[0]);
+        long studyId = studyDBAdaptor.getStudyId(projectId, projectStudyPath[1]);
         return fileDBAdaptor.getFileId(studyId, projectStudyPath[2]);
     }
 
@@ -193,7 +193,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> getParents(int fileId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> getParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return getParents(true, options, read(fileId, new QueryOptions("include", "projects.studies.files.path"), sessionId).first()
                 .getPath(), getStudyId(fileId));
     }
@@ -211,7 +211,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         return getParents(rootFirst, options, filePath, getStudyId(file.getId()));
     }
 
-    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, int studyId) throws CatalogException {
+    private QueryResult<File> getParents(boolean rootFirst, QueryOptions options, String filePath, long studyId) throws CatalogException {
         List<String> paths = getParentPaths(filePath);
 
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), paths);
@@ -225,7 +225,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                objectMap.getInt("studyId"),
+                objectMap.getLong("studyId"),
                 File.Type.valueOf(objectMap.getString("type", File.Type.FILE.toString())),
                 File.Format.valueOf(objectMap.getString("format", File.Format.PLAIN.toString())),
                 File.Bioformat.valueOf(objectMap.getString("type", File.Bioformat.NONE.toString())),
@@ -235,9 +235,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                 objectMap.getString("description", null),
                 File.FileStatus.valueOf(objectMap.getString("type", File.FileStatus.STAGE.toString())),
                 objectMap.getLong("diskUsage", 0),
-                objectMap.getInt("experimentId", -1),
-                objectMap.getAsIntegerList("sampleIds"),
-                objectMap.getInt("jobId", -1),
+                objectMap.getLong("experimentId", -1),
+                objectMap.getAsLongList("sampleIds"),
+                objectMap.getLong("jobId", -1),
                 objectMap.getMap("stats", null),
                 objectMap.getMap("attributes", null),
                 objectMap.getBoolean("parents"),
@@ -247,7 +247,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(int studyId, String path, File.FileStatus status, boolean parents, String description,
+    public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
                 path, null, null, description, status, 0, -1, null, -1, null, null,
@@ -255,9 +255,9 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
-                                    String creationDate, String description, File.FileStatus status, long diskUsage, int experimentId,
-                                    List<Integer> sampleIds, int jobId, Map<String, Object> stats, Map<String, Object> attributes,
+    public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
+                                    String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                                    List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -280,9 +280,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (experimentId > 0 && !jobDBAdaptor.experimentExists(experimentId)) {
             throw new CatalogException("Experiment { id: " + experimentId + "} does not exist.");
         }
-        sampleIds = ParamUtils.defaultObject(sampleIds, LinkedList<Integer>::new);
+        sampleIds = ParamUtils.defaultObject(sampleIds, LinkedList<Long>::new);
 
-        for (Integer sampleId : sampleIds) {
+        for (Long sampleId : sampleIds) {
             if (!sampleDBAdaptor.sampleExists(sampleId)) {
                 throw new CatalogException("Sample { id: " + sampleId + "} does not exist.");
             }
@@ -324,14 +324,14 @@ public class FileManager extends AbstractManager implements IFileManager {
             parentPath = parent.toString() + "/";
         }
 
-        int parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
+        long parentFileId = fileDBAdaptor.getFileId(studyId, parentPath);
         boolean newParent = false;
         if (parentFileId < 0 && parent != null) {
             if (parents) {
                 newParent = true;
                 parentFileId = create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
                         file.getOwnerId(), file.getCreationDate(), "", File.FileStatus.READY, 0, -1,
-                        Collections.<Integer>emptyList(), -1, Collections.<String, Object>emptyMap(),
+                        Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId).first().getId();
             } else {
@@ -365,7 +365,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> read(Integer id, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> read(Long id, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -375,10 +375,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> getParent(int fileId, QueryOptions options, String sessionId)
+    public QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId)
             throws CatalogException {
 
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         File file = read(fileId, null, sessionId).first();
         Path parent = Paths.get(file.getPath()).getParent();
         String parentPath;
@@ -397,7 +397,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> readAll(int studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -422,7 +422,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> update(Integer fileId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<File> update(Long fileId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -496,12 +496,12 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> delete(Integer fileId, QueryOptions options, String sessionId)
+    public QueryResult<File> delete(Long fileId, QueryOptions options, String sessionId)
             throws CatalogException {        //Safe delete: Don't delete. Just rename file and set {deleting:true}
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         File file = fileDBAdaptor.getFile(fileId, null).first();
@@ -584,13 +584,13 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> rename(int fileId, String newName, String sessionId)
+    public QueryResult<File> rename(long fileId, String newName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkFileName(newName, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        int studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        int projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
@@ -648,7 +648,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
+    public QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException {
         throw new UnsupportedOperationException();
         //TODO https://github.com/opencb/opencga/issues/136
@@ -668,7 +668,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<Dataset> createDataset(int studyId, String name, String description, List<Integer> files,
+    public QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -681,7 +681,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
-        for (Integer fileId : files) {
+        for (Long fileId : files) {
             if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
                 throw new CatalogException("Can't create a dataset with files from different files.");
             }
@@ -695,14 +695,14 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<Dataset> readDataset(int dataSetId, QueryOptions options, String sessionId)
+    public QueryResult<Dataset> readDataset(long dataSetId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         QueryResult<Dataset> queryResult = fileDBAdaptor.getDataset(dataSetId, options);
 
-        for (Integer fileId : queryResult.first().getFiles()) {
+        for (Long fileId : queryResult.first().getFiles()) {
             authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
         }
 
@@ -710,7 +710,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public DataInputStream grep(int fileId, String pattern, QueryOptions options, String sessionId)
+    public DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -723,7 +723,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public DataInputStream download(int fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
+    public DataInputStream download(long fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
@@ -734,7 +734,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public DataInputStream head(int fileId, int lines, QueryOptions options, String sessionId)
+    public DataInputStream head(long fileId, int lines, QueryOptions options, String sessionId)
             throws CatalogException {
         return download(fileId, 0, lines, options, sessionId);
     }

@@ -31,11 +31,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
-    default boolean jobExists(int jobId) throws CatalogDBException {
+    default boolean jobExists(long jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
     }
 
-    default void checkJobId(int jobId) throws CatalogDBException {
+    default void checkJobId(long jobId) throws CatalogDBException {
         if (jobId < 0) {
             throw CatalogDBException.newInstance("Job id '{}' is not valid: ", jobId);
         }
@@ -45,14 +45,14 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         }
     }
 
-    QueryResult<Job> createJob(int studyId, Job job, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
     @Deprecated
-    default QueryResult<Job> deleteJob(int jobId) throws CatalogDBException {
+    default QueryResult<Job> deleteJob(long jobId) throws CatalogDBException {
         return delete(jobId, false);
     }
 
-    default QueryResult<Job> getJob(int jobId, QueryOptions options) throws CatalogDBException {
+    default QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), jobId);
         QueryResult<Job> jobQueryResult = get(query, options);
         if (jobQueryResult == null || jobQueryResult.getResult().size() == 0) {
@@ -64,16 +64,16 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     @Deprecated
     QueryResult<Job> getAllJobs(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Job> getAllJobsInStudy(int studyId, QueryOptions options) throws CatalogDBException;
+    QueryResult<Job> getAllJobsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    String getJobStatus(int jobId, String sessionId) throws CatalogDBException;
+    String getJobStatus(long jobId, String sessionId) throws CatalogDBException;
 
-    QueryResult<ObjectMap> incJobVisits(int jobId) throws CatalogDBException;
+    QueryResult<ObjectMap> incJobVisits(long jobId) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<Job> modifyJob(int jobId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Job> modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException;
 
-    int getStudyIdByJobId(int jobId) throws CatalogDBException;
+    long getStudyIdByJobId(long jobId) throws CatalogDBException;
 
     /*
      * Tool methods
@@ -81,9 +81,9 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<Tool> createTool(String userId, Tool tool) throws CatalogDBException;
 
-    QueryResult<Tool> getTool(int id) throws CatalogDBException;
+    QueryResult<Tool> getTool(long id) throws CatalogDBException;
 
-    int getToolId(String userId, String toolAlias) throws CatalogDBException;
+    long getToolId(String userId, String toolAlias) throws CatalogDBException;
 
     QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
@@ -91,7 +91,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
      * Experiments methods
      */
 
-    boolean experimentExists(int experimentId);
+    boolean experimentExists(long experimentId);
 
 //    public abstract QueryResult<Tool> searchTool(QueryOptions options);
 

@@ -406,7 +406,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<User> update(long id, ObjectMap parameters) throws CatalogDBException {
         throw new NotImplementedException("Update user by int id. The id should be a string.");
     }
 
@@ -426,7 +426,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<User> delete(long id, boolean force) throws CatalogDBException {
         throw new NotImplementedException("Delete user by int id. The id should be a string.");
     }
 
@@ -442,7 +442,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
 
         List<User> userList = get(query, new QueryOptions()).getResult();
-        List<Integer> projectIds = new ArrayList<>();
+        List<Long> projectIds = new ArrayList<>();
         for (User user : userList) {
             for (Project project : user.getProjects()) {
                 projectIds.add(project.getId());

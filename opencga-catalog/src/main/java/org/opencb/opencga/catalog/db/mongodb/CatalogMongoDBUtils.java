@@ -68,7 +68,7 @@ class CatalogMongoDBUtils {
     }
 
     @Deprecated
-    static int getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
+    static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 //        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
 //                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
 //                new BasicDBObject(field, true),  //Fields
@@ -104,7 +104,7 @@ class CatalogMongoDBUtils {
      * @param studyId studyId
      * @throws CatalogDBException CatalogDBException
      */
-    public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, int studyId) throws CatalogDBException {
+    public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, long studyId) throws CatalogDBException {
         if (userId.equals(AclEntry.USER_OTHERS_ID)) {
             return;
         } else if (userId.startsWith("@")) {

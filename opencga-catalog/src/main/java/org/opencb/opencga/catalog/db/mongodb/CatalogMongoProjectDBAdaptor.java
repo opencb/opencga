@@ -64,7 +64,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public boolean projectExists(int projectId) {
+    public boolean projectExists(long projectId) {
         QueryResult<Long> count = userCollection.count(new Document("projects.id", projectId));
         return count.getResult().get(0) != 0;
     }
@@ -126,7 +126,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> getProject(int projectId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Project> getProject(long projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         /*
@@ -206,7 +206,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
      * })
      */
     @Override
-    public QueryResult renameProjectAlias(int projectId, String newProjectAlias) throws CatalogDBException {
+    public QueryResult renameProjectAlias(long projectId, String newProjectAlias) throws CatalogDBException {
         long startTime = startQuery();
 //        String projectOwner = getProjectOwner(projectId);
 //
@@ -243,7 +243,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Deprecated
     @Override
-    public QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
         if (!projectExists(projectId)) {
@@ -302,7 +302,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public int getProjectId(String userId, String projectAlias) throws CatalogDBException {
+    public long getProjectId(String userId, String projectAlias) throws CatalogDBException {
         QueryResult<Document> queryResult = userCollection.find(
                 new BsonDocument("projects.alias", new BsonString(projectAlias))
                         .append("id", new BsonString(userId)),
@@ -327,7 +327,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public String getProjectOwnerId(int projectId) throws CatalogDBException {
+    public String getProjectOwnerId(long projectId) throws CatalogDBException {
 //        DBObject query = new BasicDBObject("projects.id", projectId);
         Bson query = Filters.eq("projects.id", projectId);
 
@@ -370,7 +370,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
      * {"$match": {"projects.acl.userId": "jmmut"}}).pretty()
      */
     @Override
-    public QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException {
+    public QueryResult<AclEntry> getProjectAcl(long projectId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         /*
         DBObject match1 = new BasicDBObject("$match", new BasicDBObject("projects.id", projectId));
@@ -412,7 +412,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException {
+    public QueryResult setProjectAcl(long projectId, AclEntry newAcl) throws CatalogDBException {
         long startTime = startQuery();
         String userId = newAcl.getUserId();
         if (!dbAdaptorFactory.getCatalogUserDBAdaptor().userExists(userId)) {
@@ -535,7 +535,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Project> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id), parameters);
         if (update.getNumTotalResults() != 1) {
@@ -545,7 +545,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Project> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
         delete(query, force);
@@ -557,8 +557,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         long startTime = startQuery();
 
         List<Project> projectList = get(query, new QueryOptions()).getResult();
-        List<Integer> projectListIds = new ArrayList<>();
-        List<Integer> studyIds = new ArrayList<>();
+        List<Long> projectListIds = new ArrayList<>();
+        List<Long> studyIds = new ArrayList<>();
         for (Project project : projectList) {
             projectListIds.add(project.getId());
             for (Study study : project.getStudies()) {

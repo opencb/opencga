@@ -35,8 +35,8 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     private final ProjectManager catalogProjectClient;
     private String sessionId;
     private String userId;
-    private int projectId;
-    private int studyId;
+    private long projectId;
+    private long studyId;
 
     public CatalogDBClient(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -94,7 +94,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogProjectClient projects(int projectId) {
+    public CatalogProjectClient projects(long projectId) {
         this.projectId = projectId;
         return null;
     }
@@ -105,7 +105,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogStudyClient studies(int studyId) {
+    public CatalogStudyClient studies(long studyId) {
         return null;
     }
 
@@ -115,7 +115,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogFileClient files(int fileId) {
+    public CatalogFileClient files(long fileId) {
         return null;
     }
 
@@ -125,7 +125,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogJobClient jobs(int jobId) {
+    public CatalogJobClient jobs(long jobId) {
         return null;
     }
 
@@ -191,12 +191,12 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     class ProjectManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogProjectClient {
 
         @Override
-        public String getUserId(int projectId) throws CatalogException {
+        public String getUserId(long projectId) throws CatalogException {
             return null;
         }
 
         @Override
-        public Integer getProjectId(String projectId) throws CatalogException {
+        public Long getProjectId(String projectId) throws CatalogException {
             return catalogManager.getProjectId(projectId);
         }
 

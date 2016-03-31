@@ -77,7 +77,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //            throw CatalogDBException.idNotFound("Study", studyId);
 //        }
 //    }
-    private boolean studyAliasExists(int projectId, String studyAlias) throws CatalogDBException {
+    private boolean studyAliasExists(long projectId, String studyAlias) throws CatalogDBException {
         if (projectId < 0) {
             throw CatalogDBException.newInstance("Project id '{}' is not valid: ", projectId);
         }
@@ -88,7 +88,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> createStudy(int projectId, Study study, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> createStudy(long projectId, Study study, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (projectId < 0) {
             throw CatalogDBException.idNotFound("Project", projectId);
@@ -162,13 +162,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     @Override
-    public QueryResult<Study> getStudy(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException {
         checkStudyId(studyId);
         return get(new Query(QueryParams.ID.key(), studyId), options);
     }
 
     @Override
-    public QueryResult<Study> getAllStudiesInProject(int projectId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogProjectDbAdaptor().checkProjectId(projectId);
         Query query = new Query(QueryParams.PROJECT_ID.key(), projectId);
@@ -222,13 +222,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 */
     @Override
-    public void updateStudyLastActivity(int studyId) throws CatalogDBException {
+    public void updateStudyLastActivity(long studyId) throws CatalogDBException {
         update(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
     @Deprecated
     @Override
-    public QueryResult<Study> modifyStudy(int studyId, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Study> modifyStudy(long studyId, ObjectMap parameters) throws CatalogDBException {
         /*long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -287,7 +287,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        }
 //    }
     @Override
-    public int getStudyId(int projectId, String studyAlias) throws CatalogDBException {
+    public long getStudyId(long projectId, String studyAlias) throws CatalogDBException {
         Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key());
         QueryResult<Study> studyQueryResult = get(query1, queryOptions);
@@ -296,7 +296,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public int getProjectIdByStudyId(int studyId) throws CatalogDBException {
+    public long getProjectIdByStudyId(long studyId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), studyId);
         QueryOptions queryOptions = new QueryOptions("include", FILTER_ROUTE_STUDIES + PRIVATE_PROJECT_ID);
         QueryResult result = nativeGet(query, queryOptions);
@@ -304,15 +304,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (!result.getResult().isEmpty()) {
             Document study = (Document) result.getResult().get(0);
             Object id = study.get(PRIVATE_PROJECT_ID);
-            return id instanceof Number ? ((Number) id).intValue() : (int) Double.parseDouble(id.toString());
+            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
     }
 
     @Override
-    public String getStudyOwnerId(int studyId) throws CatalogDBException {
-        int projectId = getProjectIdByStudyId(studyId);
+    public String getStudyOwnerId(long studyId) throws CatalogDBException {
+        long projectId = getProjectIdByStudyId(studyId);
         return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(projectId);
     }
 
@@ -364,7 +364,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     @Override
-    public QueryResult<Group> getGroup(int studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(PRIVATE_ID, studyId);
@@ -387,13 +387,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("getGroup", startTime, groups);
     }
 
-    boolean groupExists(int studyId, String groupId) throws CatalogDBException {
+    boolean groupExists(long studyId, String groupId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.GROUP_ID.key(), groupId);
         return count(query).first() == 1;
     }
 
     @Override
-    public QueryResult<Group> addMemberToGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+    public QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
         if (!groupExists(studyId, groupId)) {
@@ -411,7 +411,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Group> removeMemberFromGroup(int studyId, String groupId, String userId) throws CatalogDBException {
+    public QueryResult<Group> removeMemberFromGroup(long studyId, String groupId, String userId) throws CatalogDBException {
         long startTime = startQuery();
 
         if (!groupExists(studyId, groupId)) {
@@ -434,7 +434,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      */
 
     @Override
-    public QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException {
+    public QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         long startTime = startQuery();
 
         Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSet.getName()).append(QueryParams.ID.key(), studyId);
@@ -460,7 +460,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -492,7 +492,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     //FIXME: getAllVariableSets method should receive Query and QueryOptions
     @Override
-    public QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<VariableSet> getAllVariableSets(long studyId, QueryOptions options) throws CatalogDBException {
 
         long startTime = startQuery();
 
@@ -546,11 +546,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException {
+    public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         checkVariableSetInUse(variableSetId);
-        int studyId = getStudyIdByVariableSetId(variableSetId);
+        long studyId = getStudyIdByVariableSetId(variableSetId);
         QueryResult<VariableSet> variableSet = getVariableSet(variableSetId, queryOptions);
         Bson query = Filters.eq(PRIVATE_ID, studyId);
         Bson operation = Updates.pull("variableSets", Filters.eq("id", variableSetId));
@@ -563,7 +563,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
 
-    public void checkVariableSetInUse(int variableSetId) throws CatalogDBException {
+    public void checkVariableSetInUse(long variableSetId) throws CatalogDBException {
         QueryResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
                 new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
         if (samples.getNumResults() != 0) {
@@ -588,7 +588,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     @Override
-    public int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException {
+    public long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException {
 //        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
         Bson query = Filters.eq("variableSets.id", variableSetId);
         Bson projection = Projections.include("id");
@@ -632,7 +632,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
-        int studyId = study.getId();
+        long studyId = study.getId();
         if (studyId <= 0 || options == null) {
             return;
         }
@@ -774,7 +774,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Study> update(long id, ObjectMap parameters) throws CatalogDBException {
 
         long startTime = startQuery();
         QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
@@ -786,7 +786,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Study> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkStudyId(id);
         delete(new Query(QueryParams.ID.key(), id), force);
@@ -797,15 +797,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<Integer> studiesToRemove = new ArrayList<>();
+        List<Long> studiesToRemove = new ArrayList<>();
         List<Study> studies = get(query, new QueryOptions()).getResult();
         for (Study study : studies) {
             boolean success = true;
 
             // Try to remove all the samples
             if (study.getSamples().size() > 0) {
-                List<Integer> sampleIds = new ArrayList<>(study.getSamples().size());
-                sampleIds.addAll(study.getSamples().stream().map((Function<Sample, Integer>) Sample::getId).collect(Collectors.toList()));
+                List<Long> sampleIds = new ArrayList<>(study.getSamples().size());
+                sampleIds.addAll(study.getSamples().stream().map((Function<Sample, Long>) Sample::getId).collect(Collectors.toList()));
                 try {
                     Long nDeleted = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(
                             new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), force).first();
@@ -819,8 +819,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             // Try to remove all the jobs.
             if (study.getJobs().size() > 0) {
-                List<Integer> jobIds = new ArrayList<>(study.getJobs().size());
-                jobIds.addAll(study.getJobs().stream().map((Function<Job, Integer>) Job::getId).collect(Collectors.toList()));
+                List<Long> jobIds = new ArrayList<>(study.getJobs().size());
+                jobIds.addAll(study.getJobs().stream().map((Function<Job, Long>) Job::getId).collect(Collectors.toList()));
                 try {
                     Long nDeleted = dbAdaptorFactory.getCatalogJobDBAdaptor().delete(
                             new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), jobIds), force).first();
@@ -834,8 +834,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             // Try to remove all the files.
             if (study.getFiles().size() > 0) {
-                List<Integer> fileIds = new ArrayList<>(study.getFiles().size());
-                fileIds.addAll(study.getFiles().stream().map((Function<File, Integer>) File::getId).collect(Collectors.toList()));
+                List<Long> fileIds = new ArrayList<>(study.getFiles().size());
+                fileIds.addAll(study.getFiles().stream().map((Function<File, Long>) File::getId).collect(Collectors.toList()));
                 try {
                     Long nDeleted = dbAdaptorFactory.getCatalogFileDBAdaptor().delete(
                             new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds), force).first();
@@ -985,7 +985,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      *                  will be > 0 to increment the diskUsage field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
-    public void updateDiskUsage(int studyId, long diskUsage) throws CatalogDBException {
+    public void updateDiskUsage(long studyId, long diskUsage) throws CatalogDBException {
         Bson query = new Document(QueryParams.ID.key(), studyId);
         Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
         if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {

@@ -62,12 +62,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public boolean individualExists(int individualId) {
+    public boolean individualExists(long individualId) {
         return individualCollection.count(new Document(PRIVATE_ID, individualId)).first() != 0;
     }
 
     @Override
-    public QueryResult<Individual> createIndividual(int studyId, Individual individual, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> createIndividual(long studyId, Individual individual, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -95,7 +95,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> getIndividual(int individualId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
         long startQuery = startQuery();
 
         QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
@@ -175,7 +175,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Deprecated
     @Override
-    public QueryResult<Individual> getAllIndividualsInStudy(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
         return endQuery("Get all files", startTime, get(query, options).getResult());
@@ -183,7 +183,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Deprecated
     @Override
-    public QueryResult<Individual> modifyIndividual(int individualId, QueryOptions parameters) throws CatalogDBException {
+    public QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException {
         throw new UnsupportedOperationException("Deprecated method. Use update instead");
 /*
         long startTime = startQuery();
@@ -239,7 +239,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite)
+    public QueryResult<AnnotationSet> annotateIndividual(long individualId, AnnotationSet annotationSet, boolean overwrite)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -285,7 +285,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException {
+    public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId) throws CatalogDBException {
 
         long startTime = startQuery();
 
@@ -321,7 +321,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> deleteIndividual(int individualId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options) throws CatalogDBException {
 
         long startTime = startQuery();
 
@@ -337,8 +337,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("Delete individual", startTime, individual);
     }
 
-    public void checkInUse(int individualId) throws CatalogDBException {
-        int studyId = getStudyIdByIndividualId(individualId);
+    public void checkInUse(long individualId) throws CatalogDBException {
+        long studyId = getStudyIdByIndividualId(individualId);
         QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_ID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
@@ -373,12 +373,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public int getStudyIdByIndividualId(int individualId) throws CatalogDBException {
+    public long getStudyIdByIndividualId(long individualId) throws CatalogDBException {
         QueryResult<Document> result =
                 individualCollection.find(new Document(PRIVATE_ID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
 
         if (!result.getResult().isEmpty()) {
-            return (int) result.getResult().get(0).get(PRIVATE_STUDY_ID);
+            return (long) result.getResult().get(0).get(PRIVATE_STUDY_ID);
         } else {
             throw CatalogDBException.idNotFound("Individual", individualId);
         }
@@ -430,7 +430,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> update(int id, ObjectMap parameters) throws CatalogDBException {
+    public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(id);
         Query query = new Query(QueryParams.ID.key(), id);
@@ -514,7 +514,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         if (!force) {
             Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
             List<Individual> individuals = get(subQuery, null).getResult();
-            List<Integer> individualIdsToDelete = new ArrayList<>();
+            List<Long> individualIdsToDelete = new ArrayList<>();
 
             if (individuals.size() == 0) {
                 // Check if we do not get any results because they are already deleted.
@@ -543,18 +543,18 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
                 if (individualListDatabase.size() == indFamily.getValue().size()) {
                     individualIdsToDelete.addAll(indFamily.getValue().stream()
-                            .map((Function<Individual, Integer>) Individual::getId).collect(Collectors.toList()));
+                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toList()));
                 } else {
                     // Remove in order from children to parents
                     List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
-                    Set<Integer> desiredIdsToDelete = indFamily.getValue().stream()
-                            .map((Function<Individual, Integer>) Individual::getId).collect(Collectors.toSet());
+                    Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
+                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toSet());
                     boolean changed = true;
                     // While we still have some individuals to remove
                     while (indCopyDatabase.size() > 0 && changed) {
                         changed = false;
-                        Set<Integer> parents = new HashSet<>();
-                        Set<Integer> children = new HashSet<>();
+                        Set<Long> parents = new HashSet<>();
+                        Set<Long> children = new HashSet<>();
                         for (Individual individual : indCopyDatabase) {
                             // Add to parents
                             parents.add(individual.getFatherId());
@@ -574,10 +574,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                             }
                         }
 
-                        Set<Integer> newIdsToDelete = new HashSet<>();
-                        Iterator<Integer> iterator = children.iterator();
+                        Set<Long> newIdsToDelete = new HashSet<>();
+                        Iterator<Long> iterator = children.iterator();
                         while (iterator.hasNext()) {
-                            Integer individualId = iterator.next();
+                            Long individualId = iterator.next();
                             if (desiredIdsToDelete.contains(individualId)) {
                                 individualIdsToDelete.add(individualId);
                                 newIdsToDelete.add(individualId);
@@ -615,7 +615,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> delete(int id, boolean force) throws CatalogDBException {
+    public QueryResult<Individual> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(id);
         delete(new Query(QueryParams.ID.key(), id), force);

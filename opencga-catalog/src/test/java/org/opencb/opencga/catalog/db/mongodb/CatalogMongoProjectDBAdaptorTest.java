@@ -46,7 +46,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void getProjectTest() throws CatalogDBException {
-        int projectId = catalogProjectDBAdaptor.getProjectId(user3.getId(), user3.getProjects().get(0).getAlias());
+        long projectId = catalogProjectDBAdaptor.getProjectId(user3.getId(), user3.getProjects().get(0).getAlias());
         System.out.println("projectId = " + projectId);
         QueryResult<Project> project = catalogProjectDBAdaptor.getProject(projectId, null);
         System.out.println(project);
@@ -120,7 +120,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void projectAclTest() throws CatalogDBException {
-        int projectId = user3.getProjects().get(0).getId();
+        long projectId = user3.getProjects().get(0).getId();
         List<AclEntry> acls = catalogProjectDBAdaptor.getProjectAcl(projectId, user3.getId()).getResult();
         assertTrue(acls.isEmpty());
         acls = catalogProjectDBAdaptor.getProjectAcl(projectId, user2.getId()).getResult();

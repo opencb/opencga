@@ -350,7 +350,7 @@ public class CatalogFileUtils {
         //Only list files if request to create found files
         if (createFoundFiles) {
             //List files in folder
-            int studyId = catalogManager.getStudyIdByFileId(folder.getId());
+            long studyId = catalogManager.getStudyIdByFileId(folder.getId());
             Stream<URI> uris = ioManager.listFilesStream(externalUri);
             Path folderPath = Paths.get(folder.getPath());
             Map<URI, String> uriPathMap = uris
@@ -402,7 +402,7 @@ public class CatalogFileUtils {
         return catalogManager.getFile(folder.getId(), sessionId).first();
     }
 
-    public void delete(int fileId, String sessionId) throws CatalogException {
+    public void delete(long fileId, String sessionId) throws CatalogException {
         delete(catalogManager.getFile(fileId, sessionId).first(), sessionId);
     }
 
@@ -412,7 +412,7 @@ public class CatalogFileUtils {
         if (!file.getFileStatus().equals(File.FileStatus.TRASHED)) {
             throw new CatalogIOException("Only trashed files can be deleted");
         }
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (file.getType().equals(File.Type.FOLDER)) {
             List<File> files = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                     "~" + file.getPath() + "..*"), new QueryOptions(), sessionId).getResult();
