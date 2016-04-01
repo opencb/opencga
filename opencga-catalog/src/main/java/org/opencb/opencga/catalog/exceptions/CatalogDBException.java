@@ -58,6 +58,10 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + " { id:" + id + "} already exists");
     }
 
+    public static CatalogDBException updateError(String name, long id) {
+        return new CatalogDBException(name + " {id: " + id + "} could not be updated.");
+    }
+
     public static CatalogDBException deleteError(String name) {
         return new CatalogDBException(name + ": It has been impossible to delete the object from the database.");
     }
@@ -77,4 +81,5 @@ public class CatalogDBException extends CatalogException {
     public static CatalogDBException sampleIdIsParentOfOtherIndividual(long id) {
         return new CatalogDBException("The sample { id: " + id + "} cannot be removed as it is already the parent of other individual(s).");
     }
+
 }

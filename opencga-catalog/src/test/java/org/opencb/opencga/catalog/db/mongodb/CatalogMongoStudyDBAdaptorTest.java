@@ -21,8 +21,16 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.VariableSet;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -49,6 +57,61 @@ public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }
 
+    @Test
+    public void createVariableSet() throws CatalogDBException {
+        Set<Variable> variables = new HashSet<>();
+        variables.addAll(Arrays.asList(
+                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                        Collections.<String, Object>emptyMap()),
+                new Variable("AGE", "", Variable.VariableType.NUMERIC, null, true, false, Collections.singletonList("0:99"), 1, "", "",
+                        null, Collections.<String, Object>emptyMap()),
+                new Variable("HEIGHT", "", Variable.VariableType.NUMERIC, "1.5", false, false, Collections.singletonList("0:"), 2, "",
+                        "", null, Collections.<String, Object>emptyMap()),
+                new Variable("ALIVE", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "",
+                        null, Collections.<String, Object>emptyMap()),
+                new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), 4, "", "",
+                        null, Collections.<String, Object>emptyMap())
+        ));
+        VariableSet variableSet = new VariableSet(-1, "VARSET_1", false, "My description", variables, Collections.emptyMap());
+        QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
+
+        assertEquals(variableSet.getName(), queryResult.first().getName());
+        assertTrue("The id of the variableSet is wrong.", queryResult.first().getId() > -1);
+    }
+
+    /**
+     * Creates a new variable once and attempts to create the same one again.
+     * @throws CatalogDBException
+     */
+    @Test
+    public void addFieldToVariableSetTest1() throws CatalogDBException {
+        createVariableSet();
+        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                Collections.emptyMap());
+        QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable);
+
+        // Check that the new variable has been inserted in the variableSet
+        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()
+                .isPresent());
+
+        // We try to insert the same one again.
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("already exist");
+        catalogStudyDBAdaptor.addFieldToVariableSet(18, variable);
+    }
+
+    /**
+     * Tries to add a new variable to a non existent variableSet.
+     * @throws CatalogDBException
+     */
+    @Test
+    public void addFieldToVariableSetTest2() throws CatalogDBException {
+        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                Collections.emptyMap());
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("does not exist");
+        catalogStudyDBAdaptor.addFieldToVariableSet(18, variable);
+    }
 
 
 }

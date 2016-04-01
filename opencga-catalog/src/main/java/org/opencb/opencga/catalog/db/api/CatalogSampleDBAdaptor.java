@@ -103,6 +103,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<AnnotationSet> annotateSample(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
+    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
@@ -130,6 +132,11 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
+        /*
+        ANNOTATIONS_SET_VARIABLE_SET_ID("annotationSets.variableSetId", DOUBLE, ""),
+        ANNOTATION_SET_ID("annotationSets.id", TEXT, ""),
+        ANNOTATION_SET("annotationSets", TEXT_ARRAY, "");
+*/
         private static Map<String, QueryParams> map;
         static {
             map = new LinkedMap();
@@ -172,6 +179,61 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         }
     }
 
+    enum AnnotationSetParams implements QueryParam {
+        ID("id", TEXT, ""),
+        VARIABLE_SET_ID("variableSetId", DOUBLE, ""),
+        ANNOTATIONS("annotations", TEXT_ARRAY, ""),
+        ANNOTATIONS_ID("annotations.id", TEXT, ""),
+        ANNOTATIONS_VALUE("annotations.value", TEXT, ""), // We don't really know the type. It is defined  in VariableSet.
+        DATE("date", TEXT, ""),
+        ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]");
+
+        private static Map<String, AnnotationSetParams> map;
+        static {
+            map = new LinkedMap();
+            for (AnnotationSetParams params : AnnotationSetParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        AnnotationSetParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, AnnotationSetParams> getMap() {
+            return map;
+        }
+
+        public static AnnotationSetParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    //FIXME: This should be ported to CatalogStudyDBAdaptor
+    @Deprecated
     enum VariableSetParams implements QueryParam {
         ID("id", DECIMAL, ""),
         NAME("name", TEXT, ""),

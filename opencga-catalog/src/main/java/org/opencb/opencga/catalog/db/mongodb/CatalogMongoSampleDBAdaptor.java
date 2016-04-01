@@ -528,6 +528,46 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
+    /**
+     * The method will add the new variable to each annotation using the default value.
+     * @param variableSetId id of the variableSet.
+     * @param variable new variable that will be pushed to the annotations.
+     */
+    @Override
+    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Annotation annotation = new Annotation(variable.getId(), variable.getDefaultValue());
+        // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
+        List<Bson> aggregation = new ArrayList<>(4);
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        aggregation.add(Aggregates.unwind("$annotationSets"));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets.id", "annotationSets.variableSetId")));
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        QueryResult<Document> aggregationResult = sampleCollection.aggregate(aggregation, null);
+
+        Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
+        for (Document document : aggregationResult.getResult()) {
+            annotationIds.add((String) ((Document) document.get("annotationSets")).get("id"));
+        }
+
+        Bson bsonQuery;
+        Bson update = Updates.push("annotationSets.$." + AnnotationSetParams.ANNOTATIONS.key(),
+                getMongoDBDocument(annotation, "annotation"));
+        long modifiedCount = 0;
+        for (String annotationId : annotationIds) {
+            bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
+                    Filters.eq("variableSetId", variableSetId),
+                    Filters.eq("id", annotationId)
+            ));
+
+            modifiedCount += sampleCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
+                    .getModifiedCount();
+        }
+
+        return endQuery("Add new variable to annotations", startTime, Collections.singletonList(modifiedCount));
+    }
+
     public void checkInUse(long sampleId) throws CatalogDBException {
         long studyId = getStudyIdBySampleId(sampleId);
 

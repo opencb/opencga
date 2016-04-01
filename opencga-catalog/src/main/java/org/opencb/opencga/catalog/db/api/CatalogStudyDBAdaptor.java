@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
 import java.util.Map;
@@ -96,6 +97,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
+    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException;
+
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<VariableSet> getAllVariableSets(long studyId, QueryOptions queryOptions) throws CatalogDBException;
@@ -164,6 +167,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
         COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
 
+        VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSets.id", INTEGER_ARRAY, ""),
         VARIABLE_SET_NAME("variableSets.name", TEXT_ARRAY, ""),
         VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
@@ -206,6 +210,56 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum VariableSetParams implements QueryParam {
+        ID("id", DOUBLE, ""),
+        NAME("name", TEXT, ""),
+        UNIQUE("unique", BOOLEAN, ""),
+        DESCRIPTION("description", TEXT, ""),
+        VARIABLE("variables", TEXT_ARRAY, ""),
+        VARIABLE_ID("variables.id", TEXT, "");
+
+        private static Map<String, VariableSetParams> map;
+        static {
+            map = new LinkedMap();
+            for (VariableSetParams params : VariableSetParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        VariableSetParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, VariableSetParams> getMap() {
+            return map;
+        }
+
+        public static VariableSetParams getParam(String key) {
             return map.get(key);
         }
     }

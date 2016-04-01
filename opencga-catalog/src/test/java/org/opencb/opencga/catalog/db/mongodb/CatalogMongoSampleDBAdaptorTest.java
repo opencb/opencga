@@ -105,6 +105,30 @@ public class CatalogMongoSampleDBAdaptorTest {
     }
 
     @Test
+    public void testAddVariableToAnnotations() throws Exception {
+        long sampleId = s1.getId();
+
+        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
+                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
+
+        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
+
+        Variable variable = new Variable("ANOTHER_KEY", "", Variable.VariableType.BOOLEAN, false, true, false, null, -1, null, null, null,
+                null);
+
+        assertEquals(3, catalogSampleDBAdaptor.addVariableToAnnotations(3, variable).first().longValue());
+
+    }
+
+    @Test
     public void testOverwriteAnnotateSample() throws Exception {
         long sampleId = s1.getId();
 
