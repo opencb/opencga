@@ -57,7 +57,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
         this.dbAdaptor = dbAdaptor;
         this.conf = new Configuration(conf);
         this.archiveTableCredentials = archiveCredentials;
-        this.variantsTableCredentials = dbAdaptor.getCredentials();
+        this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
     }
 
     @Override

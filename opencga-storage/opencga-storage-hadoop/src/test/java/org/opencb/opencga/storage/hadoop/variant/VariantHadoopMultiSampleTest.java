@@ -5,7 +5,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -17,6 +20,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -35,7 +39,10 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTestUtils {
+public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+
+    @ClassRule
+    public static ExternalResource externalResource = new HadoopExternalResource();
 
     public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantTableMapper.TARGET_VARIANT_TYPE);
 
@@ -43,7 +50,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>(Arrays.asList("M:515:G:A", "1:10352:T:A"));
 
     @Before
-    public void loadSingleVcf() throws Exception {
+    public void setUp() throws Exception {
         clearDB(DB_NAME);
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
@@ -62,32 +69,11 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
         return loadFile(resourceName, fileId, studyConfiguration, otherParams, true, true, true);
     }
 
-    public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-        URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
-
-        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
-//                .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
-                .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
-                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
-                .append(VariantStorageManager.Options.DB_NAME.key(), DB_NAME)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
-                .append(VariantAnnotationManager.SPECIES, "hsapiens")
-                .append(VariantAnnotationManager.ASSEMBLY, "GRc37")
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, loadArchive)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, loadVariant);
-        if (otherParams != null) {
-            params.putAll(otherParams);
-        }
-
-        if (fileId > 0) {
-            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        }
-
-        ETLResult etlResult = runETL(variantStorageManager, fileInputUri, outputUri, params, true, doTransform, true);
-
-        return variantStorageManager.readVariantSource(doTransform? etlResult.transformResult : inputUri);
+    public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration,
+                                  Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant)
+            throws Exception {
+        return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resourceName, fileId, studyConfiguration,
+                otherParams, doTransform, loadArchive, loadVariant);
     }
 
     @Test

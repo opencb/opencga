@@ -255,7 +255,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
     }
 
     @Override
-    public StorageETL newStorageETL() {
+    public StorageETL newStorageETL(boolean connected) {
         return this;
     }
 

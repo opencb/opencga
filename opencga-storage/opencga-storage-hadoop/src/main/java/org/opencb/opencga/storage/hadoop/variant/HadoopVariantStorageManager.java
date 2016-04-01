@@ -51,9 +51,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public HadoopVariantStorageETL newStorageETL() throws StorageManagerException {
+    public HadoopVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = getHadoopConfiguration(options);
         HadoopCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 

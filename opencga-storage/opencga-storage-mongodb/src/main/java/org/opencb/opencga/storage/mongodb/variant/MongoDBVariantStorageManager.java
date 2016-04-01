@@ -68,8 +68,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantStorageETL newStorageETL() throws StorageManagerException {
-        return new MongoDBVariantStorageETL(configuration, STORAGE_ENGINE_ID, getDBAdaptor(null));
+    public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
+        VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor(null) : null;
+        return new MongoDBVariantStorageETL(configuration, STORAGE_ENGINE_ID, dbAdaptor);
     }
 
     @Override

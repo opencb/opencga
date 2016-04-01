@@ -66,7 +66,8 @@ public abstract class StorageManager<DBADAPTOR> {
             throws StorageManagerException, IOException, FileFormatException {
 
         for (URI inputFile : inputFiles) {
-            StorageETL storageETL = newStorageETL();
+            //Provide a connected storageETL if load is required.
+            StorageETL storageETL = newStorageETL(load);
 
             URI nextFileUri = inputFile;
 
@@ -107,6 +108,15 @@ public abstract class StorageManager<DBADAPTOR> {
     // TODO: Pending implementation
     public abstract void testConnection() throws StorageManagerException;
 
-    public abstract StorageETL newStorageETL() throws StorageManagerException;
+    /**
+     * Creates a new {@link StorageETL} object.
+     *
+     * Each {@link StorageETL} should be used to index one single file.
+     *
+     * @param connected Specify if the provided object must be connected to the underlying database.
+     * @return Created {@link StorageETL}
+     * @throws StorageManagerException If there is any problem while creation
+     */
+    public abstract StorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
 }

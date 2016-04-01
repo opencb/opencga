@@ -109,7 +109,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     }
 
     @Override
-    public abstract VariantStorageETL newStorageETL() throws StorageManagerException;
+    public abstract VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
     @Override
     public void testConnection() throws StorageManagerException {

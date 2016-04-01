@@ -8,7 +8,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -20,7 +23,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeleteTest extends HadoopVariantStorageManagerTestUtils {
+public class VariantTableDeleteTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+
+    @ClassRule
+    public static ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantSource loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
         return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resource, studyConfiguration, map);

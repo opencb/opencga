@@ -4,9 +4,8 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -38,12 +37,15 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopManagerTest extends HadoopVariantStorageManagerTestUtils {
+public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
     private static VariantSource source;
     private static ETLResult etlResult = null;
+
+    @ClassRule
+    public static ExternalResource externalResource = new HadoopExternalResource();
 
     @Before
     public void before() throws Exception {

@@ -3,15 +3,12 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
 import org.apache.hadoop.hbase.client.Result;
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -65,42 +62,37 @@ public class VariantHbaseTestUtils {
 //        return variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
     }
 
-    private static VariantSource processParameters(HadoopVariantStorageManager variantStorageManager, URI outputUri, URI fileInputUri,
-            int fileId, Map<? extends String, ?> otherParams, ObjectMap params) throws IOException, FileFormatException,
-            StorageManagerException {
-        if (otherParams != null) {
-            params.putAll(otherParams);
-        }
-        if (fileId > 0) {
-            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        }
-        ETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, params, params,
-                params, params, params, params, true, true, true);
-
-        return variantStorageManager.readVariantSource(etlResult.transformResult);
-    }
-
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
-            String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
+                                         String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
+
         ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true);
-        return processParameters(variantStorageManager, outputUri, fileInputUri, fileId, otherParams, params);
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, loadArchive)
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, loadVariant);
+
+        if (otherParams != null) {
+            params.putAll(otherParams);
+        }
+        if (fileId > 0) {
+            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
+        }
+        ETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
+
+        return variantStorageManager.readVariantSource(etlResult.transformResult);
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
             String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
-        return loadFile(variantStorageManager, dbName, outputUri, resourceName, fileId, studyConfiguration, null);
+        return loadFile(variantStorageManager, dbName, outputUri, resourceName, fileId, studyConfiguration, null, true, true, true);
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
             String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        return loadFile(variantStorageManager, dbName, outputUri, resourceName, -1, studyConfiguration, otherParams);
+        return loadFile(variantStorageManager, dbName, outputUri, resourceName, -1, studyConfiguration, otherParams, true, true, true);
     }
 }

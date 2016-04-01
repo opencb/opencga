@@ -58,8 +58,8 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class VariantStorageETL implements StorageETL {
 
-    protected final String storageEngineId;
     protected final StorageConfiguration configuration;
+    protected final String storageEngineId;
     protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
