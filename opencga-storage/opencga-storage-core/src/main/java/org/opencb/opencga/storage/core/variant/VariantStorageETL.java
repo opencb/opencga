@@ -58,11 +58,12 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class VariantStorageETL implements StorageETL {
 
-    protected final StorageConfiguration configuration;
     protected final String storageEngineId;
-    protected final Logger logger;
+    protected final StorageConfiguration configuration;
+    protected final ObjectMap options;
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
+    protected final Logger logger;
 
     public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
                              VariantReaderUtils variantReaderUtils) {
@@ -71,6 +72,7 @@ public abstract class VariantStorageETL implements StorageETL {
         this.logger = logger;
         this.dbAdaptor = dbAdaptor;
         this.variantReaderUtils = variantReaderUtils;
+        this.options = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
     }
 
     @Override
@@ -80,33 +82,33 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         String fileName = Paths.get(input.getPath()).getFileName().toString();
-        int fileId = variantOptions.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-        int studyId = variantOptions.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
+        int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
+        int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
 
         StudyConfiguration studyConfiguration;
         if (studyId < 0 && fileId < 0) {
             logger.debug("Isolated study configuration");
             studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(),
                     fileName);
-            studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
-            variantOptions.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+            options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
             //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-            studyConfiguration = getStudyConfiguration(variantOptions);
+            studyConfiguration = getStudyConfiguration(options);
 
             if (studyConfiguration == null) {
                 logger.info("Creating a new StudyConfiguration");
                 checkStudyId(studyId);
-                studyConfiguration = new StudyConfiguration(studyId, variantOptions.getString(Options.STUDY_NAME.key()));
-                studyConfiguration.setAggregation(variantOptions.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
+                studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             }
             fileId = checkNewFile(studyConfiguration, fileId, fileName);
-            variantOptions.put(Options.FILE_ID.key(), fileId);
+            options.put(Options.FILE_ID.key(), fileId);
         }
-        variantOptions.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
 
         return input;
@@ -125,7 +127,7 @@ public abstract class VariantStorageETL implements StorageETL {
         // input: VcfReader
         // output: JsonWriter
 
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
         Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
@@ -364,7 +366,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         // Delete isolated storage configuration
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key())) {
@@ -376,7 +378,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
@@ -568,7 +570,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         String dbName = options.getString(Options.DB_NAME.key(), null);
         List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());

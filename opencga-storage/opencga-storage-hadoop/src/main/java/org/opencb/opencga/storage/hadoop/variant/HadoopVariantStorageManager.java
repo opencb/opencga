@@ -50,6 +50,17 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         variantReaderUtils = new HdfsVariantReaderUtils(conf);
     }
 
+    @Override
+    public HadoopVariantStorageETL newStorageETL() throws StorageManagerException {
+        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+        Configuration hadoopConfiguration = getHadoopConfiguration(options);
+        HadoopCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
+
+        return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+                hadoopConfiguration, archiveCredentials, variantReaderUtils);
+    }
+
     public void remove() throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
@@ -82,12 +93,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
     }
 
-    public MRExecutor getMRExecutor(ObjectMap options) {
-        if (mrExecutor == null) {
-            return new ExternalMRExecutor(options);
-        } else {
-            return mrExecutor;
-        }
+    @Override
+    public VariantHadoopDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
+        return getDBAdaptor(buildCredentials(dbName));
     }
 
     private HadoopCredentials getDbCredentials() throws StorageManagerException {
@@ -96,10 +104,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return buildCredentials(dbName);
     }
 
-    @Override
-    public VariantHadoopDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
-        return getDBAdaptor(buildCredentials(dbName));
-    }
 
     public VariantHadoopDBAdaptor getDBAdaptor() throws StorageManagerException {
         return getDBAdaptor(getDbCredentials());
@@ -107,8 +111,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     protected VariantHadoopDBAdaptor getDBAdaptor(HadoopCredentials credentials) throws StorageManagerException {
         try {
-            return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(storageEngineId),
-                    getHadoopConfiguration(configuration.getStorageEngine(storageEngineId).getOptions()));
+            return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(STORAGE_ENGINE_ID),
+                    getHadoopConfiguration(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()));
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
         }
@@ -139,12 +143,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
     }
 
-    @Override
-    public HadoopVariantStorageETL newStorageETL() throws StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        return new HadoopVariantStorageETL(configuration, storageEngineId, logger, getDBAdaptor(), getMRExecutor(options),
-               getHadoopConfiguration(options), buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key()))), variantReaderUtils);
-    }
 
     @Override
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
@@ -189,6 +187,14 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 .filter(entry -> entry.getValue() != null)
                 .forEach(entry -> conf.set(entry.getKey(), options.getString(entry.getKey())));
         return conf;
+    }
+
+    public MRExecutor getMRExecutor(ObjectMap options) {
+        if (mrExecutor == null) {
+            return new ExternalMRExecutor(options);
+        } else {
+            return mrExecutor;
+        }
     }
 
     /**

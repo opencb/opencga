@@ -85,8 +85,7 @@ public class VariantHadoopMultiSampleTest extends HadoopVariantStorageManagerTes
             params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
 
-        ETLResult etlResult = runETL(variantStorageManager, fileInputUri, outputUri, params, params, params,
-                params, params, params, params, true, doTransform, true);
+        ETLResult etlResult = runETL(variantStorageManager, fileInputUri, outputUri, params, true, doTransform, true);
 
         return variantStorageManager.readVariantSource(doTransform? etlResult.transformResult : inputUri);
     }

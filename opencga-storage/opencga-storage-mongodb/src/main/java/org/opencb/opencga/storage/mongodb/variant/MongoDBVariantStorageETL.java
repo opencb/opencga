@@ -69,13 +69,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     @Deprecated
     public static final String OPENCGA_STORAGE_MONGODB_VARIANT_COMPRESS_GT = "OPENCGA.STORAGE.MONGODB.VARIANT.LOAD.COMPRESS_GENOTYPES";
 
-
-    protected static Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageManager.class);
     private final VariantMongoDBAdaptor dbAdaptor;
 
-    public MongoDBVariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger,
+    public MongoDBVariantStorageETL(StorageConfiguration configuration, String storageEngineId,
                                     VariantMongoDBAdaptor dbAdaptor) {
-        super(configuration, storageEngineId, logger, dbAdaptor, new VariantReaderUtils());
+        super(configuration, storageEngineId, LoggerFactory.getLogger(MongoDBVariantStorageETL.class), dbAdaptor, new VariantReaderUtils());
         this.dbAdaptor = dbAdaptor;
     }
 
@@ -87,7 +85,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         URI uri = super.preLoad(input, output);
 
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
@@ -183,7 +181,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     public URI load(URI inputUri) throws IOException, StorageManagerException {
         // input: getDBSchemaReader
         // output: getDBWriter()
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
 
         Path input = Paths.get(inputUri.getPath());
@@ -382,7 +380,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     @Override
     protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
             StorageManagerException {
-        VariantSource variantSource = VariantStorageManager.readVariantSource(Paths.get(input.getPath()), null);
+        VariantSource variantSource = VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
 
 //        VariantMongoDBAdaptor dbAdaptor = getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
         Long count = dbAdaptor.count(new Query()

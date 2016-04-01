@@ -171,59 +171,67 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
                                    boolean doTransform,
                                    boolean doLoad)
             throws IOException, FileFormatException, StorageManagerException {
+        ObjectMap params = new ObjectMap();
+        params.putAll(extractParams);
+        params.putAll(preTransformParams);
+        params.putAll(transformParams);
+        params.putAll(postTransformParams);
+        params.putAll(preLoadParams);
+        params.putAll(loadParams);
+        params.putAll(postLoadParams);
+        return runETL(variantStorageManager, inputUri, outputUri, params, doExtract, doTransform, doLoad);
+    }
+
+    public static ETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
+                                   ObjectMap params,
+                                   boolean doExtract,
+                                   boolean doTransform,
+                                   boolean doLoad)
+            throws IOException, FileFormatException, StorageManagerException {
         ETLResult etlResult = new ETLResult();
 
+
+        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
+                ().putAll(params);
+        VariantStorageETL variantStorageETL = variantStorageManager.newStorageETL();
+
         if (doExtract) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(extractParams);
-            inputUri = variantStorageManager.newStorageETL().extract(inputUri, outputUri);
+            inputUri = variantStorageETL.extract(inputUri, outputUri);
             etlResult.extractResult = inputUri;
         }
 
         if (doTransform) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(preTransformParams);
-            inputUri = variantStorageManager.newStorageETL().preTransform(inputUri);
+            inputUri = variantStorageETL.preTransform(inputUri);
             etlResult.preTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(transformParams);
-            inputUri = variantStorageManager.newStorageETL().transform(inputUri, null, outputUri);
+            inputUri = variantStorageETL.transform(inputUri, null, outputUri);
             etlResult.transformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(postTransformParams);
-            inputUri = variantStorageManager.newStorageETL().postTransform(inputUri);
+            inputUri = variantStorageETL.postTransform(inputUri);
             etlResult.postTransformResult = inputUri;
             Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
         }
 
         if (doLoad) {
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(preLoadParams);
-            inputUri = variantStorageManager.newStorageETL().preLoad(inputUri, outputUri);
+            inputUri = variantStorageETL.preLoad(inputUri, outputUri);
             etlResult.preLoadResult = inputUri;
             if (Objects.equals(inputUri.getScheme(), "file")) {
                 Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
             }
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(loadParams);
-            inputUri = variantStorageManager.newStorageETL().load(inputUri);
+            inputUri = variantStorageETL.load(inputUri);
             etlResult.loadResult = inputUri;
             if (Objects.equals(inputUri.getScheme(), "file")) {
                 Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
             }
 
 
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions
-                    ().putAll(postLoadParams);
-            variantStorageManager.newStorageETL().postLoad(inputUri, outputUri);
+            variantStorageETL.postLoad(inputUri, outputUri);
         }
         return etlResult;
     }

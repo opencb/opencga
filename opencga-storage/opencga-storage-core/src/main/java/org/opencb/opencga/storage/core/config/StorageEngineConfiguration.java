@@ -30,6 +30,7 @@ public class StorageEngineConfiguration {
      * options parameter defines database-specific parameters
      */
 //    private Map<String, String> options;
+    @Deprecated
     private ObjectMap options;
 
     private StorageEtlConfiguration alignment;

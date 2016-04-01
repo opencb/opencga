@@ -43,21 +43,19 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
     public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
 
-    protected static Logger logger = LoggerFactory.getLogger(HadoopVariantStorageManager.class);
-
     protected MRExecutor mrExecutor = null;
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
     protected final HadoopCredentials archiveTableCredentials;
     protected final HadoopCredentials variantsTableCredentials;
 
-    public HadoopVariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger,
+    public HadoopVariantStorageETL(StorageConfiguration configuration, String storageEngineId,
                                    VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
                                    Configuration conf, HadoopCredentials archiveCredentials, VariantReaderUtils variantReaderUtils) {
-        super(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils);
+        super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStorageETL.class), dbAdaptor, variantReaderUtils);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
-        this.conf = conf;
+        this.conf = new Configuration(conf);
         this.archiveTableCredentials = archiveCredentials;
         this.variantsTableCredentials = dbAdaptor.getCredentials();
     }
@@ -65,7 +63,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
         logger.info("PreTransform: " + input);
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
         options.put(VariantStorageManager.Options.GVCF.key(), true);
         return super.preTransform(input);
@@ -75,7 +73,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         super.preLoad(input, output);
 
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
@@ -204,7 +202,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
 
         int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
@@ -270,7 +268,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
             // Current StudyConfiguration may be outdated. Remove it.
             options.remove(VariantStorageManager.Options.STUDY_CONFIGURATION.key());
@@ -303,10 +301,6 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
         return super.postTransform(input);
-    }
-
-    public static Logger getLogger() {
-        return logger;
     }
 
 }

@@ -63,6 +63,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager im
 
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        logger.info("Get StudyConfiguration " + studyId + " from DB " + tableName);
         return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
     }
 
@@ -142,11 +143,13 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager im
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
             if (!hBaseManager.act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+                logger.info("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
             return hBaseManager.act(getConnection(), tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
+                    logger.info("Get StudyConfiguration summary EMPTY");
                     return HashBiMap.create();
                 } else {
                     byte[] value = result.getValue(genomeHelper.getColumnFamily(), studiesSummaryColumn);
@@ -158,13 +161,14 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager im
             });
         } catch (IOException e) {
             e.printStackTrace();
+            logger.info("Get StudyConfiguration summary ERROR");
             return HashBiMap.create();
         }
     }
 
     private void updateStudiesSummary(String study, Integer studyId, QueryOptions options) {
         BiMap<String, Integer> studiesSummary = getStudiesSummary(options);
-        if (studiesSummary.getOrDefault(study, -1).equals(studyId)) {
+        if (studiesSummary.getOrDefault(study, Integer.MIN_VALUE).equals(studyId)) {
             //Nothing to update
             return;
         } else {
