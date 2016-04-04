@@ -18,6 +18,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
@@ -52,9 +53,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
+        clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
-
     }
 
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
@@ -101,7 +102,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration,
                     Collections.singletonMap(TestMRExecutor.VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
             fail();
-        } catch (Exception e) {
+        } catch (StorageETLException e) {
             HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
             studyConfiguration = scm.toHBaseStudyConfiguration(scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first());
             System.out.println(studyConfiguration.getIndexedFiles());

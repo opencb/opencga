@@ -38,7 +38,7 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
     }
 
     @Test
-    public void deleteTest() throws Exception {
+    public void dropFileTest() throws Exception {
         HadoopVariantStorageManager sm = getVariantStorageManager();
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
@@ -75,7 +75,7 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
     }
 
-    private Map<String, Variant> buildVariantsIdx() throws StorageManagerException, Exception {
+    private Map<String, Variant> buildVariantsIdx() throws Exception {
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
         Map<String, Variant> variants = new HashMap<>();
         for (Variant variant : dbAdaptor) {

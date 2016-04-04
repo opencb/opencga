@@ -9,7 +9,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(ArchiveDriver.class);
 
-    public ArchiveFileMetadataManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
+    public ArchiveFileMetadataManager(HBaseCredentials credentials, Configuration configuration, ObjectMap options)
             throws IOException {
         this(credentials.getTable(), configuration, options);
     }

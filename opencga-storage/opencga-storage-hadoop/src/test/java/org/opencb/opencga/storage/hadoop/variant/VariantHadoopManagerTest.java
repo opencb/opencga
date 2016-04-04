@@ -55,6 +55,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     public void before() throws Exception {
         if (etlResult == null) {
             clearDB(DB_NAME);
+            clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
             URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
@@ -62,12 +63,12 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
             etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                     new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                            .append(Options.FILE_ID.key(), FILE_ID)
                             .append(Options.ANNOTATE.key(), false)
                             .append(Options.CALCULATE_STATS.key(), false)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
             );
-
 
             source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
             VariantGlobalStats stats = source.getStats();
@@ -223,9 +224,14 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     @Test
     public void checkMeta() throws Exception {
         System.out.println("Get studies");
-        for (String studyName : dbAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions())) {
+        List<String> studyNames = dbAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+        assertEquals(1, studyNames.size());
+        for (String studyName : studyNames) {
             System.out.println("studyName = " + studyName);
             StudyConfiguration sc = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, new QueryOptions()).first();
+            assertEquals(sc.getStudyId(), STUDY_ID);
+            assertEquals(sc.getStudyName(), STUDY_NAME);
+            assertEquals(Collections.singleton(FILE_ID), sc.getIndexedFiles());
             System.out.println("sc = " + sc);
         }
     }

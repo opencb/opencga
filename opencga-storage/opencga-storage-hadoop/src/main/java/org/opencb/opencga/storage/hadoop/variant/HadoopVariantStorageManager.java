@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
@@ -7,13 +8,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 
@@ -55,19 +57,27 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = getHadoopConfiguration(options);
-        HadoopCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
+        HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 
         return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
                 hadoopConfiguration, archiveCredentials, variantReaderUtils);
     }
 
-    public void remove() throws StorageManagerException {
+    @Override
+    public void dropFile(String study, int fileId) throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
-        Integer fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
+        VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
+
+        final int studyId;
+        if (StringUtils.isNumeric(study)) {
+            studyId = Integer.parseInt(study);
+        } else {
+            StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+            studyId = studyConfiguration.getStudyId();
+        }
 
         String archiveTable = getTableName(studyId);
-        HadoopCredentials variantsTable = getDbCredentials();
+        HBaseCredentials variantsTable = getDbCredentials();
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
         String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
         if (jar == null) {
@@ -81,7 +91,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         long startTime = System.currentTimeMillis();
         logger.info("------------------------------------------------------");
-        logger.info("Remove file IDs {} in analysis {} and archive table '{}'", fileId, archiveTable, variantsTable.getTable());
+        logger.info("Remove file ID {} in archive '{}' and analysis table '{}'", fileId, archiveTable, variantsTable.getTable());
         logger.debug(executable + " " + args);
         logger.info("------------------------------------------------------");
         int exitValue = getMRExecutor(options).run(executable, args);
@@ -94,11 +104,16 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
+    public void dropStudy(String studyName) throws StorageManagerException {
+        throw new UnsupportedOperationException("Unimplemented");
+    }
+
+    @Override
     public VariantHadoopDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         return getDBAdaptor(buildCredentials(dbName));
     }
 
-    private HadoopCredentials getDbCredentials() throws StorageManagerException {
+    private HBaseCredentials getDbCredentials() throws StorageManagerException {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         String dbName = options.getString(VariantStorageManager.Options.DB_NAME.key(), null);
         return buildCredentials(dbName);
@@ -109,7 +124,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return getDBAdaptor(getDbCredentials());
     }
 
-    protected VariantHadoopDBAdaptor getDBAdaptor(HadoopCredentials credentials) throws StorageManagerException {
+    protected VariantHadoopDBAdaptor getDBAdaptor(HBaseCredentials credentials) throws StorageManagerException {
         try {
             return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(STORAGE_ENGINE_ID),
                     getHadoopConfiguration(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()));
@@ -118,7 +133,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
     }
 
-    public HadoopCredentials buildCredentials(String table) throws IllegalStateException {
+    public HBaseCredentials buildCredentials(String table) throws IllegalStateException {
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
 
         DatabaseCredentials db = vStore.getDatabase();
@@ -136,7 +151,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             //        String tablename = uri.getPath();
             //        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
             //        String master = String.join(":", server, port.toString());
-            HadoopCredentials credentials = new HadoopCredentials(server, table, user, pass, port);
+            HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
             return credentials;
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
@@ -147,7 +162,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         try {
-            HadoopCredentials dbCredentials = getDbCredentials();
+            HBaseCredentials dbCredentials = getDbCredentials();
             Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
             return new HBaseStudyConfigurationManager(dbCredentials, configuration, options);
         } catch (IOException e) {
@@ -161,7 +176,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return buildArchiveFileMetaManager(buildCredentials(archiveTableName), options);
     }
 
-    private ArchiveFileMetadataManager buildArchiveFileMetaManager(HadoopCredentials archiveTableCredentials, ObjectMap options)
+    private ArchiveFileMetadataManager buildArchiveFileMetaManager(HBaseCredentials archiveTableCredentials, ObjectMap options)
             throws StorageManagerException {
         try {
             Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options),

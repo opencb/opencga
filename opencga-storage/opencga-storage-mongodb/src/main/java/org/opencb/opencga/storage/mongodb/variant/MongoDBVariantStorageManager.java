@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
@@ -71,6 +72,22 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor(null) : null;
         return new MongoDBVariantStorageETL(configuration, STORAGE_ENGINE_ID, dbAdaptor);
+    }
+
+    @Override
+    public void dropFile(String study, int fileId) throws StorageManagerException {
+        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        getDBAdaptor().deleteFile(study, fileName, new QueryOptions(options));
+    }
+
+    @Override
+    public void dropStudy(String studyName) throws StorageManagerException {
+        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        getDBAdaptor().deleteStudy(studyName, new QueryOptions(options));
+    }
+
+    public VariantMongoDBAdaptor getDBAdaptor() throws StorageManagerException {
+        return getDBAdaptor(null);
     }
 
     @Override

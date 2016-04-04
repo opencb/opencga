@@ -13,7 +13,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
@@ -42,7 +42,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager im
     private final HBaseManager hBaseManager;
     private final String tableName;
 
-    public HBaseStudyConfigurationManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
+    public HBaseStudyConfigurationManager(HBaseCredentials credentials, Configuration configuration, ObjectMap options)
             throws IOException {
         this(credentials.getTable(), configuration, options);
     }

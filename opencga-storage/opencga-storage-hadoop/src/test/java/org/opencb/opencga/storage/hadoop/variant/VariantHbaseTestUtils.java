@@ -51,14 +51,10 @@ public class VariantHbaseTestUtils {
         if (otherParams != null) {
             params.putAll(otherParams);
         }
-        if (fileId > 0) {
-            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        }
-        StorageETLResult etlResult = new StorageETLResult();
 
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
-        variantStorageManager.remove();
+        variantStorageManager.dropFile(studyConfiguration.getStudyName(), fileId);
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 
@@ -82,8 +78,11 @@ public class VariantHbaseTestUtils {
             params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
         StorageETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
+        StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration.setIndexedFiles(updatedStudyConfiguration.getIndexedFiles());
+        studyConfiguration.setAttributes(updatedStudyConfiguration.getAttributes());
 
-        return variantStorageManager.readVariantSource(etlResult.getTransformResult());
+        return variantStorageManager.readVariantSource(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,

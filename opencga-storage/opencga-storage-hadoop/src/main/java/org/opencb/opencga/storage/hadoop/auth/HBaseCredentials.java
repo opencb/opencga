@@ -9,7 +9,7 @@ import java.net.URISyntaxException;
 /**
  * Created by mh719 on 16/06/15.
  */
-public class HadoopCredentials implements OpenCGACredentials {
+public class HBaseCredentials implements OpenCGACredentials {
 
     private static final Integer DEFAULT_PORT = 60000;
     private final String host;
@@ -19,11 +19,11 @@ public class HadoopCredentials implements OpenCGACredentials {
     private final String user;
 //    private final int hbaseZookeeperClientPort;
 
-    public HadoopCredentials(String host, String table, String user, String pass) {
+    public HBaseCredentials(String host, String table, String user, String pass) {
         this(host, table, user, pass, DEFAULT_PORT);
     }
 
-    public HadoopCredentials(String host, String table, String user, String pass, Integer hbasePort) {
+    public HBaseCredentials(String host, String table, String user, String pass, Integer hbasePort) {
         this.host = host;
         this.hbasePort = hbasePort;
         this.table = table;

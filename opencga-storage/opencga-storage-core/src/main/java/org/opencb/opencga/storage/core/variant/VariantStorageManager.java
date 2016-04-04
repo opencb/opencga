@@ -111,6 +111,17 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     @Override
     public abstract VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
+    /**
+     * Drops a file from the Variant Storage.
+     *
+     * @param study   StudyName or StudyId
+     * @param fileId  FileId
+     * @throws StorageManagerException If the file can not be deleted or there was some problem deleting it.
+     */
+    public abstract void dropFile(String study, int fileId) throws StorageManagerException;
+
+    public abstract void dropStudy(String studyName) throws StorageManagerException;
+
     @Override
     public void testConnection() throws StorageManagerException {
 //        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();

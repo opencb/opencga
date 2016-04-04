@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
@@ -45,12 +45,12 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
     protected MRExecutor mrExecutor = null;
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
-    protected final HadoopCredentials archiveTableCredentials;
-    protected final HadoopCredentials variantsTableCredentials;
+    protected final HBaseCredentials archiveTableCredentials;
+    protected final HBaseCredentials variantsTableCredentials;
 
     public HadoopVariantStorageETL(StorageConfiguration configuration, String storageEngineId,
                                    VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
-                                   Configuration conf, HadoopCredentials archiveCredentials, VariantReaderUtils variantReaderUtils) {
+                                   Configuration conf, HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils) {
         super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStorageETL.class), dbAdaptor, variantReaderUtils);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
