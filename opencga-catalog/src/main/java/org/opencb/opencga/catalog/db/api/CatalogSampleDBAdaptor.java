@@ -117,6 +117,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
      */
     QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
 
+    QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException;
+
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {

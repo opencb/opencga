@@ -95,11 +95,47 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * ***************************
      */
 
+    /**
+     * The method will obtain the number of variableSets with the same id.
+     * @param variableSetId id of the variableSet.
+     * @return the count of variableSets with the variableSetId.
+     */
+    Long variableSetExists(long variableSetId);
+
+    default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
+        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.ID.key(), studyId);
+        return count(query).first();
+    }
+
+    default void checkVariableSetExists(long variableSetId) throws CatalogDBException {
+        if (variableSetId < 0) {
+            throw CatalogDBException.newInstance("VariableSet id '{}' is not valid: ", variableSetId);
+        }
+        Long count = variableSetExists(variableSetId);
+        if (count <= 0) {
+            throw CatalogDBException.newInstance("VariableSet id '{}' does not exist", variableSetId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet id '{}'", count, variableSetId);
+        }
+    }
+
+    default void checkVariableSetExists(String variableSetName, long studyId) throws CatalogDBException {
+        Long count = variableSetExists(variableSetName, studyId);
+        if (count <= 0) {
+            throw CatalogDBException.newInstance("VariableSet name '{}' does not exist", variableSetName);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet name '{}' in study '{}'", count,
+                    variableSetName, studyId);
+        }
+    }
+
     QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException;
 
     QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException;
 
     QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException;
+
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId) throws CatalogDBException;
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 

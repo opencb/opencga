@@ -437,13 +437,23 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      */
 
     @Override
+    public Long variableSetExists(long variableSetId) {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
+                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
+        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
+        QueryResult<VariableSet> queryResult = studyCollection.aggregate(aggregation, variableSetConverter, new QueryOptions());
+
+        return (long) queryResult.getResult().size();
+    }
+
+    @Override
     public QueryResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         long startTime = startQuery();
 
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSet.getName()).append(QueryParams.ID.key(), studyId);
-        QueryResult<Long> count = count(query);
-
-        if (count.getResult().get(0) > 0) {
+        if (variableSetExists(variableSet.getName(), studyId) > 0) {
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
         }
 
@@ -465,6 +475,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
+
+        checkVariableSetExists(variableSetId);
         checkVariableNotInVariableSet(variableSetId, variable.getId());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
@@ -484,17 +496,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException {
         long startTime = startQuery();
 
-        // Check that the oldName exists in the variableSet
-        try {
-            checkVariableNotInVariableSet(variableSetId, oldName);
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Variable {id: " + oldName + "} does not exist.");
-        } catch (CatalogDBException e) {
-            if (e.getMessage().endsWith("does not exist.")) { // The variableSetId or the oldName do not exist
-                throw e;
-            } // The other type of exception just means that the variableSetId and the oldFieldName both exist.
-        }
-
-        // Now we check that the newName the user wants to set is not already being used.
+        checkVariableSetExists(variableSetId);
+        checkVariableInVariableSet(variableSetId, oldName);
         checkVariableNotInVariableSet(variableSetId, newName);
 
         // The field can be changed if we arrive to this point.
@@ -531,6 +534,31 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
 
+    @Override
+    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        try {
+            checkVariableInVariableSet(variableSetId, fieldId);
+        } catch (CatalogDBException e) {
+            checkVariableSetExists(variableSetId);
+            throw e;
+        }
+        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+                Filters.eq("id", fieldId));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + fieldId
+                    + " from the variableSet id " +  variableSetId);
+        }
+
+        // Remove all the annotations from that field
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, fieldId);
+
+        return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
+    }
+
     /**
      * The method will return the variable object given variableSetId and the variableId.
      * @param variableSetId Id of the variableSet.
@@ -565,10 +593,27 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      * Checks if the variable given is present in the variableSet.
      * @param variableSetId Identifier of the variableSet where it will be checked.
      * @param variableId VariableId that will be checked.
-     * @throws CatalogDBException when there is a variable with the same name in the variableSet.
+     * @throws CatalogDBException when the variableId is not present in the variableSet.
+     */
+    private void checkVariableInVariableSet(long variableSetId, String variableId) throws CatalogDBException {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
+                Filters.eq(VariableSetParams.ID.key(), variableSetId),
+                Filters.eq(VariableSetParams.VARIABLE_ID.key(), variableId))
+        )));
+
+        if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "}. The variable {id: " + variableId + "} does not exist.");
+        }
+    }
+
+    /**
+     * Checks if the variable given is not present in the variableSet.
+     * @param variableSetId Identifier of the variableSet where it will be checked.
+     * @param variableId VariableId that will be checked.
+     * @throws CatalogDBException when the variableId is present in the variableSet.
      */
     private void checkVariableNotInVariableSet(long variableSetId, String variableId) throws CatalogDBException {
-
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
                 Filters.eq(VariableSetParams.ID.key(), variableSetId),
@@ -576,12 +621,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         )));
 
         if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
-            // Check if the variableSet exists
-            getVariableSet(variableSetId, null);
-            // If we arrive here, the variableSet and the variable already exist.
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Variable {id: " + variableId + "} already exist.");
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "}. The variable {id: " + variableId + "} already exists.");
         }
-
     }
 
     @Override

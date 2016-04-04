@@ -620,6 +620,41 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                 Collections.singletonList(renamedAnnotations));
     }
 
+    @Override
+    public QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException {
+        long renamedAnnotations = 0;
+
+        // 1. we obtain the variable
+        List<Sample> sampleAnnotations = getAnnotation(variableSetId, fieldId);
+
+        if (sampleAnnotations.size() > 0) {
+            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+            for (Sample sample : sampleAnnotations) {
+                for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
+                    Bson bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), sample.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId()),
+                            Filters.eq("annotationSets.annotations.id", fieldId)
+                    );
+
+                    // We extract the annotation.
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
+                    QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + fieldId
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+
+                    renamedAnnotations += 1;
+                }
+            }
+        }
+
+        return new QueryResult<>("Remove annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
+                Collections.singletonList(renamedAnnotations));
+    }
+
     /**
      * The method will return the list of samples containing the annotation.
      * @param variableSetId Id of the variableSet.

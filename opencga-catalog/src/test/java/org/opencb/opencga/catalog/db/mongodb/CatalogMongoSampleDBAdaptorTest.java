@@ -106,21 +106,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void testAddVariableToAnnotations() throws Exception {
-        long sampleId = s1.getId();
-
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
-                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
-
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
-
-        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
-
+        createAnnotationExample();
         Variable variable = new Variable("ANOTHER_KEY", "", Variable.VariableType.BOOLEAN, false, true, false, null, -1, null, null, null,
                 null);
 
@@ -130,21 +116,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void testRenameFieldFromAnnotation() throws Exception {
-        long sampleId = s1.getId();
-
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
-                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
-
-        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
-
-        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
-
+        createAnnotationExample();
         // Rename
         QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "newKey4");
         assertEquals(3, longQueryResult.first().longValue());
@@ -155,6 +127,36 @@ public class CatalogMongoSampleDBAdaptorTest {
         longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "renewkey4");
         assertEquals(0, longQueryResult.first().longValue());
 
+    }
+
+    private void createAnnotationExample() throws CatalogDBException {
+        long sampleId = s1.getId();
+
+        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
+                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
+
+        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
+    }
+
+    @Test
+    public void testRemoveFieldFromAnnotations() throws Exception {
+        createAnnotationExample();
+        QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "key4");
+        assertEquals(3, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(1, "key3");
+        assertEquals(0, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "nonExistentKey");
+        assertEquals(0, longQueryResult.first().longValue());
     }
 
     @Test
