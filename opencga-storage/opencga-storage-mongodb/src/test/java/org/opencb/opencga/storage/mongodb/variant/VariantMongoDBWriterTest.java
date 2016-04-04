@@ -35,7 +35,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;

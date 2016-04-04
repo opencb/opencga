@@ -32,7 +32,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;

@@ -15,14 +15,13 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;

@@ -20,7 +20,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;

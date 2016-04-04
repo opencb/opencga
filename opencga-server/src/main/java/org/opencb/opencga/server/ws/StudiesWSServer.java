@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;

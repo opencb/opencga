@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;

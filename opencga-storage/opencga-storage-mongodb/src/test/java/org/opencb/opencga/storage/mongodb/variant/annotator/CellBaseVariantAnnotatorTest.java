@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant.annotator;
 
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;

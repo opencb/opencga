@@ -22,7 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

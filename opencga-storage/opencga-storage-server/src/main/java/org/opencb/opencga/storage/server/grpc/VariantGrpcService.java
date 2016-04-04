@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;

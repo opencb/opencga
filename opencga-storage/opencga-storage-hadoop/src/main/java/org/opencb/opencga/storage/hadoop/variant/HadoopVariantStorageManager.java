@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;

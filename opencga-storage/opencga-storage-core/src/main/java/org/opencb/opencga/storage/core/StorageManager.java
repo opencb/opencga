@@ -16,14 +16,13 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -62,45 +61,89 @@ public abstract class StorageManager<DBADAPTOR> {
         return storageEngineId;
     }
 
-    public List<ObjectMap> index(List<URI> inputFiles, URI outdirUri, boolean extract, boolean transform, boolean load)
-            throws StorageManagerException, IOException, FileFormatException {
+    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
+            throws StorageManagerException {
+
+        List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
+        boolean abortOnFail = true;
+
+        // Check the database connection before we start
+        if (doLoad) {
+            testConnection();
+        }
 
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
-            StorageETL storageETL = newStorageETL(load);
+            StorageETL storageETL = newStorageETL(doLoad);
+
+            StorageETLResult etlResult = new StorageETLResult();
+            results.add(etlResult);
 
             URI nextFileUri = inputFile;
+            etlResult.setInput(inputFile);
 
-            // Check the database connection before we start
-            if (load) {
-                testConnection();
-            }
-
-            if (extract) {
+            if (doExtract) {
                 logger.info("Extract '{}'", inputFile);
                 nextFileUri = storageETL.extract(inputFile, outdirUri);
+                etlResult.setExtractResult(nextFileUri);
             }
 
-            if (transform) {
-                logger.info("PreTransform '{}'", nextFileUri);
-                nextFileUri = storageETL.preTransform(nextFileUri);
-                logger.info("Transform '{}'", nextFileUri);
-                nextFileUri = storageETL.transform(nextFileUri, null, outdirUri);
-                logger.info("PostTransform '{}'", nextFileUri);
-                nextFileUri = storageETL.postTransform(nextFileUri);
+            if (doTransform) {
+                etlResult.setTransformExecuted(true);
+                long millis = System.currentTimeMillis();
+                try {
+                    logger.info("PreTransform '{}'", nextFileUri);
+                    nextFileUri = storageETL.preTransform(nextFileUri);
+                    etlResult.setPreTransformResult(nextFileUri);
+
+                    logger.info("Transform '{}'", nextFileUri);
+                    nextFileUri = storageETL.transform(nextFileUri, null, outdirUri);
+                    etlResult.setTransformResult(nextFileUri);
+
+                    logger.info("PostTransform '{}'", nextFileUri);
+                    nextFileUri = storageETL.postTransform(nextFileUri);
+                    etlResult.setPostTransformResult(nextFileUri);
+                } catch (Exception e) {
+                    etlResult.setTransformError(e);
+                    if (abortOnFail) {
+                        throw new StorageETLException("Exception executing transform.", e, results);
+                    } else {
+                        continue;
+                    }
+                } finally {
+                    etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
+                    etlResult.setTransformStats(storageETL.getTransformStats());
+                }
             }
 
-            if (load) {
-                logger.info("PreLoad '{}'", nextFileUri);
-                nextFileUri = storageETL.preLoad(nextFileUri, outdirUri);
-                logger.info("Load '{}'", nextFileUri);
-                nextFileUri = storageETL.load(nextFileUri);
-                logger.info("PostLoad '{}'", nextFileUri);
-                nextFileUri = storageETL.postLoad(nextFileUri, outdirUri);
+            if (doLoad) {
+                etlResult.setLoadExecuted(true);
+                long millis = System.currentTimeMillis();
+                try {
+                    logger.info("PreLoad '{}'", nextFileUri);
+                    nextFileUri = storageETL.preLoad(nextFileUri, outdirUri);
+                    etlResult.setPreLoadResult(nextFileUri);
+
+                    logger.info("Load '{}'", nextFileUri);
+                    nextFileUri = storageETL.load(nextFileUri);
+                    etlResult.setLoadResult(nextFileUri);
+
+                    logger.info("PostLoad '{}'", nextFileUri);
+                    nextFileUri = storageETL.postLoad(nextFileUri, outdirUri);
+                    etlResult.setPostLoadResult(nextFileUri);
+                } catch (Exception e) {
+                    etlResult.setLoadError(e);
+                    if (abortOnFail) {
+                        throw new StorageETLException("Exception executing load.", e, results);
+                    }
+                } finally {
+                    etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
+                    etlResult.setLoadStats(storageETL.getLoadStats());
+                }
             }
         }
 
-        return Collections.emptyList();
+        return results;
     }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;

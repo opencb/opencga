@@ -6,7 +6,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;

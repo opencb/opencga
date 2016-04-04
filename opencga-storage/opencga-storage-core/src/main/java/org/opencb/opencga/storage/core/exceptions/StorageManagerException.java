@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core;
+package org.opencb.opencga.storage.core.exceptions;
 
 /**
  * Created by jacobo on 1/02/15.

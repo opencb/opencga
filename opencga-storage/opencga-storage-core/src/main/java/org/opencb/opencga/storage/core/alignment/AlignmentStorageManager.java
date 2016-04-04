@@ -32,7 +32,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;

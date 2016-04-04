@@ -9,13 +9,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 

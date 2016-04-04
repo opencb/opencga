@@ -21,7 +21,7 @@ import org.opencb.datastore.core.config.DataStoreServerAddress;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;

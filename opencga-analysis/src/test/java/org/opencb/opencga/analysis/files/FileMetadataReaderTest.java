@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -17,8 +16,7 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.*;
 import java.net.URI;

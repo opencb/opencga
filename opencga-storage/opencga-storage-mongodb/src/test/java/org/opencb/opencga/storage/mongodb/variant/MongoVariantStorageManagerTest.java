@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 

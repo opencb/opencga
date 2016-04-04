@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,6 +51,9 @@ public interface StorageETL {
 
     URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
 
+    default ObjectMap getTransformStats() {
+        return new ObjectMap();
+    }
 
     URI preLoad(URI input, URI output) throws IOException, StorageManagerException;
 
@@ -64,5 +69,9 @@ public interface StorageETL {
     URI load(URI input) throws IOException, StorageManagerException;
 
     URI postLoad(URI input, URI output) throws IOException, StorageManagerException;
+
+    default ObjectMap getLoadStats() {
+        return new ObjectMap();
+    }
 
 }

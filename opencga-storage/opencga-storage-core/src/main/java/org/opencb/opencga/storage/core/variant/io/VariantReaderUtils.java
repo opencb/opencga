@@ -7,7 +7,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 

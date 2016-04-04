@@ -38,7 +38,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;

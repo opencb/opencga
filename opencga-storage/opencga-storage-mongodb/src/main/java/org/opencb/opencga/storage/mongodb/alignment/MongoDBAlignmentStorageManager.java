@@ -24,7 +24,7 @@ import org.opencb.commons.run.Runner;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;

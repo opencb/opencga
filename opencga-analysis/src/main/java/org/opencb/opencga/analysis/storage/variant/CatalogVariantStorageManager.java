@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,13 +24,12 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;

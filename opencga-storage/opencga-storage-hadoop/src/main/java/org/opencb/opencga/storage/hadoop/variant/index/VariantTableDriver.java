@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 

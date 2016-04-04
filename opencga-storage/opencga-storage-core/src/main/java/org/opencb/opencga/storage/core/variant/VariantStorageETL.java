@@ -24,7 +24,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
