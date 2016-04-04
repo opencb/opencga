@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -52,12 +53,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     private final MongoDBCollection studyCollection;
     private StudyConverter studyConverter;
+    private VariableSetConverter variableSetConverter;
 
     public CatalogMongoStudyDBAdaptor(MongoDBCollection studyCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
         this.studyConverter = new StudyConverter();
+        this.variableSetConverter = new VariableSetConverter();
     }
 
     /*
@@ -477,6 +480,87 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
     }
 
+    @Override
+    public QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that the oldName exists in the variableSet
+        try {
+            checkVariableNotInVariableSet(variableSetId, oldName);
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Variable {id: " + oldName + "} does not exist.");
+        } catch (CatalogDBException e) {
+            if (e.getMessage().endsWith("does not exist.")) { // The variableSetId or the oldName do not exist
+                throw e;
+            } // The other type of exception just means that the variableSetId and the oldFieldName both exist.
+        }
+
+        // Now we check that the newName the user wants to set is not already being used.
+        checkVariableNotInVariableSet(variableSetId, newName);
+
+        // The field can be changed if we arrive to this point.
+        // 1. we obtain the variable
+        Variable variable = getVariable(variableSetId, oldName);
+
+        // 2. we take it out from the array.
+        Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(), Filters.eq("id", oldName));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
+
+        if (queryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not rename the field " + oldName);
+        }
+        if (queryResult.first().getModifiedCount() > 1) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - An unexpected error happened when extracting the "
+                    + "variable from the variableSet to do the rename. Please, report this error to the OpenCGA developers.");
+        }
+
+        // 3. we change the name in the variable object and push it again in the array.
+        variable.setId(newName);
+        update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
+                getMongoDBDocument(variable, "Variable"));
+        queryResult = studyCollection.update(bsonQuery, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - A critical error happened when trying to rename one "
+                    + "of the variables of the variableSet object. Please, report this error to the OpenCGA developers.");
+        }
+
+        // 4. Change the field id in the annotations
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+
+        return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
+    }
+
+    /**
+     * The method will return the variable object given variableSetId and the variableId.
+     * @param variableSetId Id of the variableSet.
+     * @param variableId Id of the variable inside the variableSet.
+     * @return the variable object.
+     */
+    private Variable getVariable(long variableSetId, String variableId) throws CatalogDBException {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
+                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
+        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE.key()));
+        aggregation.add(Aggregates.match(
+                Filters.eq(QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE_ID.key(), variableId)));
+
+        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, new QueryOptions());
+
+        Document variableSetDocument = (Document) queryResult.first().get(QueryParams.VARIABLE_SET.key());
+        VariableSet variableSet = variableSetConverter.convertToDataModelType(variableSetDocument);
+        Iterator<Variable> iterator = variableSet.getVariables().iterator();
+        if (iterator.hasNext()) {
+            return iterator.next();
+        } else {
+            // This error should never be raised.
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - Could not obtain variable object.");
+        }
+    }
+
     /**
      * Checks if the variable given is present in the variableSet.
      * @param variableSetId Identifier of the variableSet where it will be checked.
@@ -514,7 +598,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         QueryResult<Study> studyQueryResult = get(query, qOptions);
 
         if (studyQueryResult.getResult().isEmpty() || studyQueryResult.first().getVariableSets().isEmpty()) {
-            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist");
+            throw new CatalogDBException("VariableSet {id: " + variableSetId + "} does not exist.");
         }
 
 /*

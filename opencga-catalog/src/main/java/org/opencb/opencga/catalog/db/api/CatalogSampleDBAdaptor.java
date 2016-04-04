@@ -105,6 +105,18 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
 
+    /**
+     * This method will rename the id of all the annotations corresponding to the variableSetId changin oldName per newName.
+     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
+     * from a variableSet.
+     * @param variableSetId Id of the variable to be renamed.
+     * @param oldName Name of the field to be renamed.
+     * @param newName New name that will be set.
+     * @return a QueryResult containing the number of annotations that have been changed.
+     * @throws CatalogDBException when there is an error with database transactions.
+     */
+    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
+
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {

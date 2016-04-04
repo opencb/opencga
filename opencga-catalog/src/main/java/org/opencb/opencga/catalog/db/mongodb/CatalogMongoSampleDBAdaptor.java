@@ -42,6 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static java.lang.Math.toIntExact;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -566,6 +567,77 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         return endQuery("Add new variable to annotations", startTime, Collections.singletonList(modifiedCount));
+    }
+
+    @Override
+    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
+        long renamedAnnotations = 0;
+
+        // 1. we obtain the variable
+        List<Sample> sampleAnnotations = getAnnotation(variableSetId, oldName);
+
+        if (sampleAnnotations.size() > 0) {
+            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+            for (Sample sample : sampleAnnotations) {
+                for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
+                    Bson bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), sample.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId()),
+                            Filters.eq("annotationSets.annotations.id", oldName)
+                    );
+
+                    // 1. We extract the annotation.
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
+                    QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + oldName
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+
+                    // 2. We change the id and push it again
+                    Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
+                    Annotation annotation = iterator.next();
+                    annotation.setId(newName);
+                    bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), sample.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId())
+                    );
+                    update = Updates.push("annotationSets.$.annotations", getMongoDBDocument(annotation, "Annotation"));
+                    queryResult = sampleCollection.update(bsonQuery, update, null);
+
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - A critical error happened when trying to rename the annotation " + oldName
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+                    renamedAnnotations += 1;
+                }
+            }
+        }
+
+        return new QueryResult<>("Rename annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
+                Collections.singletonList(renamedAnnotations));
+    }
+
+    /**
+     * The method will return the list of samples containing the annotation.
+     * @param variableSetId Id of the variableSet.
+     * @param annotationFieldId Name of the field of the annotation from all the annotationSets.
+     * @return list of samples containing an array of annotationSets, containing just the annotation that matches with annotationFieldId.
+     */
+    private List<Sample> getAnnotation(long variableSetId, String annotationFieldId) {
+        // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch("annotationSets", Filters.eq("variableSetId", variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets", "id")));
+        aggregation.add(Aggregates.unwind("$annotationSets"));
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
+        aggregation.add(Aggregates.match(
+                Filters.eq("annotationSets.annotations.id", annotationFieldId)));
+
+        return sampleCollection.aggregate(aggregation, sampleConverter, new QueryOptions()).getResult();
     }
 
     public void checkInUse(long sampleId) throws CatalogDBException {
