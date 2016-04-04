@@ -4,7 +4,10 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -17,6 +20,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -42,7 +46,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
     private static VariantSource source;
-    private static ETLResult etlResult = null;
+    private static StorageETLResult etlResult = null;
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -65,7 +69,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             );
 
 
-            source = variantStorageManager.readVariantSource(etlResult.transformResult);
+            source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
             VariantGlobalStats stats = source.getStats();
             Assert.assertNotNull(stats);
         }

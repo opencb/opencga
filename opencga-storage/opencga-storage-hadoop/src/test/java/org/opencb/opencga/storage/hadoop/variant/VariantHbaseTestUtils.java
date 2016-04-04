@@ -3,18 +3,18 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.net.URI;
-import java.util.Map;
-
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.ETLResult;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
+
+import java.net.URI;
+import java.util.Map;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -54,12 +54,12 @@ public class VariantHbaseTestUtils {
         if (fileId > 0) {
             params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
-        ETLResult etlResult = new ETLResult();
+        StorageETLResult etlResult = new StorageETLResult();
 
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
         variantStorageManager.remove();
-//        return variantStorageManager.readVariantSource(etlResult.transformResult, new ObjectMap());
+//        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
@@ -81,9 +81,9 @@ public class VariantHbaseTestUtils {
         if (fileId > 0) {
             params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
-        ETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
+        StorageETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
 
-        return variantStorageManager.readVariantSource(etlResult.transformResult);
+        return variantStorageManager.readVariantSource(etlResult.getTransformResult());
     }
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,

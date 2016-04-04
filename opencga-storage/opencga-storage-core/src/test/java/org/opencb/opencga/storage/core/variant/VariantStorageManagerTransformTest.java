@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant;
 
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.StorageETLResult;
 
 import java.util.Collections;
 
@@ -20,7 +21,7 @@ public abstract class VariantStorageManagerTransformTest extends VariantStorageM
         VariantStorageManager variantStorageManager = getVariantStorageManager();
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getDatabase()
                 .setHosts(Collections.singletonList("1.1.1.1"));
-        ETLResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
+        StorageETLResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
 
     }

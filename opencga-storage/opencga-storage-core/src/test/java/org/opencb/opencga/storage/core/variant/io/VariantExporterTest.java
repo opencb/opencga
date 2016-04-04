@@ -28,6 +28,7 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -62,7 +63,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
     private static URI[] inputUri;
-    private static VariantStorageManagerTestUtils.ETLResult[] etlResult;
+    private static StorageETLResult[] etlResult;
     private VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -71,7 +72,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     @BeforeClass
     public static void beforeClass() throws IOException {
         inputUri = new URI[VCF_TEST_FILE_NAMES.length];
-        etlResult = new VariantStorageManagerTestUtils.ETLResult[VCF_TEST_FILE_NAMES.length];
+        etlResult = new StorageETLResult[VCF_TEST_FILE_NAMES.length];
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             etlResult[i] = null;
             inputUri[i] = getResourceUri(VCF_TEST_FILE_NAMES[i]);
