@@ -159,7 +159,12 @@ public class Cohort {
         this.attributes = attributes;
     }
 
-    public enum CohortStatus {NONE, CALCULATING, READY, INVALID}
+    public enum CohortStatus {
+        NONE,
+        CALCULATING,
+        READY,
+        INVALID
+    }
 
     //Represents the criteria of grouping samples in the cohort
     public enum Type {

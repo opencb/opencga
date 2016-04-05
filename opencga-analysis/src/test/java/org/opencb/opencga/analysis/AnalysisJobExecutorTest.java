@@ -56,7 +56,7 @@ public class AnalysisJobExecutorTest {
         Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "echo " + helloWorld, true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.JobStatus.READY, job.getJobStatus());
+        assertEquals(Job.JobStatusEnum.READY, job.getJobStatusEnum());
         assertEquals(2, job.getOutput().size());
         for (Long fileId : job.getOutput()) {
             File file = catalogManager.getFile(fileId, sessionId).first();
@@ -73,7 +73,7 @@ public class AnalysisJobExecutorTest {
         Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "unexisting_tool ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.JobStatus.ERROR, job.getJobStatus());
+        assertEquals(Job.JobStatusEnum.ERROR, job.getJobStatusEnum());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
@@ -83,7 +83,7 @@ public class AnalysisJobExecutorTest {
         Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "false ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.JobStatus.ERROR, job.getJobStatus());
+        assertEquals(Job.JobStatusEnum.ERROR, job.getJobStatusEnum());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
@@ -104,7 +104,7 @@ public class AnalysisJobExecutorTest {
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
-        assertEquals(Job.JobStatus.ERROR, job.getJobStatus());
+        assertEquals(Job.JobStatusEnum.ERROR, job.getJobStatusEnum());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 

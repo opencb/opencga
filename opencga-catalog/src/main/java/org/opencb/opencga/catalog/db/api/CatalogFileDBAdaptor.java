@@ -51,6 +51,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         }
     }
 
+    QueryResult<Long> updateStatus(Query query, File.FileStatus status) throws CatalogDBException;
+
     long getFileId(long studyId, String path) throws CatalogDBException;
 
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
@@ -245,6 +247,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         }
     }
 
+    @Deprecated
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
         directory(Type.TEXT, ""),

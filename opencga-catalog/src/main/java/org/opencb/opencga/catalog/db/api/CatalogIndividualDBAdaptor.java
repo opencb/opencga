@@ -54,13 +54,13 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
+//    @Deprecated
+//    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+//    QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
+//    @Deprecated
+//    QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException;
 
     QueryResult<AnnotationSet> annotateIndividual(long individualId, AnnotationSet annotationSet, boolean overwrite) throws
             CatalogDBException;

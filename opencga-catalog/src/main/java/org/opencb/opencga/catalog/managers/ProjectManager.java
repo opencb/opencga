@@ -159,7 +159,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             }
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<Project> queryResult = projectDBAdaptor.modifyProject(projectId, parameters);
+        QueryResult<Project> queryResult = projectDBAdaptor.update(projectId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
         return queryResult;
     }

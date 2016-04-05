@@ -54,17 +54,17 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
 
-    @Deprecated
-    default QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
-        return update(userId, parameters);
-    }
+//    @Deprecated
+//    default QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
+//        return update(userId, parameters);
+//    }
 
     QueryResult<User> update(String userId, ObjectMap parameters) throws CatalogDBException;
 
-    @Deprecated
-    default QueryResult<User> deleteUser(String userId) throws CatalogDBException {
-        return delete(userId, false);
-    }
+//    @Deprecated
+//    default QueryResult<User> deleteUser(String userId) throws CatalogDBException {
+//        return delete(userId, false);
+//    }
 
     QueryResult<User> delete(String userId, boolean force) throws CatalogDBException;
 

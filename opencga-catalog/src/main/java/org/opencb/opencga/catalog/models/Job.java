@@ -84,8 +84,8 @@ public class Job {
     private Map<String, String> params;
     private String commandLine;
     private long visits;
-    private Status status;
-    private JobStatus jobStatus;
+    private JobStatus status;
+    private JobStatusEnum jobStatusEnum;
     private long diskUsage;
     private long outDirId;
     private URI tmpOutDirUri;
@@ -102,14 +102,13 @@ public class Job {
 
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
                URI tmpOutDirUri, List<Long> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, JobStatus
-                        .PREPARED, 0,
-                outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1,
+                JobStatusEnum.PREPARED, 0, outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
 
     public Job(long id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus,
+               long startTime, long endTime, String outputError, String commandLine, long visits, JobStatusEnum jobStatusEnum,
                long diskUsage, long outDirId, URI tmpOutDirUri, List<Long> input,
                List<Long> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
         this.id = id;
@@ -123,8 +122,8 @@ public class Job {
         this.outputError = outputError;
         this.commandLine = commandLine;
         this.visits = visits;
-        this.status = new Status();
-        this.jobStatus = jobStatus;
+        this.status = new JobStatus(JobStatus.PREPARED);
+        this.jobStatusEnum = jobStatusEnum;
         this.diskUsage = diskUsage;
         this.outDirId = outDirId;
 //        this.tmpOutDirId = tmpOutDirId;
@@ -166,7 +165,7 @@ public class Job {
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visits=").append(visits);
         sb.append(", status=").append(status);
-        sb.append(", jobStatus=").append(jobStatus);
+        sb.append(", jobStatus=").append(jobStatusEnum);
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", outDirId=").append(outDirId);
         sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
@@ -269,19 +268,19 @@ public class Job {
         this.visits = visits;
     }
 
-    public JobStatus getJobStatus() {
-        return jobStatus;
+    public JobStatusEnum getJobStatusEnum() {
+        return jobStatusEnum;
     }
 
-    public void setJobStatus(JobStatus jobStatus) {
-        this.jobStatus = jobStatus;
+    public void setJobStatusEnum(JobStatusEnum jobStatusEnum) {
+        this.jobStatusEnum = jobStatusEnum;
     }
 
-    public Status getStatus() {
+    public JobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(JobStatus status) {
         this.status = status;
     }
 
@@ -383,14 +382,34 @@ public class Job {
         this.error = error;
     }
 
-    public enum JobStatus {
+    public static class JobStatus extends Status {
+
+        public static final String PREPARED = "prepared";
+        public static final String QUEUED = "queued";
+        public static final String RUNNING = "running";
+
+        public JobStatus(String status) {
+            super(status);
+        }
+
+        public static JobStatus prepared() {
+            return new JobStatus(PREPARED);
+        }
+    }
+
+
+    public enum JobStatusEnum {
         PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
         ERROR,                 //Job with errors. See "error"
         QUEUED,
         RUNNING,
         DONE,                  //Job finished, but output not ready. Daemon will process the output.
         //       PROCESSING_OUTPUT,     //Job finished, but output not ready. Daemon will process the output.
-        READY,                 //Job finished and ready
+        READY;                 //Job finished and ready
+
+        boolean isActive() {
+            return true;
+        }
     }
 
     public enum Type {

@@ -390,7 +390,7 @@ public class OpenCGAMain {
 
                         /** First, run CheckStudyFiles to find new missing files **/
                         List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-                        List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatus().equals(File.FileStatus.READY)).collect(Collectors.toList());
+                        List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatusEnum().equals(File.FileStatusEnum.READY)).collect(Collectors.toList());
                         int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
                         /** Get untracked files **/
@@ -404,7 +404,7 @@ public class OpenCGAMain {
 
                         /** Get missing files **/
                         List<File> missingFiles = catalogManager.getAllFiles(studyId,
-                                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.MISSING),
+                                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatusEnum.MISSING),
                                 new QueryOptions(), sessionId).getResult();
                         int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
@@ -861,11 +861,11 @@ public class OpenCGAMain {
                         QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         Job job = jobQueryResult.first();
                         if (c.force) {
-                            if (job.getJobStatus().equals(Job.JobStatus.ERROR) || job.getJobStatus().equals(Job.JobStatus.READY)) {
-                                logger.info("Job status is '{}' . Nothing to do.", job.getJobStatus());
+                            if (job.getJobStatusEnum().equals(Job.JobStatusEnum.ERROR) || job.getJobStatusEnum().equals(Job.JobStatusEnum.READY)) {
+                                logger.info("Job status is '{}' . Nothing to do.", job.getJobStatusEnum());
                                 System.out.println(createOutput(c.cOpt, jobQueryResult, null));
                             }
-                        } else if (!job.getJobStatus().equals(Job.JobStatus.DONE)) {
+                        } else if (!job.getJobStatusEnum().equals(Job.JobStatusEnum.DONE)) {
                             throw new Exception("Job status != DONE. Need --force to continue");
                         }
 
@@ -887,11 +887,11 @@ public class OpenCGAMain {
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
                         if (c.error) {
-                            parameters.put("status", Job.JobStatus.ERROR);
+                            parameters.put("status", Job.JobStatusEnum.ERROR);
                             parameters.put("error", Job.ERRNO_ABORTED);
                             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_ABORTED));
                         } else {
-                            parameters.put("status", Job.JobStatus.READY);
+                            parameters.put("status", Job.JobStatusEnum.READY);
                         }
                         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
@@ -916,7 +916,7 @@ public class OpenCGAMain {
                         for (Long studyId : studyIds) {
                             QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
                                     new Query(CatalogJobDBAdaptor.QueryParams.JOB_STATUS.key(),
-                                            Collections.singletonList(Job.JobStatus.RUNNING.toString())), new QueryOptions(), sessionId);
+                                            Collections.singletonList(Job.JobStatusEnum.RUNNING.toString())), new QueryOptions(), sessionId);
 
                             for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
                                 Job job = iterator.next();
@@ -1208,7 +1208,7 @@ public class OpenCGAMain {
                         indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                         file.getId(),
                         file.getName(),
-                        file.getFileStatus(),
+                        file.getFileStatusEnum(),
                         humanReadableByteCount(file.getDiskUsage(), false),
                         showUries && file.getUri() != null ? " --> " + file.getUri() : ""
                 ));

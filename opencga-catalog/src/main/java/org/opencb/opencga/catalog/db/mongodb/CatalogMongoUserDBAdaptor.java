@@ -467,6 +467,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     }
 
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
+    }
+
 
     /***
      * Removes completely the user from the database.

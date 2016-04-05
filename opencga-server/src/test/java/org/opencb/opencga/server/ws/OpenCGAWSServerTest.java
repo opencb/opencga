@@ -129,13 +129,13 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.FileStatus.READY, fileVcf.getFileStatus());
+        assertEquals(File.FileStatusEnum.READY, fileVcf.getFileStatusEnum());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobVcf = runStorageJob(sessionId, indexJobVcf);
-        assertEquals(Job.JobStatus.READY, indexJobVcf.getJobStatus());
+        assertEquals(Job.JobStatusEnum.READY, indexJobVcf.getJobStatusEnum());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
@@ -160,19 +160,19 @@ public class OpenCGAWSServerTest {
 
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
-        assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getJobStatus());
+        assertEquals(Job.JobStatusEnum.READY, calculateVariantStatsJob.getJobStatusEnum());
         assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
 
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.FileStatus.READY, fileBam.getFileStatus());
+        assertEquals(File.FileStatusEnum.READY, fileBam.getFileStatusEnum());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobBam = runStorageJob(sessionId, indexJobBam);
-        assertEquals(Job.JobStatus.READY, indexJobBam.getJobStatus());
+        assertEquals(Job.JobStatusEnum.READY, indexJobBam.getJobStatusEnum());
 
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");

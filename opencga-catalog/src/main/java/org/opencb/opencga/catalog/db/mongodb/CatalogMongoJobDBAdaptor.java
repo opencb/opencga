@@ -440,8 +440,13 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.JOB_STATUS.key()), Job.JobStatus.class);
-        filterEnumParams(parameters, jobParameters, acceptedEnums);
+//        Map<String, Class<? extends Enum>> acceptedEnums =
+//                Collections.singletonMap((QueryParams.JOB_STATUS.key()), Job.JobStatusEnum.class);
+//        filterEnumParams(parameters, jobParameters, acceptedEnums);
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            jobParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        }
+
 
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
         filterIntParams(parameters, jobParameters, acceptedIntParams);
@@ -518,6 +523,16 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
                 Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
                 Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
         return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> updateStatus(Query query, Job.JobStatus status) throws CatalogDBException {
+        return null;
     }
 
     @Override

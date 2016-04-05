@@ -67,16 +67,16 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     void updateStudyLastActivity(long studyId) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
+//    @Deprecated
+//    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
 
 //  QueryResult modifyStudy(long studyId, Map<String, String> parameters, Map<String, Object> attributes, Map<String, Object> stats)
 // throws CatalogManagerException;
 
-    @Deprecated
-    default QueryResult<Study> deleteStudy(long studyId) throws CatalogDBException {
-        return delete(studyId, false);
-    }
+//    @Deprecated
+//    default QueryResult<Study> deleteStudy(long studyId) throws CatalogDBException {
+//        return delete(studyId, false);
+//    }
 
     long getStudyId(long projectId, String studyAlias) throws CatalogDBException;
 

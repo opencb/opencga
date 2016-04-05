@@ -47,11 +47,11 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /* CRUD METHODS */
     /*--------------*/
     QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
-                             String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                             String creationDate, String description, File.FileStatusEnum status, long diskUsage, long experimentId,
                              List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                              boolean parents, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
+    QueryResult<File> createFolder(long studyId, String path, File.FileStatusEnum status, boolean parents, String description,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;

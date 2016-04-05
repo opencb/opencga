@@ -36,11 +36,13 @@ public class CatalogConfiguration {
     private String dataDir;
     private String tempJobsDir;
 
-    private String user;
+    private String admin;
     private String password;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
+
+//    private authentication
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogConfiguration.class);
 
@@ -91,7 +93,7 @@ public class CatalogConfiguration {
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
-        sb.append(", user='").append(user).append('\'');
+        sb.append(", admin='").append(admin).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
@@ -131,12 +133,12 @@ public class CatalogConfiguration {
         this.tempJobsDir = tempJobsDir;
     }
 
-    public String getUser() {
-        return user;
+    public String getAdmin() {
+        return admin;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public void setAdmin(String admin) {
+        this.admin = admin;
     }
 
     public String getPassword() {

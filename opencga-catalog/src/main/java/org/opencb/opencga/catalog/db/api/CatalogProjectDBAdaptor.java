@@ -51,15 +51,15 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
 
     QueryResult<Project> getProject(long project, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {
-        return delete(projectId, false);
-    }
+//    @Deprecated
+//    default QueryResult<Project> deleteProject(long projectId) throws CatalogDBException {
+//        return delete(projectId, false);
+//    }
 
     QueryResult renameProjectAlias(long projectId, String newProjectName) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;
+//    @Deprecated
+//    QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException;
 
     long getProjectId(String userId, String projectAlias) throws CatalogDBException;
 

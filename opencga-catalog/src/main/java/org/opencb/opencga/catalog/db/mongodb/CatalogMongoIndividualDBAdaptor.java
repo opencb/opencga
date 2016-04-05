@@ -108,135 +108,79 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException {
-        int variableSetId = query.getInt(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
-        Map<String, Variable> variableMap = null;
-        if (variableSetId > 0) {
-            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
-        }
-        return getAllIndividuals(query, options, variableMap);
-    }
+//    @Deprecated
+//    @Override
+//    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException {
+//        int variableSetId = query.getInt(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
+//        Map<String, Variable> variableMap = null;
+//        if (variableSetId > 0) {
+//            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+//                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+//        }
+//        return getAllIndividuals(query, options, variableMap);
+//    }
 
-    @Deprecated
-    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options, Map<String, Variable> variableMap)
-            throws CatalogDBException {
-        long startTime = startQuery();
+//    @Deprecated
+//    public QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options, Map<String, Variable> variableMap)
+//            throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//        List<Bson> mongoQueryList = new LinkedList<>();
+//        List<Bson> annotationSetFilter = new LinkedList<>();
+//        for (Map.Entry<String, Object> entry : query.entrySet()) {
+//            String key = entry.getKey().split("\\.")[0];
+//            try {
+//                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
+//                    continue;   //Exclude DataStore options
+//                }
+//                CatalogIndividualDBAdaptor.QueryParams option = CatalogIndividualDBAdaptor.QueryParams.getParam(key);
+//                switch (option) {
+//                    case ID:
+//                        addCompQueryFilter(option, option.name(), PRIVATE_ID, query, mongoQueryList);
+//                        break;
+//                    case STUDY_ID:
+//                        addCompQueryFilter(option, option.name(), PRIVATE_STUDY_ID, query, mongoQueryList);
+//                        break;
+//                    case ANNOTATION_SET_ID:
+//                        addCompQueryFilter(option, option.name(), "id", query, annotationSetFilter);
+//                        break;
+//                    case VARIABLE_SET_ID:
+//                        addCompQueryFilter(option, option.name(), option.key(), query, annotationSetFilter);
+//                        break;
+//                    case ANNOTATION:
+//                        addAnnotationQueryFilter(option.name(), query, variableMap, annotationSetFilter);
+//                        break;
+//                    default:
+//                        String queryKey = entry.getKey().replaceFirst(option.name(), option.key());
+//                        addCompQueryFilter(option, entry.getKey(), queryKey, query, mongoQueryList);
+//                        break;
+//                }
+//            } catch (IllegalArgumentException e) {
+//                throw new CatalogDBException(e);
+//            }
+//        }
+//
+//        Document mongoQuery = new Document();
+//        if (!mongoQueryList.isEmpty()) {
+//            mongoQuery.put("$and", mongoQueryList);
+//        }
+//        if (!annotationSetFilter.isEmpty()) {
+//            mongoQuery.put("annotationSets", new Document("$elemMatch", new Document("$and", annotationSetFilter)) {
+//            });
+//        }
+//        QueryResult<Document> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
+//        List<Individual> individuals = parseObjects(result, Individual.class);
+//        return endQuery("getAllIndividuals", startTime, individuals);
+//    }
 
-        List<Bson> mongoQueryList = new LinkedList<>();
-        List<Bson> annotationSetFilter = new LinkedList<>();
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                CatalogIndividualDBAdaptor.QueryParams option = CatalogIndividualDBAdaptor.QueryParams.getParam(key);
-                switch (option) {
-                    case ID:
-                        addCompQueryFilter(option, option.name(), PRIVATE_ID, query, mongoQueryList);
-                        break;
-                    case STUDY_ID:
-                        addCompQueryFilter(option, option.name(), PRIVATE_STUDY_ID, query, mongoQueryList);
-                        break;
-                    case ANNOTATION_SET_ID:
-                        addCompQueryFilter(option, option.name(), "id", query, annotationSetFilter);
-                        break;
-                    case VARIABLE_SET_ID:
-                        addCompQueryFilter(option, option.name(), option.key(), query, annotationSetFilter);
-                        break;
-                    case ANNOTATION:
-                        addAnnotationQueryFilter(option.name(), query, variableMap, annotationSetFilter);
-                        break;
-                    default:
-                        String queryKey = entry.getKey().replaceFirst(option.name(), option.key());
-                        addCompQueryFilter(option, entry.getKey(), queryKey, query, mongoQueryList);
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        Document mongoQuery = new Document();
-        if (!mongoQueryList.isEmpty()) {
-            mongoQuery.put("$and", mongoQueryList);
-        }
-        if (!annotationSetFilter.isEmpty()) {
-            mongoQuery.put("annotationSets", new Document("$elemMatch", new Document("$and", annotationSetFilter)) {
-            });
-        }
-        QueryResult<Document> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
-        List<Individual> individuals = parseObjects(result, Individual.class);
-        return endQuery("getAllIndividuals", startTime, individuals);
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
-        return endQuery("Get all files", startTime, get(query, options).getResult());
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Individual> modifyIndividual(long individualId, QueryOptions parameters) throws CatalogDBException {
-        throw new UnsupportedOperationException("Deprecated method. Use update instead");
-/*
-        long startTime = startQuery();
-        Map<String, Object> individualParameters = new HashMap<>();
-
-        String[] acceptedParams = {"name", "family", "race", "gender",
-                "species.taxonomyCode", "species.scientificName", "species.commonName",
-                "population.name", "population.subpopulation", "population.description", };
-        filterStringParams(parameters, individualParameters, acceptedParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("gender"), Individual.Gender.class);
-        filterEnumParams(parameters, individualParameters, acceptedEnums);
-
-        String[] acceptedIntParams = {"fatherId", "motherId"};
-        filterIntParams(parameters, individualParameters, acceptedIntParams);
-
-        String[] acceptedMapParams = {"attributes"};
-        filterMapParams(parameters, individualParameters, acceptedMapParams);
-
-
-        //Check existing name
-        if (individualParameters.containsKey("name")) {
-            String name = individualParameters.get("name").toString();
-            Query query = new Query(QueryParams.NAME.key(), name)
-                    .append(QueryParams.STUDY_ID.key(), getStudyIdByIndividualId(individualId));
-            if (!getAllIndividuals(query, new QueryOptions()).getResult().isEmpty()) {
-                throw CatalogDBException.alreadyExists("Individual", "name", name);
-            }
-        }
-        //Check individualIds exists
-        String[] individualIdParams = {"fatherId", "motherId"};
-        for (String individualIdParam : individualIdParams) {
-            if (individualParameters.containsKey(individualIdParam)) {
-                Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
-                if (individualId1 > 0 && !individualExists(individualId1)) {
-                    throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
-                }
-            }
-        }
-
-
-        if (!individualParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = individualCollection.update(
-                    new BasicDBObject(PRIVATE_ID, individualId),
-                    new BasicDBObject("$set", individualParameters), null);
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("Individual", individualId);
-            }
-        }
-
-        return endQuery("Modify individual", startTime, getIndividual(individualId, parameters));
-        */
-    }
+//    @Deprecated
+//    @Override
+//    public QueryResult<Individual> getAllIndividualsInStudy(long studyId, QueryOptions options) throws CatalogDBException {
+//        long startTime = startQuery();
+//        Query query = new Query(QueryParams.STUDY_ID.key(), studyId);
+//        List<Individual> result = get(query, options).getResult();
+//        return endQuery("Get all files", startTime, result);
+//    }
 
     @Override
     public QueryResult<AnnotationSet> annotateIndividual(long individualId, AnnotationSet annotationSet, boolean overwrite)
@@ -612,6 +556,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         return endQuery("Delete individual", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
 
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
     }
 
     @Override

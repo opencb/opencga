@@ -736,8 +736,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         //If the given job does not contain the required fields, query Catalog
         //Only non READY or ERROR jobs can have null output files
         if ((job.getOutput() == null
-                && (job.getJobStatus() == null || !job.getJobStatus().equals(Job.JobStatus.READY)
-                || !job.getJobStatus().equals(Job.JobStatus.ERROR))) || job.getInput() == null) {
+                && (job.getJobStatusEnum() == null || !job.getJobStatusEnum().equals(Job.JobStatusEnum.READY)
+                || !job.getJobStatusEnum().equals(Job.JobStatusEnum.ERROR))) || job.getInput() == null) {
             job = fetchJob(job.getId());
         }
         privateCheckReadJob(userId, job);

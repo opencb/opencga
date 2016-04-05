@@ -38,10 +38,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
-    /*
-     * Samples methods
-     */
-
     default boolean sampleExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
     }
@@ -60,11 +56,11 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException;
 
-    @Deprecated
-    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
-
-    @Deprecated
-    QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
+//    @Deprecated
+//    QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException;
+//
+//    @Deprecated
+//    QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Sample> getAllSamplesInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 

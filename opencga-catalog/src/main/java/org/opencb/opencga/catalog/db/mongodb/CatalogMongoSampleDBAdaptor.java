@@ -112,84 +112,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("getSample", startTime, sampleQueryResult);
     }
 
-    @Override
-    public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
-        throw new UnsupportedOperationException("Deprecated method. Use get instead");
-        /*
-        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
-        Map<String, Variable> variableMap = null;
-        if (variableSetId > 0) {
-            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
-        }
-        return getAllSamples(variableMap, options);*/
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Sample> getAllSamples(Map<String, Variable> variableMap, QueryOptions options) throws CatalogDBException {
-        throw new UnsupportedOperationException("Deprecated method. Use get instead");
-        /*
-        long startTime = startQuery();
-        String warning = "";
-
-        QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-
-        List<DBObject> mongoQueryList = new LinkedList<>();
-        List<DBObject> annotationSetFilter = new LinkedList<>();
-
-        for (Map.Entry<String, Object> entry : options.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                SampleFilterOption option = SampleFilterOption.valueOf(key);
-                switch (option) {
-                    case id:
-                        addCompQueryFilter(option, option.name(), options, PRIVATE_ID, mongoQueryList);
-                        break;
-                    case studyId:
-                        addCompQueryFilter(option, option.name(), options, PRIVATE_STUDY_ID, mongoQueryList);
-                        break;
-                    case annotationSetId:
-                        addCompQueryFilter(option, option.name(), options, "id", annotationSetFilter);
-                        break;
-                    case variableSetId:
-                        addCompQueryFilter(option, option.name(), options, option.getKey(), annotationSetFilter);
-                        break;
-                    case annotation:
-                        addAnnotationQueryFilter(option.name(), options, annotationSetFilter, variableMap);
-                        break;
-                    default:
-                        String optionsKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), options, optionsKey, mongoQueryList);
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        Document query = new Document();
-        if (!annotationSetFilter.isEmpty()) {
-            query.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
-        }
-        if (!mongoQueryList.isEmpty()) {
-            query.put("$and", mongoQueryList);
-        }
-        logger.debug("GetAllSamples query: {}", query);
-//        QueryResult<DBObject> queryResult = sampleCollection.find(query, filteredOptions);
-
-
-        QueryResult<Document> queryResult = sampleCollection.find(query, filteredOptions);
-        List<Sample> samples = parseSamples(queryResult);
-
-        QueryResult<Sample> result = endQuery("getAllSamples", startTime, samples, null, warning.isEmpty() ? null : warning);
-        result.setNumTotalResults(queryResult.getNumTotalResults());
-        return result;
-        */
-    }
+//    @Override
+//    public QueryResult<Sample> getAllSamples(QueryOptions options) throws CatalogDBException {
+//        throw new UnsupportedOperationException("Deprecated method. Use get instead");
+//        /*
+//        int variableSetId = options.getInt(SampleFilterOption.variableSetId.toString());
+//        Map<String, Variable> variableMap = null;
+//        if (variableSetId > 0) {
+//            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+//                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+//        }
+//        return getAllSamples(variableMap, options);*/
+//    }
 
     @Override
     public QueryResult<Sample> getAllSamplesInStudy(long studyId, QueryOptions options) throws CatalogDBException {
@@ -875,6 +809,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
         }
         */
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
     }
 
     /***

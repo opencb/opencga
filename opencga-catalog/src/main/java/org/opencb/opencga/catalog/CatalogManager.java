@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptorFactory;
@@ -82,6 +83,18 @@ public class CatalogManager implements AutoCloseable {
     private AuthorizationManager authorizationManager;
     private CatalogAuditManager auditManager;
 
+    private CatalogConfiguration catalogConfiguration;
+
+    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogConfiguration catalogConfiguration)
+            throws IOException, CatalogIOException {
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+//        this.properties = catalogProperties;
+        this.catalogConfiguration = catalogConfiguration;
+
+        configureIOManager(properties);
+        configureManagers(properties);
+    }
+
     public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, Properties catalogProperties)
             throws IOException, CatalogIOException {
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
@@ -127,7 +140,7 @@ public class CatalogManager implements AutoCloseable {
         projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, properties);
         jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
+                catalogIOManagerFactory, catalogConfiguration);
         sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, properties);
         individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
@@ -494,7 +507,7 @@ public class CatalogManager implements AutoCloseable {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.FileStatus.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.FileStatusEnum.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -504,7 +517,7 @@ public class CatalogManager implements AutoCloseable {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.FileStatus.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, File.FileStatusEnum.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -518,7 +531,7 @@ public class CatalogManager implements AutoCloseable {
 
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.FileStatus status,
+                                        String ownerId, String creationDate, String description, File.FileStatusEnum status,
                                         long diskUsage, long experimentId, List<Long> sampleIds, long jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
@@ -533,7 +546,7 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, null, options, sessionId);
     }
 
-    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
+    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatusEnum status, boolean parents, String description,
                                           QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
@@ -695,7 +708,7 @@ public class CatalogManager implements AutoCloseable {
             params, String commandLine,
                                       URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles, Map<String,
             Object> attributes,
-                                      Map<String, Object> resourceManagerAttributes, Job.JobStatus status,
+                                      Map<String, Object> resourceManagerAttributes, Job.JobStatusEnum status,
                                       long startTime, long endTime, QueryOptions options, String sessionId)
             throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, executor, params, commandLine, tmpOutDirUri, outDirId, inputFiles,
@@ -723,10 +736,10 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
         return jobManager.readAll(new Query("jobStatus",
                 Arrays.asList(
-                        Job.JobStatus.PREPARED.toString(),
-                        Job.JobStatus.QUEUED.toString(),
-                        Job.JobStatus.RUNNING.toString(),
-                        Job.JobStatus.DONE.toString()
+                        Job.JobStatusEnum.PREPARED.toString(),
+                        Job.JobStatusEnum.QUEUED.toString(),
+                        Job.JobStatusEnum.RUNNING.toString(),
+                        Job.JobStatusEnum.DONE.toString()
                 )
         ), null, sessionId);
     }

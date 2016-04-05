@@ -47,6 +47,13 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
+
+    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return updateStatus(query, new Job.JobStatus(Job.JobStatus.ACTIVE));
+    }
+
+    QueryResult<Long> updateStatus(Query query, Job.JobStatus status) throws CatalogDBException;
+
     @Deprecated
     default QueryResult<Job> deleteJob(long jobId) throws CatalogDBException {
         return delete(jobId, false);

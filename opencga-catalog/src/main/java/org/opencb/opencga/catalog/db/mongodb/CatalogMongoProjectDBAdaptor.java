@@ -241,65 +241,65 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("rename project alias", startTime, result);
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-
-        if (!projectExists(projectId)) {
-            throw CatalogDBException.idNotFound("Project", projectId);
-        }
-        //BasicDBObject projectParameters = new BasicDBObject();
-        Bson projectParameters = new Document();
-
-        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
-        for (String s : acceptedParams) {
-            if (parameters.containsKey(s)) {
-                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
-            }
-        }
-        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
-        for (String s : acceptedIntParams) {
-            if (parameters.containsKey(s)) {
-                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
-                if (anInt != Integer.MIN_VALUE) {
-                    ((Document) projectParameters).put(s, anInt);
-                }
-            }
-        }
-        Map<String, Object> attributes = parameters.getMap("attributes");
-        if (attributes != null) {
-            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
-                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
-            }
-//            projectParameters.put("projects.$.attributes", attributes);
-        }
-
-        if (!((Document) projectParameters).isEmpty()) {
-            Bson query = Filters.eq("projects.id", projectId);
-            Bson updates = new Document("$set", projectParameters);
-            // Fixme: Updates
-                    /*
-            BasicDBObject query = new BasicDBObject("projects.id", projectId);
-            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
-            */
-            QueryResult<UpdateResult> updateResult = userCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("Project", projectId);
-            }
-        }
-        /*
-        if (!projectParameters.isEmpty()) {
-            BasicDBObject query = new BasicDBObject("projects.id", projectId);
-            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
-            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
-            if (updateResult.getResult().get(0).getN() == 0) {
-                throw CatalogDBException.idNotFound("Project", projectId);
-            }
-        }
-        */
-        return endQuery("Modify project", startTime, getProject(projectId, null));
-    }
+//    @Deprecated
+//    @Override
+//    public QueryResult<Project> modifyProject(long projectId, ObjectMap parameters) throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//        if (!projectExists(projectId)) {
+//            throw CatalogDBException.idNotFound("Project", projectId);
+//        }
+//        //BasicDBObject projectParameters = new BasicDBObject();
+//        Bson projectParameters = new Document();
+//
+//        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
+//        for (String s : acceptedParams) {
+//            if (parameters.containsKey(s)) {
+//                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
+//            }
+//        }
+//        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+//        for (String s : acceptedIntParams) {
+//            if (parameters.containsKey(s)) {
+//                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
+//                if (anInt != Integer.MIN_VALUE) {
+//                    ((Document) projectParameters).put(s, anInt);
+//                }
+//            }
+//        }
+//        Map<String, Object> attributes = parameters.getMap("attributes");
+//        if (attributes != null) {
+//            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+//                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
+//            }
+////            projectParameters.put("projects.$.attributes", attributes);
+//        }
+//
+//        if (!((Document) projectParameters).isEmpty()) {
+//            Bson query = Filters.eq("projects.id", projectId);
+//            Bson updates = new Document("$set", projectParameters);
+//            // Fixme: Updates
+//                    /*
+//            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+//            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+//            */
+//            QueryResult<UpdateResult> updateResult = userCollection.update(query, updates, null);
+//            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
+//                throw CatalogDBException.idNotFound("Project", projectId);
+//            }
+//        }
+//        /*
+//        if (!projectParameters.isEmpty()) {
+//            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+//            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+//            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
+//            if (updateResult.getResult().get(0).getN() == 0) {
+//                throw CatalogDBException.idNotFound("Project", projectId);
+//            }
+//        }
+//        */
+//        return endQuery("Modify project", startTime, getProject(projectId, null));
+//    }
 
     @Override
     public long getProjectId(String userId, String projectAlias) throws CatalogDBException {
@@ -586,6 +586,11 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
 
         throw CatalogDBException.deleteError("Project");
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
     }
 
     @Override

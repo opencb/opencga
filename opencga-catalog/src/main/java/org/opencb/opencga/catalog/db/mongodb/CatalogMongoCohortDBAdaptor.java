@@ -199,6 +199,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
     public CatalogDBIterator<Cohort> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         MongoCursor<Document> iterator = cohortCollection.nativeQuery().find(bson, options).iterator();

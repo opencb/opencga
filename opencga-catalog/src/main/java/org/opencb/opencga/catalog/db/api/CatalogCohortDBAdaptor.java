@@ -93,6 +93,11 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         }
     }
 
+//    @Override
+//    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+//        updateStatus();
+//    }
+
     QueryResult<Cohort> createCohort(long studyId, Cohort cohort, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException;

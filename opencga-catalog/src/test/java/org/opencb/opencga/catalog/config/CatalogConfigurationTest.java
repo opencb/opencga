@@ -31,13 +31,16 @@ public class CatalogConfigurationTest {
     public void testDefault() {
         CatalogConfiguration catalogConfiguration = new CatalogConfiguration();
 
-        catalogConfiguration.setLogFile("INFO");
+        catalogConfiguration.setLogLevel("INFO");
 
         catalogConfiguration.setDataDir("/opt/opencga/sessions");
         catalogConfiguration.setTempJobsDir("/opt/opencga/sessions/jobs");
 
-        catalogConfiguration.setUser("admin");
+        catalogConfiguration.setAdmin("admin");
         catalogConfiguration.setPassword("admin");
+
+        EmailServer emailServer = new EmailServer("localhost", "", "", "", "", false);
+        catalogConfiguration.setEmailServer(emailServer);
 
         DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
         catalogConfiguration.setDatabase(databaseCredentials);

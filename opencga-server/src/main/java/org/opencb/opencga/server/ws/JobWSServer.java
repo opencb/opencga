@@ -117,7 +117,7 @@ public class JobWSServer extends OpenCGAWSServer {
             long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
                     job.execution, job.params, job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
-                    job.resourceManagerAttributes, Job.JobStatus.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
+                    job.resourceManagerAttributes, Job.JobStatusEnum.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

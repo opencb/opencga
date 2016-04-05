@@ -74,7 +74,7 @@ public class JobWSServerTest {
         assertEquals(toolName, job.getToolName());
         assertEquals(description, job.getDescription());
         assertEquals(commandLine, job.getCommandLine());
-        assertEquals(status.toString(), job.getJobStatus().toString());
+        assertEquals(status.toString(), job.getJobStatusEnum().toString());
         assertEquals(outDirId, job.getOutDirId());
     }
 
@@ -103,7 +103,7 @@ public class JobWSServerTest {
         assertEquals(10, job.getStartTime());
         assertEquals(20, job.getEndTime());
         assertEquals(commandLine, job.getCommandLine());
-        assertEquals(status.toString(), job.getJobStatus().toString());
+        assertEquals(status.toString(), job.getJobStatusEnum().toString());
         assertEquals(outDirId, job.getOutDirId());
     }
 

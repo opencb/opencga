@@ -282,7 +282,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         acceptedEnums.put("type", File.Type.class);
         acceptedEnums.put("format", File.Format.class);
         acceptedEnums.put("bioformat", File.Bioformat.class);
-        acceptedEnums.put("fileStatus", File.FileStatus.class);
+        acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
         } catch (CatalogDBException e) {
@@ -409,6 +409,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> updateStatus(Query query, File.FileStatus status) throws CatalogDBException {
+        return null;
     }
 
     public QueryResult<File> clean(int id) throws CatalogDBException {

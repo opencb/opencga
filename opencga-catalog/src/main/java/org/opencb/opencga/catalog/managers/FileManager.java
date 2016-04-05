@@ -233,7 +233,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 objectMap.getString("ownerId", null),
                 objectMap.getString("creationDate", null),
                 objectMap.getString("description", null),
-                File.FileStatus.valueOf(objectMap.getString("type", File.FileStatus.STAGE.toString())),
+                File.FileStatusEnum.valueOf(objectMap.getString("type", File.FileStatusEnum.STAGE.toString())),
                 objectMap.getLong("diskUsage", 0),
                 objectMap.getLong("experimentId", -1),
                 objectMap.getAsLongList("sampleIds"),
@@ -247,7 +247,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
+    public QueryResult<File> createFolder(long studyId, String path, File.FileStatusEnum status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         return create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE,
                 path, null, null, description, status, 0, -1, null, -1, null, null,
@@ -256,7 +256,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
-                                    String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                                    String creationDate, String description, File.FileStatusEnum status, long diskUsage, long experimentId,
                                     List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
@@ -271,8 +271,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
         status = (type == File.Type.FILE)
-                ? ParamUtils.defaultObject(status, File.FileStatus.STAGE) //By default, files are STAGED
-                : ParamUtils.defaultObject(status, File.FileStatus.READY);   //By default, folders are READY
+                ? ParamUtils.defaultObject(status, File.FileStatusEnum.STAGE) //By default, files are STAGED
+                : ParamUtils.defaultObject(status, File.FileStatusEnum.READY);   //By default, folders are READY
 
         if (diskUsage < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
@@ -295,7 +295,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (status != File.FileStatus.STAGE && type == File.Type.FILE) {
+        if (status != File.FileStatusEnum.STAGE && type == File.Type.FILE) {
             if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                 throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
             }
@@ -330,7 +330,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (parents) {
                 newParent = true;
                 parentFileId = create(studyId, File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
-                        file.getOwnerId(), file.getCreationDate(), "", File.FileStatus.READY, 0, -1,
+                        file.getOwnerId(), file.getCreationDate(), "", File.FileStatusEnum.READY, 0, -1,
                         Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId).first().getId();
@@ -353,7 +353,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         //Check external file
         boolean isExternal = isExternal(file);
 
-        if (file.getType() == File.Type.FOLDER && file.getFileStatus() == File.FileStatus.READY && (!isExternal || isRoot)) {
+        if (file.getType() == File.Type.FOLDER && file.getFileStatusEnum() == File.FileStatusEnum.READY && (!isExternal || isRoot)) {
             URI fileUri = getFileUri(studyId, file.getPath());
             CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
             ioManager.createDirectory(fileUri, parents);
@@ -517,7 +517,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         userDBAdaptor.updateUserLastActivity(ownerId);
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("fileStatus", File.FileStatus.TRASHED);
+        objectMap.put("fileStatus", File.FileStatusEnum.TRASHED);
         objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
 
         switch (file.getType()) {
@@ -561,11 +561,11 @@ public class FileManager extends AbstractManager implements IFileManager {
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
         authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
 
-        switch (file.getFileStatus()) {
+        switch (file.getFileStatusEnum()) {
             case TRASHED:
             case DELETED:
                 //Send warning message
-                String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getFileStatus() + "'}";
+                String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getFileStatusEnum() + "'}";
                 logger.warn(warningMsg);
                 return new QueryResult<File>("Delete file", 0, 0, 0,
                         warningMsg,
@@ -578,7 +578,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 throw new CatalogException("File is not ready. {"
                         + "id: " + file.getId() + ", "
                         + "path:\"" + file.getPath() + "\","
-                        + "status: '" + file.getFileStatus() + "'}");
+                        + "status: '" + file.getFileStatusEnum() + "'}");
         }
         return null;
     }

@@ -86,6 +86,11 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException;
 
+    QueryResult<Long> restore(Query query) throws CatalogDBException;
+
+
+//    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
+
 
     @Override
     default CatalogDBIterator<T> iterator() {

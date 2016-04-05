@@ -25,12 +25,17 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Created by imedina on 13/01/16.
  */
 public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     private final MongoDBCollection metaCollection;
+
+    private List<String> COLLECTIONS_LIST = Collections.singletonList("");
 
     public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
@@ -59,6 +64,36 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
         return result.getResult().get(0).getInteger(field);
+    }
+
+
+    public void createCollections() {
+        clean(Collections.singletonList(""));
+//        metaCollection.createIndex()
+//        dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection().createIndex()
+    }
+
+    public void createIndex(List<String> collections) {
+        for (String collection : collections) {
+            System.out.println(collection);
+            switch (collection) {
+                case "user":
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+
+    public void clean() {
+        clean(Collections.singletonList(""));
+    }
+
+    public void clean(List<String> collections) {
+        for (String collection : collections) {
+            System.out.println(collection);
+        }
     }
 
 }

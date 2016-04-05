@@ -27,8 +27,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class
-File {
+public class File {
 
     /* Attributes known values */
     public static final String DELETE_DATE = "deleteDate";      //Long
@@ -58,8 +57,9 @@ File {
     private String creationDate;
     private String modificationDate;
     private String description;
-    private Status status;
-    private FileStatus fileStatus;
+    private FileStatus status;
+    @Deprecated
+    private FileStatusEnum fileStatusEnum;
     private long diskUsage;
     //private long studyId;
     private long experimentId;
@@ -83,21 +83,21 @@ File {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, FileStatus fileStatus, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, fileStatus, diskUsage,
-                -1, new LinkedList<Long>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+                String description, FileStatusEnum fileStatusEnum, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, fileStatusEnum, diskUsage,
+                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                new HashMap<>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus fileStatus, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, fileStatus, diskUsage,
-                -1, new LinkedList<Long>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+                String creationDate, String description, FileStatusEnum fileStatusEnum, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, fileStatusEnum, diskUsage,
+                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                new HashMap<>());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus fileStatus, long diskUsage, long experimentId,
+                String creationDate, String description, FileStatusEnum fileStatusEnum, long diskUsage, long experimentId,
                 List<Long> sampleIds, long jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
@@ -111,8 +111,8 @@ File {
         this.creationDate = creationDate;
         this.modificationDate = creationDate;
         this.description = description;
-        this.fileStatus = fileStatus;
-        this.status = new Status();
+        this.fileStatusEnum = fileStatusEnum;
+        this.status = new FileStatus(FileStatus.ACTIVE);
         this.diskUsage = diskUsage;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
@@ -139,7 +139,7 @@ File {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", fileStatus=").append(fileStatus);
+        sb.append(", fileStatus=").append(fileStatusEnum);
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
@@ -241,19 +241,19 @@ File {
         this.description = description;
     }
 
-    public FileStatus getFileStatus() {
-        return fileStatus;
+    public FileStatusEnum getFileStatusEnum() {
+        return fileStatusEnum;
     }
 
-    public void setFileStatus(FileStatus fileStatus) {
-        this.fileStatus = fileStatus;
+    public void setFileStatusEnum(FileStatusEnum fileStatusEnum) {
+        this.fileStatusEnum = fileStatusEnum;
     }
 
-    public Status getStatus() {
+    public FileStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(FileStatus status) {
         this.status = status;
     }
 
@@ -321,8 +321,20 @@ File {
         this.attributes = attributes;
     }
 
+    public static class FileStatus extends Status {
+
+        public static final String STAGE = "stage";
+        public static final String MISSING = "missing";
+        public static final String TRASHED = "trashed";
+
+        public FileStatus(String status) {
+            super(status);
+        }
+
+    }
+
     /* Status */
-    public enum FileStatus {
+    public enum FileStatusEnum {
         STAGE,
         READY,
         MISSING,

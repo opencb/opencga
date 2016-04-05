@@ -54,7 +54,7 @@ public class TestWSServer extends OpenCGAWSServer {
 //    @GET
 //    @Path("/{param}")
 //    @ApiOperation(defaultValue="just to test the sample api")
-//    public Response getMsg(@ApiParam(defaultValue="param",required=true)@PathParam("param") String msg ) {
+//    public Response getMessage(@ApiParam(defaultValue="param",required=true)@PathParam("param") String msg ) {
 //        String output = "Hello : " + msg;
 //        return Response.status(200).entity(output).build();
 //    }

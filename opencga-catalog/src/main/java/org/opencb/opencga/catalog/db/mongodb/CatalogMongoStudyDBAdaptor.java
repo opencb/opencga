@@ -178,117 +178,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("getAllSudiesInProject", startTime, get(query, options));
     }
 
-  /*
-    @Deprecated
-    public QueryResult<Study> getAllStudies(QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        List<Document> mongoQueryList = new LinkedList<>();
-
-        for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (isDataStoreOption(key) || isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                StudyFilterOptions option = StudyFilterOptions.valueOf(key);
-                switch (option) {
-                    case id:
-                        addCompQueryFilter(option, option.name(), PRIVATE_ID, queryOptions, mongoQueryList);
-                        break;
-                    case projectId:
-                        addCompQueryFilter(option, option.name(), PRIVATE_PROJECT_ID, queryOptions, mongoQueryList);
-                        break;
-                    default:
-                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-                        addCompQueryFilter(option, entry.getKey(), queryKey, queryOptions, mongoQueryList);
-                        break;
-                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-
-        Document mongoQuery = new Document();
-
-        if (!mongoQueryList.isEmpty()) {
-            mongoQuery.put("$and", mongoQueryList);
-        }
-
-        QueryResult<Document> queryResult = studyCollection.find(mongoQuery, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
-        List<Study> studies = parseStudies(queryResult);
-        for (Study study : studies) {
-            joinFields(study, queryOptions);
-        }
-
-        return endQuery("getAllStudies", startTime, studies);
-    }
-*/
     @Override
     public void updateStudyLastActivity(long studyId) throws CatalogDBException {
         update(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Study> modifyStudy(long studyId, ObjectMap parameters) throws CatalogDBException {
-        /*long startTime = startQuery();
-
-        checkStudyId(studyId);
-//        BasicDBObject studyParameters = new BasicDBObject();
-        Document studyParameters = new Document();
-
-        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
-        filterStringParams(parameters, studyParameters, acceptedParams);
-
-        String[] acceptedLongParams = {"diskUsage"};
-        filterLongParams(parameters, parameters, acceptedLongParams);
-
-        String[] acceptedMapParams = {"attributes", "stats"};
-        filterMapParams(parameters, studyParameters, acceptedMapParams);
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
-        filterEnumParams(parameters, studyParameters, acceptedEnums);
-
-        if (parameters.containsKey("uri")) {
-            URI uri = parameters.get("uri", URI.class);
-            studyParameters.put("uri", uri.toString());
-        }
-
-        if (!studyParameters.isEmpty()) {
-//            BasicDBObject query = new BasicDBObject(PRIVATE_ID, studyId);
-            Bson eq = Filters.eq(PRIVATE_ID, studyId);
-            BasicDBObject updates = new BasicDBObject("$set", studyParameters);
-
-//            QueryResult<WriteResult> updateResult = studyCollection.update(query, updates, null);
-            QueryResult<UpdateResult> updateResult = studyCollection.update(eq, updates, null);
-            if (updateResult.getResult().get(0).getModifiedCount() == 0) {
-                throw CatalogDBException.idNotFound("Study", studyId);
-            }
-        }
-        return endQuery("Modify study", startTime, getStudy(studyId, null));
-        */
-        return null;
-    }
-
-    /**
-     * At the moment it does not clean external references to itself.
-     */
-//    @Override
-//    public QueryResult<Integer> deleteStudy(int studyId) throws CatalogDBException {
-//        long startTime = startQuery();
-//        DBObject query = new BasicDBObject(PRIVATE_ID, studyId);
-//        QueryResult<WriteResult> remove = studyCollection.remove(query, null);
-//
-//        List<Integer> deletes = new LinkedList<>();
-//
-//        if (remove.getResult().get(0).getN() == 0) {
-//            throw CatalogDBException.idNotFound("Study", studyId);
-//        } else {
-//            deletes.add(remove.getResult().get(0).getN());
-//            return endQuery("delete study", startTime, deletes);
-//        }
-//    }
     @Override
     public long getStudyId(long projectId, String studyAlias) throws CatalogDBException {
         Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append("alias", studyAlias);
@@ -1038,6 +932,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
         }
 
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query) throws CatalogDBException {
+        return null;
     }
 
     public QueryResult<Study> remove(int studyId) throws CatalogDBException {

@@ -22,17 +22,20 @@ public class Status {
 
     private String status;
     private String date;
-    private String msg;
+    private String message;
 
     public Status() {
-        this.status = ACTIVE;
-        this.date = TimeUtils.getTimeMillis();
+        this(ACTIVE, "");
     }
 
-    public Status(String status, String msg) {
+    public Status(String status) {
+        this(status, "");
+    }
+
+    public Status(String status, String message) {
         this.status = status;
         this.date = TimeUtils.getTimeMillis();
-        this.msg = msg;
+        this.message = message;
     }
 
     public String getStatus() {
@@ -51,12 +54,12 @@ public class Status {
         this.date = TimeUtils.getTimeMillis();
     }
 
-    public String getMsg() {
-        return msg;
+    public String getMessage() {
+        return message;
     }
 
-    public void setMsg(String msg) {
-        this.msg = msg;
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     @Override
@@ -64,7 +67,7 @@ public class Status {
         final StringBuilder sb = new StringBuilder("Status{");
         sb.append("status='").append(status).append('\'');
         sb.append(", date='").append(date).append('\'');
-        sb.append(", msg='").append(msg).append('\'');
+        sb.append(", message='").append(message).append('\'');
         sb.append('}');
         return sb.toString();
     }

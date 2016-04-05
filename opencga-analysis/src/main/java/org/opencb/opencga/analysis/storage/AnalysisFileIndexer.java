@@ -25,7 +25,6 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -149,8 +148,8 @@ public class AnalysisFileIndexer {
                 indexedFileId = jobInputFiles.get(0);
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
-            if (originalFile.getFileStatus() != File.FileStatus.READY) {
-                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getFileStatus() + "\"");
+            if (originalFile.getFileStatusEnum() != File.FileStatusEnum.READY) {
+                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getFileStatusEnum() + "\"");
             }
         } else {
             originalFile = inputFile;

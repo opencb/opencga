@@ -23,7 +23,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
 
     QueryResult<Job> create(long studyId, String name, String toolName, String description, String executor, Map<String, String> params,
                             String commandLine, URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles,
-                            Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatus status,
+                            Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatusEnum status,
                             long startTime, long endTime, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Job> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
