@@ -27,7 +27,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File {
+public class
+File {
 
     /* Attributes known values */
     public static final String DELETE_DATE = "deleteDate";      //Long

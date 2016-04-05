@@ -117,6 +117,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
         QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
+        logger.debug("File get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
+                fileQueryResult.getDbTime());
         return endQuery("get File", startTime, fileQueryResult.getResult());
     }
 
@@ -166,6 +168,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 */
 
         List<AclEntry> acl = get(query, options).getResult().get(0).getAcl();
+        int dbTime = (int) (System.currentTimeMillis() - startTime);
+        logger.debug("getFileAcl for file {} and user {}, dbTime: {} ", fileId, userId, dbTime);
         return endQuery("Get file ACL", startTime, acl);
     }
 

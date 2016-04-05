@@ -734,6 +734,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
         QueryResult<Sample> sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
+        logger.debug("Sample get: query : {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
+                sampleQueryResult.getDbTime());
         return endQuery("Get sample", startTime, sampleQueryResult.getResult());
     }
 

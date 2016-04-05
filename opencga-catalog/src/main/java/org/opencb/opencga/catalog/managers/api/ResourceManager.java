@@ -20,6 +20,7 @@ public interface ResourceManager<I, R> {
      * @return The created object
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     QueryResult<R> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
@@ -66,5 +67,6 @@ public interface ResourceManager<I, R> {
      * @throws CatalogException CatalogException
      */
     QueryResult<R> delete(I id, QueryOptions options, String sessionId) throws CatalogException;
+
 
 }

@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.managers.api;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -68,5 +69,12 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<VariableSet> readAllVariableSets(long studyId, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId, String sessionId) throws CatalogException;
+
+    QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
+            throws CatalogException;
 
 }

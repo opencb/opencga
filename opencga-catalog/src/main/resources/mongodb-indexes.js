@@ -38,3 +38,5 @@ db.getCollection('file').createIndex({"name": 1})
 db.getCollection('file').createIndex({"path": 1, "_studyId": 1}, {"unique": true})
 db.getCollection('file').createIndex({"jobId": 1})
 db.getCollection('file').createIndex({"_studyId": 1})
+
+db.getCollection('cohort').createIndex({"name": 1, "_studyId": 1}, {"unique": true})
