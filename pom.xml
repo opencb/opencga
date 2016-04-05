@@ -37,9 +37,9 @@
     <properties>
         <java.version>1.8</java.version>
         <opencga.version>0.7-dev</opencga.version>
-        <biodata.version>0.6.0-SNAPSHOT</biodata.version>
+        <biodata.version>0.6.0</biodata.version>
         <datastore.version>0.5.0</datastore.version>
-        <cellbase.version>4.0.0-SNAPSHOT</cellbase.version>
+        <cellbase.version>4.0.0-rc</cellbase.version>
         <java-common-libs.version>3.1.0</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.5.4</jackson.version>
