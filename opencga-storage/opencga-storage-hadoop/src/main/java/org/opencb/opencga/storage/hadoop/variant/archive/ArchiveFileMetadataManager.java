@@ -120,21 +120,19 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public void updateLoadedFilesSummary(List<Integer> newLoadedFiles) throws IOException {
-        Set<Integer> files;
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
             logger.info("Create table '{}' in hbase!", tableName);
-            files = new HashSet<>();
-        } else {
-            files = getLoadedFiles();
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Integer newLoadedFile : newLoadedFiles) {
+            sb.append(",").append(newLoadedFile);
         }
 
-        files.addAll(newLoadedFiles);
-
-        Put put = new Put(genomeHelper.getMetaRowKey());
-        put.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
-                objectMapper.writeValueAsBytes(files));
+        Append append = new Append(genomeHelper.getMetaRowKey());
+        append.add(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
+                Bytes.toBytes(sb.toString()));
         hBaseManager.act(connection, tableName, table -> {
-            table.put(put);
+            table.append(append);
         });
     }
 
@@ -153,9 +151,14 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                 byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
                 Set<Integer> set;
                 if (value != null) {
-                    set = ((Set<Integer>) objectMapper.readValue(value, Set.class));
+                    set = new LinkedHashSet<Integer>();
+                    for (String s : Bytes.toString(value).split(",")) {
+                        if (!s.isEmpty()) {
+                            set.add(Integer.parseInt(s));
+                        }
+                    }
                 } else {
-                    set = new HashSet<Integer>();
+                    set = new LinkedHashSet<Integer>();
                 }
                 return set;
             });
