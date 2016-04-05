@@ -67,12 +67,26 @@ public abstract class VariantStorageETL implements StorageETL {
 
     public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
                              VariantReaderUtils variantReaderUtils) {
+        this(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils,
+                new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
+    }
+
+    /**
+     * @param configuration     Storage Configuration
+     * @param storageEngineId   StorageEngineID
+     * @param logger            Logger
+     * @param dbAdaptor         VariantDBAdaptor. Can be null if the load step is skipped
+     * @param variantReaderUtils    VariantReaderUtils
+     * @param options           Unique copy of the options to be used. This object can not be shared.
+     */
+    public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
+                             VariantReaderUtils variantReaderUtils, ObjectMap options) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.logger = logger;
         this.dbAdaptor = dbAdaptor;
         this.variantReaderUtils = variantReaderUtils;
-        this.options = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
+        this.options = options;
     }
 
     @Override
@@ -569,7 +583,7 @@ public abstract class VariantStorageETL implements StorageETL {
     }
 
     @Override
-    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+    public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         String dbName = options.getString(Options.DB_NAME.key(), null);
@@ -610,7 +624,11 @@ public abstract class VariantStorageETL implements StorageETL {
 
             annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
             annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
-            variantAnnotationManager.annotate(annotationQuery, annotationOptions);
+            try {
+                variantAnnotationManager.annotate(annotationQuery, annotationOptions);
+            } catch (IOException e) {
+                throw new StorageManagerException("Error annotating", e);
+            }
 //            URI annotationFile = variantAnnotationManager
 //              .createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
 //            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
@@ -680,6 +698,10 @@ public abstract class VariantStorageETL implements StorageETL {
     /* --------------------------------------- */
     /*  StudyConfiguration utils methods        */
     /* --------------------------------------- */
+
+    public final StudyConfiguration getStudyConfiguration() throws StorageManagerException {
+        return getStudyConfiguration(options);
+    }
 
     public final StudyConfiguration getStudyConfiguration(ObjectMap params) throws StorageManagerException {
         if (params.containsKey(Options.STUDY_CONFIGURATION.key())) {
@@ -777,5 +799,9 @@ public abstract class VariantStorageETL implements StorageETL {
         if (studyId < 0) {
             throw new StorageManagerException("Invalid studyId : " + studyId);
         }
+    }
+
+    public ObjectMap getOptions() {
+        return options;
     }
 }

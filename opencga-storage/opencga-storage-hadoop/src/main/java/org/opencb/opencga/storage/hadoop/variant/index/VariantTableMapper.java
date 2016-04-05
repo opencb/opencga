@@ -54,7 +54,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
         if (latestCell != null) {
-            System.out.println("latestCell.getTimestamp() = " + latestCell.getTimestamp());
             if (latestCell.getTimestamp() == timestamp) {
 
                 List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getValue(), ctx.getChromosome());

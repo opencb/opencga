@@ -23,6 +23,11 @@ public class StorageETLException extends StorageManagerException {
         this.results = results;
     }
 
+    public StorageETLException(String message, List<StorageETLResult> results) {
+        super(message);
+        this.results = results;
+    }
+
     public List<StorageETLResult> getResults() {
         return results;
     }

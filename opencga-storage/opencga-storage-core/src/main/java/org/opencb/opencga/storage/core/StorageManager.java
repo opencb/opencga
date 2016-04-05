@@ -89,61 +89,66 @@ public abstract class StorageManager<DBADAPTOR> {
             }
 
             if (doTransform) {
-                etlResult.setTransformExecuted(true);
-                long millis = System.currentTimeMillis();
-                try {
-                    logger.info("PreTransform '{}'", nextFileUri);
-                    nextFileUri = storageETL.preTransform(nextFileUri);
-                    etlResult.setPreTransformResult(nextFileUri);
-
-                    logger.info("Transform '{}'", nextFileUri);
-                    nextFileUri = storageETL.transform(nextFileUri, null, outdirUri);
-                    etlResult.setTransformResult(nextFileUri);
-
-                    logger.info("PostTransform '{}'", nextFileUri);
-                    nextFileUri = storageETL.postTransform(nextFileUri);
-                    etlResult.setPostTransformResult(nextFileUri);
-                } catch (Exception e) {
-                    etlResult.setTransformError(e);
-                    if (abortOnFail) {
-                        throw new StorageETLException("Exception executing transform.", e, results);
-                    } else {
-                        continue;
-                    }
-                } finally {
-                    etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
-                    etlResult.setTransformStats(storageETL.getTransformStats());
-                }
+                nextFileUri = transformFile(storageETL, etlResult, results, nextFileUri, outdirUri);
             }
 
             if (doLoad) {
-                etlResult.setLoadExecuted(true);
-                long millis = System.currentTimeMillis();
-                try {
-                    logger.info("PreLoad '{}'", nextFileUri);
-                    nextFileUri = storageETL.preLoad(nextFileUri, outdirUri);
-                    etlResult.setPreLoadResult(nextFileUri);
-
-                    logger.info("Load '{}'", nextFileUri);
-                    nextFileUri = storageETL.load(nextFileUri);
-                    etlResult.setLoadResult(nextFileUri);
-
-                    logger.info("PostLoad '{}'", nextFileUri);
-                    nextFileUri = storageETL.postLoad(nextFileUri, outdirUri);
-                    etlResult.setPostLoadResult(nextFileUri);
-                } catch (Exception e) {
-                    etlResult.setLoadError(e);
-                    if (abortOnFail) {
-                        throw new StorageETLException("Exception executing load.", e, results);
-                    }
-                } finally {
-                    etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
-                    etlResult.setLoadStats(storageETL.getLoadStats());
-                }
+                loadFile(storageETL, etlResult, results, nextFileUri, outdirUri);
             }
         }
 
         return results;
+    }
+
+    protected void loadFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
+                            URI inputFileUri, URI outdirUri) throws StorageETLException {
+        etlResult.setLoadExecuted(true);
+        long millis = System.currentTimeMillis();
+        try {
+            logger.info("PreLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.preLoad(inputFileUri, outdirUri);
+            etlResult.setPreLoadResult(inputFileUri);
+
+            logger.info("Load '{}'", inputFileUri);
+            inputFileUri = storageETL.load(inputFileUri);
+            etlResult.setLoadResult(inputFileUri);
+
+            logger.info("PostLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.postLoad(inputFileUri, outdirUri);
+            etlResult.setPostLoadResult(inputFileUri);
+        } catch (Exception e) {
+            etlResult.setLoadError(e);
+            throw new StorageETLException("Exception executing load.", e, results);
+        } finally {
+            etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
+            etlResult.setLoadStats(storageETL.getLoadStats());
+        }
+    }
+
+    protected URI transformFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
+                                URI inputFileUri, URI outdirUri) throws StorageETLException {
+        etlResult.setTransformExecuted(true);
+        long millis = System.currentTimeMillis();
+        try {
+            logger.info("PreTransform '{}'", inputFileUri);
+            inputFileUri = storageETL.preTransform(inputFileUri);
+            etlResult.setPreTransformResult(inputFileUri);
+
+            logger.info("Transform '{}'", inputFileUri);
+            inputFileUri = storageETL.transform(inputFileUri, null, outdirUri);
+            etlResult.setTransformResult(inputFileUri);
+
+            logger.info("PostTransform '{}'", inputFileUri);
+            inputFileUri = storageETL.postTransform(inputFileUri);
+            etlResult.setPostTransformResult(inputFileUri);
+        } catch (Exception e) {
+            etlResult.setTransformError(e);
+            throw new StorageETLException("Exception executing transform.", e, results);
+        } finally {
+            etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
+            etlResult.setTransformStats(storageETL.getTransformStats());
+        }
+        return inputFileUri;
     }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;

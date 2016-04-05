@@ -40,6 +40,8 @@ import static org.opencb.datastore.core.QueryParam.Type.TEXT_ARRAY;
  * @author Ignacio Medina <igmecas@gmail.com>
  * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
+ *
+ * TODO Implement {@link AutoCloseable}
  */
 public interface VariantDBAdaptor extends Iterable<Variant> {
 

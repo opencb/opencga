@@ -16,8 +16,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -203,13 +201,13 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             try {
                 if (executable.endsWith(ArchiveDriver.class.getName())) {
                     System.out.println("Executing ArchiveDriver");
-                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
                     System.out.println("Finish execution ArchiveDriver");
 
                     return r;
                 } else if (executable.endsWith(VariantTableDriver.class.getName())) {
                     System.out.println("Executing VariantTableDriver");
-                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), configuration, new VariantTableDriver(){
+                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration), new VariantTableDriver(){
                         @Override
                         protected Class<? extends TableMapper> getMapperClass() {
                             return VariantTableMapperFail.class;
@@ -219,7 +217,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                     return r;
                 } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
                     System.out.println("Executing VariantTableDeletionDriver");
-                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
                     System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }

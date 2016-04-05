@@ -8,9 +8,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -24,8 +26,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -53,14 +58,111 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
+    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
+            throws StorageManagerException {
+
+        if (inputFiles.size() == 1 || !doLoad) {
+            return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
+        }
+
+        List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
+
+        // Check the database connection before we start
+        if (doLoad) {
+            testConnection();
+        }
+//        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        final int nThreads = 3;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
+        List<Future<StorageETLResult>> futures = new LinkedList<>();
+        List<Integer> indexedFiles = Collections.synchronizedList(new ArrayList<>(nThreads));
+        for (Iterator<URI> iterator = inputFiles.iterator(); iterator.hasNext();) {
+            URI inputFile = iterator.next();
+            //Provide a connected storageETL if load is required.
+            ObjectMap extraOptions = new ObjectMap()
+                    .append(HADOOP_LOAD_ARCHIVE, true)
+                    .append(HADOOP_LOAD_VARIANT, false);
+            HadoopVariantStorageETL storageETL = newStorageETL(doLoad, extraOptions);
+            StorageETLResult storageETLResult = new StorageETLResult();
+            results.add(storageETLResult);
+            futures.add(executorService.submit(() -> {
+                URI nextUri = inputFile;
+                boolean error = false;
+                if (doTransform) {
+                    try {
+                        nextUri = transformFile(storageETL, storageETLResult, results, nextUri, outdirUri);
+                    } catch (StorageETLException ignore) {
+                        //Ignore here. Errors are stored in the ETLResult
+                        error = true;
+                    }
+                }
+
+                if (doLoad && !error) {
+                    try {
+                        loadFile(storageETL, storageETLResult, results, nextUri, outdirUri);
+                        indexedFiles.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                    } catch (StorageETLException ignore) {
+                        //Ignore here. Errors are stored in the ETLResult
+                    }
+                }
+                return storageETLResult;
+            }));
+
+
+            if (futures.size() % nThreads == 0 || !iterator.hasNext()) {
+                try {
+                    executorService.shutdown();
+                    //FIXME: This is not a good idea
+                    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                    executorService = Executors.newFixedThreadPool(nThreads);
+                } catch (InterruptedException e) {
+                    throw new StorageETLException("Interrupted!", e, results);
+                }
+                int errors = 0;
+                for (StorageETLResult result : results) {
+                    if (result.getTransformError() != null) {
+                        //TODO: Handle errors. Retry?
+                        errors++;
+                        result.getTransformError().printStackTrace();
+                    } else if (result.getLoadError() != null) {
+                        //TODO: Handle errors. Retry?
+                        errors++;
+                        result.getLoadError().printStackTrace();
+                    }
+                }
+                if (errors > 0) {
+                    throw new StorageETLException("Errors found", results);
+                }
+                int studyId = storageETL.getStudyConfiguration().getStudyId();
+
+                storageETL.getOptions().put(HADOOP_LOAD_ARCHIVE, false);
+                storageETL.getOptions().put(HADOOP_LOAD_VARIANT, true);
+                storageETL.merge(studyId, indexedFiles);
+                storageETL.postLoad(inputFile, outdirUri);
+
+                indexedFiles.clear();
+            }
+        }
+        return results;
+    }
+
+    @Override
     public HadoopVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        return newStorageETL(connected, null);
+    }
+
+    public HadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
+        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        if (extraOptions != null) {
+            options.putAll(extraOptions);
+        }
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = getHadoopConfiguration(options);
         HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 
         return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
-                hadoopConfiguration, archiveCredentials, variantReaderUtils);
+                hadoopConfiguration, archiveCredentials, variantReaderUtils, options);
     }
 
     @Override

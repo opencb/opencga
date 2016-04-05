@@ -214,20 +214,19 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 
         /** Execute ETL steps **/
-        URI nextFileUri = variantsUri;
-        boolean extract, transform, load;
+        boolean doExtract, doTransform, doLoad;
 
         if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
-            extract = true;
-            transform = true;
-            load = true;
+            doExtract = true;
+            doTransform = true;
+            doLoad = true;
         } else {
-            extract = indexVariantsCommandOptions.transform;
-            transform = indexVariantsCommandOptions.transform;
-            load = indexVariantsCommandOptions.load;
+            doExtract = indexVariantsCommandOptions.transform;
+            doTransform = indexVariantsCommandOptions.transform;
+            doLoad = indexVariantsCommandOptions.load;
         }
 
-        variantStorageManager.index(Collections.singletonList(variantsUri), outdirUri, extract, transform, load);
+        variantStorageManager.index(Collections.singletonList(variantsUri), outdirUri, doExtract, doTransform, doLoad);
 
     }
 

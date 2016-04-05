@@ -52,6 +52,7 @@ public class VariantTableStudyRow {
 
     public static final List<String> STUDY_COLUMNS = Collections.unmodifiableList(
             Arrays.asList(NOCALL, HOM_REF, HET_REF, HOM_VAR, OTHER, COMPLEX, PASS_CNT, CALL_CNT, FILTER_OTHER));
+    public static final List<String> GENOTYPE_COLUMNS = Collections.unmodifiableList(Arrays.asList(NOCALL, HET_REF, HOM_VAR, OTHER));
 
     public static final char COLUMN_KEY_SEPARATOR = '_';
 

@@ -49,6 +49,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 
 /**
  * Created by mh719 on 16/06/15.
+ *
+ * TODO Implement {@link AutoCloseable}
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);

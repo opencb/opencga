@@ -278,6 +278,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
         Set<Integer> fileIds = extractFileIds(value);
+        for (Integer fileId : fileIds) {
+            context.getCounter("File", fileId.toString()).increment(1);
+        }
         if (getLog().isDebugEnabled()) {
             getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
         }

@@ -50,8 +50,10 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
     public HadoopVariantStorageETL(StorageConfiguration configuration, String storageEngineId,
                                    VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
-                                   Configuration conf, HBaseCredentials archiveCredentials, VariantReaderUtils variantReaderUtils) {
-        super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStorageETL.class), dbAdaptor, variantReaderUtils);
+                                   Configuration conf, HBaseCredentials archiveCredentials,
+                                   VariantReaderUtils variantReaderUtils, ObjectMap options) {
+        super(configuration, storageEngineId, LoggerFactory.getLogger(HadoopVariantStorageETL.class), dbAdaptor, variantReaderUtils,
+                options);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
         this.conf = new Configuration(conf);
@@ -240,33 +242,44 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
         if (loadVar) {
             List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            Class execClass = VariantTableDriver.class;
-            String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostAndPort(),
-                    archiveTableCredentials.getTable(),
-                    variantsTableCredentials.getTable(), studyId, pendingFiles, options);
-            String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
-
-            long startTime = System.currentTimeMillis();
-            logger.info("------------------------------------------------------");
-            logger.info("Loading file {} into analysis table '{}'", pendingFiles, variantsTableCredentials.getTable());
-            logger.debug(executable + " " + args);
-            logger.info("------------------------------------------------------");
-            int exitValue = mrExecutor.run(executable, args);
-            logger.info("------------------------------------------------------");
-            logger.info("Exit value: {}", exitValue);
-            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-            if (exitValue != 0) {
-                throw new StorageManagerException("Error loading file " + input + " into variant table \""
-                        + variantsTableCredentials.getTable() + "\"");
-            }
+            merge(studyId, pendingFiles);
         }
 
         return input; // TODO  change return value?
     }
 
+    public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
+        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+        options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
+
+        Class execClass = VariantTableDriver.class;
+        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostAndPort(),
+                archiveTableCredentials.getTable(),
+                variantsTableCredentials.getTable(), studyId, pendingFiles, options);
+        String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
+
+        long startTime = System.currentTimeMillis();
+        logger.info("------------------------------------------------------");
+        logger.info("Loading file {} into analysis table '{}'", pendingFiles, variantsTableCredentials.getTable());
+        logger.info(executable + " " + args);
+        logger.info("------------------------------------------------------");
+        int exitValue = mrExecutor.run(executable, args);
+        logger.info("------------------------------------------------------");
+        logger.info("Exit value: {}", exitValue);
+        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+        if (exitValue != 0) {
+            throw new StorageManagerException("Error loading files " + pendingFiles + " into variant table \""
+                    + variantsTableCredentials.getTable() + "\"");
+        }
+    }
+
 
     @Override
-    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+    public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
             // Current StudyConfiguration may be outdated. Remove it.
@@ -287,6 +300,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
             return super.postLoad(input, output);
         } else {
+            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
             return input;
         }
     }

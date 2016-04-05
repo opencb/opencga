@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -246,7 +243,11 @@ public class HBaseManager extends Configured {
                     family.setCompressionType(compressionType);
                 }
                 descr.addFamily(family);
-                admin.createTable(descr);
+                try {
+                    admin.createTable(descr);
+                } catch (TableExistsException e) {
+                    return false;
+                }
                 return true;
             }
             return false;

@@ -372,7 +372,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     }
 
     @Override
-    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+    public URI postLoad(URI input, URI output) throws StorageManagerException {
         return super.postLoad(input, output);
     }
 

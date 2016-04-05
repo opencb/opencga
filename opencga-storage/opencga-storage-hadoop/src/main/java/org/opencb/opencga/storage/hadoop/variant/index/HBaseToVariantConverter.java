@@ -219,7 +219,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
                         + row.getHomRefCount() + ". Samples number: " + samplesDataArray.length + " , ";
-                for (String studyColumn : VariantTableStudyRow.STUDY_COLUMNS) {
+                message += "'" + VariantTableStudyRow.HOM_REF + "':" + row.getHomRefCount() + " , ";
+                for (String studyColumn : VariantTableStudyRow.GENOTYPE_COLUMNS) {
                     message += "'" + studyColumn + "':" + row.getSampleIds(studyColumn) + " , ";
                 }
 

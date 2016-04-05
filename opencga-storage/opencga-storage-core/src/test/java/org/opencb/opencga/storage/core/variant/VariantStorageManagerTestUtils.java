@@ -7,8 +7,8 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +90,21 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         Files.createDirectories(rootDir);
         return rootDir;
     }
+
+//    private static File tempFile = null;
+//    protected static Path getTmpRootDir() throws IOException {
+//        if (tempFile == null) {
+//            tempFile = File.createTempFile("opencga-variants-storage-test-", null);
+//        }
+//        return tempFile.toPath();
+//    }
+
+//    @ClassRule
+//    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+//
+//    protected static Path getTmpRootDir() throws IOException {
+//        return temporaryFolder.getRoot().toPath();
+//    }
 
     @Before
     public void before() throws Exception {

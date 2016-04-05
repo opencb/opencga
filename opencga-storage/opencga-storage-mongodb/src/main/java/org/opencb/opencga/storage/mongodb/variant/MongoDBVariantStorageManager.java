@@ -77,7 +77,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     @Override
     public void dropFile(String study, int fileId) throws StorageManagerException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        getDBAdaptor().deleteFile(study, fileName, new QueryOptions(options));
+        getDBAdaptor().deleteFile(study, Integer.toString(fileId), new QueryOptions(options));
     }
 
     @Override
