@@ -1263,7 +1263,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
                 VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
 
-
+        long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
         String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
         if (defaultGenotype.equals(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE)) {
@@ -1350,7 +1350,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             queries.clear();
             updates.clear();
         }
-//        }
+        writeResult.setNewVariantsNanoTime(System.nanoTime() - nanoTime);
+        nanoTime = System.nanoTime();
 
         for (Variant variant : data) {
             variant.setAnnotation(null);
@@ -1400,6 +1401,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             }
         }
+        writeResult.setExistingVariantsNanoTime(System.nanoTime() - nanoTime);
 
         if (!queries.isEmpty()) {
             QueryOptions options = new QueryOptions("upsert", false);

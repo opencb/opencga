@@ -176,7 +176,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 //            }
 
             List<Region> regions = coveredChromosomes.stream().map(Region::new).collect(Collectors.toList());
+            long nanoTime = System.nanoTime();
             dbAdaptor.fillFileGaps(fileId, new LinkedList<>(coveredChromosomes), fileSampleIds, studyConfiguration);
+            writeResult.setFillGapsNanoTime(System.nanoTime() - nanoTime);
             dbAdaptor.createIndexes(new QueryOptions());
 
         }
