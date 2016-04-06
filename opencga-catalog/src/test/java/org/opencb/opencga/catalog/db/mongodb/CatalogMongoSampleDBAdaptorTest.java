@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class CatalogMongoSampleDBAdaptorTest {
     }
 
     @Before
-    public void before() throws IOException, CatalogDBException {
+    public void before() throws IOException, CatalogException {
         CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
         dbAdaptorTest.before();
 
@@ -310,7 +311,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                     try {
                         dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
                                 "", "", Collections.emptyList(), null), null);
-                    } catch (CatalogDBException ignore) {
+                    } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }
                 }));

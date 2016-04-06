@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
@@ -43,7 +44,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void createUserTest() throws CatalogDBException {
+    public void createUserTest() throws CatalogException {
 
         User user = new User("NewUser", "", "", "", "", User.Role.USER, new Status());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
@@ -54,18 +55,18 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void deleteUserTest() throws CatalogDBException {
+    public void deleteUserTest() throws CatalogException {
         User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new Status());
         QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
-        assertEquals("active", createUser.first().getStatus().getStatus());
+        assertEquals(Status.READY, createUser.first().getStatus().getStatus());
 
         QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), false);
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
-        assertEquals("deleted", deleteUser.first().getStatus().getStatus());
+        assertEquals(Status.DELETED, deleteUser.first().getStatus().getStatus());
 
 
         /*

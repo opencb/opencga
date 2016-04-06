@@ -118,7 +118,7 @@ public interface CatalogClient {
         Long getFileId(String fileId) throws CatalogException;
 
         QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                 String ownerId, String creationDate, String description, File.FileStatusEnum status,
+                                 String ownerId, String creationDate, String description, File.FileStatus status,
                                  long diskUsage, long experimentId, List<Integer> sampleIds, long jobId,
                                  Map<String, Object> stats, Map<String, Object> attributes,
                                  boolean parents) throws CatalogException;

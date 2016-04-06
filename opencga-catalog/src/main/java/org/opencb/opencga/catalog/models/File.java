@@ -59,7 +59,7 @@ public class File {
     private String description;
     private FileStatus status;
     @Deprecated
-    private FileStatusEnum fileStatusEnum;
+    //private FileStatusEnum fileStatusEnum;
     private long diskUsage;
     //private long studyId;
     private long experimentId;
@@ -83,21 +83,21 @@ public class File {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, FileStatusEnum fileStatusEnum, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, fileStatusEnum, diskUsage,
+                String description, FileStatus status, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
                 -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatusEnum fileStatusEnum, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, fileStatusEnum, diskUsage,
+                String creationDate, String description, FileStatus status, long diskUsage) {
+        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
                 -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
                 new HashMap<>());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatusEnum fileStatusEnum, long diskUsage, long experimentId,
+                String creationDate, String description, FileStatus status, long diskUsage, long experimentId,
                 List<Long> sampleIds, long jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
@@ -111,8 +111,7 @@ public class File {
         this.creationDate = creationDate;
         this.modificationDate = creationDate;
         this.description = description;
-        this.fileStatusEnum = fileStatusEnum;
-        this.status = new FileStatus(FileStatus.ACTIVE);
+        this.status = status;
         this.diskUsage = diskUsage;
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
@@ -139,7 +138,6 @@ public class File {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", fileStatus=").append(fileStatusEnum);
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
@@ -241,14 +239,14 @@ public class File {
         this.description = description;
     }
 
-    public FileStatusEnum getFileStatusEnum() {
+    /*public FileStatusEnum getFileStatusEnum() {
         return fileStatusEnum;
     }
 
     public void setFileStatusEnum(FileStatusEnum fileStatusEnum) {
         this.fileStatusEnum = fileStatusEnum;
     }
-
+*/
     public FileStatus getStatus() {
         return status;
     }
@@ -323,17 +321,49 @@ public class File {
 
     public static class FileStatus extends Status {
 
-        public static final String STAGE = "stage";
-        public static final String MISSING = "missing";
-        public static final String TRASHED = "trashed";
+        /**
+         * STAGE.
+         */
+        public static final String STAGE = "STAGE";
+        /**
+         * MISSING.
+         */
+        public static final String MISSING = "MISSING";
+        /**
+         * TRASHED.
+         */
+        public static final String TRASHED = "TRASHED";
 
-        public FileStatus(String status) {
-            super(status);
+        public FileStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                init(UNKNOWN, message);
+            }
         }
 
+        public FileStatus(String status) {
+            this(status, "");
+        }
+
+        public FileStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)) {
+                return true;
+            }
+            return false;
+        }
     }
 
+
     /* Status */
+    /*
     public enum FileStatusEnum {
         STAGE,
         READY,
@@ -341,6 +371,7 @@ public class File {
         TRASHED,
         DELETED
     }
+*/
 
     public enum Type {
         FOLDER,

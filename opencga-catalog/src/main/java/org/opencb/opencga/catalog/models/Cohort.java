@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,12 +46,12 @@ public class Cohort {
     }
 
     public Cohort(String name, Type type, String creationDate, String description, List<Long> samples,
-                  Map<String, Object> attributes) {
+                  Map<String, Object> attributes) throws CatalogException {
         this(-1, name, type, creationDate, CohortStatus.NONE, description, samples, Collections.emptyMap(), attributes);
     }
 
     public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Long> samples,
-                  Map<String, Object> stats, Map<String, Object> attributes) {
+                  Map<String, Object> stats, Map<String, Object> attributes) throws CatalogException {
         this.id = id;
         this.name = name;
         this.type = type;

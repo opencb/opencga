@@ -59,7 +59,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
         Bson query = Filters.eq("_id", CatalogMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
-        Bson inc = Updates.inc(field, 1);
+        Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
         QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());

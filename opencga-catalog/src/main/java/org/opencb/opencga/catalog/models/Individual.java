@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +44,7 @@ public class Individual {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) throws CatalogException {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;

@@ -529,16 +529,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), ownerSessionId);
         long job1 = catalogManager.createJob(studyId, "job1", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
                 tmpJobOutDir, outDirId, Collections.emptyList(), Collections.emptyList(),
-                new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, ownerSessionId).first().getId();
+                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, ownerSessionId).first().getId();
         long job2 = catalogManager.createJob(studyId, "job2", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
                 tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2), Collections.emptyList(),
-                new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, ownerSessionId).first().getId();
+                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, ownerSessionId).first().getId();
         long job3 = catalogManager.createJob(studyId, "job3", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
                 tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3), Collections.emptyList(),
-                new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, ownerSessionId).first().getId();
+                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, ownerSessionId).first().getId();
         long job4 = catalogManager.createJob(studyId, "job4", "toolName", "d", "", Collections.emptyMap(), "echo \"Hello World!\"",
                 tmpJobOutDir, outDirId, Collections.singletonList(data_d1_d2_d3_d4), Collections.emptyList(),
-                new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, ownerSessionId).first().getId();
+                new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, ownerSessionId).first().getId();
 
         checkGetAllJobs(studyId, Arrays.asList(job1, job2, job3, job4), ownerSessionId);    //Owner can see everything
         checkGetAllJobs(studyId, Arrays.asList(job1, job2), memberSessionId);               //Can't see inside data_d1_d2_d3

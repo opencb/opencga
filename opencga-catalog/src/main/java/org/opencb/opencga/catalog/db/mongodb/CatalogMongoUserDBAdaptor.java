@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
@@ -176,7 +177,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogDBException {
+    public QueryResult<ObjectMap> loginAsAnonymous(Session session) throws CatalogException {
         long startTime = startQuery();
 
         QueryResult<Long> countSessions = count(new Query(QueryParams.SESSION_ID.key(), session.getId()));

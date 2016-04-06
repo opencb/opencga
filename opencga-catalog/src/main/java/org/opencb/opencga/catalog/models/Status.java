@@ -8,24 +8,28 @@ import org.opencb.opencga.core.common.TimeUtils;
 public class Status {
 
     /**
-     * ACTIVE status means that the object is being used.
+     * UNKNOWN status means that the status input was not valid when created so we don't know.
      */
-    public static final String ACTIVE = "active";
+    public static final String UNKNOWN = "UNKNOWN";
+    /**
+     * READY status means that the object is being used.
+     */
+    public static final String READY = "READY";
     /**
      * DELETED status means that the object is marked as deleted although is still available in the database.
      */
-    public static final String DELETED = "deleted";
+    public static final String DELETED = "DELETED";
     /**
      * REMOVED status means that the object is marked as removed, so it will get completely removed from the database ASAP.
      */
-    public static final String REMOVED = "removed";
+    public static final String REMOVED = "REMOVED";
 
     private String status;
     private String date;
     private String message;
 
     public Status() {
-        this(ACTIVE, "");
+        this(READY, "");
     }
 
     public Status(String status) {
@@ -33,6 +37,14 @@ public class Status {
     }
 
     public Status(String status, String message) {
+        if (isValid(status)) {
+            init(status, message);
+        } else {
+            init(UNKNOWN, message);
+        }
+    }
+
+    protected void init(String status, String message) {
         this.status = status;
         this.date = TimeUtils.getTimeMillis();
         this.message = message;
@@ -50,7 +62,11 @@ public class Status {
         return date;
     }
 
-    public void setDate() {
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public void setCurrentDate() {
         this.date = TimeUtils.getTimeMillis();
     }
 
@@ -60,6 +76,13 @@ public class Status {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public static boolean isValid(String status) {
+        if (status.equals(READY) || status.equals(DELETED) || status.equals(REMOVED)) {
+            return true;
+        }
+        return false;
     }
 
     @Override

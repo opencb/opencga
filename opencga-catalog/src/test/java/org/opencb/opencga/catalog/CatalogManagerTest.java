@@ -608,7 +608,7 @@ public class CatalogManagerTest extends GenericTest {
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
-        assertTrue("", fileResult.first().getFileStatusEnum() == File.FileStatusEnum.READY);
+        assertTrue("", fileResult.first().getStatus().getStatus().equals(File.FileStatus.READY));
         assertTrue("", fileResult.first().getDiskUsage() == 200);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
@@ -1100,7 +1100,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getFileStatusEnum(), File.FileStatusEnum.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1112,7 +1112,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getFileStatusEnum(), File.FileStatusEnum.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1161,8 +1161,8 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         File stagedFile = catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt",
-                null, null, null, File.FileStatusEnum.STAGE, 0, -1, null, -1, null, null, true, null, sessionIdUser).first();
+                "folder/subfolder/subsubfolder/my_staged.txt", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
+                -1, null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
         try {
@@ -1191,9 +1191,9 @@ public class CatalogManagerTest extends GenericTest {
                 new Query("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getFileStatusEnum() == File.FileStatusEnum.TRASHED);
+        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getFileStatusEnum() == File.FileStatusEnum.TRASHED);
+            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.TRASHED));
         }
     }
 
@@ -1213,23 +1213,23 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createJob(
                 studyId, "myJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir, outDir
                         .getId(),
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.PREPARED, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionIdUser);
 //                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myReadyJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir,
                 outDir.getId(),
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.READY, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.READY), 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myQueuedJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir,
                 outDir.getId(),
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.QUEUED, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.QUEUED), 0, 0, null, sessionIdUser);
 
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir,
                 outDir.getId(),
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
         String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
         QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
@@ -1249,7 +1249,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir,
                 projectId, //Bad outputId
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
     }
 
     @Test
@@ -1262,7 +1262,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createJob(
                 studyId, "myErrorJob", "samtool", "description", "", Collections.emptyMap(), "echo \"Hello World!\"", tmpJobOutDir,
                 outDir.getId(),
-                Collections.emptyList(), null, new HashMap<>(), null, Job.JobStatusEnum.ERROR, 0, 0, null, sessionIdUser);
+                Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
 
@@ -2026,7 +2026,7 @@ public class CatalogManagerTest extends GenericTest {
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
-        thrown.expect(CatalogException.class);
+        thrown.expect(CatalogDBException.class);
         catalogManager.getCohort(myCohort.getId(), null, sessionIdUser);
     }
 

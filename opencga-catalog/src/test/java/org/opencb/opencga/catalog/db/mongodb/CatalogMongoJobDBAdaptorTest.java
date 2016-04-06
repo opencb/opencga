@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 
 import java.util.Collections;
@@ -35,17 +36,17 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void deleteJobTest() throws CatalogDBException {
+    public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
-        assertEquals("active", job.getStatus().getStatus());
+        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
         QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, false);
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
-        assertEquals("deleted", queryResult.first().getStatus().getStatus());
+        assertEquals(Job.JobStatus.DELETED, queryResult.first().getStatus().getStatus());
         try {
             System.out.println(catalogJobDBAdaptor.delete(-1, false));
             fail("error: Expected \"Job not found\" exception");
@@ -64,7 +65,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
 
     @Test
-    public void getJobTest() throws CatalogDBException {
+    public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
         Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
@@ -84,7 +85,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void incJobVisits() throws CatalogDBException {
+    public void incJobVisits() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         Job jobBefore = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections
                 .<Long>emptyList()), null).first();

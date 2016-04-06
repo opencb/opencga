@@ -282,7 +282,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         acceptedEnums.put("type", File.Type.class);
         acceptedEnums.put("format", File.Format.class);
         acceptedEnums.put("bioformat", File.Bioformat.class);
-        acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
+       // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
         } catch (CatalogDBException e) {

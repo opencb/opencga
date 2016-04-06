@@ -530,13 +530,63 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Long> update(Query query, ObjectMap parameters) {
-        throw new NotImplementedException("Update project is not implemented");
+    public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+
+        //BasicDBObject projectParameters = new BasicDBObject();
+        Bson projectParameters = new Document();
+
+        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
+        for (String s : acceptedParams) {
+            if (parameters.containsKey(s)) {
+                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
+            }
+        }
+        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+        for (String s : acceptedIntParams) {
+            if (parameters.containsKey(s)) {
+                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
+                if (anInt != Integer.MIN_VALUE) {
+                    ((Document) projectParameters).put(s, anInt);
+                }
+            }
+        }
+        Map<String, Object> attributes = parameters.getMap("attributes");
+        if (attributes != null) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
+            }
+//            projectParameters.put("projects.$.attributes", attributes);
+        }
+
+        QueryResult<UpdateResult> updateResult = new QueryResult<>();
+        if (!((Document) projectParameters).isEmpty()) {
+            Bson bsonQuery = parseQuery(query);
+            Bson updates = new Document("$set", projectParameters);
+            // Fixme: Updates
+                    /*
+            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+            */
+            updateResult = userCollection.update(bsonQuery, updates, null);
+        }
+        /*
+        if (!projectParameters.isEmpty()) {
+            BasicDBObject query = new BasicDBObject("projects.id", projectId);
+            BasicDBObject updates = new BasicDBObject("$set", projectParameters);
+            QueryResult<WriteResult> updateResult = userCollection.update(query, updates, null);
+            if (updateResult.getResult().get(0).getN() == 0) {
+                throw CatalogDBException.idNotFound("Project", projectId);
+            }
+        }
+        */
+        return endQuery("Update project", startTime, Collections.singletonList(updateResult.first().getModifiedCount()));
     }
 
     @Override
     public QueryResult<Project> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
+        checkProjectId(id);
         QueryResult<Long> update = update(new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id), parameters);
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);

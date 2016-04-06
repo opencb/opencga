@@ -105,7 +105,7 @@ public class CatalogFileUtils {
                 logger.debug("SourceURI equals to TargetURI. Only update file entry");
                 targetChecksum = sourceChecksum;
             }
-            updateFileAttributes(file, targetChecksum, targetUri, new ObjectMap("fileStatus", File.FileStatusEnum.READY), sessionId);
+            updateFileAttributes(file, targetChecksum, targetUri, new ObjectMap("status.status", File.FileStatus.READY), sessionId);
             return;
         }
 
@@ -181,7 +181,8 @@ public class CatalogFileUtils {
                 logger.info("Checksum not computed.");
             }
 
-            updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap("fileStatus", File.FileStatusEnum.READY), sessionId);
+            updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(),
+                    File.FileStatus.READY), sessionId);
 
             if (deleteSource && !fileMoved) {
                 logger.info("Deleting source file {} after moving", sourceUri);
@@ -234,7 +235,8 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, targetUri, new ObjectMap("fileStatus", File.FileStatusEnum.READY), sessionId);
+        updateFileAttributes(file, checksum, targetUri, new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(),
+                File.FileStatus.READY), sessionId);
 
     }
 
@@ -287,8 +289,8 @@ public class CatalogFileUtils {
         ParamUtils.checkObj(externalUri, "externalUri");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), File.FileStatusEnum.STAGE, parents, description, null,
-                sessionId).first();
+        File folder = catalogManager.createFolder(studyId, Paths.get(filePath), new File.FileStatus(File.FileStatus.STAGE), parents,
+                description, null, sessionId).first();
 
         checkCanLinkFile(folder, relink);
 
@@ -297,16 +299,16 @@ public class CatalogFileUtils {
 
 
     private void checkCanLinkFile(File file, boolean relink) throws CatalogException {
-        File.FileStatusEnum fileStatusEnum = file.getFileStatusEnum();
+        String fileStatusEnum = file.getStatus().getStatus();
         if (relink) {
-            if (!fileStatusEnum.equals(File.FileStatusEnum.READY)) {
+            if (!fileStatusEnum.equals(File.FileStatus.READY)) {
                 throw new CatalogIOException("Unable to relink a file with status : " + fileStatusEnum);
             }
             if (!catalogManager.isExternal(file)) {
                 throw new CatalogIOException("Unable to relink a non linked file");
             }
         } else {
-            if (!fileStatusEnum.equals(File.FileStatusEnum.STAGE) && !fileStatusEnum.equals(File.FileStatusEnum.MISSING)) {
+            if (!fileStatusEnum.equals(File.FileStatus.STAGE) && !fileStatusEnum.equals(File.FileStatus.MISSING)) {
                 throw new CatalogIOException("Unable to link a file with status : " + fileStatusEnum);
             }
         }
@@ -329,7 +331,7 @@ public class CatalogFileUtils {
         }
 
         ObjectMap objectMap = new ObjectMap("uri", externalUri);
-        objectMap.put("fileStatus", File.FileStatusEnum.READY);
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
         updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
@@ -397,7 +399,7 @@ public class CatalogFileUtils {
         }
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("fileStatus", File.FileStatusEnum.READY);
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
         updateFileAttributes(folder, null, externalUri, objectMap, sessionId);
         return catalogManager.getFile(folder.getId(), sessionId).first();
     }
@@ -409,7 +411,7 @@ public class CatalogFileUtils {
     public void delete(File file, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
 
-        if (!file.getFileStatusEnum().equals(File.FileStatusEnum.TRASHED)) {
+        if (!file.getStatus().getStatus().equals(File.FileStatus.TRASHED)) {
             throw new CatalogIOException("Only trashed files can be deleted");
         }
         long studyId = catalogManager.getStudyIdByFileId(file.getId());
@@ -417,17 +419,18 @@ public class CatalogFileUtils {
             List<File> files = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                     "~" + file.getPath() + "..*"), new QueryOptions(), sessionId).getResult();
             for (File f : files) {
-                if (f.getFileStatusEnum() != File.FileStatusEnum.TRASHED && f.getFileStatusEnum() != File.FileStatusEnum.DELETED) {
+                if (!f.getStatus().getStatus().equals(File.FileStatus.TRASHED)
+                        && !f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
                     throw new CatalogIOException("Only trashed files can be deleted");
                 }
             }
             for (File f : files) {
-                if (f.getType() == File.Type.FILE && f.getFileStatusEnum() != File.FileStatusEnum.DELETED) {
+                if (f.getType() == File.Type.FILE && !f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
                     delete(f, sessionId);
                 }
             }
             List<File> folders = files.stream()
-                    .filter(f -> f.getType() == File.Type.FOLDER && f.getFileStatusEnum() != File.FileStatusEnum.DELETED)
+                    .filter(f -> f.getType() == File.Type.FOLDER && !f.getStatus().getStatus().equals(File.FileStatus.DELETED))
                     .sorted((f1, f2) -> f2.getPath().length() - f1.getPath().length())
                     .collect(Collectors.toList());
             for (File folder : folders) {
@@ -445,7 +448,7 @@ public class CatalogFileUtils {
             }
             ioManager.deleteFile(fileUri);
         }
-        catalogManager.modifyFile(file.getId(), new ObjectMap("fileStatus", File.FileStatusEnum.DELETED), sessionId);
+        catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.DELETED), sessionId);
 
     }
 
@@ -464,31 +467,31 @@ public class CatalogFileUtils {
      */
     public File checkFile(File file, boolean calculateChecksum, String sessionId) throws CatalogException {
         File modifiedFile = file;
-        switch (file.getFileStatusEnum()) {
-            case READY:
-            case MISSING: {
+        switch (file.getStatus().getStatus()) {
+            case File.FileStatus.READY:
+            case File.FileStatus.MISSING: {
                 URI fileUri = catalogManager.getFileUri(file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
                     logger.warn("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
-                    if (file.getFileStatusEnum() != File.FileStatusEnum.MISSING) {
-                        logger.info("Set status to " + File.FileStatusEnum.MISSING);
-                        catalogManager.modifyFile(file.getId(), new ObjectMap("fileStatus", File.FileStatusEnum.MISSING), sessionId);
+                    if (!file.getStatus().getStatus().equals(File.FileStatus.MISSING)) {
+                        logger.info("Set status to " + File.FileStatus.MISSING);
+                        catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.MISSING), sessionId);
                         modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
                     }
-                } else if (file.getFileStatusEnum() == File.FileStatusEnum.MISSING) {
+                } else if (file.getStatus().getStatus().equals(File.FileStatus.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
-                    logger.info("Set status to " + File.FileStatusEnum.READY);
+                    logger.info("Set status to " + File.FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                    params.put("fileStatus", File.FileStatusEnum.READY);
+                    params.put("status.status", File.FileStatus.READY);
                     catalogManager.modifyFile(file.getId(), params, sessionId);
                     modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
                 }
                 break;
             }
-            case TRASHED: {
+            case File.FileStatus.TRASHED: {
                 URI fileUri = catalogManager.getFileUri(file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                    catalogManager.modifyFile(file.getId(), new ObjectMap("fileStatus", File.FileStatusEnum.DELETED), sessionId);
+                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.DELETED), sessionId);
                     modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
                     break;
                 }
@@ -627,9 +630,9 @@ public class CatalogFileUtils {
      * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
      */
     private void checkStatus(File file) throws CatalogIOException {
-        if (file.getFileStatusEnum() != File.FileStatusEnum.STAGE) {
+        if (!file.getStatus().getStatus().equals(File.FileStatus.STAGE)) {
             throw new CatalogIOException("File status is already uploaded and ready! "
-                    + "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getFileStatusEnum() + "' } "
+                    + "file:{ path: '" + file.getPath() + "', id:" + file.getId() + ", status: '" + file.getStatus().getStatus() + "' } "
                     + "Needs 'ignoreStatus = true' for continue.");
         }
     }

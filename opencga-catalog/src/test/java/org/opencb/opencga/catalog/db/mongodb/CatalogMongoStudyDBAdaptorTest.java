@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.Variable;
@@ -51,7 +52,7 @@ public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
      * project.
      */
     @Test
-    public void createStudySameAliasDifferentProject() throws CatalogDBException {
+    public void createStudySameAliasDifferentProject() throws CatalogException {
         QueryResult<Study> ph1 = catalogStudyDBAdaptor.createStudy(1, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "",
                 new Status(), null), null);
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);

@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.StringUtils;
@@ -24,25 +25,25 @@ import static org.junit.Assert.*;
 public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
-    public void createFileToStudyTest() throws CatalogDBException, IOException {
+    public void createFileToStudyTest() throws CatalogException, IOException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         assertTrue(studyId >= 0);
         File file;
-        file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "", File
-                .FileStatusEnum.STAGE, 1000);
+        file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "",
+                new File.FileStatus(File.FileStatus.STAGE), 1000);
         LinkedList<AclEntry> acl = new LinkedList<>();
         acl.push(new AclEntry("jcoll", true, true, true, true));
         acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcl(acl);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime
-                (), "", File.FileStatusEnum.STAGE, 1000);
+                (), "", new File.FileStatus(File.FileStatus.STAGE), 1000);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, TimeUtils
-                .getTime(), "", File.FileStatusEnum.STAGE, 1000);
+                .getTime(), "", new File.FileStatus(File.FileStatus.STAGE), 1000);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, TimeUtils.getTime
-                (), "", File.FileStatusEnum.STAGE, 1000);
+                (), "", new File.FileStatus(File.FileStatus.STAGE), 1000);
 
         try {
             System.out.println(catalogFileDBAdaptor.createFile(-20, file, null));
@@ -116,12 +117,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 .randomString(20));
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("fileStatus", File.FileStatusEnum.READY);
+        parameters.put("status.status", File.FileStatus.READY);
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
 
         file = catalogFileDBAdaptor.getFile(fileId, null).first();
-        assertEquals(file.getFileStatusEnum(), File.FileStatusEnum.READY);
+        assertEquals(file.getStatus().getStatus(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
     }

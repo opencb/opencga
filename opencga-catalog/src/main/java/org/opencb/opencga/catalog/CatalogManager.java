@@ -507,7 +507,7 @@ public class CatalogManager implements AutoCloseable {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.FileStatusEnum.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -517,7 +517,7 @@ public class CatalogManager implements AutoCloseable {
                                         boolean parents, String sessionId)
             throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
-                description, File.FileStatusEnum.STAGE, 0, -1, null, -1, null, null, parents, null, sessionId);
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
@@ -531,7 +531,7 @@ public class CatalogManager implements AutoCloseable {
 
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.FileStatusEnum status,
+                                        String ownerId, String creationDate, String description, File.FileStatus status,
                                         long diskUsage, long experimentId, List<Long> sampleIds, long jobId,
                                         Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
@@ -546,7 +546,7 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, null, options, sessionId);
     }
 
-    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatusEnum status, boolean parents, String description,
+    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
@@ -705,12 +705,9 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> createJob(long studyId, String name, String toolName, String description, String executor, Map<String, String>
-            params, String commandLine,
-                                      URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles, Map<String,
-            Object> attributes,
-                                      Map<String, Object> resourceManagerAttributes, Job.JobStatusEnum status,
-                                      long startTime, long endTime, QueryOptions options, String sessionId)
-            throws CatalogException {
+            params, String commandLine, URI tmpOutDirUri, long outDirId, List<Long> inputFiles, List<Long> outputFiles, Map<String,
+            Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime, long endTime,
+                                      QueryOptions options, String sessionId) throws CatalogException {
         return jobManager.create(studyId, name, toolName, description, executor, params, commandLine, tmpOutDirUri, outDirId, inputFiles,
                 outputFiles, attributes, resourceManagerAttributes, status, startTime, endTime, options, sessionId);
     }
@@ -734,12 +731,12 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.readAll(new Query("jobStatus",
+        return jobManager.readAll(new Query("status.status",
                 Arrays.asList(
-                        Job.JobStatusEnum.PREPARED.toString(),
-                        Job.JobStatusEnum.QUEUED.toString(),
-                        Job.JobStatusEnum.RUNNING.toString(),
-                        Job.JobStatusEnum.DONE.toString()
+                        Job.JobStatus.PREPARED,
+                        Job.JobStatus.QUEUED,
+                        Job.JobStatus.RUNNING,
+                        Job.JobStatus.DONE
                 )
         ), null, sessionId);
     }
