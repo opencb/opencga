@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -31,6 +30,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
@@ -41,17 +41,17 @@ import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -924,19 +924,23 @@ public class OpenCGAMain {
                                 System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
                                 URI tmpOutDirUri = job.getTmpOutDirUri();
                                 CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
-                                ioManager.listFilesStream(tmpOutDirUri)
-                                        .sorted()
-                                        .forEach(uri -> {
-                                                    String count;
-                                                    try {
-                                                        long fileSize = ioManager.getFileSize(uri);
-                                                        count = humanReadableByteCount(fileSize, false);
-                                                    } catch (CatalogIOException e) {
-                                                        count = "ERROR";
+                                try {
+                                    ioManager.listFilesStream(tmpOutDirUri)
+                                            .sorted()
+                                            .forEach(uri -> {
+                                                        String count;
+                                                        try {
+                                                            long fileSize = ioManager.getFileSize(uri);
+                                                            count = humanReadableByteCount(fileSize, false);
+                                                        } catch (CatalogIOException e) {
+                                                            count = "ERROR";
+                                                        }
+                                                        System.out.format("\t%s [%s]\n", tmpOutDirUri.relativize(uri), count);
                                                     }
-                                                    System.out.format("\t%s [%s]\n", tmpOutDirUri.relativize(uri), count);
-                                                }
-                                        );
+                                            );
+                                } catch (CatalogIOException e) {
+                                    System.out.println("Unable to read files from " + tmpOutDirUri + " - " + e.getCause().getMessage());
+                                }
                                 if (iterator.hasNext()) {
                                     System.out.println("-----------------------------------------");
                                 }

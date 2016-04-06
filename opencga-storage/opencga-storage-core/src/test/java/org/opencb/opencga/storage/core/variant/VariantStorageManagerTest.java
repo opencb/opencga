@@ -341,7 +341,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
             loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
-                while(values.get(1).length() < 5) values.set(1, values.get(1) + "0");   //Set lost zeros
 
             });
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
@@ -350,6 +349,96 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         reader.post();
         reader.close();
 
+    }
+
+    @Test
+    public void indexWithOtherFieldsNoGT() throws Exception {
+        //GL:DP:GU:TU:AU:CU
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+
+        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME).iterator(new Query(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            assertEquals("./.", variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GL"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "AU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "CU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
+        }
+
+    }
+
+    @Test
+    public void indexWithOtherFieldsExcludeGT() throws Exception {
+        //GL:DP:GU:TU:AU:CU
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        ETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
+                        .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), true)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 2)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+        etlResult = runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
+                        .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), false)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageManager.Options.FILE_ID.key(), 3)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+
+        for (Variant variant : getVariantStorageManager().getDBAdaptor(DB_NAME)) {
+            System.out.println(variant.toJson());
+            assertNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GL"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "AU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "CU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GU"));
+            assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
+        }
+
+        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
+
+        });
+
+        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() > 0);
+            assertTrue(variant.getStudy(STUDY_NAME).getFiles().size() <= 2);
+
+        });
+
+        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
+                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2")
+                        .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 3)
+                        .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 3), new QueryOptions());
+        iterator.forEachRemaining(variant -> {
+            System.out.println("variant.toJson() = " + variant.toJson());
+            assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
+            assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
+            if (!variant.getStudy(STUDY_NAME).getFiles().isEmpty()) {
+                assertEquals("3", variant.getStudy(STUDY_NAME).getFiles().get(0).getFileId());
+            }
+        });
     }
 
     @Test

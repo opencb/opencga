@@ -44,6 +44,7 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
     //    public final static String FORMAT_FIELD = "fm";
     public final static String GENOTYPES_FIELD = "gt";
     public static final String FILES_FIELD = "files";
+    public static final String SAMPLE_DATA_FIELD = "sampleData";
     public static final String ORI_FIELD = "_ori";
 
     public final static String ALTERNATES_FIELD = "alts";
@@ -212,10 +213,8 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
 //        }
 
         // Samples
-        if (samplesConverter != null && object.containsField(GENOTYPES_FIELD)) {
+        if (samplesConverter != null) {
             samplesConverter.convertToDataModelType(object, study, studyId);
-        } else {
-            study.setFormat(Collections.<String>emptyList());
         }
 
         return study;
@@ -326,19 +325,22 @@ public class DBObjectToStudyVariantEntryConverter implements ComplexTypeConverte
         }
 
         int studyId = Integer.parseInt(object.getStudyId());
-        BasicDBObject mongoFile = new BasicDBObject(STUDYID_FIELD, studyId);
-        mongoFile.append(FILES_FIELD, Collections.singletonList(fileObject));
+        BasicDBObject mongoStudy = new BasicDBObject(STUDYID_FIELD, studyId);
+        mongoStudy.append(FILES_FIELD, Collections.singletonList(fileObject));
         if (alternates != null && !alternates.isEmpty()) {
-            mongoFile.append(ALTERNATES_FIELD, alternates);
+            mongoStudy.append(ALTERNATES_FIELD, alternates);
         }
 
 //        if (samples != null && !samples.isEmpty()) {
         if (samplesConverter != null) {
-            mongoFile.putAll(samplesConverter.convertToStorageType(object, studyId, fileId));
+            BasicDBObject otherFields = new BasicDBObject();
+            fileObject.append(SAMPLE_DATA_FIELD, otherFields);
+            mongoStudy.putAll(samplesConverter.convertToStorageType(object, studyId, fileId, otherFields));
+
         }
 
 
-        return mongoFile;
+        return mongoStudy;
     }
 
     public DBObjectToSamplesConverter getSamplesConverter() {

@@ -25,6 +25,7 @@ import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
+import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
@@ -38,7 +39,6 @@ import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.core.converters.FullVcfCodec;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManager;
@@ -105,9 +105,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         @Deprecated
         INCLUDE_GENOTYPES ("include.genotypes", true),      //Include sample information (genotypes)
         EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
+        EXTRA_GENOTYPE_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
+        EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
         @Deprecated
         INCLUDE_SRC ("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
+        EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
 
         STUDY_CONFIGURATION ("studyConfiguration", ""),      //
         STUDY_CONFIGURATION_MANAGER_CLASS_NAME ("studyConfigurationManagerClassName", ""),
@@ -524,6 +527,23 @@ public abstract class VariantStorageManager extends StorageManager<VariantWriter
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
         studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
 
+        if (studyConfiguration.getIndexedFiles().isEmpty()) {
+            // First indexed file
+            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
+            boolean excludeGenotypes =
+                    options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+            boolean compressExtraFields =
+                    options.getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+            studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), compressExtraFields);
+
+        } else {
+            // Not first indexed file
+            // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
+            boolean excludeGenotypes = studyConfiguration.getAttributes()
+                    .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+        }
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 

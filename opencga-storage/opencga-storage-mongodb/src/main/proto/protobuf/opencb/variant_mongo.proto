@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package protobuf.opencb;
+
+option java_package = "org.opencb.opencga.storage.mongodb.variant.protobuf";
+option java_outer_classname = "VariantMongoDBProto";
+option java_generate_equals_and_hash = true;
+//option java_multiple_files = true;
+
+message OtherFields {
+//    int32 arity = 1;
+    repeated int32 intValues = 2 [packed=true];     // v == "." ? 0 : v + 1;
+    repeated int32 floatValues = 3 [packed=true];   // v == "." ? 0 : (int)(v * 1000) + 1;
+    repeated string stringValues = 4;               // v;
+}

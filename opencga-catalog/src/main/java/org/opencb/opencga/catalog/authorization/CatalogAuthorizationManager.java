@@ -744,7 +744,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private void privateCheckReadJob(String userId, Job job) throws CatalogException {
+        if (isAdmin(userId)) {
+            return;
+        }
         long studyId = jobDBAdaptor.getStudyIdByJobId(job.getId());
+
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
         StudyAuthenticationContext context = new StudyAuthenticationContext(studyId);
 
         //Make all the required queries once

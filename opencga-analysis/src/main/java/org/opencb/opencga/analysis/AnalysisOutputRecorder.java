@@ -63,17 +63,20 @@ public class AnalysisOutputRecorder {
         this.sessionId = sessionId;
     }
 
-    public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) {
+    public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) throws CatalogException {
+        /** Modifies the job to set the output and endTime. **/
+
         recordJobOutput(job);
 
-        /** Modifies the job to set the output and endTime. **/
-        try {
-            postProcessJob(job, jobFailed);
-        } catch (CatalogException e) {
-            e.printStackTrace(); //TODO: Handle exception
-        }
+        postProcessJob(job, jobFailed);
     }
-    public void recordJobOutput(Job job) {
+
+    /**
+     * Scans the temporal output folder for the job and adds all the output files to catalog
+     *
+     * @param job
+     */
+    public void recordJobOutput(Job job) throws CatalogException {
 
         try {
             /** Scans the output directory from a job or index to find all files. **/
@@ -105,9 +108,9 @@ public class AnalysisOutputRecorder {
             job.setEndTime(parameters.getLong("endTime"));
 
             //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
-        } catch (CatalogException | IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
             logger.error("Error while processing Job", e);
+            throw new CatalogException(e);
         }
     }
 
