@@ -98,6 +98,7 @@ public class JobWSServer extends OpenCGAWSServer {
         @ApiModelProperty(required = true)
         public String commandLine;
         public Status status = Status.READY;
+        public String statusMessage;
         @ApiModelProperty(required = true)
         public long outDirId;
         public List<Long> input;
@@ -107,17 +108,28 @@ public class JobWSServer extends OpenCGAWSServer {
 
     }
 
+    // TODO: Change the name for register. We are not "creating" a job, meaning that it will be put into execution, we are just registering
+    // TODO: it, so it would be necessary changing the path name "create" per "register"
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create job with POST method", position = 1, notes = "Required values: [name, toolName, commandLine]")
+    @ApiOperation(value = "Register an executed job with POST method", position = 1,
+            notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
+                    + "Required values: [name, toolName, commandLine]")
     public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "studies", required = true) InputJob job) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
-                    job.execution, job.params, job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
-                    job.resourceManagerAttributes, Job.JobStatusEnum.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
+            Job.JobStatus jobStatus;
+            if (Job.JobStatus.isValid(job.status.toString())) {
+                jobStatus = new Job.JobStatus(job.status.toString(), job.statusMessage);
+            } else {
+                jobStatus = new Job.JobStatus();
+                jobStatus.setMessage(job.statusMessage);
+            }
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
+                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
+                    job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

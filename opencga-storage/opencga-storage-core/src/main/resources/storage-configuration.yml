@@ -15,7 +15,7 @@ cellbase:
   database:   ## 'local' connection to CellBase MongoDB
     hosts:
     - ""
-    admin: ""
+    user: ""
     password: ""
     options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
   preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
@@ -42,7 +42,7 @@ storageEngines:
     database:
       hosts:
       - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
-      admin: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
       password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
@@ -68,7 +68,7 @@ storageEngines:
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-      admin: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
 
 ## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
@@ -80,7 +80,7 @@ storageEngines:
     database:
       hosts:
       - "who-master:60000"
-      admin: "admin"
+      user: "admin"
       password: "password"
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
@@ -88,5 +88,5 @@ storageEngines:
     database:
       hosts:
       - "who-master:60000"
-      admin: "admin"
+      user: "admin"
       password: "password"

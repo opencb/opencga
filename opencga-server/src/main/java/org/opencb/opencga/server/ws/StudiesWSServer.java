@@ -399,14 +399,14 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
             /** First, run CheckStudyFiles to find new missing files **/
             List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-            List<File> found = checkStudyFiles.stream().filter(f -> f.getFileStatusEnum().equals(File.FileStatusEnum.READY)).collect(Collectors.toList());
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getStatus().equals(File.FileStatus.READY)).collect(Collectors.toList());
 
             /** Get untracked files **/
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
             List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
-                    File.FileStatusEnum.MISSING), queryOptions, sessionId).getResult();
+                    File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 

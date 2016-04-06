@@ -129,13 +129,13 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.FileStatusEnum.READY, fileVcf.getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, fileVcf.getStatus().getStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobVcf = runStorageJob(sessionId, indexJobVcf);
-        assertEquals(Job.JobStatusEnum.READY, indexJobVcf.getJobStatusEnum());
+        assertEquals(Job.JobStatus.READY, indexJobVcf.getStatus().getStatus());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
@@ -160,19 +160,19 @@ public class OpenCGAWSServerTest {
 
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
-        assertEquals(Job.JobStatusEnum.READY, calculateVariantStatsJob.getJobStatusEnum());
+        assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
 
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.FileStatusEnum.READY, fileBam.getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, fileBam.getStatus().getStatus());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobBam = runStorageJob(sessionId, indexJobBam);
-        assertEquals(Job.JobStatusEnum.READY, indexJobBam.getJobStatusEnum());
+        assertEquals(Job.JobStatus.READY, indexJobBam.getStatus().getStatus());
 
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");

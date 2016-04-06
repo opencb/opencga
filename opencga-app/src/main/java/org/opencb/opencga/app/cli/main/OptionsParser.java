@@ -689,7 +689,7 @@ public class OptionsParser {
             List<File.Bioformat> bioformats;
 
             @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-            List<File.FileStatusEnum> status;
+            List<String> status;
 
         }
 

@@ -140,7 +140,7 @@ public class AnalysisJobExecutor {
             try {
                 SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
                         -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-                catalogManager.modifyJob(job.getId(), new ObjectMap("jobStatus", Job.JobStatusEnum.QUEUED), sessionId);
+                catalogManager.modifyJob(job.getId(), new ObjectMap("jobStatus", Job.JobStatus.QUEUED), sessionId);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
@@ -296,13 +296,13 @@ public class AnalysisJobExecutor {
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.JobStatusEnum.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.emptyList(),
+                            new Job.JobStatus(Job.JobStatus.PREPARED), -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.emptyList(),
                             null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.JobStatusEnum.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 jobQueryResult = executeLocal(catalogManager, job, sessionId);
@@ -311,7 +311,7 @@ public class AnalysisJobExecutor {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.JobStatusEnum.PREPARED, 0, 0, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionId);
             }
         }
         return jobQueryResult;
@@ -382,7 +382,7 @@ public class AnalysisJobExecutor {
 //                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
         ObjectMap parameters = new ObjectMap();
         parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
-        parameters.put("jobStatus", Job.JobStatusEnum.DONE);
+        parameters.put("status.status", Job.JobStatus.DONE);
         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
         /** Record output **/
@@ -391,10 +391,10 @@ public class AnalysisJobExecutor {
 
         /** Change status to READY or ERROR **/
         if (com.getExitValue() == 0) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("jobStatus", Job.JobStatusEnum.READY), sessionId);
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
         } else {
             parameters = new ObjectMap();
-            parameters.put("jobStatus", Job.JobStatusEnum.ERROR);
+            parameters.put("status.status", Job.JobStatus.ERROR);
             parameters.put("error", Job.ERRNO_FINISH_ERROR);
             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_FINISH_ERROR));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);

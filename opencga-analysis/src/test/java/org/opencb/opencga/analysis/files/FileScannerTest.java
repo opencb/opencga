@@ -91,7 +91,7 @@ public class FileScannerTest extends TestCase {
         List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.FileStatusEnum.TRASHED, catalogManager.getFile(file.getId(), sessionIdUser).first().getFileStatusEnum());
+        assertEquals(File.FileStatus.TRASHED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus().getStatus());
     }
 
     @Test
@@ -103,13 +103,13 @@ public class FileScannerTest extends TestCase {
         catalogManager.deleteFile(file.getId(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatusEnum.TRASHED, file.getFileStatusEnum());
+        assertEquals(File.FileStatus.TRASHED, file.getStatus().getStatus());
 
         Files.delete(Paths.get(catalogManager.getFileUri(file)));
         List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatusEnum.DELETED, file.getFileStatusEnum());
+        assertEquals(File.FileStatus.DELETED, file.getStatus().getStatus());
         assertEquals(1, files.size());
         assertEquals(file.getId(), files.get(0).getId());
     }
@@ -125,7 +125,7 @@ public class FileScannerTest extends TestCase {
         fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         File replacedFile = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatusEnum.READY, replacedFile.getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, replacedFile.getStatus().getStatus());
         assertEquals(file.getId(), replacedFile.getId());
         assertFalse(replacedFile.getAttributes().get("checksum").equals(file.getAttributes().get("checksum")));
     }
@@ -147,7 +147,7 @@ public class FileScannerTest extends TestCase {
 
         assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getDiskUsage() > 0));
-        files.forEach((f) -> assertEquals(f.getFileStatusEnum(), File.FileStatusEnum.READY));
+        files.forEach((f) -> assertEquals(f.getStatus().getStatus(), File.FileStatus.READY));
         files.forEach((f) -> assertTrue(f.getAttributes().containsKey("checksum")));
     }
 
@@ -169,7 +169,7 @@ public class FileScannerTest extends TestCase {
         assertEquals(1, files.size());
         File file = files.get(0);
         assertTrue(file.getDiskUsage() > 0);
-        assertEquals(File.FileStatusEnum.READY, file.getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
         assertTrue(file.getAttributes().containsKey("checksum"));
 
 
@@ -178,7 +178,7 @@ public class FileScannerTest extends TestCase {
         files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatusEnum.MISSING, files.get(0).getFileStatusEnum());
+        assertEquals(File.FileStatus.MISSING, files.get(0).getStatus().getStatus());
         String originalChecksum = files.get(0).getAttributes().get("checksum").toString();
 
         //Restore file. CheckStudyFiles. Will detect one re-tracked file. Checksum must be different.
@@ -186,7 +186,7 @@ public class FileScannerTest extends TestCase {
         files = fileScanner.checkStudyFiles(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatusEnum.READY, files.get(0).getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, files.get(0).getStatus().getStatus());
         String newChecksum = files.get(0).getAttributes().get("checksum").toString();
         assertFalse(originalChecksum.equals(newChecksum));
 
@@ -195,7 +195,7 @@ public class FileScannerTest extends TestCase {
         files = fileScanner.reSync(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatusEnum.MISSING, files.get(0).getFileStatusEnum());
+        assertEquals(File.FileStatus.MISSING, files.get(0).getStatus().getStatus());
         originalChecksum = files.get(0).getAttributes().get("checksum").toString();
 
         //Restore file. CheckStudyFiles. Will detect one found file. Checksum must be different.
@@ -203,7 +203,7 @@ public class FileScannerTest extends TestCase {
         files = fileScanner.reSync(study, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        assertEquals(File.FileStatusEnum.READY, files.get(0).getFileStatusEnum());
+        assertEquals(File.FileStatus.READY, files.get(0).getStatus().getStatus());
         newChecksum = files.get(0).getAttributes().get("checksum").toString();
         assertFalse(originalChecksum.equals(newChecksum));
 
@@ -225,7 +225,7 @@ public class FileScannerTest extends TestCase {
         Map<String, File> map = files.stream().collect(Collectors.toMap(File::getName, (f) -> f));
 
         assertEquals(6, files.size());
-        files.forEach((file) -> assertEquals(File.FileStatusEnum.READY, file.getFileStatusEnum()));
+        files.forEach((file) -> assertEquals(File.FileStatus.READY, file.getStatus().getStatus()));
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.gz").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json").getBioformat());
         assertEquals(File.Bioformat.VARIANT, map.get("file1.vcf.variants.json.gz").getBioformat());
