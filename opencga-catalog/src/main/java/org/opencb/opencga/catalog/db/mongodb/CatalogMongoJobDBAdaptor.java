@@ -53,7 +53,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         this.dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
 
-        int jobId = getNewId();
+        long jobId = getNewId();
         job.setId(jobId);
 
         Document jobObject = getMongoDBDocument(job, "job");

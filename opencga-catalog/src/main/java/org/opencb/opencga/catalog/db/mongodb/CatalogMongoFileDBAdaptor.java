@@ -72,7 +72,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         //new File Id
-        int newFileId = getNewId();
+        long newFileId = getNewId();
         file.setId(newFileId);
         if (file.getOwnerId() == null) {
             file.setOwnerId(ownerId);
@@ -643,7 +643,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Dataset { name: \"" + dataset.getName() + "\" } already exists in this study.");
         }
 
-        int newId = getNewId();
+        long newId = getNewId();
         dataset.setId(newId);
 
         Document datasetObject = getMongoDBDocument(dataset, "Dataset");

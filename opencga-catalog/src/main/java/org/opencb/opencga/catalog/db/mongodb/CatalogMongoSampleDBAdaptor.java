@@ -80,7 +80,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             throw new CatalogDBException("Sample { name: '" + sample.getName() + "'} already exists.");
         }
 
-        int sampleId = getNewId();
+        long sampleId = getNewId();
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets

@@ -45,7 +45,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         checkCohortNameExists(studyId, cohort.getName());
 
-        int newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
+        long newId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         cohort.setId(newId);
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort);

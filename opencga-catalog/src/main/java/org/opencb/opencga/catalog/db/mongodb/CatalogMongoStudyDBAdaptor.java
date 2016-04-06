@@ -104,7 +104,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         //Set new ID
 //        int newId = getNewAutoIncrementId(metaCollection);
-        int newId = getNewId();
+        long newId = getNewId();
         study.setId(newId);
 
         //Empty nested fields
@@ -351,7 +351,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("VariableSet { name: '" + variableSet.getName() + "'} already exists.");
         }
 
-        int variableSetId = getNewId();
+        long variableSetId = getNewId();
         variableSet.setId(variableSetId);
         Document object = getMongoDBDocument(variableSet, "VariableSet");
 

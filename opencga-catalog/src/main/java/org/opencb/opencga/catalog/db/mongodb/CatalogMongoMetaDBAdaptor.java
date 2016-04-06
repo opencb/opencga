@@ -43,11 +43,11 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         this.metaCollection = userCollection;
     }
 
-    public int getNewAutoIncrementId() {
+    public long getNewAutoIncrementId() {
         return getNewAutoIncrementId("idCounter"); //, metaCollection
     }
 
-    public int getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
+    public long getNewAutoIncrementId(String field) { //, MongoDBCollection metaCollection
 //        QueryResult<BasicDBObject> result = metaCollection.findAndModify(
 //                new BasicDBObject("_id", CatalogMongoDBAdaptor.METADATA_OBJECT_ID),  //Query
 //                new BasicDBObject(field, true),  //Fields
@@ -63,7 +63,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
         QueryResult<Document> result = metaCollection.findAndUpdate(query, projection, null, inc, queryOptions);
 //        return (int) Float.parseFloat(result.getResult().get(0).get(field).toString());
-        return result.getResult().get(0).getInteger(field);
+        return result.getResult().get(0).getLong(field);
     }
 
 

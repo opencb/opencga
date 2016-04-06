@@ -96,7 +96,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         //Generate json
 //        int projectId = CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
-        int projectId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
+        long projectId = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         project.setId(projectId);
 //        DBObject query = new BasicDBObject("id", userId);
 //        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));

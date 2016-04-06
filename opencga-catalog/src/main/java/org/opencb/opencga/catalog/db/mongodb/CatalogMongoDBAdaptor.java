@@ -56,7 +56,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
         super(logger);
     }
 
-    protected int getNewId() {
+    protected long getNewId() {
 //        return CatalogMongoDBUtils.getNewAutoIncrementId(metaCollection);
         return dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
     }

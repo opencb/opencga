@@ -82,7 +82,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             throw CatalogDBException.idNotFound("Individual", individual.getMotherId());
         }
 
-        int individualId = getNewId();
+        long individualId = getNewId();
 
         individual.setId(individualId);
 
