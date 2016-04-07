@@ -72,6 +72,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
+    @Deprecated
     @Override
     public QueryResult<User> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");

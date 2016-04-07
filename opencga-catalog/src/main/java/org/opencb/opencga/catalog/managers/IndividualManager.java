@@ -43,7 +43,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
-
+    @Deprecated
     @Override
     public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");

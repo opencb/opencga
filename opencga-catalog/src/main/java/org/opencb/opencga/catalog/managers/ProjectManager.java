@@ -90,6 +90,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         return queryResult;
     }
 
+    @Deprecated
     @Override
     public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");

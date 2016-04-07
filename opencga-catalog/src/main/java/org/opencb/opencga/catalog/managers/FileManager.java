@@ -221,6 +221,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         return result;
     }
 
+    @Deprecated
     @Override
     public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");

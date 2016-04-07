@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
@@ -35,7 +36,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
@@ -1360,19 +1360,19 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1,vs2"), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "VS1"), sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.ID.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.ID.key()
                 , vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
