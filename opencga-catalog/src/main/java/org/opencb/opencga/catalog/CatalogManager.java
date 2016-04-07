@@ -67,10 +67,13 @@ public class CatalogManager implements AutoCloseable {
     public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
     public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
     public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
+
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
+
     private CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
     private CatalogClient catalogClient;
+
     private IUserManager userManager;
     private IProjectManager projectManager;
     private IStudyManager studyManager;
@@ -183,6 +186,11 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
+    public void testIndices() {
+        System.out.println("vamos bien");
+        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndex();
+    }
+
     public CatalogClient client() {
         return client("");
     }
@@ -197,8 +205,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     @Deprecated
-    private void configureIOManager(Properties properties)
-            throws CatalogIOException {
+    private void configureIOManager(Properties properties) throws CatalogIOException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
     }
 

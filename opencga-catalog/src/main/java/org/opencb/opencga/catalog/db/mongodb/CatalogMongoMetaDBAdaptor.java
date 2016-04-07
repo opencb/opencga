@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
@@ -25,7 +26,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -37,10 +43,10 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     private List<String> COLLECTIONS_LIST = Collections.singletonList("");
 
-    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaMongoDBCollection) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = userCollection;
+        this.metaCollection = metaMongoDBCollection;
     }
 
     public long getNewAutoIncrementId() {
@@ -73,16 +79,35 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 //        dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection().createIndex()
     }
 
-    public void createIndex(List<String> collections) {
-        for (String collection : collections) {
-            System.out.println(collection);
-            switch (collection) {
-                case "user":
-                    break;
-                default:
-                    break;
+    public void createIndex() {
+        InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
+        ObjectMapper objectMapper = new ObjectMapper();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
+        bufferedReader.lines().filter(s -> !s.trim().isEmpty()).forEach(s -> {
+            try {
+                System.out.println(s);
+                HashMap hashMap = objectMapper.readValue(s, HashMap.class);
+                System.out.println(hashMap);
+                QueryResult<Bson> index = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection().getIndex();
+                System.out.println(index);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+        });
+        try {
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+//        for (String collection : collections) {
+//            System.out.println(collection);
+//            switch (collection) {
+//                case "user":
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
     }
 
 

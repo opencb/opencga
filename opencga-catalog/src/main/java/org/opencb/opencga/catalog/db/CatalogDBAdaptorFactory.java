@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.CatalogMongoMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
 /**
@@ -38,6 +39,8 @@ public interface CatalogDBAdaptorFactory {
     void initializeCatalogDB() throws CatalogDBException;
 
     void close();
+
+    CatalogMongoMetaDBAdaptor getCatalogMongoMetaDBAdaptor();
 
     CatalogUserDBAdaptor getCatalogUserDBAdaptor();
 

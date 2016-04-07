@@ -33,8 +33,10 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.cellbase.core.CellBaseConfiguration;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
@@ -53,6 +55,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -111,6 +114,8 @@ public class OpenCGAWSServer {
 
     protected static CatalogManager catalogManager;
     protected static StorageManagerFactory storageManagerFactory;
+
+    protected static CatalogConfiguration catalogConfiguration;
 
     static {
 
@@ -426,5 +431,12 @@ public class OpenCGAWSServer {
                 .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
                 .build();
+    }
+
+    @GET
+    @Path("/testIndices")
+    public Response testIndices() {
+        catalogManager.testIndices();
+        return Response.ok("mira el log").build();
     }
 }

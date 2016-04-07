@@ -120,6 +120,11 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
+    public CatalogMongoMetaDBAdaptor getCatalogMongoMetaDBAdaptor() {
+        return metaDBAdaptor;
+    }
+
+    @Override
     public CatalogMongoUserDBAdaptor getCatalogUserDBAdaptor() {
         return userDBAdaptor;
     }
