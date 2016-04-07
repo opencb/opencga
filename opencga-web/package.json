@@ -1,0 +1,30 @@
+{
+  "name": "opencga",
+  "version": "0.8.0-beta",
+  "description": "OpenCGA Dashboard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opencb/opencga.git"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.5",
+    "grunt-contrib-clean": "~1.0.0",
+    "grunt-contrib-concat": "~1.0.0",
+    "grunt-contrib-copy": "~1.0.0",
+    "grunt-contrib-jshint": "~1.0.0",
+    "grunt-contrib-qunit": "~1.1.0",
+    "grunt-contrib-rename": "0.0.3",
+    "grunt-contrib-uglify": "~1.0.1",
+    "grunt-contrib-watch": "~1.0.0",
+    "grunt-vulcanize": "~1.0.0",
+    "grunt-curl": "~2.2.0",
+    "grunt-html-build": "~0.5.3",
+    "grunt-hub": "~0.7.0",
+    "grunt-replace": "~0.11.0",
+    "grunt-processhtml": "~0.3.13",
+    "js-beautify": "~1.6.2",
+    "vulcanize": "~1.14.8",
+    "crisper": "~2.0.1",
+    "uglify-js": "^2.6.2"
+  }
+}
