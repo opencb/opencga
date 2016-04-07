@@ -25,7 +25,6 @@ import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
@@ -123,8 +122,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(database.getHosts());
 
         try {
-            MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, database.getUser(), database.getPassword(), database.getOptions(), false);
-            return mongoCredentials;
+            return new MongoCredentials(database, dbName);
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();
             return null;

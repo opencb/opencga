@@ -19,12 +19,10 @@ package org.opencb.opencga.storage.mongodb.alignment;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import org.bson.Document;
-import org.bson.types.Binary;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Created by jacobo on 26/08/14.

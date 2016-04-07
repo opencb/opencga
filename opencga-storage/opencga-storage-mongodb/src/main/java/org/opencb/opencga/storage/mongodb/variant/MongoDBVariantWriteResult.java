@@ -111,12 +111,24 @@ public class MongoDBVariantWriteResult {
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
 
-        if (newDocuments != that.newDocuments) return false;
-        if (updatedObjects != that.updatedObjects) return false;
-        if (skippedVariants != that.skippedVariants) return false;
-        if (nonInsertedVariants != that.nonInsertedVariants) return false;
-        if (newVariantsNanoTime != that.newVariantsNanoTime) return false;
-        if (existingVariantsNanoTime != that.existingVariantsNanoTime) return false;
+        if (newDocuments != that.newDocuments) {
+            return false;
+        }
+        if (updatedObjects != that.updatedObjects) {
+            return false;
+        }
+        if (skippedVariants != that.skippedVariants) {
+            return false;
+        }
+        if (nonInsertedVariants != that.nonInsertedVariants) {
+            return false;
+        }
+        if (newVariantsNanoTime != that.newVariantsNanoTime) {
+            return false;
+        }
+        if (existingVariantsNanoTime != that.existingVariantsNanoTime) {
+            return false;
+        }
         return fillGapsNanoTime == that.fillGapsNanoTime;
 
     }
@@ -135,15 +147,15 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public String toString() {
-        return "MongoDBVariantWriteResult{" +
-                "newDocuments=" + newDocuments +
-                ", updatedObjects=" + updatedObjects +
-                ", skippedVariants=" + skippedVariants +
-                ", nonInsertedVariants=" + nonInsertedVariants +
-                ", newVariantsTime=" + newVariantsNanoTime / 1000000000.0 + "s" +
-                ", existingVariantsTime=" + existingVariantsNanoTime / 1000000000.0 + "s" +
-                ", fillGapsTime=" + fillGapsNanoTime / 1000000000.0 + "s" +
-                '}';
+        return "MongoDBVariantWriteResult{"
+                + "newDocuments=" + newDocuments
+                + ", updatedObjects=" + updatedObjects
+                + ", skippedVariants=" + skippedVariants
+                + ", nonInsertedVariants=" + nonInsertedVariants
+                + ", newVariantsTime=" + newVariantsNanoTime / 1000000000.0 + "s"
+                + ", existingVariantsTime=" + existingVariantsNanoTime / 1000000000.0 + "s"
+                + ", fillGapsTime=" + fillGapsNanoTime / 1000000000.0 + "s"
+                + '}';
     }
 
 }

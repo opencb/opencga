@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.junit.Test;
-import org.opencb.datastore.core.Query;
+import org.opencb.commons.datastore.core.Query;
 
 import java.util.Arrays;
 import java.util.Collections;

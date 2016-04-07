@@ -31,11 +31,13 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     private MongoCursor<Document> dbCursor;
     private DocumentToVariantConverter documentToVariantConverter;
 
-    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter) { //Package protected
+    //Package protected
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter) {
         this(dbCursor, documentToVariantConverter, 100);
     }
 
-    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter, int batchSize) { //Package protected
+    //Package protected
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter, int batchSize) {
         this.documentToVariantConverter = documentToVariantConverter;
         if (batchSize > 0) {
             dbCursor.batchSize(batchSize);

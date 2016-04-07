@@ -73,12 +73,7 @@
                     <artifactId>hbase-server</artifactId>
                     <groupId>org.apache.hbase</groupId>
                 </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.datastore</groupId>
-            <artifactId>datastore-hbase</artifactId>
-            <version>${datastore.version}</version>
+            </exclusions>q
         </dependency>
 
         <dependency>

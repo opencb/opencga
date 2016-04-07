@@ -373,12 +373,12 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //                .append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD,fileId)
                 .append(CoverageMongoDBWriter.FILES_FIELD, new BasicDBObject("$elemMatch", new BasicDBObject(CoverageMongoDBWriter
                         .FILE_ID_FIELD, fileId)))
-                .append(CoverageMongoDBWriter.FILES_FIELD + "." + coverageType, true)
+                .append(CoverageMongoDBWriter.FILES_FIELD + "." + coverageType, true);
 
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToRegionCoverageConverter.COVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToMeanCoverageConverter.AVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD, true)
-                ;
+
 
         System.out.println("db." + CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME + ".find(" + query.toString() + ", " + projection
                 .toString() + ")");

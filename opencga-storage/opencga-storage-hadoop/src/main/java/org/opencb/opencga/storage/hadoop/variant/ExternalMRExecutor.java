@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exec.Command;
 
 import java.util.List;

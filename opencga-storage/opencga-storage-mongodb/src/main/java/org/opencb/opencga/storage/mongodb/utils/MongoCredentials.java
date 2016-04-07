@@ -39,7 +39,8 @@ public class MongoCredentials implements OpenCGACredentials {
     private final String mongoDbName;
     private MongoDBConfiguration mongoDBConfiguration;
 
-    public MongoCredentials(String mongoHost, int mongoPort, String mongoDbName, String mongoUser, String mongoPassword, boolean checkConnection)
+    public MongoCredentials(String mongoHost, int mongoPort, String mongoDbName, String mongoUser, String mongoPassword,
+                            boolean checkConnection)
             throws IllegalOpenCGACredentialsException {
         this.mongoDbName = mongoDbName;
         mongoDBConfiguration = MongoDBConfiguration.builder()

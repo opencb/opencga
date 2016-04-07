@@ -21,7 +21,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.hpg.bigdata.tools.alignment.Bam2AvroMR;
 import org.opencb.hpg.bigdata.tools.alignment.stats.ReadAlignmentDepthMR;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;

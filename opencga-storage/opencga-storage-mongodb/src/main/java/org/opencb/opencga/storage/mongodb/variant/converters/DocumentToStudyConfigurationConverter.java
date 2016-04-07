@@ -45,7 +45,8 @@ public class DocumentToStudyConfigurationConverter implements ComplexTypeConvert
     @Override
     public StudyConfiguration convertToDataModelType(Document document) {
         try {
-            return objectMapper.readValue(objectMapper.writeValueAsString(document).replace(TO_REPLACE_DOTS, "."), StudyConfiguration.class);
+            String json = objectMapper.writeValueAsString(document).replace(TO_REPLACE_DOTS, ".");
+            return objectMapper.readValue(json, StudyConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
         }

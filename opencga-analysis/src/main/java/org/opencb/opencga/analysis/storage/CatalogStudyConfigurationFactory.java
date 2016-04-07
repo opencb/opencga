@@ -81,7 +81,7 @@ public class CatalogStudyConfigurationFactory {
         Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
         StudyConfiguration studyConfiguration = null;
         if (studyConfigurationManager != null) {
-            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, options).first();
+            studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new org.opencb.commons.datastore.core.QueryOptions(options)).first();
         }
         studyConfiguration = fillStudyConfiguration(studyConfiguration, study, sessionId);
 
@@ -202,13 +202,13 @@ public class CatalogStudyConfigurationFactory {
             studyConfiguration.setCohorts(new HashMap<>());
         }
         if (studyConfiguration.getAttributes() == null) {
-            studyConfiguration.setAttributes(new ObjectMap());
+            studyConfiguration.setAttributes(new org.opencb.commons.datastore.core.ObjectMap());
         }
     }
 
     public void updateStudyConfigurationFromCatalog(int studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
-        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new org.opencb.commons.datastore.core.QueryOptions());
     }
 
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {

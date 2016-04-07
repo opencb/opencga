@@ -16,7 +16,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;

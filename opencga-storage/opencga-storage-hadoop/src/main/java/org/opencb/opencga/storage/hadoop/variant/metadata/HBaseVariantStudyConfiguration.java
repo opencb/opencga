@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 
 import java.util.List;

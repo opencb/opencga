@@ -177,7 +177,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
-        Document query = (Document) parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new Document());
+        Document query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new Document());
 
         // { $pull : { files : {  sid : <studyId> } } }
         Document update = new Document(
@@ -746,7 +746,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private Document parseQuery(Query query, Document mongoQuery) {
         QueryBuilder builder = new QueryBuilder();
-
         if (query != null) {
             /** VARIANT PARAMS **/
             if (query.get(VariantQueryParams.CHROMOSOME.key()) != null && !query.getString(VariantQueryParams.CHROMOSOME.key()).isEmpty()) {

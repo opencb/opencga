@@ -22,12 +22,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -179,7 +179,8 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                         + "VariantSource", studyId);
 
                 if (sourceDbAdaptor != null) {
-                    QueryResult samplesBySource = sourceDbAdaptor.getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
+                    QueryResult samplesBySource = sourceDbAdaptor
+                            .getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
                     if (samplesBySource.getResult().isEmpty()) {
                         logger.warn("DocumentToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
                     } else {
@@ -197,17 +198,16 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
         Map<String, Integer> sampleIds = getIndexedSamplesIdMap(studyId);
-        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
+//        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
 
         List<String> extraFields = studyConfiguration.getAttributes()
-                .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
-        boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD) || studyConfiguration.getAttributes()
-                .getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
+                || studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyConfiguration.getAttributes()
-                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
@@ -272,7 +272,8 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
             List<Document> fileObjects = (List<Document>) object.get(DocumentToStudyVariantEntryConverter.FILES_FIELD);
-            Map<Integer, Document> files = fileObjects.stream().collect(Collectors.toMap(f -> (Integer) f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD), f -> f));
+            Map<Integer, Document> files = fileObjects.stream()
+                    .collect(Collectors.toMap(f -> (Integer) f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD), f -> f));
 
             for (Integer fid : studyConfiguration.getIndexedFiles()) {
                 if (files.containsKey(fid)) {
@@ -399,11 +400,11 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(),
+                Options.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyConfiguration.getAttributes()
-                .getBoolean(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
         Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
@@ -461,9 +462,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
 
         List<String> extraFields = studyConfiguration.getAttributes()
-                .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
         List<String> extraFieldsType = studyConfiguration.getAttributes()
-                .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
 
         for (int i = 0; i < extraFields.size(); i++) {
             String extraField = extraFields.get(i);
@@ -634,7 +635,7 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 
     public List<String> getFormat(int studyId) {
         StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS
                 .key());
         if (extraFields.isEmpty()) {
             return Collections.singletonList("GT");
