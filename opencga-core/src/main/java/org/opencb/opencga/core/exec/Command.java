@@ -236,7 +236,7 @@ public class Command extends RunnableProcess {
      * @return the environment
      */
     public List<String> getEnvironment() {
-        return Collections.unmodifiableList(
+        return environment == null ? Collections.emptyList() : Collections.unmodifiableList(
                 environment.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.toList()));
     }
 

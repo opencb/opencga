@@ -383,7 +383,7 @@ public class AnalysisFileIndexer {
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" index-alignments ")
+                    .append(" alignment index ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --database ").append(dataStore.getDbName())
@@ -413,7 +413,7 @@ public class AnalysisFileIndexer {
             String userId = catalogManager.getUserIdByProjectId(projectId);
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" index-variants ")
+                    .append(" variant index ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
 //                    .append(" --study-name \'").append(study.getName()).append("\'")

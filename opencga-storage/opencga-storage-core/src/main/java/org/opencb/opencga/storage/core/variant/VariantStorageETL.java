@@ -87,6 +87,9 @@ public abstract class VariantStorageETL implements StorageETL {
         this.dbAdaptor = dbAdaptor;
         this.variantReaderUtils = variantReaderUtils;
         this.options = options;
+        if (dbAdaptor == null) {
+            options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+        }
     }
 
     @Override
@@ -102,8 +105,9 @@ public abstract class VariantStorageETL implements StorageETL {
         int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
 
+        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), false);
         StudyConfiguration studyConfiguration;
-        if (studyId < 0 && fileId < 0) {
+        if (studyId < 0 && fileId < 0 || isolate) {
             logger.debug("Isolated study configuration");
             studyConfiguration = new StudyConfiguration(Options.STUDY_ID.defaultValue(), "unknown", Options.FILE_ID.defaultValue(),
                     fileName);
