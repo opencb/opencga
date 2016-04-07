@@ -51,10 +51,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
-    private final HdfsVariantReaderUtils variantReaderUtils;
+    private HdfsVariantReaderUtils variantReaderUtils;
 
     public HadoopVariantStorageManager() {
-        variantReaderUtils = new HdfsVariantReaderUtils(conf);
+//        variantReaderUtils = new HdfsVariantReaderUtils(conf);
     }
 
     @Override
@@ -162,7 +162,16 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 
         return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
-                hadoopConfiguration, archiveCredentials, variantReaderUtils, options);
+                hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+    }
+
+    private HdfsVariantReaderUtils getVariantReaderUtils(Configuration config) {
+        if (null == variantReaderUtils) {
+            variantReaderUtils = new HdfsVariantReaderUtils(config);
+        } else if (this.variantReaderUtils.conf == null && config != null) {
+            variantReaderUtils = new HdfsVariantReaderUtils(config);
+        }
+        return variantReaderUtils;
     }
 
     @Override
@@ -325,7 +334,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     public VariantSource readVariantSource(URI input) throws StorageManagerException {
-        return variantReaderUtils.readVariantSource(input);
+        return getVariantReaderUtils(null).readVariantSource(input);
     }
 
     private static class HdfsVariantReaderUtils extends VariantReaderUtils {
