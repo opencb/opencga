@@ -32,11 +32,12 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Date: 8/06/14
- * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
+ * Date: 8/06/14.
  *
- * AlignmentsFileName     : <name>.alignments.json.gz
- * HeaderFileName         : <name>.header.json.gz
+ * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
+ *         <p>
+ *         AlignmentsFileName     : <name>.alignments.json.gz
+ *         HeaderFileName         : <name>.header.json.gz
  */
 public class AlignmentJsonDataWriter implements AlignmentDataWriter {
 
@@ -69,14 +70,13 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
     }
 
     public AlignmentJsonDataWriter(AlignmentDataReader reader, String baseFilename, boolean gzip) {
-        this.alignmentFilename  = baseFilename + ".alignments" + (gzip ? ".json.gz" : ".json");
-        this.headerFilename     = baseFilename + ".header"     + (gzip ? ".json.gz" : ".json");
+        this.alignmentFilename = baseFilename + ".alignments" + (gzip ? ".json.gz" : ".json");
+        this.headerFilename = baseFilename + ".header" + (gzip ? ".json.gz" : ".json");
         this.reader = reader;
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
         this.gzip = gzip;
     }
-
 
 
     @Override
@@ -98,13 +98,13 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
     @Override
     public boolean open() {
         try {
-            
-            alignmentOutputStream = new FileOutputStream(alignmentFilename , append);
-            headerOutputStream    = new FileOutputStream(headerFilename, append);
 
-            if(gzip){
-                alignmentOutputStream   = new GZIPOutputStream(alignmentOutputStream);
-                headerOutputStream      = new GZIPOutputStream(headerOutputStream);
+            alignmentOutputStream = new FileOutputStream(alignmentFilename, append);
+            headerOutputStream = new FileOutputStream(headerFilename, append);
+
+            if (gzip) {
+                alignmentOutputStream = new GZIPOutputStream(alignmentOutputStream);
+                headerOutputStream = new GZIPOutputStream(headerOutputStream);
             }
 
 
@@ -166,7 +166,7 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
     @Override
     public boolean write(List<Alignment> batch) {
         for (Alignment elem : batch) {
-            if(!write(elem)){
+            if (!write(elem)) {
                 return false;
             }
         }
@@ -174,11 +174,11 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
     }
 
     @Override
-     public boolean post() {
+    public boolean post() {
         //TODO: Write Summary
         AlignmentHeader header = reader.getHeader();
         writeHeader(header);
-        
+
         try {
             alignmentOutputStream.flush();
             alignmentsGenerator.flush();
@@ -200,7 +200,6 @@ public class AlignmentJsonDataWriter implements AlignmentDataWriter {
         }
         return true;
     }
-
 
 
     public boolean isAppend() {

@@ -59,7 +59,7 @@ public class SqliteManager {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
         connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath.toString(), config.toProperties());
-        connection.setAutoCommit(false);//Set false to perform commits manually and increase performance on insertion
+        connection.setAutoCommit(false); //Set false to perform commits manually and increase performance on insertion
     }
 
     public void disconnect(boolean commit) throws SQLException {
@@ -168,13 +168,13 @@ public class SqliteManager {
             for (String colName : updateColumns) {
                 sbQuery.append("'" + colName + "'=?, ");
             }
-            sbQuery.delete(sbQuery.length() - 2, sbQuery.length());//", ".length()
+            sbQuery.delete(sbQuery.length() - 2, sbQuery.length()); //", ".length()
             sbQuery.append(" WHERE ");
             Set<String> whereColumns = xObject.keySet();
             for (String colName : whereColumns) {
                 sbQuery.append("'" + colName + "'=? AND ");
             }
-            sbQuery.delete(sbQuery.length() - 5, sbQuery.length());//" AND ".length()
+            sbQuery.delete(sbQuery.length() - 5, sbQuery.length()); //" AND ".length()
 
             System.out.println(sbQuery.toString());
 
@@ -401,4 +401,5 @@ public class SqliteManager {
         }
         return sb.toString();
     }
+
 }

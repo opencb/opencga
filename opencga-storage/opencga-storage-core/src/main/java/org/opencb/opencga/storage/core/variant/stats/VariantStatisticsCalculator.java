@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedEVSStatsCalculator;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedExacStatsCalculator;
@@ -33,6 +33,7 @@ import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggr
  * Created by jmmut on 28/01/15.
  */
 public class VariantStatisticsCalculator {
+
     private int skippedFiles;
     private boolean overwrite;
     private VariantAggregatedStatsCalculator aggregatedCalculator;
@@ -56,10 +57,11 @@ public class VariantStatisticsCalculator {
     }
 
     /**
-     * if the study is aggregated i.e. it doesn't have sample data, call this before calculate. It is not needed if the 
+     * if the study is aggregated i.e. it doesn't have sample data, call this before calculate. It is not needed if the
      * study does have samples.
+     *
      * @param aggregation see org.opencb.biodata.models.variant.VariantSource.Aggregation
-     * @param tagmap nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
+     * @param tagmap      nullable, see org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator()
      */
     public void setAggregationType(VariantSource.Aggregation aggregation, Properties tagmap) {
         aggregatedCalculator = null;
@@ -69,21 +71,25 @@ public class VariantStatisticsCalculator {
                 aggregatedCalculator = null;
                 break;
             case BASIC:
-                    aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
+                aggregatedCalculator = new VariantAggregatedStatsCalculator(tagmap);
                 break;
             case EVS:
-                    aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
+                aggregatedCalculator = new VariantAggregatedEVSStatsCalculator(tagmap);
                 break;
             case EXAC:
-                    aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
+                aggregatedCalculator = new VariantAggregatedExacStatsCalculator(tagmap);
+                break;
+            default:
                 break;
         }
     }
 
     /**
      * Creates another map with the intersection of the parameters.
-     * @param allSamples Map that contains the values we want a subset of
+     *
+     * @param allSamples    Map that contains the values we want a subset of
      * @param samplesToKeep set of names of samples
+     * @param <T> Type
      * @return variant with just the samples in 'samplesToKeep'
      */
     public <T> Map<String, T> filterSamples(Map<String, T> allSamples, Set<String> samplesToKeep) {
@@ -100,16 +106,18 @@ public class VariantStatisticsCalculator {
 
     /**
      * computes the VariantStats for each subset of samples.
-     * @param variants
-     * @param studyId needed to choose the VariantSourceEntry in the variants
-     * @param fileId  needed to choose the VariantSourceEntry in the variants
-     * @param samples keys are cohort names, values are sets of samples names. groups of samples (cohorts) for each to compute VariantStats.
+     *
+     * @param variants variants to to calculate stats from
+     * @param studyId  needed to choose the VariantSourceEntry in the variants
+     * @param fileId   needed to choose the VariantSourceEntry in the variants
+     * @param samples  keys are cohort names, values are sets of samples names. groups of samples (cohorts) for each to compute
+     *                 VariantStats.
      * @return list of VariantStatsWrapper. may be shorter than the list of variants if there is no source for some variant
      */
-    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId, String fileId
-            , Map<String, Set<String>> samples) {
+    public List<VariantStatsWrapper> calculateBatch(List<Variant> variants, String studyId, String fileId,
+                                                    Map<String, Set<String>> samples) {
         List<VariantStatsWrapper> variantStatsWrappers = new ArrayList<>(variants.size());
-        
+
         for (Variant variant : variants) {
             StudyEntry study = null;
             for (StudyEntry entry : variant.getStudies()) {
@@ -122,7 +130,7 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
-            
+
             if (!isAggregated(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || study.getStats(cohort.getKey()) == null) {
@@ -134,7 +142,8 @@ public class VariantStatisticsCalculator {
 
                     }
                 }
-            } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation.NONE.equals(aggregation))
+            } else if (aggregatedCalculator != null) { // another way to say that the study is aggregated (!VariantSource.Aggregation
+                // .NONE.equals(aggregation))
 //                study.setAttributes(removeAttributePrefix(study.getAttributes()));
                 aggregatedCalculator.calculate(variant, study);
             }
@@ -151,8 +160,8 @@ public class VariantStatisticsCalculator {
     }
 
     @Deprecated
-    public static Map<String, String> removeAttributePrefix(Map<String, String> attributes) 
-    throws IllegalArgumentException {
+    public static Map<String, String> removeAttributePrefix(Map<String, String> attributes)
+            throws IllegalArgumentException {
         Map<String, String> newAttributes = new LinkedHashMap<>(attributes.size());
         Set<String> prefixSet = new LinkedHashSet<>();
         for (String key : attributes.keySet()) {
@@ -160,10 +169,10 @@ public class VariantStatisticsCalculator {
             prefixSet.add(split[0]);
             newAttributes.put(split[1], attributes.get(key));
         }
-        
+
         if (prefixSet.size() > 1) {
-                throw new IllegalArgumentException("attributes should contain only one fileId prefix, and there are: "
-                        + prefixSet.toString());
+            throw new IllegalArgumentException("attributes should contain only one fileId prefix, and there are: "
+                    + prefixSet.toString());
         }
         return newAttributes;
     }

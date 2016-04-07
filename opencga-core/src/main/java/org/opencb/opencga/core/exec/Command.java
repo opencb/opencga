@@ -17,14 +17,17 @@
 package org.opencb.opencga.core.exec;
 
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.opencga.core.common.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Command extends RunnableProcess {
 
@@ -34,8 +37,9 @@ public class Command extends RunnableProcess {
     // protected Arguments arguments;
 
     private String commandLine;
-    private List<String> environment;
+    private Map<String, String> environment;
     private Process proc;
+    private boolean clearEnvironment = false;
 
     protected static Logger logger = LoggerFactory.getLogger(Command.class);
     private StringBuffer outputBuffer = new StringBuffer();
@@ -52,14 +56,14 @@ public class Command extends RunnableProcess {
 
     public Command(String commandLine, List<String> environment) {
         this.commandLine = commandLine;
-        this.environment = environment;
+        this.environment = parseEnvironment(environment);
         cmdArray = Commandline.translateCommandline(getCommandLine());
     }
 
     public Command(String[] cmdArray, List<String> environment) {
         this.cmdArray = cmdArray;
         this.commandLine = Commandline.toString(cmdArray);
-        this.environment = environment;
+        this.environment = parseEnvironment(environment);
     }
 
     @Override
@@ -70,7 +74,14 @@ public class Command extends RunnableProcess {
             startTime();
             logger.debug(Commandline.describeCommand(cmdArray));
             if (environment != null && environment.size() > 0) {
-                proc = Runtime.getRuntime().exec(cmdArray, ListUtils.toArray(environment));
+                ProcessBuilder processBuilder = new ProcessBuilder(cmdArray);
+                if (clearEnvironment) {
+                    processBuilder.environment().clear();
+                }
+                processBuilder.environment().putAll(environment);
+//                logger.debug("Environment variables:");
+//                processBuilder.environment().forEach((k, v) -> logger.debug("\t" + k + "=" + v));
+                proc = processBuilder.start();
             } else {
                 proc = Runtime.getRuntime().exec(cmdArray);
             }
@@ -144,7 +155,7 @@ public class Command extends RunnableProcess {
                             outputOutputStream.flush();
                         }
                         Thread.sleep(500);
-                        logger.debug("stdout - Sleep (last bytesRead = " + bytesRead + ")");
+                        logger.trace("stdout - Sleep (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadOutputStream - Exit while");
                 } catch (Exception ex) {
@@ -187,7 +198,7 @@ public class Command extends RunnableProcess {
                             errorOutputStream.flush();
                         }
                         Thread.sleep(500);
-                        logger.debug("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
+                        logger.trace("stderr - Sleep  (last bytesRead = " + bytesRead + ")");
                     }
                     logger.debug("ReadErrorStream - Exit while");
                 } catch (Exception ex) {
@@ -218,13 +229,46 @@ public class Command extends RunnableProcess {
      * @param environment the environment to set
      */
     public void setEnvironment(List<String> environment) {
-        this.environment = environment;
+        this.environment = parseEnvironment(environment);
     }
 
     /**
      * @return the environment
      */
     public List<String> getEnvironment() {
+        return Collections.unmodifiableList(
+                environment.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.toList()));
+    }
+
+    /**
+     * @param environment the environment to set
+     */
+    public void setEnvironmentMap(Map<String, String> environment) {
+        this.environment = environment;
+    }
+
+    /**
+     * @return the environment as map
+     */
+    public Map<String, String> getEnvironmentMap() {
+        return environment;
+    }
+
+    public boolean isClearEnvironment() {
+        return clearEnvironment;
+    }
+
+    public Command setClearEnvironment(boolean clearEnvironment) {
+        this.clearEnvironment = clearEnvironment;
+        return this;
+    }
+
+    private Map<String, String> parseEnvironment(List<String> environmentList) {
+        Map<String, String> environment = new HashMap<>();
+        for (String s : environmentList) {
+            String[] split = s.split("=");
+            environment.put(split[0], split[1]);
+        }
         return environment;
     }
 

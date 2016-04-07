@@ -26,7 +26,7 @@ import java.util.Map;
 public class DatabaseCredentials {
 
     /**
-     * host attribute includes port with this format 'host[:port]'
+     * host attribute includes port with this format 'host[:port]'.
      */
     private List<String> hosts;
 
@@ -34,7 +34,7 @@ public class DatabaseCredentials {
     private String password;
 
     /**
-     * options parameter defines database-specific parameters such as --authenticateDatabase of MongoDB
+     * options parameter defines database-specific parameters such as --authenticateDatabase of MongoDB.
      */
     private Map<String, String> options;
 
@@ -54,17 +54,16 @@ public class DatabaseCredentials {
         this.options = options;
     }
 
-
     @Override
     public String toString() {
-        return "DatabaseCredentials{" +
-                "hosts=" + hosts +
-                ", user='" + user + '\'' +
-                ", password='" + password + '\'' +
-                ", options=" + options +
-                '}';
+        final StringBuilder sb = new StringBuilder("DatabaseCredentials{");
+        sb.append("hosts=").append(hosts);
+        sb.append(", user='").append(user).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", options=").append(options);
+        sb.append('}');
+        return sb.toString();
     }
-
 
     public List<String> getHosts() {
         return hosts;

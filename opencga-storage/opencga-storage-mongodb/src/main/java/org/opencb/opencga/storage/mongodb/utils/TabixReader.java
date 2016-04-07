@@ -96,8 +96,8 @@ public class TabixReader {
 
     private static int reg2bins(final int beg, final int _end, final int[] list) {
         int i = 0, k, end = _end;
-        if (beg >= end) return 0;
-        if (end >= 1 << 29) end = 1 << 29;
+        if (beg >= end) { return 0; }
+        if (end >= 1 << 29) { end = 1 << 29; }
         --end;
         list[i++] = 0;
         for (k = 1 + (beg >> 26); k <= 1 + (end >> 26); ++k) list[i++] = k;
@@ -125,7 +125,7 @@ public class TabixReader {
         int c;
         while ((c = is.read()) >= 0 && c != '\n')
             buf.append((char) c);
-        if (c < 0) return null;
+        if (c < 0) { return null; }
         return buf.toString();
     }
 
@@ -135,7 +135,7 @@ public class TabixReader {
      * @param fp File pointer
      */
     public void readIndex(final File fp) throws IOException {
-        if (fp == null) return;
+        if (fp == null) { return; }
         BlockCompressedInputStream is = new BlockCompressedInputStream(fp);
         byte[] buf = new byte[4];
 
@@ -203,8 +203,7 @@ public class TabixReader {
     }
 
     private int chr2tid(final String chr) {
-        if (mChr2tid.containsKey(chr)) return mChr2tid.get(chr);
-        else return -1;
+        if (mChr2tid.containsKey(chr)) { return mChr2tid.get(chr); } else { return -1; }
     }
 
     /**
@@ -212,7 +211,7 @@ public class TabixReader {
      *
      * @param reg Region string
      * @return An array where the three elements are sequence_id,
-     *         region_begin and region_end. On failure, sequence_id==-1.
+     * region_begin and region_end. On failure, sequence_id==-1.
      */
     public int[] parseReg(final String reg) { // FIXME: NOT working when the sequence name contains : or -.
         String chr;
@@ -236,14 +235,12 @@ public class TabixReader {
                 intv.tid = chr2tid(s.substring(beg, end));
             } else if (col == mBc) {
                 intv.beg = intv.end = Integer.parseInt(s.substring(beg, end == -1 ? s.length() : end));
-                if ((mPreset & 0x10000) != 0) ++intv.end;
-                else --intv.beg;
-                if (intv.beg < 0) intv.beg = 0;
-                if (intv.end < 1) intv.end = 1;
+                if ((mPreset & 0x10000) != 0) { ++intv.end; } else { --intv.beg; }
+                if (intv.beg < 0) { intv.beg = 0; }
+                if (intv.end < 1) { intv.end = 1; }
             } else { // FIXME: SAM supports are not tested yet
                 if ((mPreset & 0xffff) == 0) { // generic
-                    if (col == mEc)
-                        intv.end = Integer.parseInt(s.substring(beg, end));
+                    if (col == mEc) { intv.end = Integer.parseInt(s.substring(beg, end)); }
                 } else if ((mPreset & 0xffff) == 1) { // SAM
                     if (col == 6) { // CIGAR
                         int l = 0, i, j;
@@ -251,8 +248,7 @@ public class TabixReader {
                         for (i = j = 0; i < cigar.length(); ++i) {
                             if (cigar.charAt(i) > '9') {
                                 int op = cigar.charAt(i);
-                                if (op == 'M' || op == 'D' || op == 'N')
-                                    l += Integer.parseInt(cigar.substring(j, i));
+                                if (op == 'M' || op == 'D' || op == 'N') { l += Integer.parseInt(cigar.substring(j, i)); }
                             }
                         }
                         intv.end = intv.beg + l;
@@ -261,13 +257,12 @@ public class TabixReader {
                     String alt;
                     alt = end >= 0 ? s.substring(beg, end) : s.substring(beg);
                     if (col == 4) { // REF
-                        if (alt.length() > 0) intv.end = intv.beg + alt.length();
+                        if (alt.length() > 0) { intv.end = intv.beg + alt.length(); }
                     } else if (col == 8) { // INFO
                         int e_off = -1, i = alt.indexOf("END=");
-                        if (i == 0) e_off = 4;
-                        else if (i > 0) {
+                        if (i == 0) { e_off = 4; } else if (i > 0) {
                             i = alt.indexOf(";END=");
-                            if (i >= 0) e_off = i + 5;
+                            if (i >= 0) { e_off = i + 5; }
                         }
                         if (e_off > 0) {
                             i = alt.indexOf(";", e_off);
@@ -276,7 +271,7 @@ public class TabixReader {
                     }
                 }
             }
-            if (end == -1) break;
+            if (end == -1) { break; }
             beg = end + 1;
         }
         return intv;
@@ -301,11 +296,15 @@ public class TabixReader {
         }
 
         public String next() throws IOException {
-            if (iseof) return null;
+            if (iseof) { return null; }
             for (; ; ) {
                 if (curr_off == 0 || !less64(curr_off, off[i].v)) { // then jump to the next chunk
-                    if (i == off.length - 1) break; // no more chunks
-                    if (i >= 0) assert (curr_off == off[i].v); // otherwise bug
+                    if (i == off.length - 1) {
+                        break; // no more chunks
+                    }
+                    if (i >= 0) {
+                        assert (curr_off == off[i].v); // otherwise bug
+                    }
                     if (i < 0 || off[i].v != off[i + 1].u) { // not adjacent chunks; then seek
                         mFp.seek(off[i + 1].u);
                         curr_off = mFp.getFilePointer();
@@ -318,11 +317,16 @@ public class TabixReader {
                     TIntv intv;
                     char[] str = s.toCharArray();
                     curr_off = mFp.getFilePointer();
-                    if (str.length == 0 || str[0] == mMeta) continue;
+                    if (str.length == 0 || str[0] == mMeta) { continue; }
                     intv = getIntv(s);
-                    if (intv.tid != tid || intv.beg >= end) break; // no need to proceed
-                    else if (intv.end > beg && intv.beg < end) return s; // overlap; return
-                } else break; // end of file
+                    if (intv.tid != tid || intv.beg >= end) {
+                        break; // no need to proceed
+                    } else if (intv.end > beg && intv.beg < end) {
+                        return s; // overlap; return
+                    }
+                } else {
+                    break; // end of file
+                }
             }
             iseof = true;
             return null;
@@ -337,21 +341,20 @@ public class TabixReader {
         TIndex idx = mIndex[tid];
         int[] bins = new int[MAX_BIN];
         int i, l, n_off, n_bins = reg2bins(beg, end, bins);
-        if (idx.l.length > 0)
+        if (idx.l.length > 0) {
             min_off = (beg >> TAD_LIDX_SHIFT >= idx.l.length) ? idx.l[idx.l.length - 1] : idx.l[beg >> TAD_LIDX_SHIFT];
-        else min_off = 0;
+        } else { min_off = 0; }
         for (i = n_off = 0; i < n_bins; ++i) {
-            if ((chunks = idx.b.get(bins[i])) != null)
-                n_off += chunks.length;
+            if ((chunks = idx.b.get(bins[i])) != null) { n_off += chunks.length; }
         }
-        if (n_off == 0) return null;
+        if (n_off == 0) { return null; }
         off = new TPair64[n_off];
         for (i = n_off = 0; i < n_bins; ++i)
-            if ((chunks = idx.b.get(bins[i])) != null)
+            if ((chunks = idx.b.get(bins[i])) != null) {
                 for (int j = 0; j < chunks.length; ++j)
-                    if (less64(min_off, chunks[j].v))
-                        off[n_off++] = new TPair64(chunks[j]);
-        if (n_off == 0) return null;
+                    if (less64(min_off, chunks[j].v)) { off[n_off++] = new TPair64(chunks[j]); }
+            }
+        if (n_off == 0) { return null; }
         Arrays.sort(off, 0, n_off);
         // resolve completely contained adjacent blocks
         for (i = 1, l = 0; i < n_off; ++i) {
@@ -364,11 +367,10 @@ public class TabixReader {
         n_off = l + 1;
         // resolve overlaps between adjacent blocks; this may happen due to the merge in indexing
         for (i = 1; i < n_off; ++i)
-            if (!less64(off[i - 1].v, off[i].u)) off[i - 1].v = off[i].u;
+            if (!less64(off[i - 1].v, off[i].u)) { off[i - 1].v = off[i].u; }
         // merge adjacent blocks
         for (i = 1, l = 0; i < n_off; ++i) {
-            if (off[l].v >> 16 == off[i].u >> 16) off[l].v = off[i].v;
-            else {
+            if (off[l].v >> 16 == off[i].u >> 16) { off[l].v = off[i].v; } else {
                 ++l;
                 off[l].u = off[i].u;
                 off[l].v = off[i].v;

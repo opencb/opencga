@@ -7,13 +7,16 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.opencb.commons.io.DataWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Created on 09/11/15
+ * Created on 09/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -23,6 +26,7 @@ public class AvroDataWriter<T extends GenericRecord> implements DataWriter<T> {
     private boolean gzip;
     private DataFileWriter<T> avroWriter;
     private Schema schema;
+    protected Logger logger = LoggerFactory.getLogger(this.getClass().toString());
 
     public AvroDataWriter(Path outputPath, boolean gzip, Schema schema) {
         this.outputPath = outputPath;
@@ -48,12 +52,18 @@ public class AvroDataWriter<T extends GenericRecord> implements DataWriter<T> {
 
     @Override
     public boolean write(List<T> batch) {
+        T last = null;
         try {
             for (T t : batch) {
+                last = t;
                 avroWriter.append(t);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logger.error("last element : " + last, e);
+            throw new UncheckedIOException(e);
+        } catch (Exception e) {
+            logger.error("last element : " + last, e);
+            throw e;
         }
         return true;
     }

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created on 01/10/15
+ * Created on 01/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -24,13 +24,16 @@ public class VariantAvroTransformTask extends VariantTransformTask<ByteBuffer> {
 
     protected final AvroEncoder<VariantAvro> encoder;
 
-    public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includesrc) {
+    public VariantAvroTransformTask(VariantFactory factory, VariantSource source, Path outputFileJsonFile,
+                                    VariantGlobalStatsCalculator variantStatsTask, boolean includesrc) {
         super(factory, source, outputFileJsonFile, variantStatsTask, includesrc);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 
-    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc);
+    public VariantAvroTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source,
+                                    Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc,
+                                    boolean generateReferenceBlocks) {
+        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
         this.encoder = new AvroEncoder<>(VariantAvro.getClassSchema());
     }
 

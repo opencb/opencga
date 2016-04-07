@@ -2,11 +2,11 @@ package org.opencb.opencga.storage.core.variant.stats;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
@@ -41,7 +41,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public static void beforeClass() throws IOException {
         Path rootDir = getTmpRootDir();
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+                StandardCopyOption.REPLACE_EXISTING);
         inputUri = inputPath.toUri();
     }
 
@@ -50,7 +51,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
-        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
+        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(),
+                false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
@@ -157,11 +159,13 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
                 Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
-                    assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " + calculatedCohorts,
+                    assertTrue("CohortStats should contain stats for cohort " + entry.getKey() + ". Only contains stats for " +
+                                    calculatedCohorts,
                             cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
 
                     assertEquals("Stats have less genotypes than expected.",
-                            studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to the number of samples)
+                            studyConfiguration.getCohorts().get(entry.getValue()).size(),  //Check numGenotypes are correct (equals to
+                            // the number of samples)
                             cohortStats.get(entry.getKey()).getGenotypesCount().values().stream().reduce(0, (a, b) -> a + b).intValue());
                 }
             }
