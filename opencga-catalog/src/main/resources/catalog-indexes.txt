@@ -1,0 +1,3 @@
+{"collection": "user", "fields": [""], "options": {}}
+
+{"collection": "", "fields": [""], "options": {"unique": true}}
