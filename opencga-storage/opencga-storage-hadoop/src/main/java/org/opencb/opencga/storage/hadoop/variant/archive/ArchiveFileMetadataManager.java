@@ -154,6 +154,12 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                     set = new LinkedHashSet<Integer>();
                     for (String s : Bytes.toString(value).split(",")) {
                         if (!s.isEmpty()) {
+                            if (s.startsWith("[")) {
+                                s = s.replaceFirst("[", "");
+                            }
+                            if (s.endsWith("]")) {
+                                s = s.replaceAll("]", "");
+                            }
                             set.add(Integer.parseInt(s));
                         }
                     }
