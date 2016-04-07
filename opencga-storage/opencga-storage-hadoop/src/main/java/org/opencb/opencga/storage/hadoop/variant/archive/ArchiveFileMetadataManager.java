@@ -155,10 +155,10 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                     for (String s : Bytes.toString(value).split(",")) {
                         if (!s.isEmpty()) {
                             if (s.startsWith("[")) {
-                                s = s.replaceFirst("[", "");
+                                s = s.replaceFirst("\\[", "");
                             }
                             if (s.endsWith("]")) {
-                                s = s.replaceAll("]", "");
+                                s = s.replaceAll("\\]", "");
                             }
                             set.add(Integer.parseInt(s));
                         }
