@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -18,7 +19,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -49,13 +50,12 @@ public class FileMetadataReaderTest extends TestCase {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
-        CatalogManagerTest.clearCatalog(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");

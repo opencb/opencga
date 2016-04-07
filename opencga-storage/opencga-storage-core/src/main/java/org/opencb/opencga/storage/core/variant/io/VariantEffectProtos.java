@@ -23,2483 +23,2735 @@ import com.google.protobuf.AbstractMessage;
 
 @Deprecated
 public final class VariantEffectProtos {
-  private VariantEffectProtos() {}
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
-  }
-  public interface EffectInfoOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
-    
-    // required string reference = 1;
-    boolean hasReference();
-    String getReference();
-    
-    // required string alternative = 2;
-    boolean hasAlternative();
-    String getAlternative();
-    
-    // required string chromosome = 3;
-    boolean hasChromosome();
-    String getChromosome();
-    
-    // required int32 position = 4;
-    boolean hasPosition();
-    int getPosition();
-    
-    // optional string featureId = 5;
-    boolean hasFeatureId();
-    String getFeatureId();
-    
-    // optional string featureName = 6;
-    boolean hasFeatureName();
-    String getFeatureName();
-    
-    // optional string featureType = 7;
-    boolean hasFeatureType();
-    String getFeatureType();
-    
-    // optional string featureBiotype = 8;
-    boolean hasFeatureBiotype();
-    String getFeatureBiotype();
-    
-    // optional string featureChromosome = 9;
-    boolean hasFeatureChromosome();
-    String getFeatureChromosome();
-    
-    // optional int32 featureStart = 10;
-    boolean hasFeatureStart();
-    int getFeatureStart();
-    
-    // optional int32 featureEnd = 11;
-    boolean hasFeatureEnd();
-    int getFeatureEnd();
-    
-    // optional string featureStrand = 12;
-    boolean hasFeatureStrand();
-    String getFeatureStrand();
-    
-    // optional string snpId = 13;
-    boolean hasSnpId();
-    String getSnpId();
-    
-    // optional string ancestral = 14;
-    boolean hasAncestral();
-    String getAncestral();
-    
-    // optional string geneId = 15;
-    boolean hasGeneId();
-    String getGeneId();
-    
-    // optional string transcriptId = 16;
-    boolean hasTranscriptId();
-    String getTranscriptId();
-    
-    // optional string geneName = 17;
-    boolean hasGeneName();
-    String getGeneName();
-    
-    // optional string consequenceType = 18;
-    boolean hasConsequenceType();
-    String getConsequenceType();
-    
-    // optional string consequenceTypeObo = 19;
-    boolean hasConsequenceTypeObo();
-    String getConsequenceTypeObo();
-    
-    // optional string consequenceTypeDesc = 20;
-    boolean hasConsequenceTypeDesc();
-    String getConsequenceTypeDesc();
-    
-    // optional string consequenceTypeType = 21;
-    boolean hasConsequenceTypeType();
-    String getConsequenceTypeType();
-    
-    // optional int32 aaPosition = 22;
-    boolean hasAaPosition();
-    int getAaPosition();
-    
-    // optional string aminoacidChange = 23;
-    boolean hasAminoacidChange();
-    String getAminoacidChange();
-    
-    // optional string codonChange = 24;
-    boolean hasCodonChange();
-    String getCodonChange();
-  }
-  public static final class EffectInfo extends
-      com.google.protobuf.GeneratedMessage
-      implements EffectInfoOrBuilder {
-    // Use EffectInfo.newBuilder() to construct.
-    private EffectInfo(Builder builder) {
-      super(builder);
+    private VariantEffectProtos() {
     }
-    private EffectInfo(boolean noInit) {}
-    
-    private static final EffectInfo defaultInstance;
-    public static EffectInfo getDefaultInstance() {
-      return defaultInstance;
+
+    public static void registerAllExtensions(
+            com.google.protobuf.ExtensionRegistry registry) {
     }
-    
-    public EffectInfo getDefaultInstanceForType() {
-      return defaultInstance;
+
+    public interface EffectInfoOrBuilder
+            extends com.google.protobuf.MessageOrBuilder {
+
+        // required string reference = 1;
+        boolean hasReference();
+
+        String getReference();
+
+        // required string alternative = 2;
+        boolean hasAlternative();
+
+        String getAlternative();
+
+        // required string chromosome = 3;
+        boolean hasChromosome();
+
+        String getChromosome();
+
+        // required int32 position = 4;
+        boolean hasPosition();
+
+        int getPosition();
+
+        // optional string featureId = 5;
+        boolean hasFeatureId();
+
+        String getFeatureId();
+
+        // optional string featureName = 6;
+        boolean hasFeatureName();
+
+        String getFeatureName();
+
+        // optional string featureType = 7;
+        boolean hasFeatureType();
+
+        String getFeatureType();
+
+        // optional string featureBiotype = 8;
+        boolean hasFeatureBiotype();
+
+        String getFeatureBiotype();
+
+        // optional string featureChromosome = 9;
+        boolean hasFeatureChromosome();
+
+        String getFeatureChromosome();
+
+        // optional int32 featureStart = 10;
+        boolean hasFeatureStart();
+
+        int getFeatureStart();
+
+        // optional int32 featureEnd = 11;
+        boolean hasFeatureEnd();
+
+        int getFeatureEnd();
+
+        // optional string featureStrand = 12;
+        boolean hasFeatureStrand();
+
+        String getFeatureStrand();
+
+        // optional string snpId = 13;
+        boolean hasSnpId();
+
+        String getSnpId();
+
+        // optional string ancestral = 14;
+        boolean hasAncestral();
+
+        String getAncestral();
+
+        // optional string geneId = 15;
+        boolean hasGeneId();
+
+        String getGeneId();
+
+        // optional string transcriptId = 16;
+        boolean hasTranscriptId();
+
+        String getTranscriptId();
+
+        // optional string geneName = 17;
+        boolean hasGeneName();
+
+        String getGeneName();
+
+        // optional string consequenceType = 18;
+        boolean hasConsequenceType();
+
+        String getConsequenceType();
+
+        // optional string consequenceTypeObo = 19;
+        boolean hasConsequenceTypeObo();
+
+        String getConsequenceTypeObo();
+
+        // optional string consequenceTypeDesc = 20;
+        boolean hasConsequenceTypeDesc();
+
+        String getConsequenceTypeDesc();
+
+        // optional string consequenceTypeType = 21;
+        boolean hasConsequenceTypeType();
+
+        String getConsequenceTypeType();
+
+        // optional int32 aaPosition = 22;
+        boolean hasAaPosition();
+
+        int getAaPosition();
+
+        // optional string aminoacidChange = 23;
+        boolean hasAminoacidChange();
+
+        String getAminoacidChange();
+
+        // optional string codonChange = 24;
+        boolean hasCodonChange();
+
+        String getCodonChange();
     }
-    
-    public static final com.google.protobuf.Descriptors.Descriptor
+
+    public static final class EffectInfo extends
+            com.google.protobuf.GeneratedMessage
+            implements EffectInfoOrBuilder {
+        // Use EffectInfo.newBuilder() to construct.
+        private EffectInfo(Builder builder) {
+            super(builder);
+        }
+
+        private EffectInfo(boolean noInit) {
+        }
+
+        private static final EffectInfo defaultInstance;
+
+        public static EffectInfo getDefaultInstance() {
+            return defaultInstance;
+        }
+
+        public EffectInfo getDefaultInstanceForType() {
+            return defaultInstance;
+        }
+
+        public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
-    }
-    
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
+        }
+
+        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
-    }
-    
-    private int bitField0_;
-    // required string reference = 1;
-    public static final int REFERENCE_FIELD_NUMBER = 1;
-    private java.lang.Object reference_;
-    public boolean hasReference() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    public String getReference() {
-      java.lang.Object ref = reference_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          reference_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getReferenceBytes() {
-      java.lang.Object ref = reference_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        reference_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // required string alternative = 2;
-    public static final int ALTERNATIVE_FIELD_NUMBER = 2;
-    private java.lang.Object alternative_;
-    public boolean hasAlternative() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public String getAlternative() {
-      java.lang.Object ref = alternative_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          alternative_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getAlternativeBytes() {
-      java.lang.Object ref = alternative_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        alternative_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // required string chromosome = 3;
-    public static final int CHROMOSOME_FIELD_NUMBER = 3;
-    private java.lang.Object chromosome_;
-    public boolean hasChromosome() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    public String getChromosome() {
-      java.lang.Object ref = chromosome_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          chromosome_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getChromosomeBytes() {
-      java.lang.Object ref = chromosome_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        chromosome_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // required int32 position = 4;
-    public static final int POSITION_FIELD_NUMBER = 4;
-    private int position_;
-    public boolean hasPosition() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    public int getPosition() {
-      return position_;
-    }
-    
-    // optional string featureId = 5;
-    public static final int FEATUREID_FIELD_NUMBER = 5;
-    private java.lang.Object featureId_;
-    public boolean hasFeatureId() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    public String getFeatureId() {
-      java.lang.Object ref = featureId_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureId_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureIdBytes() {
-      java.lang.Object ref = featureId_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string featureName = 6;
-    public static final int FEATURENAME_FIELD_NUMBER = 6;
-    private java.lang.Object featureName_;
-    public boolean hasFeatureName() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
-    }
-    public String getFeatureName() {
-      java.lang.Object ref = featureName_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureName_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureNameBytes() {
-      java.lang.Object ref = featureName_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureName_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string featureType = 7;
-    public static final int FEATURETYPE_FIELD_NUMBER = 7;
-    private java.lang.Object featureType_;
-    public boolean hasFeatureType() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
-    }
-    public String getFeatureType() {
-      java.lang.Object ref = featureType_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureType_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureTypeBytes() {
-      java.lang.Object ref = featureType_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureType_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string featureBiotype = 8;
-    public static final int FEATUREBIOTYPE_FIELD_NUMBER = 8;
-    private java.lang.Object featureBiotype_;
-    public boolean hasFeatureBiotype() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
-    }
-    public String getFeatureBiotype() {
-      java.lang.Object ref = featureBiotype_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureBiotype_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureBiotypeBytes() {
-      java.lang.Object ref = featureBiotype_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureBiotype_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string featureChromosome = 9;
-    public static final int FEATURECHROMOSOME_FIELD_NUMBER = 9;
-    private java.lang.Object featureChromosome_;
-    public boolean hasFeatureChromosome() {
-      return ((bitField0_ & 0x00000100) == 0x00000100);
-    }
-    public String getFeatureChromosome() {
-      java.lang.Object ref = featureChromosome_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureChromosome_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureChromosomeBytes() {
-      java.lang.Object ref = featureChromosome_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureChromosome_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional int32 featureStart = 10;
-    public static final int FEATURESTART_FIELD_NUMBER = 10;
-    private int featureStart_;
-    public boolean hasFeatureStart() {
-      return ((bitField0_ & 0x00000200) == 0x00000200);
-    }
-    public int getFeatureStart() {
-      return featureStart_;
-    }
-    
-    // optional int32 featureEnd = 11;
-    public static final int FEATUREEND_FIELD_NUMBER = 11;
-    private int featureEnd_;
-    public boolean hasFeatureEnd() {
-      return ((bitField0_ & 0x00000400) == 0x00000400);
-    }
-    public int getFeatureEnd() {
-      return featureEnd_;
-    }
-    
-    // optional string featureStrand = 12;
-    public static final int FEATURESTRAND_FIELD_NUMBER = 12;
-    private java.lang.Object featureStrand_;
-    public boolean hasFeatureStrand() {
-      return ((bitField0_ & 0x00000800) == 0x00000800);
-    }
-    public String getFeatureStrand() {
-      java.lang.Object ref = featureStrand_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          featureStrand_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getFeatureStrandBytes() {
-      java.lang.Object ref = featureStrand_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        featureStrand_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string snpId = 13;
-    public static final int SNPID_FIELD_NUMBER = 13;
-    private java.lang.Object snpId_;
-    public boolean hasSnpId() {
-      return ((bitField0_ & 0x00001000) == 0x00001000);
-    }
-    public String getSnpId() {
-      java.lang.Object ref = snpId_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          snpId_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getSnpIdBytes() {
-      java.lang.Object ref = snpId_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        snpId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string ancestral = 14;
-    public static final int ANCESTRAL_FIELD_NUMBER = 14;
-    private java.lang.Object ancestral_;
-    public boolean hasAncestral() {
-      return ((bitField0_ & 0x00002000) == 0x00002000);
-    }
-    public String getAncestral() {
-      java.lang.Object ref = ancestral_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          ancestral_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getAncestralBytes() {
-      java.lang.Object ref = ancestral_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        ancestral_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string geneId = 15;
-    public static final int GENEID_FIELD_NUMBER = 15;
-    private java.lang.Object geneId_;
-    public boolean hasGeneId() {
-      return ((bitField0_ & 0x00004000) == 0x00004000);
-    }
-    public String getGeneId() {
-      java.lang.Object ref = geneId_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          geneId_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getGeneIdBytes() {
-      java.lang.Object ref = geneId_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        geneId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string transcriptId = 16;
-    public static final int TRANSCRIPTID_FIELD_NUMBER = 16;
-    private java.lang.Object transcriptId_;
-    public boolean hasTranscriptId() {
-      return ((bitField0_ & 0x00008000) == 0x00008000);
-    }
-    public String getTranscriptId() {
-      java.lang.Object ref = transcriptId_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          transcriptId_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getTranscriptIdBytes() {
-      java.lang.Object ref = transcriptId_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        transcriptId_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string geneName = 17;
-    public static final int GENENAME_FIELD_NUMBER = 17;
-    private java.lang.Object geneName_;
-    public boolean hasGeneName() {
-      return ((bitField0_ & 0x00010000) == 0x00010000);
-    }
-    public String getGeneName() {
-      java.lang.Object ref = geneName_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          geneName_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getGeneNameBytes() {
-      java.lang.Object ref = geneName_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        geneName_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string consequenceType = 18;
-    public static final int CONSEQUENCETYPE_FIELD_NUMBER = 18;
-    private java.lang.Object consequenceType_;
-    public boolean hasConsequenceType() {
-      return ((bitField0_ & 0x00020000) == 0x00020000);
-    }
-    public String getConsequenceType() {
-      java.lang.Object ref = consequenceType_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          consequenceType_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getConsequenceTypeBytes() {
-      java.lang.Object ref = consequenceType_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        consequenceType_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string consequenceTypeObo = 19;
-    public static final int CONSEQUENCETYPEOBO_FIELD_NUMBER = 19;
-    private java.lang.Object consequenceTypeObo_;
-    public boolean hasConsequenceTypeObo() {
-      return ((bitField0_ & 0x00040000) == 0x00040000);
-    }
-    public String getConsequenceTypeObo() {
-      java.lang.Object ref = consequenceTypeObo_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          consequenceTypeObo_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getConsequenceTypeOboBytes() {
-      java.lang.Object ref = consequenceTypeObo_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        consequenceTypeObo_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string consequenceTypeDesc = 20;
-    public static final int CONSEQUENCETYPEDESC_FIELD_NUMBER = 20;
-    private java.lang.Object consequenceTypeDesc_;
-    public boolean hasConsequenceTypeDesc() {
-      return ((bitField0_ & 0x00080000) == 0x00080000);
-    }
-    public String getConsequenceTypeDesc() {
-      java.lang.Object ref = consequenceTypeDesc_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          consequenceTypeDesc_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getConsequenceTypeDescBytes() {
-      java.lang.Object ref = consequenceTypeDesc_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        consequenceTypeDesc_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string consequenceTypeType = 21;
-    public static final int CONSEQUENCETYPETYPE_FIELD_NUMBER = 21;
-    private java.lang.Object consequenceTypeType_;
-    public boolean hasConsequenceTypeType() {
-      return ((bitField0_ & 0x00100000) == 0x00100000);
-    }
-    public String getConsequenceTypeType() {
-      java.lang.Object ref = consequenceTypeType_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          consequenceTypeType_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getConsequenceTypeTypeBytes() {
-      java.lang.Object ref = consequenceTypeType_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        consequenceTypeType_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional int32 aaPosition = 22;
-    public static final int AAPOSITION_FIELD_NUMBER = 22;
-    private int aaPosition_;
-    public boolean hasAaPosition() {
-      return ((bitField0_ & 0x00200000) == 0x00200000);
-    }
-    public int getAaPosition() {
-      return aaPosition_;
-    }
-    
-    // optional string aminoacidChange = 23;
-    public static final int AMINOACIDCHANGE_FIELD_NUMBER = 23;
-    private java.lang.Object aminoacidChange_;
-    public boolean hasAminoacidChange() {
-      return ((bitField0_ & 0x00400000) == 0x00400000);
-    }
-    public String getAminoacidChange() {
-      java.lang.Object ref = aminoacidChange_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          aminoacidChange_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getAminoacidChangeBytes() {
-      java.lang.Object ref = aminoacidChange_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        aminoacidChange_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    // optional string codonChange = 24;
-    public static final int CODONCHANGE_FIELD_NUMBER = 24;
-    private java.lang.Object codonChange_;
-    public boolean hasCodonChange() {
-      return ((bitField0_ & 0x00800000) == 0x00800000);
-    }
-    public String getCodonChange() {
-      java.lang.Object ref = codonChange_;
-      if (ref instanceof String) {
-        return (String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        String s = bs.toStringUtf8();
-        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
-          codonChange_ = s;
-        }
-        return s;
-      }
-    }
-    private com.google.protobuf.ByteString getCodonChangeBytes() {
-      java.lang.Object ref = codonChange_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
-        codonChange_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-    
-    private void initFields() {
-      reference_ = "";
-      alternative_ = "";
-      chromosome_ = "";
-      position_ = 0;
-      featureId_ = "";
-      featureName_ = "";
-      featureType_ = "";
-      featureBiotype_ = "";
-      featureChromosome_ = "";
-      featureStart_ = 0;
-      featureEnd_ = 0;
-      featureStrand_ = "";
-      snpId_ = "";
-      ancestral_ = "";
-      geneId_ = "";
-      transcriptId_ = "";
-      geneName_ = "";
-      consequenceType_ = "";
-      consequenceTypeObo_ = "";
-      consequenceTypeDesc_ = "";
-      consequenceTypeType_ = "";
-      aaPosition_ = 0;
-      aminoacidChange_ = "";
-      codonChange_ = "";
-    }
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
-      
-      if (!hasReference()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasAlternative()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasChromosome()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasPosition()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      memoizedIsInitialized = 1;
-      return true;
-    }
-    
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      getSerializedSize();
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getReferenceBytes());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBytes(2, getAlternativeBytes());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getChromosomeBytes());
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeInt32(4, position_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeBytes(5, getFeatureIdBytes());
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeBytes(6, getFeatureNameBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        output.writeBytes(7, getFeatureTypeBytes());
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        output.writeBytes(8, getFeatureBiotypeBytes());
-      }
-      if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        output.writeBytes(9, getFeatureChromosomeBytes());
-      }
-      if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        output.writeInt32(10, featureStart_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        output.writeInt32(11, featureEnd_);
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        output.writeBytes(12, getFeatureStrandBytes());
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        output.writeBytes(13, getSnpIdBytes());
-      }
-      if (((bitField0_ & 0x00002000) == 0x00002000)) {
-        output.writeBytes(14, getAncestralBytes());
-      }
-      if (((bitField0_ & 0x00004000) == 0x00004000)) {
-        output.writeBytes(15, getGeneIdBytes());
-      }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        output.writeBytes(16, getTranscriptIdBytes());
-      }
-      if (((bitField0_ & 0x00010000) == 0x00010000)) {
-        output.writeBytes(17, getGeneNameBytes());
-      }
-      if (((bitField0_ & 0x00020000) == 0x00020000)) {
-        output.writeBytes(18, getConsequenceTypeBytes());
-      }
-      if (((bitField0_ & 0x00040000) == 0x00040000)) {
-        output.writeBytes(19, getConsequenceTypeOboBytes());
-      }
-      if (((bitField0_ & 0x00080000) == 0x00080000)) {
-        output.writeBytes(20, getConsequenceTypeDescBytes());
-      }
-      if (((bitField0_ & 0x00100000) == 0x00100000)) {
-        output.writeBytes(21, getConsequenceTypeTypeBytes());
-      }
-      if (((bitField0_ & 0x00200000) == 0x00200000)) {
-        output.writeInt32(22, aaPosition_);
-      }
-      if (((bitField0_ & 0x00400000) == 0x00400000)) {
-        output.writeBytes(23, getAminoacidChangeBytes());
-      }
-      if (((bitField0_ & 0x00800000) == 0x00800000)) {
-        output.writeBytes(24, getCodonChangeBytes());
-      }
-      getUnknownFields().writeTo(output);
-    }
-    
-    private int memoizedSerializedSize = -1;
-    public int getSerializedSize() {
-      int size = memoizedSerializedSize;
-      if (size != -1) return size;
-    
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getReferenceBytes());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(2, getAlternativeBytes());
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getChromosomeBytes());
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(4, position_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(5, getFeatureIdBytes());
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(6, getFeatureNameBytes());
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(7, getFeatureTypeBytes());
-      }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(8, getFeatureBiotypeBytes());
-      }
-      if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(9, getFeatureChromosomeBytes());
-      }
-      if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(10, featureStart_);
-      }
-      if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(11, featureEnd_);
-      }
-      if (((bitField0_ & 0x00000800) == 0x00000800)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(12, getFeatureStrandBytes());
-      }
-      if (((bitField0_ & 0x00001000) == 0x00001000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(13, getSnpIdBytes());
-      }
-      if (((bitField0_ & 0x00002000) == 0x00002000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(14, getAncestralBytes());
-      }
-      if (((bitField0_ & 0x00004000) == 0x00004000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(15, getGeneIdBytes());
-      }
-      if (((bitField0_ & 0x00008000) == 0x00008000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(16, getTranscriptIdBytes());
-      }
-      if (((bitField0_ & 0x00010000) == 0x00010000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(17, getGeneNameBytes());
-      }
-      if (((bitField0_ & 0x00020000) == 0x00020000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(18, getConsequenceTypeBytes());
-      }
-      if (((bitField0_ & 0x00040000) == 0x00040000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(19, getConsequenceTypeOboBytes());
-      }
-      if (((bitField0_ & 0x00080000) == 0x00080000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(20, getConsequenceTypeDescBytes());
-      }
-      if (((bitField0_ & 0x00100000) == 0x00100000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(21, getConsequenceTypeTypeBytes());
-      }
-      if (((bitField0_ & 0x00200000) == 0x00200000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(22, aaPosition_);
-      }
-      if (((bitField0_ & 0x00400000) == 0x00400000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(23, getAminoacidChangeBytes());
-      }
-      if (((bitField0_ & 0x00800000) == 0x00800000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(24, getCodonChangeBytes());
-      }
-      size += getUnknownFields().getSerializedSize();
-      memoizedSerializedSize = size;
-      return size;
-    }
-    
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
-      return super.writeReplace();
-    }
-    
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data).buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return newBuilder().mergeFrom(data, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantEffectProtos.EffectInfo parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      Builder builder = newBuilder();
-      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
-        return builder.buildParsed();
-      } else {
-        return null;
-      }
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input).buildParsed();
-    }
-    public static VariantEffectProtos.EffectInfo parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return newBuilder().mergeFrom(input, extensionRegistry)
-               .buildParsed();
-    }
-    
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(VariantEffectProtos.EffectInfo prototype) {
-      return newBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() { return newBuilder(this); }
-    
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements VariantEffectProtos.EffectInfoOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
-      }
-      
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
-      }
-      
-      // Construct using org.opencb.opencga.storage.core.variant.io.VariantEffectProtos.EffectInfo.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-      
-      private Builder(BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
-      }
-      private static Builder create() {
-        return new Builder();
-      }
-      
-      public Builder clear() {
-        super.clear();
-        reference_ = "";
-        bitField0_ = (bitField0_ & ~0x00000001);
-        alternative_ = "";
-        bitField0_ = (bitField0_ & ~0x00000002);
-        chromosome_ = "";
-        bitField0_ = (bitField0_ & ~0x00000004);
-        position_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000008);
-        featureId_ = "";
-        bitField0_ = (bitField0_ & ~0x00000010);
-        featureName_ = "";
-        bitField0_ = (bitField0_ & ~0x00000020);
-        featureType_ = "";
-        bitField0_ = (bitField0_ & ~0x00000040);
-        featureBiotype_ = "";
-        bitField0_ = (bitField0_ & ~0x00000080);
-        featureChromosome_ = "";
-        bitField0_ = (bitField0_ & ~0x00000100);
-        featureStart_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000200);
-        featureEnd_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000400);
-        featureStrand_ = "";
-        bitField0_ = (bitField0_ & ~0x00000800);
-        snpId_ = "";
-        bitField0_ = (bitField0_ & ~0x00001000);
-        ancestral_ = "";
-        bitField0_ = (bitField0_ & ~0x00002000);
-        geneId_ = "";
-        bitField0_ = (bitField0_ & ~0x00004000);
-        transcriptId_ = "";
-        bitField0_ = (bitField0_ & ~0x00008000);
-        geneName_ = "";
-        bitField0_ = (bitField0_ & ~0x00010000);
-        consequenceType_ = "";
-        bitField0_ = (bitField0_ & ~0x00020000);
-        consequenceTypeObo_ = "";
-        bitField0_ = (bitField0_ & ~0x00040000);
-        consequenceTypeDesc_ = "";
-        bitField0_ = (bitField0_ & ~0x00080000);
-        consequenceTypeType_ = "";
-        bitField0_ = (bitField0_ & ~0x00100000);
-        aaPosition_ = 0;
-        bitField0_ = (bitField0_ & ~0x00200000);
-        aminoacidChange_ = "";
-        bitField0_ = (bitField0_ & ~0x00400000);
-        codonChange_ = "";
-        bitField0_ = (bitField0_ & ~0x00800000);
-        return this;
-      }
-      
-      public Builder clone() {
-        return create().mergeFrom(buildPartial());
-      }
-      
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return VariantEffectProtos.EffectInfo.getDescriptor();
-      }
-      
-      public VariantEffectProtos.EffectInfo getDefaultInstanceForType() {
-        return VariantEffectProtos.EffectInfo.getDefaultInstance();
-      }
-      
-      public VariantEffectProtos.EffectInfo build() {
-        VariantEffectProtos.EffectInfo result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(result);
-        }
-        return result;
-      }
-      
-      private VariantEffectProtos.EffectInfo buildParsed()
-          throws com.google.protobuf.InvalidProtocolBufferException {
-        VariantEffectProtos.EffectInfo result = buildPartial();
-        if (!result.isInitialized()) {
-          throw AbstractMessage.Builder.newUninitializedMessageException(
-                  result).asInvalidProtocolBufferException();
-        }
-        return result;
-      }
-      
-      public VariantEffectProtos.EffectInfo buildPartial() {
-        VariantEffectProtos.EffectInfo result = new VariantEffectProtos.EffectInfo(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.reference_ = reference_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.alternative_ = alternative_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.chromosome_ = chromosome_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.position_ = position_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.featureId_ = featureId_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000020;
-        }
-        result.featureName_ = featureName_;
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-          to_bitField0_ |= 0x00000040;
-        }
-        result.featureType_ = featureType_;
-        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-          to_bitField0_ |= 0x00000080;
-        }
-        result.featureBiotype_ = featureBiotype_;
-        if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
-          to_bitField0_ |= 0x00000100;
-        }
-        result.featureChromosome_ = featureChromosome_;
-        if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
-          to_bitField0_ |= 0x00000200;
-        }
-        result.featureStart_ = featureStart_;
-        if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
-          to_bitField0_ |= 0x00000400;
-        }
-        result.featureEnd_ = featureEnd_;
-        if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
-          to_bitField0_ |= 0x00000800;
-        }
-        result.featureStrand_ = featureStrand_;
-        if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
-          to_bitField0_ |= 0x00001000;
-        }
-        result.snpId_ = snpId_;
-        if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
-          to_bitField0_ |= 0x00002000;
-        }
-        result.ancestral_ = ancestral_;
-        if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
-          to_bitField0_ |= 0x00004000;
-        }
-        result.geneId_ = geneId_;
-        if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
-          to_bitField0_ |= 0x00008000;
-        }
-        result.transcriptId_ = transcriptId_;
-        if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
-          to_bitField0_ |= 0x00010000;
-        }
-        result.geneName_ = geneName_;
-        if (((from_bitField0_ & 0x00020000) == 0x00020000)) {
-          to_bitField0_ |= 0x00020000;
-        }
-        result.consequenceType_ = consequenceType_;
-        if (((from_bitField0_ & 0x00040000) == 0x00040000)) {
-          to_bitField0_ |= 0x00040000;
-        }
-        result.consequenceTypeObo_ = consequenceTypeObo_;
-        if (((from_bitField0_ & 0x00080000) == 0x00080000)) {
-          to_bitField0_ |= 0x00080000;
-        }
-        result.consequenceTypeDesc_ = consequenceTypeDesc_;
-        if (((from_bitField0_ & 0x00100000) == 0x00100000)) {
-          to_bitField0_ |= 0x00100000;
-        }
-        result.consequenceTypeType_ = consequenceTypeType_;
-        if (((from_bitField0_ & 0x00200000) == 0x00200000)) {
-          to_bitField0_ |= 0x00200000;
-        }
-        result.aaPosition_ = aaPosition_;
-        if (((from_bitField0_ & 0x00400000) == 0x00400000)) {
-          to_bitField0_ |= 0x00400000;
-        }
-        result.aminoacidChange_ = aminoacidChange_;
-        if (((from_bitField0_ & 0x00800000) == 0x00800000)) {
-          to_bitField0_ |= 0x00800000;
-        }
-        result.codonChange_ = codonChange_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-      
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof VariantEffectProtos.EffectInfo) {
-          return mergeFrom((VariantEffectProtos.EffectInfo)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-      
-      public Builder mergeFrom(VariantEffectProtos.EffectInfo other) {
-        if (other == VariantEffectProtos.EffectInfo.getDefaultInstance()) return this;
-        if (other.hasReference()) {
-          setReference(other.getReference());
-        }
-        if (other.hasAlternative()) {
-          setAlternative(other.getAlternative());
-        }
-        if (other.hasChromosome()) {
-          setChromosome(other.getChromosome());
-        }
-        if (other.hasPosition()) {
-          setPosition(other.getPosition());
-        }
-        if (other.hasFeatureId()) {
-          setFeatureId(other.getFeatureId());
-        }
-        if (other.hasFeatureName()) {
-          setFeatureName(other.getFeatureName());
-        }
-        if (other.hasFeatureType()) {
-          setFeatureType(other.getFeatureType());
-        }
-        if (other.hasFeatureBiotype()) {
-          setFeatureBiotype(other.getFeatureBiotype());
-        }
-        if (other.hasFeatureChromosome()) {
-          setFeatureChromosome(other.getFeatureChromosome());
-        }
-        if (other.hasFeatureStart()) {
-          setFeatureStart(other.getFeatureStart());
-        }
-        if (other.hasFeatureEnd()) {
-          setFeatureEnd(other.getFeatureEnd());
-        }
-        if (other.hasFeatureStrand()) {
-          setFeatureStrand(other.getFeatureStrand());
-        }
-        if (other.hasSnpId()) {
-          setSnpId(other.getSnpId());
-        }
-        if (other.hasAncestral()) {
-          setAncestral(other.getAncestral());
-        }
-        if (other.hasGeneId()) {
-          setGeneId(other.getGeneId());
-        }
-        if (other.hasTranscriptId()) {
-          setTranscriptId(other.getTranscriptId());
-        }
-        if (other.hasGeneName()) {
-          setGeneName(other.getGeneName());
-        }
-        if (other.hasConsequenceType()) {
-          setConsequenceType(other.getConsequenceType());
-        }
-        if (other.hasConsequenceTypeObo()) {
-          setConsequenceTypeObo(other.getConsequenceTypeObo());
-        }
-        if (other.hasConsequenceTypeDesc()) {
-          setConsequenceTypeDesc(other.getConsequenceTypeDesc());
-        }
-        if (other.hasConsequenceTypeType()) {
-          setConsequenceTypeType(other.getConsequenceTypeType());
-        }
-        if (other.hasAaPosition()) {
-          setAaPosition(other.getAaPosition());
-        }
-        if (other.hasAminoacidChange()) {
-          setAminoacidChange(other.getAminoacidChange());
-        }
-        if (other.hasCodonChange()) {
-          setCodonChange(other.getCodonChange());
-        }
-        this.mergeUnknownFields(other.getUnknownFields());
-        return this;
-      }
-      
-      public final boolean isInitialized() {
-        if (!hasReference()) {
-          
-          return false;
-        }
-        if (!hasAlternative()) {
-          
-          return false;
-        }
-        if (!hasChromosome()) {
-          
-          return false;
-        }
-        if (!hasPosition()) {
-          
-          return false;
-        }
-        return true;
-      }
-      
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder(
-            this.getUnknownFields());
-        while (true) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              this.setUnknownFields(unknownFields.build());
-              onChanged();
-              return this;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                this.setUnknownFields(unknownFields.build());
+            return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
+        }
+
+        private int bitField0_;
+        // required string reference = 1;
+        public static final int REFERENCE_FIELD_NUMBER = 1;
+        private java.lang.Object reference_;
+
+        public boolean hasReference() {
+            return ((bitField0_ & 0x00000001) == 0x00000001);
+        }
+
+        public String getReference() {
+            java.lang.Object ref = reference_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    reference_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getReferenceBytes() {
+            java.lang.Object ref = reference_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                reference_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // required string alternative = 2;
+        public static final int ALTERNATIVE_FIELD_NUMBER = 2;
+        private java.lang.Object alternative_;
+
+        public boolean hasAlternative() {
+            return ((bitField0_ & 0x00000002) == 0x00000002);
+        }
+
+        public String getAlternative() {
+            java.lang.Object ref = alternative_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    alternative_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getAlternativeBytes() {
+            java.lang.Object ref = alternative_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                alternative_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // required string chromosome = 3;
+        public static final int CHROMOSOME_FIELD_NUMBER = 3;
+        private java.lang.Object chromosome_;
+
+        public boolean hasChromosome() {
+            return ((bitField0_ & 0x00000004) == 0x00000004);
+        }
+
+        public String getChromosome() {
+            java.lang.Object ref = chromosome_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    chromosome_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getChromosomeBytes() {
+            java.lang.Object ref = chromosome_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                chromosome_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // required int32 position = 4;
+        public static final int POSITION_FIELD_NUMBER = 4;
+        private int position_;
+
+        public boolean hasPosition() {
+            return ((bitField0_ & 0x00000008) == 0x00000008);
+        }
+
+        public int getPosition() {
+            return position_;
+        }
+
+        // optional string featureId = 5;
+        public static final int FEATUREID_FIELD_NUMBER = 5;
+        private java.lang.Object featureId_;
+
+        public boolean hasFeatureId() {
+            return ((bitField0_ & 0x00000010) == 0x00000010);
+        }
+
+        public String getFeatureId() {
+            java.lang.Object ref = featureId_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureId_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureIdBytes() {
+            java.lang.Object ref = featureId_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureId_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string featureName = 6;
+        public static final int FEATURENAME_FIELD_NUMBER = 6;
+        private java.lang.Object featureName_;
+
+        public boolean hasFeatureName() {
+            return ((bitField0_ & 0x00000020) == 0x00000020);
+        }
+
+        public String getFeatureName() {
+            java.lang.Object ref = featureName_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureName_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureNameBytes() {
+            java.lang.Object ref = featureName_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureName_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string featureType = 7;
+        public static final int FEATURETYPE_FIELD_NUMBER = 7;
+        private java.lang.Object featureType_;
+
+        public boolean hasFeatureType() {
+            return ((bitField0_ & 0x00000040) == 0x00000040);
+        }
+
+        public String getFeatureType() {
+            java.lang.Object ref = featureType_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureType_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureTypeBytes() {
+            java.lang.Object ref = featureType_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureType_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string featureBiotype = 8;
+        public static final int FEATUREBIOTYPE_FIELD_NUMBER = 8;
+        private java.lang.Object featureBiotype_;
+
+        public boolean hasFeatureBiotype() {
+            return ((bitField0_ & 0x00000080) == 0x00000080);
+        }
+
+        public String getFeatureBiotype() {
+            java.lang.Object ref = featureBiotype_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureBiotype_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureBiotypeBytes() {
+            java.lang.Object ref = featureBiotype_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureBiotype_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string featureChromosome = 9;
+        public static final int FEATURECHROMOSOME_FIELD_NUMBER = 9;
+        private java.lang.Object featureChromosome_;
+
+        public boolean hasFeatureChromosome() {
+            return ((bitField0_ & 0x00000100) == 0x00000100);
+        }
+
+        public String getFeatureChromosome() {
+            java.lang.Object ref = featureChromosome_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureChromosome_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureChromosomeBytes() {
+            java.lang.Object ref = featureChromosome_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureChromosome_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional int32 featureStart = 10;
+        public static final int FEATURESTART_FIELD_NUMBER = 10;
+        private int featureStart_;
+
+        public boolean hasFeatureStart() {
+            return ((bitField0_ & 0x00000200) == 0x00000200);
+        }
+
+        public int getFeatureStart() {
+            return featureStart_;
+        }
+
+        // optional int32 featureEnd = 11;
+        public static final int FEATUREEND_FIELD_NUMBER = 11;
+        private int featureEnd_;
+
+        public boolean hasFeatureEnd() {
+            return ((bitField0_ & 0x00000400) == 0x00000400);
+        }
+
+        public int getFeatureEnd() {
+            return featureEnd_;
+        }
+
+        // optional string featureStrand = 12;
+        public static final int FEATURESTRAND_FIELD_NUMBER = 12;
+        private java.lang.Object featureStrand_;
+
+        public boolean hasFeatureStrand() {
+            return ((bitField0_ & 0x00000800) == 0x00000800);
+        }
+
+        public String getFeatureStrand() {
+            java.lang.Object ref = featureStrand_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    featureStrand_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getFeatureStrandBytes() {
+            java.lang.Object ref = featureStrand_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                featureStrand_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string snpId = 13;
+        public static final int SNPID_FIELD_NUMBER = 13;
+        private java.lang.Object snpId_;
+
+        public boolean hasSnpId() {
+            return ((bitField0_ & 0x00001000) == 0x00001000);
+        }
+
+        public String getSnpId() {
+            java.lang.Object ref = snpId_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    snpId_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getSnpIdBytes() {
+            java.lang.Object ref = snpId_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                snpId_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string ancestral = 14;
+        public static final int ANCESTRAL_FIELD_NUMBER = 14;
+        private java.lang.Object ancestral_;
+
+        public boolean hasAncestral() {
+            return ((bitField0_ & 0x00002000) == 0x00002000);
+        }
+
+        public String getAncestral() {
+            java.lang.Object ref = ancestral_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    ancestral_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getAncestralBytes() {
+            java.lang.Object ref = ancestral_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                ancestral_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string geneId = 15;
+        public static final int GENEID_FIELD_NUMBER = 15;
+        private java.lang.Object geneId_;
+
+        public boolean hasGeneId() {
+            return ((bitField0_ & 0x00004000) == 0x00004000);
+        }
+
+        public String getGeneId() {
+            java.lang.Object ref = geneId_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    geneId_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getGeneIdBytes() {
+            java.lang.Object ref = geneId_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                geneId_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string transcriptId = 16;
+        public static final int TRANSCRIPTID_FIELD_NUMBER = 16;
+        private java.lang.Object transcriptId_;
+
+        public boolean hasTranscriptId() {
+            return ((bitField0_ & 0x00008000) == 0x00008000);
+        }
+
+        public String getTranscriptId() {
+            java.lang.Object ref = transcriptId_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    transcriptId_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getTranscriptIdBytes() {
+            java.lang.Object ref = transcriptId_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                transcriptId_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string geneName = 17;
+        public static final int GENENAME_FIELD_NUMBER = 17;
+        private java.lang.Object geneName_;
+
+        public boolean hasGeneName() {
+            return ((bitField0_ & 0x00010000) == 0x00010000);
+        }
+
+        public String getGeneName() {
+            java.lang.Object ref = geneName_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    geneName_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getGeneNameBytes() {
+            java.lang.Object ref = geneName_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                geneName_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string consequenceType = 18;
+        public static final int CONSEQUENCETYPE_FIELD_NUMBER = 18;
+        private java.lang.Object consequenceType_;
+
+        public boolean hasConsequenceType() {
+            return ((bitField0_ & 0x00020000) == 0x00020000);
+        }
+
+        public String getConsequenceType() {
+            java.lang.Object ref = consequenceType_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    consequenceType_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getConsequenceTypeBytes() {
+            java.lang.Object ref = consequenceType_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                consequenceType_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string consequenceTypeObo = 19;
+        public static final int CONSEQUENCETYPEOBO_FIELD_NUMBER = 19;
+        private java.lang.Object consequenceTypeObo_;
+
+        public boolean hasConsequenceTypeObo() {
+            return ((bitField0_ & 0x00040000) == 0x00040000);
+        }
+
+        public String getConsequenceTypeObo() {
+            java.lang.Object ref = consequenceTypeObo_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    consequenceTypeObo_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getConsequenceTypeOboBytes() {
+            java.lang.Object ref = consequenceTypeObo_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                consequenceTypeObo_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string consequenceTypeDesc = 20;
+        public static final int CONSEQUENCETYPEDESC_FIELD_NUMBER = 20;
+        private java.lang.Object consequenceTypeDesc_;
+
+        public boolean hasConsequenceTypeDesc() {
+            return ((bitField0_ & 0x00080000) == 0x00080000);
+        }
+
+        public String getConsequenceTypeDesc() {
+            java.lang.Object ref = consequenceTypeDesc_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    consequenceTypeDesc_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getConsequenceTypeDescBytes() {
+            java.lang.Object ref = consequenceTypeDesc_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                consequenceTypeDesc_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string consequenceTypeType = 21;
+        public static final int CONSEQUENCETYPETYPE_FIELD_NUMBER = 21;
+        private java.lang.Object consequenceTypeType_;
+
+        public boolean hasConsequenceTypeType() {
+            return ((bitField0_ & 0x00100000) == 0x00100000);
+        }
+
+        public String getConsequenceTypeType() {
+            java.lang.Object ref = consequenceTypeType_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    consequenceTypeType_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getConsequenceTypeTypeBytes() {
+            java.lang.Object ref = consequenceTypeType_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                consequenceTypeType_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional int32 aaPosition = 22;
+        public static final int AAPOSITION_FIELD_NUMBER = 22;
+        private int aaPosition_;
+
+        public boolean hasAaPosition() {
+            return ((bitField0_ & 0x00200000) == 0x00200000);
+        }
+
+        public int getAaPosition() {
+            return aaPosition_;
+        }
+
+        // optional string aminoacidChange = 23;
+        public static final int AMINOACIDCHANGE_FIELD_NUMBER = 23;
+        private java.lang.Object aminoacidChange_;
+
+        public boolean hasAminoacidChange() {
+            return ((bitField0_ & 0x00400000) == 0x00400000);
+        }
+
+        public String getAminoacidChange() {
+            java.lang.Object ref = aminoacidChange_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    aminoacidChange_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getAminoacidChangeBytes() {
+            java.lang.Object ref = aminoacidChange_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                aminoacidChange_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        // optional string codonChange = 24;
+        public static final int CODONCHANGE_FIELD_NUMBER = 24;
+        private java.lang.Object codonChange_;
+
+        public boolean hasCodonChange() {
+            return ((bitField0_ & 0x00800000) == 0x00800000);
+        }
+
+        public String getCodonChange() {
+            java.lang.Object ref = codonChange_;
+            if (ref instanceof String) {
+                return (String) ref;
+            } else {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                String s = bs.toStringUtf8();
+                if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+                    codonChange_ = s;
+                }
+                return s;
+            }
+        }
+
+        private com.google.protobuf.ByteString getCodonChangeBytes() {
+            java.lang.Object ref = codonChange_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+                codonChange_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+
+        private void initFields() {
+            reference_ = "";
+            alternative_ = "";
+            chromosome_ = "";
+            position_ = 0;
+            featureId_ = "";
+            featureName_ = "";
+            featureType_ = "";
+            featureBiotype_ = "";
+            featureChromosome_ = "";
+            featureStart_ = 0;
+            featureEnd_ = 0;
+            featureStrand_ = "";
+            snpId_ = "";
+            ancestral_ = "";
+            geneId_ = "";
+            transcriptId_ = "";
+            geneName_ = "";
+            consequenceType_ = "";
+            consequenceTypeObo_ = "";
+            consequenceTypeDesc_ = "";
+            consequenceTypeType_ = "";
+            aaPosition_ = 0;
+            aminoacidChange_ = "";
+            codonChange_ = "";
+        }
+
+        private byte memoizedIsInitialized = -1;
+
+        public final boolean isInitialized() {
+            byte isInitialized = memoizedIsInitialized;
+            if (isInitialized != -1) {
+                return isInitialized == 1;
+            }
+
+            if (!hasReference()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasAlternative()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasChromosome()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            if (!hasPosition()) {
+                memoizedIsInitialized = 0;
+                return false;
+            }
+            memoizedIsInitialized = 1;
+            return true;
+        }
+
+        public void writeTo(com.google.protobuf.CodedOutputStream output)
+                throws java.io.IOException {
+            getSerializedSize();
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                output.writeBytes(1, getReferenceBytes());
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                output.writeBytes(2, getAlternativeBytes());
+            }
+            if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                output.writeBytes(3, getChromosomeBytes());
+            }
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                output.writeInt32(4, position_);
+            }
+            if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                output.writeBytes(5, getFeatureIdBytes());
+            }
+            if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                output.writeBytes(6, getFeatureNameBytes());
+            }
+            if (((bitField0_ & 0x00000040) == 0x00000040)) {
+                output.writeBytes(7, getFeatureTypeBytes());
+            }
+            if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                output.writeBytes(8, getFeatureBiotypeBytes());
+            }
+            if (((bitField0_ & 0x00000100) == 0x00000100)) {
+                output.writeBytes(9, getFeatureChromosomeBytes());
+            }
+            if (((bitField0_ & 0x00000200) == 0x00000200)) {
+                output.writeInt32(10, featureStart_);
+            }
+            if (((bitField0_ & 0x00000400) == 0x00000400)) {
+                output.writeInt32(11, featureEnd_);
+            }
+            if (((bitField0_ & 0x00000800) == 0x00000800)) {
+                output.writeBytes(12, getFeatureStrandBytes());
+            }
+            if (((bitField0_ & 0x00001000) == 0x00001000)) {
+                output.writeBytes(13, getSnpIdBytes());
+            }
+            if (((bitField0_ & 0x00002000) == 0x00002000)) {
+                output.writeBytes(14, getAncestralBytes());
+            }
+            if (((bitField0_ & 0x00004000) == 0x00004000)) {
+                output.writeBytes(15, getGeneIdBytes());
+            }
+            if (((bitField0_ & 0x00008000) == 0x00008000)) {
+                output.writeBytes(16, getTranscriptIdBytes());
+            }
+            if (((bitField0_ & 0x00010000) == 0x00010000)) {
+                output.writeBytes(17, getGeneNameBytes());
+            }
+            if (((bitField0_ & 0x00020000) == 0x00020000)) {
+                output.writeBytes(18, getConsequenceTypeBytes());
+            }
+            if (((bitField0_ & 0x00040000) == 0x00040000)) {
+                output.writeBytes(19, getConsequenceTypeOboBytes());
+            }
+            if (((bitField0_ & 0x00080000) == 0x00080000)) {
+                output.writeBytes(20, getConsequenceTypeDescBytes());
+            }
+            if (((bitField0_ & 0x00100000) == 0x00100000)) {
+                output.writeBytes(21, getConsequenceTypeTypeBytes());
+            }
+            if (((bitField0_ & 0x00200000) == 0x00200000)) {
+                output.writeInt32(22, aaPosition_);
+            }
+            if (((bitField0_ & 0x00400000) == 0x00400000)) {
+                output.writeBytes(23, getAminoacidChangeBytes());
+            }
+            if (((bitField0_ & 0x00800000) == 0x00800000)) {
+                output.writeBytes(24, getCodonChangeBytes());
+            }
+            getUnknownFields().writeTo(output);
+        }
+
+        private int memoizedSerializedSize = -1;
+
+        public int getSerializedSize() {
+            int size = memoizedSerializedSize;
+            if (size != -1) {
+                return size;
+            }
+
+            size = 0;
+            if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(1, getReferenceBytes());
+            }
+            if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(2, getAlternativeBytes());
+            }
+            if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(3, getChromosomeBytes());
+            }
+            if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(4, position_);
+            }
+            if (((bitField0_ & 0x00000010) == 0x00000010)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(5, getFeatureIdBytes());
+            }
+            if (((bitField0_ & 0x00000020) == 0x00000020)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(6, getFeatureNameBytes());
+            }
+            if (((bitField0_ & 0x00000040) == 0x00000040)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(7, getFeatureTypeBytes());
+            }
+            if (((bitField0_ & 0x00000080) == 0x00000080)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(8, getFeatureBiotypeBytes());
+            }
+            if (((bitField0_ & 0x00000100) == 0x00000100)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(9, getFeatureChromosomeBytes());
+            }
+            if (((bitField0_ & 0x00000200) == 0x00000200)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(10, featureStart_);
+            }
+            if (((bitField0_ & 0x00000400) == 0x00000400)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(11, featureEnd_);
+            }
+            if (((bitField0_ & 0x00000800) == 0x00000800)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(12, getFeatureStrandBytes());
+            }
+            if (((bitField0_ & 0x00001000) == 0x00001000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(13, getSnpIdBytes());
+            }
+            if (((bitField0_ & 0x00002000) == 0x00002000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(14, getAncestralBytes());
+            }
+            if (((bitField0_ & 0x00004000) == 0x00004000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(15, getGeneIdBytes());
+            }
+            if (((bitField0_ & 0x00008000) == 0x00008000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(16, getTranscriptIdBytes());
+            }
+            if (((bitField0_ & 0x00010000) == 0x00010000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(17, getGeneNameBytes());
+            }
+            if (((bitField0_ & 0x00020000) == 0x00020000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(18, getConsequenceTypeBytes());
+            }
+            if (((bitField0_ & 0x00040000) == 0x00040000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(19, getConsequenceTypeOboBytes());
+            }
+            if (((bitField0_ & 0x00080000) == 0x00080000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(20, getConsequenceTypeDescBytes());
+            }
+            if (((bitField0_ & 0x00100000) == 0x00100000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(21, getConsequenceTypeTypeBytes());
+            }
+            if (((bitField0_ & 0x00200000) == 0x00200000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeInt32Size(22, aaPosition_);
+            }
+            if (((bitField0_ & 0x00400000) == 0x00400000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(23, getAminoacidChangeBytes());
+            }
+            if (((bitField0_ & 0x00800000) == 0x00800000)) {
+                size += com.google.protobuf.CodedOutputStream
+                        .computeBytesSize(24, getCodonChangeBytes());
+            }
+            size += getUnknownFields().getSerializedSize();
+            memoizedSerializedSize = size;
+            return size;
+        }
+
+        private static final long serialVersionUID = 0L;
+
+        @java.lang.Override
+        protected java.lang.Object writeReplace()
+                throws java.io.ObjectStreamException {
+            return super.writeReplace();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                com.google.protobuf.ByteString data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                com.google.protobuf.ByteString data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(byte[] data)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data).buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                byte[] data,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws com.google.protobuf.InvalidProtocolBufferException {
+            return newBuilder().mergeFrom(data, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseDelimitedFrom(java.io.InputStream input)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantEffectProtos.EffectInfo parseDelimitedFrom(
+                java.io.InputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            Builder builder = newBuilder();
+            if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+                return builder.buildParsed();
+            } else {
+                return null;
+            }
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                com.google.protobuf.CodedInputStream input)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input).buildParsed();
+        }
+
+        public static VariantEffectProtos.EffectInfo parseFrom(
+                com.google.protobuf.CodedInputStream input,
+                com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                throws java.io.IOException {
+            return newBuilder().mergeFrom(input, extensionRegistry)
+                    .buildParsed();
+        }
+
+        public static Builder newBuilder() {
+            return Builder.create();
+        }
+
+        public Builder newBuilderForType() {
+            return newBuilder();
+        }
+
+        public static Builder newBuilder(VariantEffectProtos.EffectInfo prototype) {
+            return newBuilder().mergeFrom(prototype);
+        }
+
+        public Builder toBuilder() {
+            return newBuilder(this);
+        }
+
+        @java.lang.Override
+        protected Builder newBuilderForType(
+                com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            Builder builder = new Builder(parent);
+            return builder;
+        }
+
+        public static final class Builder extends
+                com.google.protobuf.GeneratedMessage.Builder<Builder>
+                implements VariantEffectProtos.EffectInfoOrBuilder {
+            public static final com.google.protobuf.Descriptors.Descriptor
+            getDescriptor() {
+                return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
+            }
+
+            protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+            internalGetFieldAccessorTable() {
+                return VariantEffectProtos.internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
+            }
+
+            // Construct using org.opencb.opencga.storage.core.variant.io.VariantEffectProtos.EffectInfo.newBuilder()
+            private Builder() {
+                maybeForceBuilderInitialization();
+            }
+
+            private Builder(BuilderParent parent) {
+                super(parent);
+                maybeForceBuilderInitialization();
+            }
+
+            private void maybeForceBuilderInitialization() {
+                if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+                }
+            }
+
+            private static Builder create() {
+                return new Builder();
+            }
+
+            public Builder clear() {
+                super.clear();
+                reference_ = "";
+                bitField0_ = (bitField0_ & ~0x00000001);
+                alternative_ = "";
+                bitField0_ = (bitField0_ & ~0x00000002);
+                chromosome_ = "";
+                bitField0_ = (bitField0_ & ~0x00000004);
+                position_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000008);
+                featureId_ = "";
+                bitField0_ = (bitField0_ & ~0x00000010);
+                featureName_ = "";
+                bitField0_ = (bitField0_ & ~0x00000020);
+                featureType_ = "";
+                bitField0_ = (bitField0_ & ~0x00000040);
+                featureBiotype_ = "";
+                bitField0_ = (bitField0_ & ~0x00000080);
+                featureChromosome_ = "";
+                bitField0_ = (bitField0_ & ~0x00000100);
+                featureStart_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000200);
+                featureEnd_ = 0;
+                bitField0_ = (bitField0_ & ~0x00000400);
+                featureStrand_ = "";
+                bitField0_ = (bitField0_ & ~0x00000800);
+                snpId_ = "";
+                bitField0_ = (bitField0_ & ~0x00001000);
+                ancestral_ = "";
+                bitField0_ = (bitField0_ & ~0x00002000);
+                geneId_ = "";
+                bitField0_ = (bitField0_ & ~0x00004000);
+                transcriptId_ = "";
+                bitField0_ = (bitField0_ & ~0x00008000);
+                geneName_ = "";
+                bitField0_ = (bitField0_ & ~0x00010000);
+                consequenceType_ = "";
+                bitField0_ = (bitField0_ & ~0x00020000);
+                consequenceTypeObo_ = "";
+                bitField0_ = (bitField0_ & ~0x00040000);
+                consequenceTypeDesc_ = "";
+                bitField0_ = (bitField0_ & ~0x00080000);
+                consequenceTypeType_ = "";
+                bitField0_ = (bitField0_ & ~0x00100000);
+                aaPosition_ = 0;
+                bitField0_ = (bitField0_ & ~0x00200000);
+                aminoacidChange_ = "";
+                bitField0_ = (bitField0_ & ~0x00400000);
+                codonChange_ = "";
+                bitField0_ = (bitField0_ & ~0x00800000);
+                return this;
+            }
+
+            public Builder clone() {
+                return create().mergeFrom(buildPartial());
+            }
+
+            public com.google.protobuf.Descriptors.Descriptor
+            getDescriptorForType() {
+                return VariantEffectProtos.EffectInfo.getDescriptor();
+            }
+
+            public VariantEffectProtos.EffectInfo getDefaultInstanceForType() {
+                return VariantEffectProtos.EffectInfo.getDefaultInstance();
+            }
+
+            public VariantEffectProtos.EffectInfo build() {
+                VariantEffectProtos.EffectInfo result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(result);
+                }
+                return result;
+            }
+
+            private VariantEffectProtos.EffectInfo buildParsed()
+                    throws com.google.protobuf.InvalidProtocolBufferException {
+                VariantEffectProtos.EffectInfo result = buildPartial();
+                if (!result.isInitialized()) {
+                    throw AbstractMessage.Builder.newUninitializedMessageException(
+                            result).asInvalidProtocolBufferException();
+                }
+                return result;
+            }
+
+            public VariantEffectProtos.EffectInfo buildPartial() {
+                VariantEffectProtos.EffectInfo result = new VariantEffectProtos.EffectInfo(this);
+                int from_bitField0_ = bitField0_;
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+                    to_bitField0_ |= 0x00000001;
+                }
+                result.reference_ = reference_;
+                if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+                    to_bitField0_ |= 0x00000002;
+                }
+                result.alternative_ = alternative_;
+                if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+                    to_bitField0_ |= 0x00000004;
+                }
+                result.chromosome_ = chromosome_;
+                if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+                    to_bitField0_ |= 0x00000008;
+                }
+                result.position_ = position_;
+                if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+                    to_bitField0_ |= 0x00000010;
+                }
+                result.featureId_ = featureId_;
+                if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+                    to_bitField0_ |= 0x00000020;
+                }
+                result.featureName_ = featureName_;
+                if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+                    to_bitField0_ |= 0x00000040;
+                }
+                result.featureType_ = featureType_;
+                if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+                    to_bitField0_ |= 0x00000080;
+                }
+                result.featureBiotype_ = featureBiotype_;
+                if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
+                    to_bitField0_ |= 0x00000100;
+                }
+                result.featureChromosome_ = featureChromosome_;
+                if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
+                    to_bitField0_ |= 0x00000200;
+                }
+                result.featureStart_ = featureStart_;
+                if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
+                    to_bitField0_ |= 0x00000400;
+                }
+                result.featureEnd_ = featureEnd_;
+                if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
+                    to_bitField0_ |= 0x00000800;
+                }
+                result.featureStrand_ = featureStrand_;
+                if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
+                    to_bitField0_ |= 0x00001000;
+                }
+                result.snpId_ = snpId_;
+                if (((from_bitField0_ & 0x00002000) == 0x00002000)) {
+                    to_bitField0_ |= 0x00002000;
+                }
+                result.ancestral_ = ancestral_;
+                if (((from_bitField0_ & 0x00004000) == 0x00004000)) {
+                    to_bitField0_ |= 0x00004000;
+                }
+                result.geneId_ = geneId_;
+                if (((from_bitField0_ & 0x00008000) == 0x00008000)) {
+                    to_bitField0_ |= 0x00008000;
+                }
+                result.transcriptId_ = transcriptId_;
+                if (((from_bitField0_ & 0x00010000) == 0x00010000)) {
+                    to_bitField0_ |= 0x00010000;
+                }
+                result.geneName_ = geneName_;
+                if (((from_bitField0_ & 0x00020000) == 0x00020000)) {
+                    to_bitField0_ |= 0x00020000;
+                }
+                result.consequenceType_ = consequenceType_;
+                if (((from_bitField0_ & 0x00040000) == 0x00040000)) {
+                    to_bitField0_ |= 0x00040000;
+                }
+                result.consequenceTypeObo_ = consequenceTypeObo_;
+                if (((from_bitField0_ & 0x00080000) == 0x00080000)) {
+                    to_bitField0_ |= 0x00080000;
+                }
+                result.consequenceTypeDesc_ = consequenceTypeDesc_;
+                if (((from_bitField0_ & 0x00100000) == 0x00100000)) {
+                    to_bitField0_ |= 0x00100000;
+                }
+                result.consequenceTypeType_ = consequenceTypeType_;
+                if (((from_bitField0_ & 0x00200000) == 0x00200000)) {
+                    to_bitField0_ |= 0x00200000;
+                }
+                result.aaPosition_ = aaPosition_;
+                if (((from_bitField0_ & 0x00400000) == 0x00400000)) {
+                    to_bitField0_ |= 0x00400000;
+                }
+                result.aminoacidChange_ = aminoacidChange_;
+                if (((from_bitField0_ & 0x00800000) == 0x00800000)) {
+                    to_bitField0_ |= 0x00800000;
+                }
+                result.codonChange_ = codonChange_;
+                result.bitField0_ = to_bitField0_;
+                onBuilt();
+                return result;
+            }
+
+            public Builder mergeFrom(com.google.protobuf.Message other) {
+                if (other instanceof VariantEffectProtos.EffectInfo) {
+                    return mergeFrom((VariantEffectProtos.EffectInfo) other);
+                } else {
+                    super.mergeFrom(other);
+                    return this;
+                }
+            }
+
+            public Builder mergeFrom(VariantEffectProtos.EffectInfo other) {
+                if (other == VariantEffectProtos.EffectInfo.getDefaultInstance()) {
+                    return this;
+                }
+                if (other.hasReference()) {
+                    setReference(other.getReference());
+                }
+                if (other.hasAlternative()) {
+                    setAlternative(other.getAlternative());
+                }
+                if (other.hasChromosome()) {
+                    setChromosome(other.getChromosome());
+                }
+                if (other.hasPosition()) {
+                    setPosition(other.getPosition());
+                }
+                if (other.hasFeatureId()) {
+                    setFeatureId(other.getFeatureId());
+                }
+                if (other.hasFeatureName()) {
+                    setFeatureName(other.getFeatureName());
+                }
+                if (other.hasFeatureType()) {
+                    setFeatureType(other.getFeatureType());
+                }
+                if (other.hasFeatureBiotype()) {
+                    setFeatureBiotype(other.getFeatureBiotype());
+                }
+                if (other.hasFeatureChromosome()) {
+                    setFeatureChromosome(other.getFeatureChromosome());
+                }
+                if (other.hasFeatureStart()) {
+                    setFeatureStart(other.getFeatureStart());
+                }
+                if (other.hasFeatureEnd()) {
+                    setFeatureEnd(other.getFeatureEnd());
+                }
+                if (other.hasFeatureStrand()) {
+                    setFeatureStrand(other.getFeatureStrand());
+                }
+                if (other.hasSnpId()) {
+                    setSnpId(other.getSnpId());
+                }
+                if (other.hasAncestral()) {
+                    setAncestral(other.getAncestral());
+                }
+                if (other.hasGeneId()) {
+                    setGeneId(other.getGeneId());
+                }
+                if (other.hasTranscriptId()) {
+                    setTranscriptId(other.getTranscriptId());
+                }
+                if (other.hasGeneName()) {
+                    setGeneName(other.getGeneName());
+                }
+                if (other.hasConsequenceType()) {
+                    setConsequenceType(other.getConsequenceType());
+                }
+                if (other.hasConsequenceTypeObo()) {
+                    setConsequenceTypeObo(other.getConsequenceTypeObo());
+                }
+                if (other.hasConsequenceTypeDesc()) {
+                    setConsequenceTypeDesc(other.getConsequenceTypeDesc());
+                }
+                if (other.hasConsequenceTypeType()) {
+                    setConsequenceTypeType(other.getConsequenceTypeType());
+                }
+                if (other.hasAaPosition()) {
+                    setAaPosition(other.getAaPosition());
+                }
+                if (other.hasAminoacidChange()) {
+                    setAminoacidChange(other.getAminoacidChange());
+                }
+                if (other.hasCodonChange()) {
+                    setCodonChange(other.getCodonChange());
+                }
+                this.mergeUnknownFields(other.getUnknownFields());
+                return this;
+            }
+
+            public final boolean isInitialized() {
+                if (!hasReference()) {
+
+                    return false;
+                }
+                if (!hasAlternative()) {
+
+                    return false;
+                }
+                if (!hasChromosome()) {
+
+                    return false;
+                }
+                if (!hasPosition()) {
+
+                    return false;
+                }
+                return true;
+            }
+
+            public Builder mergeFrom(
+                    com.google.protobuf.CodedInputStream input,
+                    com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+                    throws java.io.IOException {
+                com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+                        com.google.protobuf.UnknownFieldSet.newBuilder(
+                                this.getUnknownFields());
+                while (true) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            this.setUnknownFields(unknownFields.build());
+                            onChanged();
+                            return this;
+                        default: {
+                            if (!parseUnknownField(input, unknownFields,
+                                    extensionRegistry, tag)) {
+                                this.setUnknownFields(unknownFields.build());
+                                onChanged();
+                                return this;
+                            }
+                            break;
+                        }
+                        case 10: {
+                            bitField0_ |= 0x00000001;
+                            reference_ = input.readBytes();
+                            break;
+                        }
+                        case 18: {
+                            bitField0_ |= 0x00000002;
+                            alternative_ = input.readBytes();
+                            break;
+                        }
+                        case 26: {
+                            bitField0_ |= 0x00000004;
+                            chromosome_ = input.readBytes();
+                            break;
+                        }
+                        case 32: {
+                            bitField0_ |= 0x00000008;
+                            position_ = input.readInt32();
+                            break;
+                        }
+                        case 42: {
+                            bitField0_ |= 0x00000010;
+                            featureId_ = input.readBytes();
+                            break;
+                        }
+                        case 50: {
+                            bitField0_ |= 0x00000020;
+                            featureName_ = input.readBytes();
+                            break;
+                        }
+                        case 58: {
+                            bitField0_ |= 0x00000040;
+                            featureType_ = input.readBytes();
+                            break;
+                        }
+                        case 66: {
+                            bitField0_ |= 0x00000080;
+                            featureBiotype_ = input.readBytes();
+                            break;
+                        }
+                        case 74: {
+                            bitField0_ |= 0x00000100;
+                            featureChromosome_ = input.readBytes();
+                            break;
+                        }
+                        case 80: {
+                            bitField0_ |= 0x00000200;
+                            featureStart_ = input.readInt32();
+                            break;
+                        }
+                        case 88: {
+                            bitField0_ |= 0x00000400;
+                            featureEnd_ = input.readInt32();
+                            break;
+                        }
+                        case 98: {
+                            bitField0_ |= 0x00000800;
+                            featureStrand_ = input.readBytes();
+                            break;
+                        }
+                        case 106: {
+                            bitField0_ |= 0x00001000;
+                            snpId_ = input.readBytes();
+                            break;
+                        }
+                        case 114: {
+                            bitField0_ |= 0x00002000;
+                            ancestral_ = input.readBytes();
+                            break;
+                        }
+                        case 122: {
+                            bitField0_ |= 0x00004000;
+                            geneId_ = input.readBytes();
+                            break;
+                        }
+                        case 130: {
+                            bitField0_ |= 0x00008000;
+                            transcriptId_ = input.readBytes();
+                            break;
+                        }
+                        case 138: {
+                            bitField0_ |= 0x00010000;
+                            geneName_ = input.readBytes();
+                            break;
+                        }
+                        case 146: {
+                            bitField0_ |= 0x00020000;
+                            consequenceType_ = input.readBytes();
+                            break;
+                        }
+                        case 154: {
+                            bitField0_ |= 0x00040000;
+                            consequenceTypeObo_ = input.readBytes();
+                            break;
+                        }
+                        case 162: {
+                            bitField0_ |= 0x00080000;
+                            consequenceTypeDesc_ = input.readBytes();
+                            break;
+                        }
+                        case 170: {
+                            bitField0_ |= 0x00100000;
+                            consequenceTypeType_ = input.readBytes();
+                            break;
+                        }
+                        case 176: {
+                            bitField0_ |= 0x00200000;
+                            aaPosition_ = input.readInt32();
+                            break;
+                        }
+                        case 186: {
+                            bitField0_ |= 0x00400000;
+                            aminoacidChange_ = input.readBytes();
+                            break;
+                        }
+                        case 194: {
+                            bitField0_ |= 0x00800000;
+                            codonChange_ = input.readBytes();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private int bitField0_;
+
+            // required string reference = 1;
+            private java.lang.Object reference_ = "";
+
+            public boolean hasReference() {
+                return ((bitField0_ & 0x00000001) == 0x00000001);
+            }
+
+            public String getReference() {
+                java.lang.Object ref = reference_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    reference_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setReference(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000001;
+                reference_ = value;
                 onChanged();
                 return this;
-              }
-              break;
             }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              reference_ = input.readBytes();
-              break;
+
+            public Builder clearReference() {
+                bitField0_ = (bitField0_ & ~0x00000001);
+                reference_ = getDefaultInstance().getReference();
+                onChanged();
+                return this;
             }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              alternative_ = input.readBytes();
-              break;
+
+            void setReference(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000001;
+                reference_ = value;
+                onChanged();
             }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              chromosome_ = input.readBytes();
-              break;
+
+            // required string alternative = 2;
+            private java.lang.Object alternative_ = "";
+
+            public boolean hasAlternative() {
+                return ((bitField0_ & 0x00000002) == 0x00000002);
             }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              position_ = input.readInt32();
-              break;
+
+            public String getAlternative() {
+                java.lang.Object ref = alternative_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    alternative_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 42: {
-              bitField0_ |= 0x00000010;
-              featureId_ = input.readBytes();
-              break;
+
+            public Builder setAlternative(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000002;
+                alternative_ = value;
+                onChanged();
+                return this;
             }
-            case 50: {
-              bitField0_ |= 0x00000020;
-              featureName_ = input.readBytes();
-              break;
+
+            public Builder clearAlternative() {
+                bitField0_ = (bitField0_ & ~0x00000002);
+                alternative_ = getDefaultInstance().getAlternative();
+                onChanged();
+                return this;
             }
-            case 58: {
-              bitField0_ |= 0x00000040;
-              featureType_ = input.readBytes();
-              break;
+
+            void setAlternative(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000002;
+                alternative_ = value;
+                onChanged();
             }
-            case 66: {
-              bitField0_ |= 0x00000080;
-              featureBiotype_ = input.readBytes();
-              break;
+
+            // required string chromosome = 3;
+            private java.lang.Object chromosome_ = "";
+
+            public boolean hasChromosome() {
+                return ((bitField0_ & 0x00000004) == 0x00000004);
             }
-            case 74: {
-              bitField0_ |= 0x00000100;
-              featureChromosome_ = input.readBytes();
-              break;
+
+            public String getChromosome() {
+                java.lang.Object ref = chromosome_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    chromosome_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 80: {
-              bitField0_ |= 0x00000200;
-              featureStart_ = input.readInt32();
-              break;
+
+            public Builder setChromosome(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000004;
+                chromosome_ = value;
+                onChanged();
+                return this;
             }
-            case 88: {
-              bitField0_ |= 0x00000400;
-              featureEnd_ = input.readInt32();
-              break;
+
+            public Builder clearChromosome() {
+                bitField0_ = (bitField0_ & ~0x00000004);
+                chromosome_ = getDefaultInstance().getChromosome();
+                onChanged();
+                return this;
             }
-            case 98: {
-              bitField0_ |= 0x00000800;
-              featureStrand_ = input.readBytes();
-              break;
+
+            void setChromosome(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000004;
+                chromosome_ = value;
+                onChanged();
             }
-            case 106: {
-              bitField0_ |= 0x00001000;
-              snpId_ = input.readBytes();
-              break;
+
+            // required int32 position = 4;
+            private int position_;
+
+            public boolean hasPosition() {
+                return ((bitField0_ & 0x00000008) == 0x00000008);
             }
-            case 114: {
-              bitField0_ |= 0x00002000;
-              ancestral_ = input.readBytes();
-              break;
+
+            public int getPosition() {
+                return position_;
             }
-            case 122: {
-              bitField0_ |= 0x00004000;
-              geneId_ = input.readBytes();
-              break;
+
+            public Builder setPosition(int value) {
+                bitField0_ |= 0x00000008;
+                position_ = value;
+                onChanged();
+                return this;
             }
-            case 130: {
-              bitField0_ |= 0x00008000;
-              transcriptId_ = input.readBytes();
-              break;
+
+            public Builder clearPosition() {
+                bitField0_ = (bitField0_ & ~0x00000008);
+                position_ = 0;
+                onChanged();
+                return this;
             }
-            case 138: {
-              bitField0_ |= 0x00010000;
-              geneName_ = input.readBytes();
-              break;
+
+            // optional string featureId = 5;
+            private java.lang.Object featureId_ = "";
+
+            public boolean hasFeatureId() {
+                return ((bitField0_ & 0x00000010) == 0x00000010);
             }
-            case 146: {
-              bitField0_ |= 0x00020000;
-              consequenceType_ = input.readBytes();
-              break;
+
+            public String getFeatureId() {
+                java.lang.Object ref = featureId_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureId_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 154: {
-              bitField0_ |= 0x00040000;
-              consequenceTypeObo_ = input.readBytes();
-              break;
+
+            public Builder setFeatureId(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000010;
+                featureId_ = value;
+                onChanged();
+                return this;
             }
-            case 162: {
-              bitField0_ |= 0x00080000;
-              consequenceTypeDesc_ = input.readBytes();
-              break;
+
+            public Builder clearFeatureId() {
+                bitField0_ = (bitField0_ & ~0x00000010);
+                featureId_ = getDefaultInstance().getFeatureId();
+                onChanged();
+                return this;
             }
-            case 170: {
-              bitField0_ |= 0x00100000;
-              consequenceTypeType_ = input.readBytes();
-              break;
+
+            void setFeatureId(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000010;
+                featureId_ = value;
+                onChanged();
             }
-            case 176: {
-              bitField0_ |= 0x00200000;
-              aaPosition_ = input.readInt32();
-              break;
+
+            // optional string featureName = 6;
+            private java.lang.Object featureName_ = "";
+
+            public boolean hasFeatureName() {
+                return ((bitField0_ & 0x00000020) == 0x00000020);
             }
-            case 186: {
-              bitField0_ |= 0x00400000;
-              aminoacidChange_ = input.readBytes();
-              break;
+
+            public String getFeatureName() {
+                java.lang.Object ref = featureName_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureName_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
             }
-            case 194: {
-              bitField0_ |= 0x00800000;
-              codonChange_ = input.readBytes();
-              break;
+
+            public Builder setFeatureName(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000020;
+                featureName_ = value;
+                onChanged();
+                return this;
             }
-          }
+
+            public Builder clearFeatureName() {
+                bitField0_ = (bitField0_ & ~0x00000020);
+                featureName_ = getDefaultInstance().getFeatureName();
+                onChanged();
+                return this;
+            }
+
+            void setFeatureName(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000020;
+                featureName_ = value;
+                onChanged();
+            }
+
+            // optional string featureType = 7;
+            private java.lang.Object featureType_ = "";
+
+            public boolean hasFeatureType() {
+                return ((bitField0_ & 0x00000040) == 0x00000040);
+            }
+
+            public String getFeatureType() {
+                java.lang.Object ref = featureType_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureType_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setFeatureType(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000040;
+                featureType_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureType() {
+                bitField0_ = (bitField0_ & ~0x00000040);
+                featureType_ = getDefaultInstance().getFeatureType();
+                onChanged();
+                return this;
+            }
+
+            void setFeatureType(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000040;
+                featureType_ = value;
+                onChanged();
+            }
+
+            // optional string featureBiotype = 8;
+            private java.lang.Object featureBiotype_ = "";
+
+            public boolean hasFeatureBiotype() {
+                return ((bitField0_ & 0x00000080) == 0x00000080);
+            }
+
+            public String getFeatureBiotype() {
+                java.lang.Object ref = featureBiotype_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureBiotype_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setFeatureBiotype(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000080;
+                featureBiotype_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureBiotype() {
+                bitField0_ = (bitField0_ & ~0x00000080);
+                featureBiotype_ = getDefaultInstance().getFeatureBiotype();
+                onChanged();
+                return this;
+            }
+
+            void setFeatureBiotype(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000080;
+                featureBiotype_ = value;
+                onChanged();
+            }
+
+            // optional string featureChromosome = 9;
+            private java.lang.Object featureChromosome_ = "";
+
+            public boolean hasFeatureChromosome() {
+                return ((bitField0_ & 0x00000100) == 0x00000100);
+            }
+
+            public String getFeatureChromosome() {
+                java.lang.Object ref = featureChromosome_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureChromosome_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setFeatureChromosome(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000100;
+                featureChromosome_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureChromosome() {
+                bitField0_ = (bitField0_ & ~0x00000100);
+                featureChromosome_ = getDefaultInstance().getFeatureChromosome();
+                onChanged();
+                return this;
+            }
+
+            void setFeatureChromosome(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000100;
+                featureChromosome_ = value;
+                onChanged();
+            }
+
+            // optional int32 featureStart = 10;
+            private int featureStart_;
+
+            public boolean hasFeatureStart() {
+                return ((bitField0_ & 0x00000200) == 0x00000200);
+            }
+
+            public int getFeatureStart() {
+                return featureStart_;
+            }
+
+            public Builder setFeatureStart(int value) {
+                bitField0_ |= 0x00000200;
+                featureStart_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureStart() {
+                bitField0_ = (bitField0_ & ~0x00000200);
+                featureStart_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // optional int32 featureEnd = 11;
+            private int featureEnd_;
+
+            public boolean hasFeatureEnd() {
+                return ((bitField0_ & 0x00000400) == 0x00000400);
+            }
+
+            public int getFeatureEnd() {
+                return featureEnd_;
+            }
+
+            public Builder setFeatureEnd(int value) {
+                bitField0_ |= 0x00000400;
+                featureEnd_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureEnd() {
+                bitField0_ = (bitField0_ & ~0x00000400);
+                featureEnd_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // optional string featureStrand = 12;
+            private java.lang.Object featureStrand_ = "";
+
+            public boolean hasFeatureStrand() {
+                return ((bitField0_ & 0x00000800) == 0x00000800);
+            }
+
+            public String getFeatureStrand() {
+                java.lang.Object ref = featureStrand_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    featureStrand_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setFeatureStrand(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00000800;
+                featureStrand_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearFeatureStrand() {
+                bitField0_ = (bitField0_ & ~0x00000800);
+                featureStrand_ = getDefaultInstance().getFeatureStrand();
+                onChanged();
+                return this;
+            }
+
+            void setFeatureStrand(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00000800;
+                featureStrand_ = value;
+                onChanged();
+            }
+
+            // optional string snpId = 13;
+            private java.lang.Object snpId_ = "";
+
+            public boolean hasSnpId() {
+                return ((bitField0_ & 0x00001000) == 0x00001000);
+            }
+
+            public String getSnpId() {
+                java.lang.Object ref = snpId_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    snpId_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setSnpId(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00001000;
+                snpId_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearSnpId() {
+                bitField0_ = (bitField0_ & ~0x00001000);
+                snpId_ = getDefaultInstance().getSnpId();
+                onChanged();
+                return this;
+            }
+
+            void setSnpId(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00001000;
+                snpId_ = value;
+                onChanged();
+            }
+
+            // optional string ancestral = 14;
+            private java.lang.Object ancestral_ = "";
+
+            public boolean hasAncestral() {
+                return ((bitField0_ & 0x00002000) == 0x00002000);
+            }
+
+            public String getAncestral() {
+                java.lang.Object ref = ancestral_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    ancestral_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setAncestral(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00002000;
+                ancestral_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAncestral() {
+                bitField0_ = (bitField0_ & ~0x00002000);
+                ancestral_ = getDefaultInstance().getAncestral();
+                onChanged();
+                return this;
+            }
+
+            void setAncestral(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00002000;
+                ancestral_ = value;
+                onChanged();
+            }
+
+            // optional string geneId = 15;
+            private java.lang.Object geneId_ = "";
+
+            public boolean hasGeneId() {
+                return ((bitField0_ & 0x00004000) == 0x00004000);
+            }
+
+            public String getGeneId() {
+                java.lang.Object ref = geneId_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    geneId_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setGeneId(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00004000;
+                geneId_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearGeneId() {
+                bitField0_ = (bitField0_ & ~0x00004000);
+                geneId_ = getDefaultInstance().getGeneId();
+                onChanged();
+                return this;
+            }
+
+            void setGeneId(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00004000;
+                geneId_ = value;
+                onChanged();
+            }
+
+            // optional string transcriptId = 16;
+            private java.lang.Object transcriptId_ = "";
+
+            public boolean hasTranscriptId() {
+                return ((bitField0_ & 0x00008000) == 0x00008000);
+            }
+
+            public String getTranscriptId() {
+                java.lang.Object ref = transcriptId_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    transcriptId_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setTranscriptId(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00008000;
+                transcriptId_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearTranscriptId() {
+                bitField0_ = (bitField0_ & ~0x00008000);
+                transcriptId_ = getDefaultInstance().getTranscriptId();
+                onChanged();
+                return this;
+            }
+
+            void setTranscriptId(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00008000;
+                transcriptId_ = value;
+                onChanged();
+            }
+
+            // optional string geneName = 17;
+            private java.lang.Object geneName_ = "";
+
+            public boolean hasGeneName() {
+                return ((bitField0_ & 0x00010000) == 0x00010000);
+            }
+
+            public String getGeneName() {
+                java.lang.Object ref = geneName_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    geneName_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setGeneName(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00010000;
+                geneName_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearGeneName() {
+                bitField0_ = (bitField0_ & ~0x00010000);
+                geneName_ = getDefaultInstance().getGeneName();
+                onChanged();
+                return this;
+            }
+
+            void setGeneName(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00010000;
+                geneName_ = value;
+                onChanged();
+            }
+
+            // optional string consequenceType = 18;
+            private java.lang.Object consequenceType_ = "";
+
+            public boolean hasConsequenceType() {
+                return ((bitField0_ & 0x00020000) == 0x00020000);
+            }
+
+            public String getConsequenceType() {
+                java.lang.Object ref = consequenceType_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    consequenceType_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setConsequenceType(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00020000;
+                consequenceType_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearConsequenceType() {
+                bitField0_ = (bitField0_ & ~0x00020000);
+                consequenceType_ = getDefaultInstance().getConsequenceType();
+                onChanged();
+                return this;
+            }
+
+            void setConsequenceType(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00020000;
+                consequenceType_ = value;
+                onChanged();
+            }
+
+            // optional string consequenceTypeObo = 19;
+            private java.lang.Object consequenceTypeObo_ = "";
+
+            public boolean hasConsequenceTypeObo() {
+                return ((bitField0_ & 0x00040000) == 0x00040000);
+            }
+
+            public String getConsequenceTypeObo() {
+                java.lang.Object ref = consequenceTypeObo_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    consequenceTypeObo_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setConsequenceTypeObo(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00040000;
+                consequenceTypeObo_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearConsequenceTypeObo() {
+                bitField0_ = (bitField0_ & ~0x00040000);
+                consequenceTypeObo_ = getDefaultInstance().getConsequenceTypeObo();
+                onChanged();
+                return this;
+            }
+
+            void setConsequenceTypeObo(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00040000;
+                consequenceTypeObo_ = value;
+                onChanged();
+            }
+
+            // optional string consequenceTypeDesc = 20;
+            private java.lang.Object consequenceTypeDesc_ = "";
+
+            public boolean hasConsequenceTypeDesc() {
+                return ((bitField0_ & 0x00080000) == 0x00080000);
+            }
+
+            public String getConsequenceTypeDesc() {
+                java.lang.Object ref = consequenceTypeDesc_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    consequenceTypeDesc_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setConsequenceTypeDesc(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00080000;
+                consequenceTypeDesc_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearConsequenceTypeDesc() {
+                bitField0_ = (bitField0_ & ~0x00080000);
+                consequenceTypeDesc_ = getDefaultInstance().getConsequenceTypeDesc();
+                onChanged();
+                return this;
+            }
+
+            void setConsequenceTypeDesc(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00080000;
+                consequenceTypeDesc_ = value;
+                onChanged();
+            }
+
+            // optional string consequenceTypeType = 21;
+            private java.lang.Object consequenceTypeType_ = "";
+
+            public boolean hasConsequenceTypeType() {
+                return ((bitField0_ & 0x00100000) == 0x00100000);
+            }
+
+            public String getConsequenceTypeType() {
+                java.lang.Object ref = consequenceTypeType_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    consequenceTypeType_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setConsequenceTypeType(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00100000;
+                consequenceTypeType_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearConsequenceTypeType() {
+                bitField0_ = (bitField0_ & ~0x00100000);
+                consequenceTypeType_ = getDefaultInstance().getConsequenceTypeType();
+                onChanged();
+                return this;
+            }
+
+            void setConsequenceTypeType(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00100000;
+                consequenceTypeType_ = value;
+                onChanged();
+            }
+
+            // optional int32 aaPosition = 22;
+            private int aaPosition_;
+
+            public boolean hasAaPosition() {
+                return ((bitField0_ & 0x00200000) == 0x00200000);
+            }
+
+            public int getAaPosition() {
+                return aaPosition_;
+            }
+
+            public Builder setAaPosition(int value) {
+                bitField0_ |= 0x00200000;
+                aaPosition_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAaPosition() {
+                bitField0_ = (bitField0_ & ~0x00200000);
+                aaPosition_ = 0;
+                onChanged();
+                return this;
+            }
+
+            // optional string aminoacidChange = 23;
+            private java.lang.Object aminoacidChange_ = "";
+
+            public boolean hasAminoacidChange() {
+                return ((bitField0_ & 0x00400000) == 0x00400000);
+            }
+
+            public String getAminoacidChange() {
+                java.lang.Object ref = aminoacidChange_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    aminoacidChange_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setAminoacidChange(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00400000;
+                aminoacidChange_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearAminoacidChange() {
+                bitField0_ = (bitField0_ & ~0x00400000);
+                aminoacidChange_ = getDefaultInstance().getAminoacidChange();
+                onChanged();
+                return this;
+            }
+
+            void setAminoacidChange(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00400000;
+                aminoacidChange_ = value;
+                onChanged();
+            }
+
+            // optional string codonChange = 24;
+            private java.lang.Object codonChange_ = "";
+
+            public boolean hasCodonChange() {
+                return ((bitField0_ & 0x00800000) == 0x00800000);
+            }
+
+            public String getCodonChange() {
+                java.lang.Object ref = codonChange_;
+                if (!(ref instanceof String)) {
+                    String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+                    codonChange_ = s;
+                    return s;
+                } else {
+                    return (String) ref;
+                }
+            }
+
+            public Builder setCodonChange(String value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                bitField0_ |= 0x00800000;
+                codonChange_ = value;
+                onChanged();
+                return this;
+            }
+
+            public Builder clearCodonChange() {
+                bitField0_ = (bitField0_ & ~0x00800000);
+                codonChange_ = getDefaultInstance().getCodonChange();
+                onChanged();
+                return this;
+            }
+
+            void setCodonChange(com.google.protobuf.ByteString value) {
+                bitField0_ |= 0x00800000;
+                codonChange_ = value;
+                onChanged();
+            }
+
+            // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.EffectInfo)
         }
-      }
-      
-      private int bitField0_;
-      
-      // required string reference = 1;
-      private java.lang.Object reference_ = "";
-      public boolean hasReference() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      public String getReference() {
-        java.lang.Object ref = reference_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          reference_ = s;
-          return s;
-        } else {
-          return (String) ref;
+
+        static {
+            defaultInstance = new EffectInfo(true);
+            defaultInstance.initFields();
         }
-      }
-      public Builder setReference(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        reference_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearReference() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        reference_ = getDefaultInstance().getReference();
-        onChanged();
-        return this;
-      }
-      void setReference(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000001;
-        reference_ = value;
-        onChanged();
-      }
-      
-      // required string alternative = 2;
-      private java.lang.Object alternative_ = "";
-      public boolean hasAlternative() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public String getAlternative() {
-        java.lang.Object ref = alternative_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          alternative_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setAlternative(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
-        alternative_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearAlternative() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        alternative_ = getDefaultInstance().getAlternative();
-        onChanged();
-        return this;
-      }
-      void setAlternative(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000002;
-        alternative_ = value;
-        onChanged();
-      }
-      
-      // required string chromosome = 3;
-      private java.lang.Object chromosome_ = "";
-      public boolean hasChromosome() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      public String getChromosome() {
-        java.lang.Object ref = chromosome_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          chromosome_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setChromosome(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        chromosome_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearChromosome() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        chromosome_ = getDefaultInstance().getChromosome();
-        onChanged();
-        return this;
-      }
-      void setChromosome(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000004;
-        chromosome_ = value;
-        onChanged();
-      }
-      
-      // required int32 position = 4;
-      private int position_ ;
-      public boolean hasPosition() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      public int getPosition() {
-        return position_;
-      }
-      public Builder setPosition(int value) {
-        bitField0_ |= 0x00000008;
-        position_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearPosition() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        position_ = 0;
-        onChanged();
-        return this;
-      }
-      
-      // optional string featureId = 5;
-      private java.lang.Object featureId_ = "";
-      public boolean hasFeatureId() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      public String getFeatureId() {
-        java.lang.Object ref = featureId_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureId_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureId(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000010;
-        featureId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureId() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        featureId_ = getDefaultInstance().getFeatureId();
-        onChanged();
-        return this;
-      }
-      void setFeatureId(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000010;
-        featureId_ = value;
-        onChanged();
-      }
-      
-      // optional string featureName = 6;
-      private java.lang.Object featureName_ = "";
-      public boolean hasFeatureName() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      public String getFeatureName() {
-        java.lang.Object ref = featureName_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureName_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureName(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000020;
-        featureName_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureName() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        featureName_ = getDefaultInstance().getFeatureName();
-        onChanged();
-        return this;
-      }
-      void setFeatureName(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000020;
-        featureName_ = value;
-        onChanged();
-      }
-      
-      // optional string featureType = 7;
-      private java.lang.Object featureType_ = "";
-      public boolean hasFeatureType() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
-      }
-      public String getFeatureType() {
-        java.lang.Object ref = featureType_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureType_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureType(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000040;
-        featureType_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureType() {
-        bitField0_ = (bitField0_ & ~0x00000040);
-        featureType_ = getDefaultInstance().getFeatureType();
-        onChanged();
-        return this;
-      }
-      void setFeatureType(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000040;
-        featureType_ = value;
-        onChanged();
-      }
-      
-      // optional string featureBiotype = 8;
-      private java.lang.Object featureBiotype_ = "";
-      public boolean hasFeatureBiotype() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
-      }
-      public String getFeatureBiotype() {
-        java.lang.Object ref = featureBiotype_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureBiotype_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureBiotype(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000080;
-        featureBiotype_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureBiotype() {
-        bitField0_ = (bitField0_ & ~0x00000080);
-        featureBiotype_ = getDefaultInstance().getFeatureBiotype();
-        onChanged();
-        return this;
-      }
-      void setFeatureBiotype(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000080;
-        featureBiotype_ = value;
-        onChanged();
-      }
-      
-      // optional string featureChromosome = 9;
-      private java.lang.Object featureChromosome_ = "";
-      public boolean hasFeatureChromosome() {
-        return ((bitField0_ & 0x00000100) == 0x00000100);
-      }
-      public String getFeatureChromosome() {
-        java.lang.Object ref = featureChromosome_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureChromosome_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureChromosome(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000100;
-        featureChromosome_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureChromosome() {
-        bitField0_ = (bitField0_ & ~0x00000100);
-        featureChromosome_ = getDefaultInstance().getFeatureChromosome();
-        onChanged();
-        return this;
-      }
-      void setFeatureChromosome(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000100;
-        featureChromosome_ = value;
-        onChanged();
-      }
-      
-      // optional int32 featureStart = 10;
-      private int featureStart_ ;
-      public boolean hasFeatureStart() {
-        return ((bitField0_ & 0x00000200) == 0x00000200);
-      }
-      public int getFeatureStart() {
-        return featureStart_;
-      }
-      public Builder setFeatureStart(int value) {
-        bitField0_ |= 0x00000200;
-        featureStart_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureStart() {
-        bitField0_ = (bitField0_ & ~0x00000200);
-        featureStart_ = 0;
-        onChanged();
-        return this;
-      }
-      
-      // optional int32 featureEnd = 11;
-      private int featureEnd_ ;
-      public boolean hasFeatureEnd() {
-        return ((bitField0_ & 0x00000400) == 0x00000400);
-      }
-      public int getFeatureEnd() {
-        return featureEnd_;
-      }
-      public Builder setFeatureEnd(int value) {
-        bitField0_ |= 0x00000400;
-        featureEnd_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureEnd() {
-        bitField0_ = (bitField0_ & ~0x00000400);
-        featureEnd_ = 0;
-        onChanged();
-        return this;
-      }
-      
-      // optional string featureStrand = 12;
-      private java.lang.Object featureStrand_ = "";
-      public boolean hasFeatureStrand() {
-        return ((bitField0_ & 0x00000800) == 0x00000800);
-      }
-      public String getFeatureStrand() {
-        java.lang.Object ref = featureStrand_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          featureStrand_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setFeatureStrand(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000800;
-        featureStrand_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFeatureStrand() {
-        bitField0_ = (bitField0_ & ~0x00000800);
-        featureStrand_ = getDefaultInstance().getFeatureStrand();
-        onChanged();
-        return this;
-      }
-      void setFeatureStrand(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00000800;
-        featureStrand_ = value;
-        onChanged();
-      }
-      
-      // optional string snpId = 13;
-      private java.lang.Object snpId_ = "";
-      public boolean hasSnpId() {
-        return ((bitField0_ & 0x00001000) == 0x00001000);
-      }
-      public String getSnpId() {
-        java.lang.Object ref = snpId_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          snpId_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setSnpId(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00001000;
-        snpId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearSnpId() {
-        bitField0_ = (bitField0_ & ~0x00001000);
-        snpId_ = getDefaultInstance().getSnpId();
-        onChanged();
-        return this;
-      }
-      void setSnpId(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00001000;
-        snpId_ = value;
-        onChanged();
-      }
-      
-      // optional string ancestral = 14;
-      private java.lang.Object ancestral_ = "";
-      public boolean hasAncestral() {
-        return ((bitField0_ & 0x00002000) == 0x00002000);
-      }
-      public String getAncestral() {
-        java.lang.Object ref = ancestral_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          ancestral_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setAncestral(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00002000;
-        ancestral_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearAncestral() {
-        bitField0_ = (bitField0_ & ~0x00002000);
-        ancestral_ = getDefaultInstance().getAncestral();
-        onChanged();
-        return this;
-      }
-      void setAncestral(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00002000;
-        ancestral_ = value;
-        onChanged();
-      }
-      
-      // optional string geneId = 15;
-      private java.lang.Object geneId_ = "";
-      public boolean hasGeneId() {
-        return ((bitField0_ & 0x00004000) == 0x00004000);
-      }
-      public String getGeneId() {
-        java.lang.Object ref = geneId_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          geneId_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setGeneId(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00004000;
-        geneId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearGeneId() {
-        bitField0_ = (bitField0_ & ~0x00004000);
-        geneId_ = getDefaultInstance().getGeneId();
-        onChanged();
-        return this;
-      }
-      void setGeneId(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00004000;
-        geneId_ = value;
-        onChanged();
-      }
-      
-      // optional string transcriptId = 16;
-      private java.lang.Object transcriptId_ = "";
-      public boolean hasTranscriptId() {
-        return ((bitField0_ & 0x00008000) == 0x00008000);
-      }
-      public String getTranscriptId() {
-        java.lang.Object ref = transcriptId_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          transcriptId_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setTranscriptId(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00008000;
-        transcriptId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearTranscriptId() {
-        bitField0_ = (bitField0_ & ~0x00008000);
-        transcriptId_ = getDefaultInstance().getTranscriptId();
-        onChanged();
-        return this;
-      }
-      void setTranscriptId(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00008000;
-        transcriptId_ = value;
-        onChanged();
-      }
-      
-      // optional string geneName = 17;
-      private java.lang.Object geneName_ = "";
-      public boolean hasGeneName() {
-        return ((bitField0_ & 0x00010000) == 0x00010000);
-      }
-      public String getGeneName() {
-        java.lang.Object ref = geneName_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          geneName_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setGeneName(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00010000;
-        geneName_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearGeneName() {
-        bitField0_ = (bitField0_ & ~0x00010000);
-        geneName_ = getDefaultInstance().getGeneName();
-        onChanged();
-        return this;
-      }
-      void setGeneName(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00010000;
-        geneName_ = value;
-        onChanged();
-      }
-      
-      // optional string consequenceType = 18;
-      private java.lang.Object consequenceType_ = "";
-      public boolean hasConsequenceType() {
-        return ((bitField0_ & 0x00020000) == 0x00020000);
-      }
-      public String getConsequenceType() {
-        java.lang.Object ref = consequenceType_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          consequenceType_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setConsequenceType(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00020000;
-        consequenceType_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearConsequenceType() {
-        bitField0_ = (bitField0_ & ~0x00020000);
-        consequenceType_ = getDefaultInstance().getConsequenceType();
-        onChanged();
-        return this;
-      }
-      void setConsequenceType(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00020000;
-        consequenceType_ = value;
-        onChanged();
-      }
-      
-      // optional string consequenceTypeObo = 19;
-      private java.lang.Object consequenceTypeObo_ = "";
-      public boolean hasConsequenceTypeObo() {
-        return ((bitField0_ & 0x00040000) == 0x00040000);
-      }
-      public String getConsequenceTypeObo() {
-        java.lang.Object ref = consequenceTypeObo_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          consequenceTypeObo_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setConsequenceTypeObo(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00040000;
-        consequenceTypeObo_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearConsequenceTypeObo() {
-        bitField0_ = (bitField0_ & ~0x00040000);
-        consequenceTypeObo_ = getDefaultInstance().getConsequenceTypeObo();
-        onChanged();
-        return this;
-      }
-      void setConsequenceTypeObo(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00040000;
-        consequenceTypeObo_ = value;
-        onChanged();
-      }
-      
-      // optional string consequenceTypeDesc = 20;
-      private java.lang.Object consequenceTypeDesc_ = "";
-      public boolean hasConsequenceTypeDesc() {
-        return ((bitField0_ & 0x00080000) == 0x00080000);
-      }
-      public String getConsequenceTypeDesc() {
-        java.lang.Object ref = consequenceTypeDesc_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          consequenceTypeDesc_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setConsequenceTypeDesc(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00080000;
-        consequenceTypeDesc_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearConsequenceTypeDesc() {
-        bitField0_ = (bitField0_ & ~0x00080000);
-        consequenceTypeDesc_ = getDefaultInstance().getConsequenceTypeDesc();
-        onChanged();
-        return this;
-      }
-      void setConsequenceTypeDesc(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00080000;
-        consequenceTypeDesc_ = value;
-        onChanged();
-      }
-      
-      // optional string consequenceTypeType = 21;
-      private java.lang.Object consequenceTypeType_ = "";
-      public boolean hasConsequenceTypeType() {
-        return ((bitField0_ & 0x00100000) == 0x00100000);
-      }
-      public String getConsequenceTypeType() {
-        java.lang.Object ref = consequenceTypeType_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          consequenceTypeType_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setConsequenceTypeType(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00100000;
-        consequenceTypeType_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearConsequenceTypeType() {
-        bitField0_ = (bitField0_ & ~0x00100000);
-        consequenceTypeType_ = getDefaultInstance().getConsequenceTypeType();
-        onChanged();
-        return this;
-      }
-      void setConsequenceTypeType(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00100000;
-        consequenceTypeType_ = value;
-        onChanged();
-      }
-      
-      // optional int32 aaPosition = 22;
-      private int aaPosition_ ;
-      public boolean hasAaPosition() {
-        return ((bitField0_ & 0x00200000) == 0x00200000);
-      }
-      public int getAaPosition() {
-        return aaPosition_;
-      }
-      public Builder setAaPosition(int value) {
-        bitField0_ |= 0x00200000;
-        aaPosition_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearAaPosition() {
-        bitField0_ = (bitField0_ & ~0x00200000);
-        aaPosition_ = 0;
-        onChanged();
-        return this;
-      }
-      
-      // optional string aminoacidChange = 23;
-      private java.lang.Object aminoacidChange_ = "";
-      public boolean hasAminoacidChange() {
-        return ((bitField0_ & 0x00400000) == 0x00400000);
-      }
-      public String getAminoacidChange() {
-        java.lang.Object ref = aminoacidChange_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          aminoacidChange_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setAminoacidChange(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00400000;
-        aminoacidChange_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearAminoacidChange() {
-        bitField0_ = (bitField0_ & ~0x00400000);
-        aminoacidChange_ = getDefaultInstance().getAminoacidChange();
-        onChanged();
-        return this;
-      }
-      void setAminoacidChange(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00400000;
-        aminoacidChange_ = value;
-        onChanged();
-      }
-      
-      // optional string codonChange = 24;
-      private java.lang.Object codonChange_ = "";
-      public boolean hasCodonChange() {
-        return ((bitField0_ & 0x00800000) == 0x00800000);
-      }
-      public String getCodonChange() {
-        java.lang.Object ref = codonChange_;
-        if (!(ref instanceof String)) {
-          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
-          codonChange_ = s;
-          return s;
-        } else {
-          return (String) ref;
-        }
-      }
-      public Builder setCodonChange(String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00800000;
-        codonChange_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearCodonChange() {
-        bitField0_ = (bitField0_ & ~0x00800000);
-        codonChange_ = getDefaultInstance().getCodonChange();
-        onChanged();
-        return this;
-      }
-      void setCodonChange(com.google.protobuf.ByteString value) {
-        bitField0_ |= 0x00800000;
-        codonChange_ = value;
-        onChanged();
-      }
-      
-      // @@protoc_insertion_point(builder_scope:org.opencb.opencga.storage.variant.EffectInfo)
+
+        // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.EffectInfo)
     }
-    
-    static {
-      defaultInstance = new EffectInfo(true);
-      defaultInstance.initFields();
-    }
-    
-    // @@protoc_insertion_point(class_scope:org.opencb.opencga.storage.variant.EffectInfo)
-  }
-  
-  private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
-  private static
+
+    private static com.google.protobuf.Descriptors.Descriptor
+            internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor;
+    private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
-  
-  public static com.google.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
-    return descriptor;
-  }
-  private static com.google.protobuf.Descriptors.FileDescriptor
-      descriptor;
-  static {
-    java.lang.String[] descriptorData = {
-      "\n\031VariantEffectProtos.proto\022\"org.opencb." +
-      "opencga.storage.variant\"\226\004\n\nEffectInfo\022\021" +
-      "\n\treference\030\001 \002(\t\022\023\n\013alternative\030\002 \002(\t\022\022" +
-      "\n\nchromosome\030\003 \002(\t\022\020\n\010position\030\004 \002(\005\022\021\n\t" +
-      "featureId\030\005 \001(\t\022\023\n\013featureName\030\006 \001(\t\022\023\n\013" +
-      "featureType\030\007 \001(\t\022\026\n\016featureBiotype\030\010 \001(" +
-      "\t\022\031\n\021featureChromosome\030\t \001(\t\022\024\n\014featureS" +
-      "tart\030\n \001(\005\022\022\n\nfeatureEnd\030\013 \001(\005\022\025\n\rfeatur" +
-      "eStrand\030\014 \001(\t\022\r\n\005snpId\030\r \001(\t\022\021\n\tancestra" +
-      "l\030\016 \001(\t\022\016\n\006geneId\030\017 \001(\t\022\024\n\014transcriptId\030",
-      "\020 \001(\t\022\020\n\010geneName\030\021 \001(\t\022\027\n\017consequenceTy" +
-      "pe\030\022 \001(\t\022\032\n\022consequenceTypeObo\030\023 \001(\t\022\033\n\023" +
-      "consequenceTypeDesc\030\024 \001(\t\022\033\n\023consequence" +
-      "TypeType\030\025 \001(\t\022\022\n\naaPosition\030\026 \001(\005\022\027\n\017am" +
-      "inoacidChange\030\027 \001(\t\022\023\n\013codonChange\030\030 \001(\t" +
-      "B\025B\023VariantEffectProtos"
-    };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor,
-              new java.lang.String[] { "Reference", "Alternative", "Chromosome", "Position", "FeatureId", "FeatureName", "FeatureType", "FeatureBiotype", "FeatureChromosome", "FeatureStart", "FeatureEnd", "FeatureStrand", "SnpId", "Ancestral", "GeneId", "TranscriptId", "GeneName", "ConsequenceType", "ConsequenceTypeObo", "ConsequenceTypeDesc", "ConsequenceTypeType", "AaPosition", "AminoacidChange", "CodonChange", },
-              VariantEffectProtos.EffectInfo.class,
-              VariantEffectProtos.EffectInfo.Builder.class);
-          return null;
-        }
-      };
-    com.google.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
-  }
-  
-  // @@protoc_insertion_point(outer_class_scope)
+            internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable;
+
+    public static com.google.protobuf.Descriptors.FileDescriptor
+    getDescriptor() {
+        return descriptor;
+    }
+
+    private static com.google.protobuf.Descriptors.FileDescriptor
+            descriptor;
+
+    static {
+        java.lang.String[] descriptorData = {
+                "\n\031VariantEffectProtos.proto\022\"org.opencb." +
+                        "opencga.storage.variant\"\226\004\n\nEffectInfo\022\021" +
+                        "\n\treference\030\001 \002(\t\022\023\n\013alternative\030\002 \002(\t\022\022" +
+                        "\n\nchromosome\030\003 \002(\t\022\020\n\010position\030\004 \002(\005\022\021\n\t" +
+                        "featureId\030\005 \001(\t\022\023\n\013featureName\030\006 \001(\t\022\023\n\013" +
+                        "featureType\030\007 \001(\t\022\026\n\016featureBiotype\030\010 \001(" +
+                        "\t\022\031\n\021featureChromosome\030\t \001(\t\022\024\n\014featureS" +
+                        "tart\030\n \001(\005\022\022\n\nfeatureEnd\030\013 \001(\005\022\025\n\rfeatur" +
+                        "eStrand\030\014 \001(\t\022\r\n\005snpId\030\r \001(\t\022\021\n\tancestra" +
+                        "l\030\016 \001(\t\022\016\n\006geneId\030\017 \001(\t\022\024\n\014transcriptId\030",
+                "\020 \001(\t\022\020\n\010geneName\030\021 \001(\t\022\027\n\017consequenceTy" +
+                        "pe\030\022 \001(\t\022\032\n\022consequenceTypeObo\030\023 \001(\t\022\033\n\023" +
+                        "consequenceTypeDesc\030\024 \001(\t\022\033\n\023consequence" +
+                        "TypeType\030\025 \001(\t\022\022\n\naaPosition\030\026 \001(\005\022\027\n\017am" +
+                        "inoacidChange\030\027 \001(\t\022\023\n\013codonChange\030\030 \001(\t" +
+                        "B\025B\023VariantEffectProtos"
+        };
+        com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+                new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+                    public com.google.protobuf.ExtensionRegistry assignDescriptors(
+                            com.google.protobuf.Descriptors.FileDescriptor root) {
+                        descriptor = root;
+                        internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor =
+                                getDescriptor().getMessageTypes().get(0);
+                        internal_static_org_opencb_opencga_storage_variant_EffectInfo_fieldAccessorTable = new
+                                com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+                                internal_static_org_opencb_opencga_storage_variant_EffectInfo_descriptor,
+                                new java.lang.String[]{"Reference", "Alternative", "Chromosome", "Position", "FeatureId", "FeatureName",
+                                        "FeatureType", "FeatureBiotype", "FeatureChromosome", "FeatureStart", "FeatureEnd",
+                                        "FeatureStrand", "SnpId", "Ancestral", "GeneId", "TranscriptId", "GeneName", "ConsequenceType",
+                                        "ConsequenceTypeObo", "ConsequenceTypeDesc", "ConsequenceTypeType", "AaPosition",
+                                        "AminoacidChange", "CodonChange",},
+                                VariantEffectProtos.EffectInfo.class,
+                                VariantEffectProtos.EffectInfo.Builder.class);
+                        return null;
+                    }
+                };
+        com.google.protobuf.Descriptors.FileDescriptor
+                .internalBuildGeneratedFileFrom(descriptorData,
+                        new com.google.protobuf.Descriptors.FileDescriptor[]{
+                        }, assigner);
+    }
+
+    // @@protoc_insertion_point(outer_class_scope)
 }

@@ -130,7 +130,8 @@ public class BamManager {
         return checkBamIndex(filePath) != null && Files.exists(metaDir.resolve(Paths.get(fileName + ".db")));
     }
 
-    public String queryRegion(Path filePath, String regionStr, Map<String, List<String>> params) throws SQLException, IOException, ClassNotFoundException {
+    public String queryRegion(Path filePath, String regionStr, Map<String, List<String>> params) throws SQLException, IOException,
+            ClassNotFoundException {
 
         if (params.get("cellbasehost") != null) {
             cellbasehost = params.get("cellbasehost").get(0);
@@ -175,7 +176,8 @@ public class BamManager {
             long tq = System.currentTimeMillis();
             String tableName = "chunk";
             String chrPrefix = "";
-            String queryString = "SELECT * FROM " + tableName + " WHERE chromosome='" + chrPrefix + chromosome + "' AND start<=" + end + " AND end>=" + start;
+            String queryString = "SELECT * FROM " + tableName + " WHERE chromosome='" + chrPrefix + chromosome + "' AND start<=" + end +
+                    " AND end>=" + start;
             List<XObject> queryResults = sqliteManager.query(queryString);
             sqliteManager.disconnect(true);
             int queryResultSize = queryResults.size();
@@ -229,7 +231,8 @@ public class BamManager {
         long tq = System.currentTimeMillis();
         String tableName = "record_query_fields";
         String chrPrefix = "";
-        String queryString = "SELECT id, start FROM " + tableName + " WHERE chromosome='" + chrPrefix + chromosome + "' AND start<=" + end + " AND end>=" + start;
+        String queryString = "SELECT id, start FROM " + tableName + " WHERE chromosome='" + chrPrefix + chromosome + "' AND start<=" +
+                end + " AND end>=" + start;
         List<XObject> queryResults = sqliteManager.query(queryString);
         sqliteManager.disconnect(true);
         System.out.println("Query time " + (System.currentTimeMillis() - tq) + "ms");
@@ -276,7 +279,8 @@ public class BamManager {
         return processRecords(records, params, chromosome, start, end);
     }
 
-    public String processRecords(List<SAMRecord> records, Map<String, List<String>> params, String chr, int start, int end) throws IOException {
+    public String processRecords(List<SAMRecord> records, Map<String, List<String>> params, String chr, int start, int end) throws
+            IOException {
         XObject res = new XObject();
         List<XObject> reads = new ArrayList<XObject>();
         XObject coverage = new XObject();
@@ -352,11 +356,14 @@ public class BamManager {
                     // record.getReadName().equals("SRR081241.645807")
                     // ){
 
-                    // System.out.println("#############################################################################################################################################");
-                    // System.out.println("#############################################################################################################################################");
+                    // System.out.println
+                    // ("#############################################################################################################################################");
+                    // System.out.println
+                    // ("#############################################################################################################################################");
                     // System.out.println("Unclipped Start:"+(record.getUnclippedStart()-start));
                     // System.out.println("Unclipped End:"+(record.getUnclippedEnd()-start+1));
-                    // System.out.println(record.getCigarString()+"   Alig Length:"+(record.getAlignmentEnd()-record.getAlignmentStart()+1)+"   Unclipped length:"+(record.getUnclippedEnd()-record.getUnclippedStart()+1));
+                    // System.out.println(record.getCigarString()+"   Alig Length:"+(record.getAlignmentEnd()-record.getAlignmentStart()
+                    // +1)+"   Unclipped length:"+(record.getUnclippedEnd()-record.getUnclippedStart()+1));
 
                     String refStr = forwardSequence.substring((500 + record.getUnclippedStart() - start),
                             (500 + record.getUnclippedEnd() - start + 1));
@@ -496,7 +503,8 @@ public class BamManager {
 //                        logger.info("readStr: "+readStr.length());
 
 
-                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
+                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar()
+                                .getCigarElement(i).getLength(); j++, cont++) {
                             if (j >= 0 && j < coverageArray.length) {
                                 coverageArray[j]++;
 //   /*check unused*/             readPos = j - offset;
@@ -737,11 +745,14 @@ public class BamManager {
                     // record.getReadName().equals("SRR081241.645807")
                     // ){
 
-                    // System.out.println("#############################################################################################################################################");
-                    // System.out.println("#############################################################################################################################################");
+                    // System.out.println
+                    // ("#############################################################################################################################################");
+                    // System.out.println
+                    // ("#############################################################################################################################################");
                     // System.out.println("Unclipped Start:"+(record.getUnclippedStart()-start));
                     // System.out.println("Unclipped End:"+(record.getUnclippedEnd()-start+1));
-                    // System.out.println(record.getCigarString()+"   Alig Length:"+(record.getAlignmentEnd()-record.getAlignmentStart()+1)+"   Unclipped length:"+(record.getUnclippedEnd()-record.getUnclippedStart()+1));
+                    // System.out.println(record.getCigarString()+"   Alig Length:"+(record.getAlignmentEnd()-record.getAlignmentStart()
+                    // +1)+"   Unclipped length:"+(record.getUnclippedEnd()-record.getUnclippedStart()+1));
 
                     String refStr = forwardSequence.substring((500 + record.getUnclippedStart() - start),
                             (500 + record.getUnclippedEnd() - start + 1));
@@ -889,7 +900,8 @@ public class BamManager {
 //                        logger.info("readStr: "+readStr.length());
 //                        logger.info("readStr: "+readStr.length());
 
-                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar().getCigarElement(i).getLength(); j++, cont++) {
+                        for (int j = record.getAlignmentStart() - start + refgenomeOffset, cont = 0; cont < record.getCigar()
+                                .getCigarElement(i).getLength(); j++, cont++) {
                             if (j >= 0 && j < coverageArray.length) {
                                 coverageArray[j]++;
                                 readPos = j - offset;
@@ -1014,7 +1026,8 @@ public class BamManager {
         ArrayNode response = (ArrayNode) o.get("response");
         String sequence = response.get(0).get("result").get("sequence").asText();
 //        JsonElement json = new JsonParser().parse(sb.toString());
-//        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result").getAsJsonObject().get("sequence").getAsString();
+//        String sequence = json.getAsJsonObject().get("response").getAsJsonArray().get(0).getAsJsonObject().get("result")
+// .getAsJsonObject().get("sequence").getAsString();
         br.close();
         return sequence;
     }

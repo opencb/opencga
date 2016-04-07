@@ -1,0 +1,29 @@
+---
+logLevel: "INFO"
+logFile: null
+
+dataDir: file:///tmp/opencga_catalog_test/
+tempJobsDir: file:///tmp/opencga_catalog_test_jobs/
+
+admin: "admin"
+password: "admin"
+
+emailServer:
+  host: ""
+  port: 123
+  user: ""
+  password: ""
+  from: ""
+  ssl: false
+
+database:
+  hosts:
+  - "localhost"
+  database: "opencga_catalog_test"
+  user: ""
+  password: ""
+  options:
+    authenticationDatabase: ""
+
+policies:
+  userCreation: "ALWAYS" ## This is the policy to create users. Can be: ONLY_ADMIN, ANY_LOGGED_USER or ALWAYS.

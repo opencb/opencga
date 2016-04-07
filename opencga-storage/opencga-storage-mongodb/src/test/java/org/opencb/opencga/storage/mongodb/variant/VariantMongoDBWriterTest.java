@@ -25,17 +25,17 @@ import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.run.Task;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -47,8 +47,8 @@ import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConverter.UNKNOWN_FIELD;
-import static org.opencb.opencga.storage.mongodb.variant.DBObjectToSamplesConverter.UNKNOWN_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_FIELD;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -138,7 +138,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     /**
      * Insert some variants.
-     *
+     * <p>
      * |---------|-------|---------------|
      * |         | Study1|    Study2     |
      * | Variant |-------|---------------|
@@ -151,9 +151,6 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
      * | 1006    |       |       |   x   |
      * |---------|-------|-------|-------|
      *
-     *
-     *
-     *
      * @throws StorageManagerException
      */
     @Test
@@ -164,15 +161,15 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
         studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
-        assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0), loadFile1());
+        assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0), clearTime(loadFile1()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
         assertEquals(3, allVariants.size());
 
-        assertEquals(new MongoDBVariantWriteResult(1, 1, 0, 0), loadFile2());
+        assertEquals(new MongoDBVariantWriteResult(1, 1, 0, 0), clearTime(loadFile2()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
         assertEquals(4, allVariants.size());
 
-        assertEquals(new MongoDBVariantWriteResult(1, 2, 0, 0), loadFile3());
+        assertEquals(new MongoDBVariantWriteResult(1, 2, 0, 0), clearTime(loadFile3()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
         assertEquals(5, allVariants.size());
 
@@ -214,10 +211,12 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     }
 
-    public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String> valueProvider, String field) {
+    public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String>
+            valueProvider, String field) {
         assertTrue(studyConfiguration.getFileIds().values().contains(fileId));
         studyConfiguration.getSamplesInFiles().get(fileId).forEach((sampleId) ->
-                assertEquals("FileId=" + fileId + " Field=" + field + " Sample=" + sampleId, valueProvider.apply(sampleId), variant.getStudy(studyConfiguration.getStudyName())
+                assertEquals("FileId=" + fileId + " Field=" + field + " Sample=" + sampleId, valueProvider.apply(sampleId),
+                        variant.getStudy(studyConfiguration.getStudyName())
                         .getSampleData(studyConfiguration.getSampleIds().inverse().get(sampleId), field))
         );
     }
@@ -365,7 +364,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         variant1.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant1);
         System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 0), mongoDBWriter.getWriteResult());
+        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 0), clearTime(mongoDBWriter.getWriteResult()));
 
         Variant variant2 = new Variant("X", 999, 999, "A", "C");
         sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
@@ -376,7 +375,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         variant2.addStudyEntry(sourceEntry);
         mongoDBWriter.write(variant2);
         System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 1), mongoDBWriter.getWriteResult());
+        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 1), clearTime(mongoDBWriter.getWriteResult()));
 
         Variant variant3 = new Variant("X", 1000, 1000, "A", "C");
         sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
@@ -396,7 +395,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
         mongoDBWriter.write(Arrays.asList(variant3, variant4));
         System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 2), mongoDBWriter.getWriteResult());
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 2), clearTime(mongoDBWriter.getWriteResult()));
 
         Variant variant5 = new Variant("X", 1000, 1000, "A", "<CN0>");
         variant5.setType(VariantType.SYMBOLIC);
@@ -407,11 +406,15 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "./.")));
         variant5.addStudyEntry(sourceEntry);
         mongoDBWriter.write(Collections.singletonList(variant5));
-        assertEquals(new MongoDBVariantWriteResult(2, 0, 1, 2), mongoDBWriter.getWriteResult());
+        assertEquals(new MongoDBVariantWriteResult(2, 0, 1, 2), clearTime(mongoDBWriter.getWriteResult()));
 
         mongoDBWriter.post();
         mongoDBWriter.close();
         studyConfiguration.getIndexedFiles().add(fileId1);
+    }
+
+    public MongoDBVariantWriteResult clearTime(MongoDBVariantWriteResult writeResult) {
+        return writeResult.setExistingVariantsNanoTime(0).setFillGapsNanoTime(0).setNewVariantsNanoTime(0);
     }
 
 }

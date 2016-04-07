@@ -177,10 +177,12 @@ public class OpenCGAWSServer {
         }
 
         try {
+            logger.info("|  * Reading CatalogConfiguration");
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "catalog-configuration.yml").toFile()));
             logger.info("|  * Initializing CatalogManager");
+            catalogManager = new CatalogManager(catalogConfiguration);
             logger.info("========================================================================");
-            catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogException e) {
+        } catch (IOException | CatalogException e) {
             logger.error("Error while creating CatalogManager", e);
         }
 

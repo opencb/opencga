@@ -113,6 +113,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
         String userId;
+
         switch (creationUserPolicy) {
             case ONLY_ADMIN: {
                 userId = getUserId(sessionId);

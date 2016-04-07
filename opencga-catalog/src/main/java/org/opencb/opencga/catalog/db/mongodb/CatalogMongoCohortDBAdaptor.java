@@ -85,9 +85,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public long getStudyIdByCohortId(long cohortId) throws CatalogDBException {
-        Document myCohort = (Document) nativeGet(new Query(QueryParams.ID.key(), cohortId),
-                new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID)).first();
-        return (long) myCohort.get(PRIVATE_STUDY_ID);
+        QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), cohortId),
+                new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID));
+        if (queryResult.getResult().isEmpty()) {
+            throw CatalogDBException.idNotFound("Cohort", cohortId);
+        } else {
+            return ((Document) queryResult.first()).getLong(PRIVATE_STUDY_ID);
+        }
     }
 
     @Override

@@ -23,12 +23,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -85,7 +84,7 @@ public class CatalogStudyConfigurationFactory {
     public StudyConfiguration getStudyConfiguration(long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, sessionId, STUDY_QUERY_OPTIONS).first();
         StudyConfiguration studyConfiguration = null;
-        org.opencb.datastore.core.QueryOptions qOpts = new org.opencb.datastore.core.QueryOptions(options);
+        QueryOptions qOpts = new QueryOptions(options);
 
         if (studyConfigurationManager != null) {
             studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, qOpts).first();
@@ -217,13 +216,13 @@ public class CatalogStudyConfigurationFactory {
             studyConfiguration.setCohorts(new HashMap<>());
         }
         if (studyConfiguration.getAttributes() == null) {
-            studyConfiguration.setAttributes(new org.opencb.datastore.core.ObjectMap());
+            studyConfiguration.setAttributes(new ObjectMap());
         }
     }
 
     public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
-        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new org.opencb.datastore.core.QueryOptions());
+        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
     }
 
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {

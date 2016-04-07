@@ -39,6 +39,10 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-server</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.beust</groupId>
@@ -101,6 +105,13 @@
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>
                             <name>opencga-storage-server.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.storage.app.StorageServerMain</mainClass>
+                            <name>opencga-storage-server2.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -195,23 +206,30 @@
             </properties>
         </profile>
         <profile>
-            <id>STORAGE-HBASE1</id>
+            <id>STORAGE-HADOOP</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <build>
                 <resources>
                     <resource>
-                        <directory>../opencga-storage-hbase/src/main/resources</directory>
+                        <directory>../opencga-storage-hadoop/src/main/resources</directory>
                         <filtering>true</filtering>
                         <targetPath>${basedir}/build/conf</targetPath>
+                    </resource>
+                    <resource>
+                        <directory>${basedir}/opencga-storage-hadoop/target</directory>
+                        <includes>
+                          <include>**/*-dependencies.jar</include>
+                        </includes>
+                        <targetPath>${basedir}/build/libs</targetPath>
                     </resource>
                 </resources>
             </build>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>

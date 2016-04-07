@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created on 25/02/16
+ * Created on 25/02/16.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -37,7 +37,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     protected final VariantSource source;
     protected boolean includeSrc = false;
 
-    protected final static Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
+    protected final Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
     protected final VCFCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
     protected final VariantNormalizer normalizer;
@@ -46,7 +46,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
 
 
     public VariantTransformTask(VariantFactory factory,
-                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includesrc) {
+                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
+                                boolean includesrc) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
@@ -59,7 +60,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
-                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
+                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
+                                boolean includeSrc, boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.source = source;
@@ -70,6 +72,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
         this.normalizer = new VariantNormalizer();
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
     @Override

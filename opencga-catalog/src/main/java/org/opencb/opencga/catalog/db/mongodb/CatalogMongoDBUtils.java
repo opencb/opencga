@@ -582,6 +582,7 @@ class CatalogMongoDBUtils {
             }
             switch (type) {
                 case DECIMAL:
+                case DOUBLE:
                 case DECIMAL_ARRAY:
                     try {
                         double doubleValue = Double.parseDouble(filter);

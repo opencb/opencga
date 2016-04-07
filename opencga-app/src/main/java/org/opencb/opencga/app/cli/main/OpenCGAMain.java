@@ -38,6 +38,7 @@ import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -195,8 +196,9 @@ public class OpenCGAMain {
     private int runCommand(OptionsParser optionsParser) throws Exception {
         int returnValue = 0;
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
-            Properties catalogProperties = Config.getCatalogProperties();
-            catalogManager = new CatalogManager(catalogProperties);
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "catalog-configuration.yml").toFile()));
+            catalogManager = new CatalogManager(catalogConfiguration);
         }
 
         String sessionId = login(optionsParser.getUserAndPasswordOptions());

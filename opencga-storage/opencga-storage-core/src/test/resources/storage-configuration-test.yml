@@ -26,7 +26,7 @@ server:
 
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine
-storageEngines:
+defaultStorageEngine:
 - id: "mongodb"
   options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
@@ -58,7 +58,6 @@ storageEngines:
       load.bulk_size: 100
       load.compress_genotypes: true
       load.threads: 4
-      authentication.db: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
       ## To delete:
       include.genotypes: true
       include.src: false
@@ -68,6 +67,8 @@ storageEngines:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
       admin: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+      options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+        authenticationDatabase: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
 
 ## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"

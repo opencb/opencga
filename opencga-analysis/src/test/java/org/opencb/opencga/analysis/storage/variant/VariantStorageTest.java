@@ -19,8 +19,8 @@ import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.AnalysisStorageTestUtil;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -71,12 +71,12 @@ public class VariantStorageTest {
     public void before () throws Exception {
         Path opencgaHome = AnalysisStorageTestUtil.isolateOpenCGA();
 
-        catalogPropertiesFile = opencgaHome.resolve("conf").resolve("catalog.properties").toString();
-        Properties catalogProperties = Config.getCatalogProperties();
-        CatalogManagerTest.clearCatalog(catalogProperties);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
         clearDB(dbName);
 
-        catalogManager = new CatalogManager(catalogProperties);
+        catalogManager = new CatalogManager(catalogConfiguration);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -113,12 +113,13 @@ public class VariantStorageTest {
     public File beforeAggregated(String fileName, VariantSource.Aggregation aggregation) throws Exception {
         Path opencgaHome = AnalysisStorageTestUtil.isolateOpenCGA();
 
-        catalogPropertiesFile = opencgaHome.resolve("conf").resolve("catalog.properties").toString();
-        Properties catalogProperties = Config.getCatalogProperties();
-        CatalogManagerTest.clearCatalog(catalogProperties);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
+
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
         clearDB(dbName);
 
-        catalogManager = new CatalogManager(catalogProperties);
+        catalogManager = new CatalogManager(catalogConfiguration);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -289,7 +290,7 @@ public class VariantStorageTest {
 
         cohorts.put(StudyEntry.DEFAULT_COHORT, new Cohort());
 //        cohorts.put("all", null);
-        checkCalculatedAggregatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedAggregatedStats(cohorts, dbName);
     }
 
     @Test
@@ -317,7 +318,7 @@ public class VariantStorageTest {
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagMapProperties)) {
             cohorts.put(cohortName, new Cohort());
         }
-        checkCalculatedAggregatedStats(cohorts, dbName, catalogPropertiesFile, sessionId);
+        checkCalculatedAggregatedStats(cohorts, dbName);
     }
 //    @Test
 //    public void testAnnotateVariants() throws Exception {
@@ -348,7 +349,7 @@ public class VariantStorageTest {
         }
     }
 
-    public static void checkCalculatedAggregatedStats(Map<String, Cohort> cohorts, String dbName, String catalogPropertiesFile, String sessionId) throws Exception {
+    public static void checkCalculatedAggregatedStats(Map<String, Cohort> cohorts, String dbName) throws Exception {
         VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager().getDBAdaptor(dbName);
 
         for (Variant variant : dbAdaptor) {

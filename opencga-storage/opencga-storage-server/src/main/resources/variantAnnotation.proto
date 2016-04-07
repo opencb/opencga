@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package org.opencb.opencga.storage.server.grpc;
+option java_outer_classname = "VariantAnnotationProto";
+
+enum ExpressionCall {
+    DOWN = 0;
+    UP = 1;
+}
+
+message ClinVar {
+    string accession = 1;
+    string clinical_significance = 2;
+    repeated string traits = 3;
+    repeated string geneNames = 4;
+    string review_status = 5;
+}
+
+message Gwas {
+    string snpIdCurrent = 1;
+    repeated string traits = 2;
+    double risk_allele_frequency = 3;
+    string reported_genes = 4;
+}
+
+message Cosmic {
+    string mutation_id = 1;
+    string primary_site = 2;
+    string site_subtype = 3;
+    string primary_histology = 4;
+    string histology_subtype = 5;
+    string sample_source = 6;
+    string tumour_origin = 7;
+    string gene_name = 8;
+    string mutation_somatic_status = 9;
+}
+
+message VariantTraitAssociation {
+    repeated ClinVar clinvar = 1;
+    repeated Gwas gwas = 2;
+    repeated Cosmic cosmic = 3;
+}
+
+message GeneDrugInteraction {
+    string gene_name = 1;
+    string drug_name = 2;
+    string source = 3;
+    string study_type = 4;
+    string type = 5;
+}
+
+message Expression {
+    string gene_name = 1;
+    string transcript_id = 2;
+    string experimental_factor = 3;
+    string factor_value = 4;
+    string experiment_id = 5;
+    string technology_platform = 6;
+    ExpressionCall expression = 7;
+    float pvalue = 8;
+}
+
+message PopulationFrequency {
+    string study = 1;
+    string population = 2;
+    string super_population = 3;
+    string ref_allele = 4;
+    string alt_allele = 5;
+    float ref_allele_freq = 6;
+    float alt_allele_freq = 7;
+    float ref_hom_genotype_freq = 8;
+    float het_genotype_freq = 9;
+    float alt_hom_genotype_freq = 10;
+}
+
+message SequenceOntologyTerm {
+    string accession = 1;
+    string name = 2;
+}
+
+message ProteinFeature {
+    string id = 1;
+    int32 start = 2;
+    int32 end = 3;
+    string type = 4;
+    string description = 5;
+}
+
+message Score {
+    double score = 1;
+    string source = 2;
+    string description = 3;
+}
+
+message ProteinVariantAnnotation {
+    string uniprot_accession = 1;
+    string uniprot_name = 2;
+    int32 position = 3;
+    //string aaChange = 4;
+    string reference = 5;
+    string alternate = 6;
+    string uniprot_variant_id = 7;
+    string functional_description = 8;
+    repeated Score substitution_scores = 9;
+    repeated string keywords = 10;
+    repeated ProteinFeature features = 11;
+}
+
+message ConsequenceType {
+    string gene_name = 1;
+    string ensembl_gene_id = 2;
+    string ensembl_transcript_id = 3;
+    string strand = 4;
+    string biotype = 5;
+    int32 c_dna_position = 6;
+    int32 cds_position = 7;
+    string codon = 8;
+    ProteinVariantAnnotation protein_variant_annotation = 9;
+    repeated SequenceOntologyTerm sequence_ontology_terms = 10;
+}
+
+message Xref {
+    string id = 1;
+    string source = 2;
+}
+
+message VariantAnnotation {
+    string chromosome = 1;
+    int32 start = 2;
+    int32 end = 3;
+    string reference = 4;
+    string alternate = 5;
+    string id = 6;
+    repeated Xref xrefs = 7;
+    repeated string hgvs = 8;
+    repeated ConsequenceType consequence_types = 9;
+    repeated PopulationFrequency population_frequencies = 10;
+    repeated Score conservation = 11;
+    repeated Expression gene_expression = 12;
+    repeated GeneDrugInteraction gene_drug_interaction = 13;
+    VariantTraitAssociation trait_association = 14;
+    map<string, string> additional_attributes = 15;
+}

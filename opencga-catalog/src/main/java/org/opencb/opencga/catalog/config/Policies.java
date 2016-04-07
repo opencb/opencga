@@ -15,8 +15,9 @@ public class Policies {
         return userCreation;
     }
 
-    public void setUserCreation(UserCreation userCreation) {
+    public Policies setUserCreation(UserCreation userCreation) {
         this.userCreation = userCreation;
+        return this;
     }
 
     public static enum UserCreation {

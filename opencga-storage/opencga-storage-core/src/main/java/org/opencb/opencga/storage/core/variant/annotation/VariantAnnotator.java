@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
@@ -29,14 +29,15 @@ import java.util.List;
  */
 public abstract class VariantAnnotator {
 
-    public VariantAnnotator(StorageConfiguration configuration, ObjectMap options) throws VariantAnnotatorException {}
+    public VariantAnnotator(StorageConfiguration configuration, ObjectMap options) throws VariantAnnotatorException {
+    }
 
     /**
      * Creates variant annotations from a list of variants.
      *
-     * @param variants              Variants to annotate
-     * @return                      VariantAnnotations
-     * @throws IOException
+     * @param variants Variants to annotate
+     * @return VariantAnnotations
+     * @throws IOException IOException thrown
      */
     public abstract List<VariantAnnotation> annotate(List<Variant> variants) throws IOException;
 

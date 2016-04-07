@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.commons.utils.StringUtils;
+import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 /**

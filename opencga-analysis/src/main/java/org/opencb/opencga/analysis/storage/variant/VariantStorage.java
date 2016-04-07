@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -145,7 +145,7 @@ public class VariantStorage {
         StringBuilder sb = new StringBuilder()
 
                 .append(opencgaStorageBinPath)
-                .append(" stats-variants ")
+                .append(" variant stats ")
                 .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
                 .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
@@ -242,7 +242,7 @@ public class VariantStorage {
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
-                .append(" annotate-variants ")
+                .append(" variant annotation ")
                 .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --outdir ").append(temporalOutDirUri.toString())
                 .append(" --database ").append(dataStore.getDbName());

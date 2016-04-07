@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package org.opencb.opencga.storage.server.grpc;
+option java_outer_classname = "AdminServiceModel";
+
+import "GenericService.proto";
+
+service AdminService {
+
+    rpc status(Request) returns (MapResponse) {}
+
+    rpc stop(Request) returns (MapResponse) {}
+
+}

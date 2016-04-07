@@ -18,11 +18,11 @@ package org.opencb.opencga.storage.core;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.variant.VariantSource;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.opencb.datastore.core.ObjectMap;
+import org.apache.commons.lang.StringUtils;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ import java.util.function.Function;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class StudyConfiguration implements Cloneable {
+public class StudyConfiguration {
 
     private int studyId;
     private String studyName;
@@ -54,15 +54,15 @@ public class StudyConfiguration implements Cloneable {
 
     private ObjectMap attributes;
 
-    StudyConfiguration() {
+    protected StudyConfiguration() {
     }
 
     public StudyConfiguration(StudyConfiguration other) {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
-        this.fileIds = HashBiMap.create(other.fileIds == null? Collections.emptyMap() : other.fileIds);
-        this.sampleIds = HashBiMap.create(other.sampleIds == null? Collections.emptyMap() : other.sampleIds);
-        this.cohortIds = HashBiMap.create(other.cohortIds == null? Collections.emptyMap() : other.cohortIds);
+        this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
+        this.sampleIds = HashBiMap.create(other.sampleIds == null ? Collections.emptyMap() : other.sampleIds);
+        this.cohortIds = HashBiMap.create(other.cohortIds == null ? Collections.emptyMap() : other.cohortIds);
         this.cohorts = new HashMap<>(other.cohorts);
         this.indexedFiles = new LinkedHashSet<>(other.indexedFiles);
         this.headers = new HashMap<>(other.headers);
@@ -73,8 +73,7 @@ public class StudyConfiguration implements Cloneable {
         this.attributes = new ObjectMap(other.attributes);
     }
 
-    @Override
-    public StudyConfiguration clone() {
+    public StudyConfiguration newInstance() {
         return new StudyConfiguration(this);
     }
 
@@ -104,9 +103,9 @@ public class StudyConfiguration implements Cloneable {
                               Map<Integer, Set<Integer>> cohorts) {
         this.studyId = studyId;
         this.studyName = studyName;
-        this.fileIds = HashBiMap.create(fileIds == null? Collections.emptyMap() : fileIds);
-        this.sampleIds = HashBiMap.create(sampleIds == null? Collections.emptyMap() : sampleIds);
-        this.cohortIds = HashBiMap.create(cohortIds == null? Collections.emptyMap() : cohortIds);
+        this.fileIds = HashBiMap.create(fileIds == null ? Collections.emptyMap() : fileIds);
+        this.sampleIds = HashBiMap.create(sampleIds == null ? Collections.emptyMap() : sampleIds);
+        this.cohortIds = HashBiMap.create(cohortIds == null ? Collections.emptyMap() : cohortIds);
         this.cohorts = cohorts;
         this.indexedFiles = new LinkedHashSet<>();
         this.headers = HashBiMap.create();
@@ -119,33 +118,35 @@ public class StudyConfiguration implements Cloneable {
 
 
     @Deprecated
-    static public StudyConfiguration read(Path path) throws IOException {
+    public static StudyConfiguration read(Path path) throws IOException {
         return new ObjectMapper(new JsonFactory()).readValue(path.toFile(), StudyConfiguration.class);
     }
 
     @Deprecated
     public void write(Path path) throws IOException {
-        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(), this);
+        new ObjectMapper(new JsonFactory()).writerWithDefaultPrettyPrinter().withoutAttribute("inverseFileIds").writeValue(path.toFile(),
+                this);
     }
 
     @Override
     public String toString() {
-        return "StudyConfiguration{" +
-                "studyId=" + studyId +
-                ", studyName='" + studyName + '\'' +
-                ", fileIds=" + fileIds +
-                ", sampleIds=" + sampleIds +
-                ", cohortIds=" + cohortIds +
-                ", cohorts=" + cohorts +
-                ", indexedFiles=" + indexedFiles +
-                ", headers=" + headers +
-                ", samplesInFiles=" + samplesInFiles +
-                ", calculatedStats=" + calculatedStats +
-                ", invalidStats=" + invalidStats +
-                ", aggregation=" + aggregation +
-                ", timeStamp=" + timeStamp +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("StudyConfiguration{");
+        sb.append("studyId=").append(studyId);
+        sb.append(", studyName='").append(studyName).append('\'');
+        sb.append(", fileIds=").append(fileIds);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", cohortIds=").append(cohortIds);
+        sb.append(", cohorts=").append(cohorts);
+        sb.append(", indexedFiles=").append(indexedFiles);
+        sb.append(", headers=").append(headers);
+        sb.append(", samplesInFiles=").append(samplesInFiles);
+        sb.append(", calculatedStats=").append(calculatedStats);
+        sb.append(", invalidStats=").append(invalidStats);
+        sb.append(", aggregation=").append(aggregation);
+        sb.append(", timeStamp=").append(timeStamp);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public int getStudyId() {
@@ -169,7 +170,7 @@ public class StudyConfiguration implements Cloneable {
     }
 
     public void setFileIds(Map<String, Integer> fileIds) {
-        this.fileIds = fileIds == null? null : HashBiMap.create(fileIds);
+        this.fileIds = fileIds == null ? null : HashBiMap.create(fileIds);
     }
 
     public BiMap<String, Integer> getSampleIds() {
@@ -177,7 +178,7 @@ public class StudyConfiguration implements Cloneable {
     }
 
     public void setSampleIds(Map<String, Integer> sampleIds) {
-        this.sampleIds = sampleIds == null? null : HashBiMap.create(sampleIds);
+        this.sampleIds = sampleIds == null ? null : HashBiMap.create(sampleIds);
     }
 
     public BiMap<String, Integer> getCohortIds() {
@@ -185,7 +186,7 @@ public class StudyConfiguration implements Cloneable {
     }
 
     public void setCohortIds(Map<String, Integer> cohortIds) {
-        this.cohortIds = cohortIds == null? null :  HashBiMap.create(cohortIds);
+        this.cohortIds = cohortIds == null ? null : HashBiMap.create(cohortIds);
     }
 
     public Map<Integer, Set<Integer>> getCohorts() {
@@ -262,25 +263,51 @@ public class StudyConfiguration implements Cloneable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof StudyConfiguration)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof StudyConfiguration)) {
+            return false;
+        }
 
         StudyConfiguration that = (StudyConfiguration) o;
 
-        if (studyId != that.studyId) return false;
-        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) return false;
-        if (fileIds != null ? !fileIds.equals(that.fileIds) : that.fileIds != null) return false;
-        if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) return false;
-        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) return false;
-        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) return false;
-        if (indexedFiles != null ? !indexedFiles.equals(that.indexedFiles) : that.indexedFiles != null) return false;
-        if (samplesInFiles != null ? !samplesInFiles.equals(that.samplesInFiles) : that.samplesInFiles != null)
+        if (studyId != that.studyId) {
             return false;
-        if (calculatedStats != null ? !calculatedStats.equals(that.calculatedStats) : that.calculatedStats != null)
+        }
+        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) {
             return false;
-        if (invalidStats != null ? !invalidStats.equals(that.invalidStats) : that.invalidStats != null) return false;
-        if (aggregation != null? !aggregation.equals(that.aggregation) : that.aggregation != null) return false;
-        if (timeStamp != null ? !timeStamp.equals(that.timeStamp) : that.timeStamp != null) return false;
+        }
+        if (fileIds != null ? !fileIds.equals(that.fileIds) : that.fileIds != null) {
+            return false;
+        }
+        if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) {
+            return false;
+        }
+        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) {
+            return false;
+        }
+        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) {
+            return false;
+        }
+        if (indexedFiles != null ? !indexedFiles.equals(that.indexedFiles) : that.indexedFiles != null) {
+            return false;
+        }
+        if (samplesInFiles != null ? !samplesInFiles.equals(that.samplesInFiles) : that.samplesInFiles != null) {
+            return false;
+        }
+        if (calculatedStats != null ? !calculatedStats.equals(that.calculatedStats) : that.calculatedStats != null) {
+            return false;
+        }
+        if (invalidStats != null ? !invalidStats.equals(that.invalidStats) : that.invalidStats != null) {
+            return false;
+        }
+        if (aggregation != null ? !aggregation.equals(that.aggregation) : that.aggregation != null) {
+            return false;
+        }
+        if (timeStamp != null ? !timeStamp.equals(that.timeStamp) : that.timeStamp != null) {
+            return false;
+        }
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
     }
@@ -303,13 +330,13 @@ public class StudyConfiguration implements Cloneable {
         return result;
     }
 
-    public static <T,R> BiMap<R,T> inverseMap(BiMap<T, R> map) {
+    public static <T, R> BiMap<R, T> inverseMap(BiMap<T, R> map) {
         return map.inverse();
     }
 
     @Deprecated
-    public static <T,R> Map<R,T> inverseMap(Map<T, R> map) {
-        Map<R,T> inverseMap = new HashMap<>();
+    public static <T, R> Map<R, T> inverseMap(Map<T, R> map) {
+        Map<R, T> inverseMap = new HashMap<>();
         for (Map.Entry<T, R> entry : map.entrySet()) {
             inverseMap.put(entry.getValue(), entry.getKey());
         }
@@ -361,11 +388,11 @@ public class StudyConfiguration implements Cloneable {
     }
 
     /**
-     * Get a list of the samples to be returned, given a study and a list of samples to be returned
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
      *
      * @param studyConfiguration    Study configuration
      * @param returnedSamples       List of samples to be returned
-     * @return
+     * @return The samples IDs
      */
     public static LinkedHashMap<String, Integer> getReturnedSamplesPosition(
             StudyConfiguration studyConfiguration,
