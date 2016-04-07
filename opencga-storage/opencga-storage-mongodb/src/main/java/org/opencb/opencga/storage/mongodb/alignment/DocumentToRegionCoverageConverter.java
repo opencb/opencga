@@ -18,17 +18,21 @@ package org.opencb.opencga.storage.mongodb.alignment;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
+import org.bson.types.Binary;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
-import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Created by jacobo on 26/08/14.
  */
-public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<RegionCoverage, DBObject> {
+public class DocumentToRegionCoverageConverter implements ComplexTypeConverter<RegionCoverage, Document> {
 
-    public DBObject getIdObject(RegionCoverage regionCoverage) {
-        return new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, getIdField(regionCoverage));
+    public Document getIdObject(RegionCoverage regionCoverage) {
+        return new Document(CoverageMongoDBWriter.ID_FIELD, getIdField(regionCoverage));
     }
 
     public String getIdField(RegionCoverage regionCoverage) {
@@ -48,17 +52,17 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
 
 
     @Override
-    public RegionCoverage convertToDataModelType(DBObject dbObject) {
-        String[] split = dbObject.get(CoverageMongoDBWriter.ID_FIELD).toString().split("_");
+    public RegionCoverage convertToDataModelType(Document document) {
+        String[] split = document.get(CoverageMongoDBWriter.ID_FIELD).toString().split("_");
 
         RegionCoverage regionCoverage = new RegionCoverage();
 
         BasicDBList coverageList;
-        if (dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
-            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0))
+        if (document.containsKey(CoverageMongoDBWriter.FILES_FIELD)) {
+            coverageList = (BasicDBList) ((BasicDBObject) ((BasicDBList) document.get(CoverageMongoDBWriter.FILES_FIELD)).get(0))
                     .get(CoverageMongoDBWriter.COVERAGE_FIELD);
-        } else if (dbObject.containsField(CoverageMongoDBWriter.COVERAGE_FIELD)) {
-            coverageList = (BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD);
+        } else if (document.containsKey(CoverageMongoDBWriter.COVERAGE_FIELD)) {
+            coverageList = (BasicDBList) document.get(CoverageMongoDBWriter.FILES_FIELD);
         } else {
             //TODO: Show a error message
             return null;
@@ -79,7 +83,7 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
     }
 
     @Override
-    public DBObject convertToStorageType(RegionCoverage regionCoverage) {
+    public Document convertToStorageType(RegionCoverage regionCoverage) {
         int size = regionCoverage.getAll().length;
 
         String chunkId;
@@ -94,6 +98,10 @@ public class DBObjectToRegionCoverageConverter implements ComplexTypeConverter<R
         //return new BasicDBObject(ID_FIELD, String.format("%s_%d_%s", regionCoverage.getChromosome(), regionCoverage.getStart() / size,
         // chunkId)).
         //        append(FILES_FIELD, Arrays.asList(new BasicDBObject(COVERAGE_FIELD, regionCoverage.getAll())));
-        return new BasicDBObject(CoverageMongoDBWriter.COVERAGE_FIELD, regionCoverage.getAll());
+        ArrayList<Short> all = new ArrayList<>(regionCoverage.getAll().length);
+        for (short i : regionCoverage.getAll()) {
+            all.add(i);
+        }
+        return new Document(CoverageMongoDBWriter.COVERAGE_FIELD, all);
     }
 }

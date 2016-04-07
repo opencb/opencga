@@ -4,7 +4,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Objects;
+
+import static org.junit.Assert.fail;
 
 /**
  * Created by jacobo on 31/05/15.

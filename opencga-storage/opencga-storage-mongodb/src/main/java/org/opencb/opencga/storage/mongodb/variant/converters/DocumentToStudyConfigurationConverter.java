@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
-import org.opencb.datastore.core.ComplexTypeConverter;
+import org.bson.Document;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 
 import java.io.IOException;
@@ -29,7 +28,7 @@ import java.io.IOException;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class DBObjectToStudyConfigurationConverter implements ComplexTypeConverter<StudyConfiguration, DBObject> {
+public class DocumentToStudyConfigurationConverter implements ComplexTypeConverter<StudyConfiguration, Document> {
 
     static final char CHARACTER_TO_REPLACE_DOTS = (char) 163; // <-- £
     static final String TO_REPLACE_DOTS = "&#46;";
@@ -37,16 +36,16 @@ public class DBObjectToStudyConfigurationConverter implements ComplexTypeConvert
 
     private final ObjectMapper objectMapper;
 
-    public DBObjectToStudyConfigurationConverter() {
+    public DocumentToStudyConfigurationConverter() {
         objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
 
     @Override
-    public StudyConfiguration convertToDataModelType(DBObject dbObject) {
+    public StudyConfiguration convertToDataModelType(Document document) {
         try {
-            return objectMapper.readValue(dbObject.toString().replace(TO_REPLACE_DOTS, "."), StudyConfiguration.class);
+            return objectMapper.readValue(objectMapper.writeValueAsString(document).replace(TO_REPLACE_DOTS, "."), StudyConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -54,9 +53,9 @@ public class DBObjectToStudyConfigurationConverter implements ComplexTypeConvert
     }
 
     @Override
-    public DBObject convertToStorageType(StudyConfiguration studyConfiguration) {
+    public Document convertToStorageType(StudyConfiguration studyConfiguration) {
         try {
-            DBObject studyMongo = (DBObject) JSON.parse(objectMapper.writeValueAsString(studyConfiguration).replace(".", TO_REPLACE_DOTS));
+            Document studyMongo = Document.parse(objectMapper.writeValueAsString(studyConfiguration).replace(".", TO_REPLACE_DOTS));
             studyMongo.put(FIELD_FILE_IDS, studyConfiguration.getFileIds().values());
             studyMongo.put("_id", studyConfiguration.getStudyId());
             return studyMongo;

@@ -179,7 +179,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
 
         //2 Index (bai)
         if (createBai) {
-            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output);
+            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
         }
 
         //3 Calculate Coverage and transform

@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

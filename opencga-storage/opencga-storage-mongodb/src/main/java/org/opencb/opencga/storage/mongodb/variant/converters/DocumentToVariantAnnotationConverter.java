@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.util.JSON;
 import org.apache.avro.generic.GenericRecord;
+import org.bson.Document;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +34,7 @@ import java.util.*;
 /**
  * Created by jacobo on 13/01/15.
  */
-public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, DBObject> {
+public class DocumentToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, Document> {
 
     public static final String ANNOT_ID_FIELD = "id";
 
@@ -89,9 +86,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
 
-    protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantAnnotationConverter.class);
+    protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantAnnotationConverter.class);
 
-    public DBObjectToVariantAnnotationConverter() {
+    public DocumentToVariantAnnotationConverter() {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -99,20 +96,20 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     }
 
     @Override
-    public VariantAnnotation convertToDataModelType(DBObject object) {
+    public VariantAnnotation convertToDataModelType(Document object) {
         VariantAnnotation va = new VariantAnnotation();
 
         //ConsequenceType
         List<ConsequenceType> consequenceTypes = new LinkedList<>();
         Object cts = object.get(CONSEQUENCE_TYPE_FIELD);
-        if (cts != null && cts instanceof BasicDBList) {
-            for (Object o : ((BasicDBList) cts)) {
-                if (o instanceof DBObject) {
-                    DBObject ct = (DBObject) o;
+        if (cts != null && cts instanceof List) {
+            for (Object o : ((List) cts)) {
+                if (o instanceof Document) {
+                    Document ct = (Document) o;
 
                     //SO accession name
                     List<String> soAccessionNames = new LinkedList<>();
-                    if (ct.containsField(SO_ACCESSION_FIELD)) {
+                    if (ct.containsKey(SO_ACCESSION_FIELD)) {
                         if (ct.get(SO_ACCESSION_FIELD) instanceof List) {
                             List<Integer> list = (List) ct.get(SO_ACCESSION_FIELD);
                             for (Integer so : list) {
@@ -125,9 +122,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
                     //ProteinSubstitutionScores
                     List<Score> proteinSubstitutionScores = new LinkedList<>();
-                    if (ct.containsField(PROTEIN_SUBSTITUTION_SCORE_FIELD)) {
-                        List<DBObject> list = (List) ct.get(PROTEIN_SUBSTITUTION_SCORE_FIELD);
-                        for (DBObject dbObject : list) {
+                    if (ct.containsKey(PROTEIN_SUBSTITUTION_SCORE_FIELD)) {
+                        List<Document> list = (List) ct.get(PROTEIN_SUBSTITUTION_SCORE_FIELD);
+                        for (Document dbObject : list) {
                             proteinSubstitutionScores.add(new Score(
                                     getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
                                     getDefault(dbObject, SCORE_SOURCE_FIELD, ""),
@@ -135,14 +132,14 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                             ));
                         }
                     }
-                    if (ct.containsField(POLYPHEN_FIELD)) {
-                        DBObject dbObject = (DBObject) ct.get(POLYPHEN_FIELD);
+                    if (ct.containsKey(POLYPHEN_FIELD)) {
+                        Document dbObject = (Document) ct.get(POLYPHEN_FIELD);
                         proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
                                 "polyphen",
                                 getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
                     }
-                    if (ct.containsField(SIFT_FIELD)) {
-                        DBObject dbObject = (DBObject) ct.get(SIFT_FIELD);
+                    if (ct.containsKey(SIFT_FIELD)) {
+                        Document dbObject = (Document) ct.get(SIFT_FIELD);
                         proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
                                 "sift",
                                 getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
@@ -171,9 +168,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
         //Conserved Region Scores
         List<Score> conservedRegionScores = new LinkedList<>();
-        if (object.containsField(CONSERVED_REGION_SCORE_FIELD)) {
-            List<DBObject> list = (List) object.get(CONSERVED_REGION_SCORE_FIELD);
-            for (DBObject dbObject : list) {
+        if (object.containsKey(CONSERVED_REGION_SCORE_FIELD)) {
+            List<Document> list = (List) object.get(CONSERVED_REGION_SCORE_FIELD);
+            for (Document dbObject : list) {
                 conservedRegionScores.add(new Score(
                         getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
                         getDefault(dbObject, SCORE_SOURCE_FIELD, ""),
@@ -185,9 +182,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
         //Population frequencies
         List<PopulationFrequency> populationFrequencies = new LinkedList<>();
-        if (object.containsField(POPULATION_FREQUENCIES_FIELD)) {
-            List<DBObject> list = (List) object.get(POPULATION_FREQUENCIES_FIELD);
-            for (DBObject dbObject : list) {
+        if (object.containsKey(POPULATION_FREQUENCIES_FIELD)) {
+            List<Document> list = (List) object.get(POPULATION_FREQUENCIES_FIELD);
+            for (Document dbObject : list) {
                 populationFrequencies.add(new PopulationFrequency(
                         getDefault(dbObject, POPULATION_FREQUENCY_STUDY_FIELD, ""),
                         getDefault(dbObject, POPULATION_FREQUENCY_POP_FIELD, ""),
@@ -205,9 +202,9 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
         // Drug-Gene Interactions
         List<GeneDrugInteraction> drugs = new LinkedList<>();
-        if (object.containsField(DRUG_FIELD)) {
-            List<DBObject> list = (List) object.get(DRUG_FIELD);
-            for (DBObject dbObject : list) {
+        if (object.containsKey(DRUG_FIELD)) {
+            List<Document> list = (List) object.get(DRUG_FIELD);
+            for (Document dbObject : list) {
                 //drugs.add(dbObject.toMap());
                 drugs.add(new GeneDrugInteraction(getDefault(dbObject, GENE_NAME_FIELD, ""),
                         getDefault(dbObject, DRUG_NAME_FIELD, ""), "dgidb",
@@ -221,10 +218,10 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         //XREfs
         List<Xref> xrefs = new LinkedList<>();
         Object xrs = object.get(XREFS_FIELD);
-        if (xrs != null && xrs instanceof BasicDBList) {
-            for (Object o : (BasicDBList) xrs) {
-                if (o instanceof DBObject) {
-                    DBObject xref = (DBObject) o;
+        if (xrs != null && xrs instanceof List) {
+            for (Object o : (List) xrs) {
+                if (o instanceof Document) {
+                    Document xref = (Document) o;
 
                     xrefs.add(new Xref(
                             (String) xref.get(XREF_ID_FIELD),
@@ -237,8 +234,8 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
 
 
         //Clinical Data
-        if (object.containsField(CLINICAL_DATA_FIELD)) {
-            va.setVariantTraitAssociation(parseClinicalData((DBObject) object.get(CLINICAL_DATA_FIELD)));
+        if (object.containsKey(CLINICAL_DATA_FIELD)) {
+            va.setVariantTraitAssociation(parseClinicalData((Document) object.get(CLINICAL_DATA_FIELD)));
         }
 
         return va;
@@ -258,11 +255,11 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
-    private VariantTraitAssociation parseClinicalData(DBObject clinicalData) {
+    private VariantTraitAssociation parseClinicalData(Document clinicalData) {
         if (clinicalData != null) {
             int size = 0;
             VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-            BasicDBList cosmicDBList = (BasicDBList) clinicalData.get(COSMIC_FIELD);
+            List cosmicDBList = (List) clinicalData.get(COSMIC_FIELD);
             if (cosmicDBList != null) {
                 List<Cosmic> cosmicList = new ArrayList<>(cosmicDBList.size());
                 for (Object object : cosmicDBList) {
@@ -271,7 +268,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 size += cosmicList.size();
                 variantTraitAssociation.setCosmic(cosmicList);
             }
-            BasicDBList gwasDBList = (BasicDBList) clinicalData.get(GWAS_FIELD);
+            List gwasDBList = (List) clinicalData.get(GWAS_FIELD);
             if (gwasDBList != null) {
                 List<Gwas> gwasList = new ArrayList<>(gwasDBList.size());
                 for (Object object : gwasDBList) {
@@ -280,7 +277,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 size += gwasList.size();
                 variantTraitAssociation.setGwas(gwasList);
             }
-            BasicDBList clinvarDBList = (BasicDBList) clinicalData.get(CLINVAR_FIELD);
+            List clinvarDBList = (List) clinicalData.get(CLINVAR_FIELD);
             if (clinvarDBList != null) {
                 List<ClinVar> clinvarList = new ArrayList<>(clinvarDBList.size());
                 for (Object object : clinvarDBList) {
@@ -301,13 +298,13 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
     }
 
     @Override
-    public DBObject convertToStorageType(VariantAnnotation variantAnnotation) {
-        DBObject dbObject = new BasicDBObject();
-        Set<DBObject> xrefs = new HashSet<>();
-        List<DBObject> cts = new LinkedList<>();
+    public Document convertToStorageType(VariantAnnotation variantAnnotation) {
+        Document document = new Document();
+        Set<Document> xrefs = new HashSet<>();
+        List<Document> cts = new LinkedList<>();
 
         //Annotation ID
-        dbObject.put(ANNOT_ID_FIELD, "?");
+        document.put(ANNOT_ID_FIELD, "?");
 
         //Variant ID
         if (variantAnnotation.getId() != null && !variantAnnotation.getId().isEmpty()) {
@@ -318,7 +315,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         if (variantAnnotation.getConsequenceTypes() != null) {
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             for (ConsequenceType consequenceType : consequenceTypes) {
-                DBObject ct = new BasicDBObject();
+                Document ct = new Document();
 
                 putNotNull(ct, GENE_NAME_FIELD, consequenceType.getGeneName());
                 putNotNull(ct, ENSEMBL_GENE_ID_FIELD, consequenceType.getEnsemblGeneId());
@@ -344,7 +341,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                     putNotNull(ct, AA_ALTERNATE_FIELD, consequenceType.getProteinVariantAnnotation().getAlternate());
                     //Protein substitution region score
                     if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
-                        List<DBObject> proteinSubstitutionScores = new LinkedList<>();
+                        List<Document> proteinSubstitutionScores = new LinkedList<>();
                         for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                             if (score != null) {
                                 if (score.getSource().equals("polyphen")) {
@@ -373,44 +370,44 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 }
 
             }
-            putNotNull(dbObject, CONSEQUENCE_TYPE_FIELD, cts);
+            putNotNull(document, CONSEQUENCE_TYPE_FIELD, cts);
         }
 
         //Conserved region score
         if (variantAnnotation.getConservation() != null) {
-            List<DBObject> conservedRegionScores = new LinkedList<>();
+            List<Document> conservedRegionScores = new LinkedList<>();
             for (Score score : variantAnnotation.getConservation()) {
                 if (score != null) {
                     conservedRegionScores.add(convertScoreToStorage(score));
                 }
             }
-            putNotNull(dbObject, CONSERVED_REGION_SCORE_FIELD, conservedRegionScores);
+            putNotNull(document, CONSERVED_REGION_SCORE_FIELD, conservedRegionScores);
         }
 
         //Population frequencies
         if (variantAnnotation.getPopulationFrequencies() != null) {
-            List<DBObject> populationFrequencies = new LinkedList<>();
+            List<Document> populationFrequencies = new LinkedList<>();
             for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
                 if (populationFrequency != null) {
                     populationFrequencies.add(convertPopulationFrequencyToStorage(populationFrequency));
                 }
             }
-            putNotNull(dbObject, POPULATION_FREQUENCIES_FIELD, populationFrequencies);
+            putNotNull(document, POPULATION_FREQUENCIES_FIELD, populationFrequencies);
         }
 
         // Drug-Gene Interactions
         if (variantAnnotation.getGeneDrugInteraction() != null) {
-            List<DBObject> drugGeneInteractions = new LinkedList<>();
+            List<Document> drugGeneInteractions = new LinkedList<>();
             List<GeneDrugInteraction> geneDrugInteractionList = variantAnnotation.getGeneDrugInteraction();
             if (geneDrugInteractionList != null) {
                 for (GeneDrugInteraction geneDrugInteraction : geneDrugInteractionList) {
-                    DBObject drugDbObject = new BasicDBObject(GENE_NAME_FIELD, geneDrugInteraction.getGeneName());
+                    Document drugDbObject = new Document(GENE_NAME_FIELD, geneDrugInteraction.getGeneName());
                     putNotNull(drugDbObject, DRUG_NAME_FIELD, geneDrugInteraction.getDrugName());
                     putNotNull(drugDbObject, "src", geneDrugInteraction.getStudyType());
                     drugGeneInteractions.add(drugDbObject);
                 }
             }
-            putNotNull(dbObject, DRUG_FIELD, drugGeneInteractions);
+            putNotNull(document, DRUG_FIELD, drugGeneInteractions);
         }
 
         //XREFs
@@ -419,103 +416,103 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
                 xrefs.add(convertXrefToStorage(xref.getId(), xref.getSource()));
             }
         }
-        putNotNull(dbObject, XREFS_FIELD, xrefs);
+        putNotNull(document, XREFS_FIELD, xrefs);
 
         //Clinical Data
-        BasicDBObject clinicalDBObject = new BasicDBObject();
+        Document clinicalDocument = new Document();
         if (variantAnnotation.getVariantTraitAssociation() != null) {
-            putNotNull(clinicalDBObject, COSMIC_FIELD,
+            putNotNull(clinicalDocument, COSMIC_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
-            putNotNull(clinicalDBObject, GWAS_FIELD,
+            putNotNull(clinicalDocument, GWAS_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
-            putNotNull(clinicalDBObject, CLINVAR_FIELD,
+            putNotNull(clinicalDocument, CLINVAR_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
         }
-        if (!clinicalDBObject.isEmpty()) {
-            dbObject.put(CLINICAL_DATA_FIELD, clinicalDBObject);
+        if (!clinicalDocument.isEmpty()) {
+            document.put(CLINICAL_DATA_FIELD, clinicalDocument);
         }
 
-        return dbObject;
+        return document;
     }
 
-    private <T> BasicDBList generateClinicalDBList(List<T> objectList) {
-        BasicDBList basicDBList = new BasicDBList();
+    private <T> List generateClinicalDBList(List<T> objectList) {
+        List list = new ArrayList(objectList.size());
         if (objectList != null) {
             for (T object : objectList) {
                 try {
                     if (object instanceof GenericRecord) {
-                        basicDBList.add(JSON.parse(object.toString()));
+                        list.add(Document.parse(object.toString()));
                     } else {
-                        basicDBList.add(JSON.parse(writer.writeValueAsString(object)));
+                        list.add(Document.parse(writer.writeValueAsString(object)));
                     }
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                     logger.error("Error serializing Clinical Data " + object.getClass(), e);
                 }
             }
-            return basicDBList;
+            return list;
         }
         return null;
     }
 
-    private DBObject convertScoreToStorage(Score score) {
+    private Document convertScoreToStorage(Score score) {
         return convertScoreToStorage(score.getScore(), score.getSource(), score.getDescription());
     }
 
-    private DBObject convertScoreToStorage(double score, String source, String description) {
-        DBObject dbObject = new BasicDBObject(SCORE_SCORE_FIELD, score);
+    private Document convertScoreToStorage(double score, String source, String description) {
+        Document dbObject = new Document(SCORE_SCORE_FIELD, score);
         putNotNull(dbObject, SCORE_SOURCE_FIELD, source);
         putNotNull(dbObject, SCORE_DESCRIPTION_FIELD, description);
         return dbObject;
     }
 
-    private DBObject convertPopulationFrequencyToStorage(PopulationFrequency populationFrequency) {
-        DBObject dbObject = new BasicDBObject(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
+    private Document convertPopulationFrequencyToStorage(PopulationFrequency populationFrequency) {
+        Document dbObject = new Document(POPULATION_FREQUENCY_STUDY_FIELD, populationFrequency.getStudy());
         putNotNull(dbObject, POPULATION_FREQUENCY_POP_FIELD, populationFrequency.getPopulation());
         putNotNull(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, populationFrequency.getRefAlleleFreq());
         putNotNull(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, populationFrequency.getAltAlleleFreq());
         return dbObject;
     }
 
-    private DBObject convertXrefToStorage(String id, String source) {
-        DBObject dbObject = new BasicDBObject(XREF_ID_FIELD, id);
+    private Document convertXrefToStorage(String id, String source) {
+        Document dbObject = new Document(XREF_ID_FIELD, id);
         dbObject.put(XREF_SOURCE_FIELD, source);
         return dbObject;
     }
 
 
     //Utils
-    private void putNotNull(DBObject dbObject, String key, Object obj) {
+    private void putNotNull(Document dbObject, String key, Object obj) {
         if (obj != null) {
             dbObject.put(key, obj);
         }
     }
 
-    private void putNotNull(DBObject dbObject, String key, Collection obj) {
+    private void putNotNull(Document dbObject, String key, Collection obj) {
         if (obj != null && !obj.isEmpty()) {
             dbObject.put(key, obj);
         }
     }
 
-    private void putNotNull(DBObject dbObject, String key, String obj) {
+    private void putNotNull(Document dbObject, String key, String obj) {
         if (obj != null && !obj.isEmpty()) {
             dbObject.put(key, obj);
         }
     }
 
-    private void putNotNull(DBObject dbObject, String key, Integer obj) {
+    private void putNotNull(Document dbObject, String key, Integer obj) {
         if (obj != null && obj != 0) {
             dbObject.put(key, obj);
         }
     }
 
-    private void putNotDefault(DBObject dbObject, String key, String obj, Object defaultValue) {
+    private void putNotDefault(Document dbObject, String key, String obj, Object defaultValue) {
         if (obj != null && !obj.isEmpty() && !obj.equals(defaultValue)) {
             dbObject.put(key, obj);
         }
     }
 
-    private String getDefault(DBObject object, String key, String defaultValue) {
+    private String getDefault(Document object, String key, String defaultValue) {
         Object o = object.get(key);
         if (o != null) {
             return o.toString();
@@ -524,7 +521,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
     }
 
-    private int getDefault(DBObject object, String key, int defaultValue) {
+    private int getDefault(Document object, String key, int defaultValue) {
         Object o = object.get(key);
         if (o != null) {
             if (o instanceof Integer) {
@@ -541,7 +538,7 @@ public class DBObjectToVariantAnnotationConverter implements ComplexTypeConverte
         }
     }
 
-    private double getDefault(DBObject object, String key, double defaultValue) {
+    private double getDefault(Document object, String key, double defaultValue) {
         Object o = object.get(key);
         if (o != null) {
             if (o instanceof Double) {

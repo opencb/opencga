@@ -26,10 +26,10 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
@@ -127,7 +127,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants - 4);
+        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants - 8);
 
 
         //Load, in a new study, the same dataset in one single file
@@ -136,7 +136,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 variantStorageManager, studyConfigurationSingleFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 10));
         assertTrue(studyConfigurationSingleFile.getIndexedFiles().contains(10));
 
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfigurationSingleFile, expectedNumVariants);
+        checkTransformedVariants(etlResult.getTransformResult(), studyConfigurationSingleFile);
 
 
         //Check that both studies contains the same information
@@ -244,8 +244,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
-        checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
-        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false);
+        VariantSource source = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
+        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
 
     }
 
@@ -383,8 +383,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     public void indexWithOtherFieldsExcludeGT() throws Exception {
         //GL:DP:GU:TU:AU:CU
         StudyConfiguration studyConfiguration = newStudyConfiguration();
+        List<String> extraFields = Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU");
         StorageETLResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), getVariantStorageManager(), studyConfiguration,
-                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
                         .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
                         .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), true)
                         .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
@@ -392,13 +393,16 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
         etlResult = runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), getVariantStorageManager(), studyConfiguration,
-                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
                         .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
                         .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), false)
                         .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                         .append(VariantStorageManager.Options.FILE_ID.key(), 3)
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
+
+        assertEquals(true, studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), false));
+        assertEquals(extraFields, studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
 
         for (Variant variant : getVariantStorageManager().getDBAdaptor(DB_NAME)) {
             System.out.println(variant.toJson());
@@ -619,7 +623,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
 
     private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration) throws StorageManagerException {
-        return checkTransformedVariants(variantsJson, studyConfiguration, NUM_VARIANTS);
+        return checkTransformedVariants(variantsJson, studyConfiguration, -1);
     }
 
     private VariantSource checkTransformedVariants(URI variantsJson, StudyConfiguration studyConfiguration, int expectedNumVariants)
@@ -640,7 +644,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         variantReader.post();
         variantReader.close();
 
-        assertEquals(expectedNumVariants, source.getStats().getNumRecords()); //9792
+        if (expectedNumVariants < 0) {
+            expectedNumVariants = source.getStats().getNumRecords();
+        } else {
+            assertEquals(expectedNumVariants, source.getStats().getNumRecords()); //9792
+        }
         assertEquals(expectedNumVariants, numVariants); //9792
         logger.info("checkTransformedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
 

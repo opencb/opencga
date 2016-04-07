@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.config.DataStoreServerAddress;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -30,7 +30,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.net.UnknownHostException;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -45,7 +44,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     //StorageEngine specific options
 //    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
-    public static final String AUTHENTICATION_DB = "authentication.db";
+    public static final String AUTHENTICATION_DB = MongoDBConfiguration.AUTHENTICATION_DATABASE;
     public static final String COLLECTION_VARIANTS = "collection.variants";
     public static final String COLLECTION_FILES = "collection.files";
     public static final String COLLECTION_STUDIES = "collection.studies";
@@ -60,16 +59,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         String dbName = options.getString(VariantStorageManager.Options.DB_NAME.key());
         MongoCredentials credentials = getMongoCredentials(dbName);
 
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
-        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        if (!db.testConnection()) {
+        if (!credentials.check()) {
             logger.error("Connection to database '{}' failed", dbName);
             throw new StorageManagerException("Database connection test failed");
         }
     }
 
     @Override
-    public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
+    public MongoDBVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor(null) : null;
         return new MongoDBVariantStorageETL(configuration, STORAGE_ENGINE_ID, dbAdaptor);
     }
@@ -117,31 +114,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     MongoCredentials getMongoCredentials(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostCsv : configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getHosts()) {
-            for (String host : hostCsv.split(",")) {
-                if (host.contains(":")) {
-                    String[] hostPort = host.split(":");
-                    dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort[0], Integer.parseInt(hostPort[1])));
-                } else {
-                    dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
-                }
-            }
-        }
-
         // If no database name is provided, read from the configuration file
         if (dbName == null || dbName.isEmpty()) {
             dbName = options.getString(VariantStorageManager.Options.DB_NAME.key(), VariantStorageManager.Options.DB_NAME.defaultValue());
         }
-        String user = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getUser();
-        String pass = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase().getPassword();
 
-        String authenticationDatabase = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()
-                .getString(AUTHENTICATION_DB, null);
+        DatabaseCredentials database = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase();
+        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(database.getHosts());
 
         try {
-            MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, user, pass);
-            mongoCredentials.setAuthenticationDatabase(authenticationDatabase);
+            MongoCredentials mongoCredentials = new MongoCredentials(dataStoreServerAddresses, dbName, database.getUser(), database.getPassword(), database.getOptions(), false);
             return mongoCredentials;
         } catch (IllegalOpenCGACredentialsException e) {
             e.printStackTrace();

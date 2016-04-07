@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.datastore.core.ComplexTypeConverter;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
@@ -39,15 +38,15 @@ import java.util.Map;
  * @author Cristina Yenyxe Gonzalez Garcia &lt;cyenyxe@ebi.ac.uk&gt;
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<VariantStats, DBObject> {
+public class DocumentToVariantStatsConverter implements ComplexTypeConverter<VariantStats, Document> {
 
     public static final QueryOptions STUDY_CONFIGURATION_MANAGER_QUERY_OPTIONS = new QueryOptions()
             .append(StudyConfigurationManager.CACHED, true).append(StudyConfigurationManager.READ_ONLY, true);
 
-    public DBObjectToVariantStatsConverter() {
+    public DocumentToVariantStatsConverter() {
     }
 
-    public DBObjectToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
+    public DocumentToVariantStatsConverter(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
@@ -63,7 +62,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     public static final String MISSGENOTYPE_FIELD = "missGt";
     public static final String NUMGT_FIELD = "numGt";
 
-    protected static Logger logger = LoggerFactory.getLogger(DBObjectToVariantStatsConverter.class);
+    protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
     private StudyConfigurationManager studyConfigurationManager = null;
     private Map<Integer, String> studyIds = new HashMap<>();
@@ -74,7 +73,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     @Override
-    public VariantStats convertToDataModelType(DBObject object) {
+    public VariantStats convertToDataModelType(Document object) {
         // Basic fields
         VariantStats stats = new VariantStats();
         stats.setMaf(((Double) object.get(MAF_FIELD)).floatValue());
@@ -86,7 +85,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         stats.setMissingGenotypes((int) object.get(MISSGENOTYPE_FIELD));
 
         // Genotype counts
-        BasicDBObject genotypes = (BasicDBObject) object.get(NUMGT_FIELD);
+        Document genotypes = (Document) object.get(NUMGT_FIELD);
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
             String genotypeStr = o.getKey().replace("-1", ".");
             stats.addGenotype(new Genotype(genotypeStr), (int) o.getValue());
@@ -96,9 +95,9 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
     }
 
     @Override
-    public DBObject convertToStorageType(VariantStats vs) {
+    public Document convertToStorageType(VariantStats vs) {
         // Basic fields
-        BasicDBObject mongoStats = new BasicDBObject(MAF_FIELD, vs.getMaf());
+        Document mongoStats = new Document(MAF_FIELD, vs.getMaf());
         mongoStats.append(MGF_FIELD, vs.getMgf());
         mongoStats.append(MAFALLELE_FIELD, vs.getMafAllele());
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());
@@ -106,7 +105,7 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
         mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypes());
 
         // Genotype counts
-        BasicDBObject genotypes = new BasicDBObject();
+        Document genotypes = new Document();
         for (Map.Entry<Genotype, Integer> g : vs.getGenotypesCount().entrySet()) {
             String genotypeStr = g.getKey().toString().replace(".", "-1");
             genotypes.append(genotypeStr, g.getValue());
@@ -122,30 +121,27 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      * @param cohortsStats List from mongo containing VariantStats.
      * @param variant      contains allele info to fill the VariantStats, and it sourceEntries will be filled.
      */
-    public void convertCohortsToDataModelType(DBObject cohortsStats, Variant variant) {
-        if (cohortsStats instanceof List) {
-            List<DBObject> cohortStatsList = ((List) cohortsStats);
-            for (DBObject vs : cohortStatsList) {
-                VariantStats variantStats = convertToDataModelType(vs);
-                if (variant != null) {
-                    variantStats.setRefAllele(variant.getReference());
-                    variantStats.setAltAllele(variant.getAlternate());
-                    variantStats.setVariantType(variant.getType());
+    public void convertCohortsToDataModelType(List<Document> cohortsStats, Variant variant) {
+        for (Document vs : cohortsStats) {
+            VariantStats variantStats = convertToDataModelType(vs);
+            if (variant != null) {
+                variantStats.setRefAllele(variant.getReference());
+                variantStats.setAltAllele(variant.getAlternate());
+                variantStats.setVariantType(variant.getType());
 //                    Integer fid = (Integer) vs.get(FILE_ID);
-                    String sid = getStudyName((Integer) vs.get(STUDY_ID));
-                    String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
-                    StudyEntry sourceEntry = null;
-                    if (sid != null && cid != null) {
-                        sourceEntry = variant.getStudiesMap().get(sid);
-                        if (sourceEntry != null) {
-                            sourceEntry.setStats(cid, variantStats);
-                        } else {
-                            //This could happen if the study has been excluded
-                            logger.trace("ignoring non present source entry studyId={}", sid);
-                        }
+                String sid = getStudyName((Integer) vs.get(STUDY_ID));
+                String cid = getCohortName((Integer) vs.get(STUDY_ID), (Integer) vs.get(COHORT_ID));
+                StudyEntry sourceEntry = null;
+                if (sid != null && cid != null) {
+                    sourceEntry = variant.getStudiesMap().get(sid);
+                    if (sourceEntry != null) {
+                        sourceEntry.setStats(cid, variantStats);
                     } else {
-                        logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);
+                        //This could happen if the study has been excluded
+                        logger.trace("ignoring non present source entry studyId={}", sid);
                     }
+                } else {
+                    logger.error("invalid mongo document: all studyId={}, cohortId={} should be present.", sid, cid);
                 }
             }
         }
@@ -155,13 +151,13 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      * converts all the cohortstats within the sourceEntries.
      *
      * @param sourceEntries for instance, you can pass in variant.getSourceEntries()
-     * @return list of VariantStats (as DBObjects)
+     * @return list of VariantStats (as Documents)
      */
-    public List<DBObject> convertCohortsToStorageType(Map<String, StudyEntry> sourceEntries) {
-        List<DBObject> cohortsStatsList = new LinkedList<>();
+    public List<Document> convertCohortsToStorageType(Map<String, StudyEntry> sourceEntries) {
+        List<Document> cohortsStatsList = new LinkedList<>();
         for (String studyIdFileId : sourceEntries.keySet()) {
             StudyEntry sourceEntry = sourceEntries.get(studyIdFileId);
-            List<DBObject> list = convertCohortsToStorageType(sourceEntry.getStats(),
+            List<Document> list = convertCohortsToStorageType(sourceEntry.getStats(),
                     Integer.parseInt(sourceEntry.getStudyId()));
             cohortsStatsList.addAll(list);
         }
@@ -173,19 +169,19 @@ public class DBObjectToVariantStatsConverter implements ComplexTypeConverter<Var
      *
      * @param cohortStats for instance, you can pass in sourceEntry.getStats()
      * @param studyId     of the source entry
-     * @return list of VariantStats (as DBObjects)
+     * @return list of VariantStats (as Documents)
      */
-    public List<DBObject> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId) {
-        List<DBObject> cohortsStatsList = new LinkedList<>();
+    public List<Document> convertCohortsToStorageType(Map<String, VariantStats> cohortStats, int studyId) {
+        List<Document> cohortsStatsList = new LinkedList<>();
         VariantStats variantStats;
         for (Map.Entry<String, VariantStats> variantStatsEntry : cohortStats.entrySet()) {
             variantStats = variantStatsEntry.getValue();
-            DBObject variantStatsDBObject = convertToStorageType(variantStats);
+            Document variantStatsDocument = convertToStorageType(variantStats);
             Integer cohortId = getCohortId(studyId, variantStatsEntry.getKey());
             if (cohortId != null) {
-                variantStatsDBObject.put(DBObjectToVariantStatsConverter.COHORT_ID, (int) cohortId);
-                variantStatsDBObject.put(DBObjectToVariantStatsConverter.STUDY_ID, studyId);
-                cohortsStatsList.add(variantStatsDBObject);
+                variantStatsDocument.put(DocumentToVariantStatsConverter.COHORT_ID, (int) cohortId);
+                variantStatsDocument.put(DocumentToVariantStatsConverter.STUDY_ID, studyId);
+                cohortsStatsList.add(variantStatsDocument);
             }
         }
         return cohortsStatsList;

@@ -18,10 +18,11 @@ package org.opencb.opencga.storage.mongodb.alignment;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.BasicDBObjectBuilder;
-import com.mongodb.DBObject;
 import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.formats.alignment.AlignmentConverter;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
@@ -30,12 +31,12 @@ import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.datastore.core.ComplexTypeConverter;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
@@ -199,7 +200,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
             size -= size % chunkSize;
         }
 
-        List<DBObject> operations = new LinkedList<>();
+        List<Bson> operations = new LinkedList<>();
         operations.add(new BasicDBObject(
                 "$match",
                 new BasicDBObject(
@@ -257,7 +258,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 new BasicDBObject("_id", 1)
         ));
         StringBuilder mongoAggregate = new StringBuilder("db.").append(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME + ".aggregate( [");
-        for (DBObject operation : operations) {
+        for (Bson operation : operations) {
             mongoAggregate.append(operation.toString()).append(" , ");
         }
         mongoAggregate.append("])");
@@ -268,7 +269,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         /*************/     //TODO: This should work, but doesn't
         System.out.println("dbName" + mongoDataStore.getDb().getName().toString());
         MongoDBCollection collection = mongoDataStore.getCollection(CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME);
-        QueryResult<DBObject> aggregate = collection.aggregate(operations, null);
+        QueryResult<Document> aggregate = collection.aggregate(operations, null);
         /*************/
 
         /*************/     //TODO: What's going on?
@@ -291,7 +292,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //        System.out.println(collection.find(new BasicDBObject("files.id", "7"), new QueryOptions("limit", 2), null));
 //        System.out.println(collection.find(new BasicDBObject("files.id", "4"), new QueryOptions("limit", 2), null));
 
-        for (DBObject object : aggregate.getResult()) {
+        for (Document object : aggregate.getResult()) {
             int id = getInt(object, "_id");
             int start = id * size + 1;
             int end = id * size + size;
@@ -312,7 +313,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return aggregate;
     }
 
-    private int getInt(DBObject object, String key) {
+    private int getInt(Document object, String key) {
         int i;
         Object oi = object.get(key);
         if (oi instanceof Double) {
@@ -325,7 +326,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return i;
     }
 
-    private double getDouble(DBObject object, String key) {
+    private double getDouble(Document object, String key) {
         double d;
         Object od = object.get(key);
         if (od instanceof Double) {
@@ -353,10 +354,10 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
         String coverageType;
         ComplexTypeConverter complexTypeConverter;
         if (histogram) {
-            complexTypeConverter = new DBObjectToMeanCoverageConverter();
+            complexTypeConverter = new DocumentToMeanCoverageConverter();
             coverageType = CoverageMongoDBWriter.AVERAGE_FIELD;
         } else {
-            complexTypeConverter = new DBObjectToRegionCoverageConverter();
+            complexTypeConverter = new DocumentToRegionCoverageConverter();
             coverageType = CoverageMongoDBWriter.COVERAGE_FIELD;
         }
         List<String> regions = new LinkedList<>();
@@ -367,9 +368,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
 
         //db.alignment.find( { _id:{$in:regions}}, { files: {$elemMatch : {id:fileId} }, "files.cov":0 , "files.id":0 } )}
-        DBObject query = new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, new BasicDBObject("$in", regions));
-        DBObject projection = BasicDBObjectBuilder
-                .start()
+        Document query = new Document(CoverageMongoDBWriter.ID_FIELD, new BasicDBObject("$in", regions));
+        Document projection = new Document()
 //                .append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD,fileId)
                 .append(CoverageMongoDBWriter.FILES_FIELD, new BasicDBObject("$elemMatch", new BasicDBObject(CoverageMongoDBWriter
                         .FILE_ID_FIELD, fileId)))
@@ -378,7 +378,7 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToRegionCoverageConverter.COVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+DBObjectToMeanCoverageConverter.AVERAGE_FIELD, true)
                 //.append(CoverageMongoWriter.FILES_FIELD+"."+CoverageMongoWriter.FILE_ID_FIELD, true)
-                .get();
+                ;
 
         System.out.println("db." + CoverageMongoDBWriter.COVERAGE_COLLECTION_NAME + ".find(" + query.toString() + ", " + projection
                 .toString() + ")");

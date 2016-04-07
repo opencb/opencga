@@ -17,17 +17,20 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
@@ -121,10 +124,10 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-        for (DBObject dbObject : variantsCollection.nativeQuery().find(new BasicDBObject(), new QueryOptions())) {
-            assertFalse(((DBObject) dbObject.get(DBObjectToVariantConverter.STUDIES_FIELD))
-                    .containsField(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD));
-            System.out.println("dbObject = " + dbObject);
+        for (Document document : variantsCollection.nativeQuery().find(new BasicDBObject(), new QueryOptions())) {
+            assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
+                    .containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD));
+            System.out.println("dbObject = " + document);
         }
 
     }

@@ -1,6 +1,7 @@
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.junit.Test;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 
 import static org.junit.Assert.*;
 
@@ -9,7 +10,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class DBObjectToSamplesConverterTest {
+public class DocumentToSamplesConverterTest {
 
     @Test
     public void testIntValue() throws Exception {
@@ -52,7 +53,7 @@ public class DBObjectToSamplesConverterTest {
     }
 
     public void testInteger(String dataModelType) {
-        assertEquals(dataModelType, DBObjectToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(DBObjectToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(dataModelType)));
+        assertEquals(dataModelType, DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToDataModelType(DocumentToSamplesConverter.INTEGER_COMPLEX_TYPE_CONVERTER.convertToStorageType(dataModelType)));
     }
 
     public void testFloat(String dataModelType, Integer i) {
@@ -60,8 +61,8 @@ public class DBObjectToSamplesConverterTest {
     }
 
     public void testFloat(String dataModelType, Integer i, String expected) {
-        Integer storageType = DBObjectToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(dataModelType);
+        Integer storageType = DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER.convertToStorageType(dataModelType);
         assertEquals(i, storageType);
-        assertEquals(expected, DBObjectToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(storageType));
+        assertEquals(expected, DocumentToSamplesConverter.FLOAT_COMPLEX_TYPE_CONVERTER.convertToDataModelType(storageType));
     }
 }

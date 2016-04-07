@@ -16,29 +16,31 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
+import org.bson.Document;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 /**
  * Created by jacobo on 9/01/15.
  */
 public class VariantMongoDBIterator extends VariantDBIterator {
 
-    private DBCursor dbCursor;
-    private DBObjectToVariantConverter dbObjectToVariantConverter;
+    private MongoCursor<Document> dbCursor;
+    private DocumentToVariantConverter documentToVariantConverter;
 
-    VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter) { //Package protected
-        this(dbCursor, dbObjectToVariantConverter, 100);
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter) { //Package protected
+        this(dbCursor, documentToVariantConverter, 100);
     }
 
-    VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter, int batchSize) { //Package protected
-        this.dbCursor = dbCursor;
-        this.dbObjectToVariantConverter = dbObjectToVariantConverter;
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter, int batchSize) { //Package protected
+        this.documentToVariantConverter = documentToVariantConverter;
         if (batchSize > 0) {
             dbCursor.batchSize(batchSize);
         }
+        this.dbCursor = dbCursor.iterator();
     }
 
     @Override
@@ -49,11 +51,10 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     @Override
     public Variant next() {
         long start = System.currentTimeMillis();
-        DBObject dbObject;
-        dbObject = dbCursor.next();
+        Document document = dbCursor.next();
         timeFetching += System.currentTimeMillis() - start;
         start = System.currentTimeMillis();
-        Variant variant = dbObjectToVariantConverter.convertToDataModelType(dbObject);
+        Variant variant = documentToVariantConverter.convertToDataModelType(document);
         timeConverting += System.currentTimeMillis() - start;
 
         return variant;

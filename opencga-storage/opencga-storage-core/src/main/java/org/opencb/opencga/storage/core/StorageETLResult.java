@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core;
 
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.net.URI;
 

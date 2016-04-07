@@ -16,21 +16,21 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
-import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
+
+import java.util.List;
 
 /**
  * Created by Jacobo Coll on 26/08/14.
  */
-public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<MeanCoverage, DBObject> {
+public class DocumentToMeanCoverageConverter implements ComplexTypeConverter<MeanCoverage, Document> {
 
     // <size>_<chromosome>_<chunk_number>
 
-    public DBObject getIdObject(MeanCoverage meanCoverage) {
-        return new BasicDBObject(CoverageMongoDBWriter.ID_FIELD, getIdField(meanCoverage));
+    public Document getIdObject(MeanCoverage meanCoverage) {
+        return new Document(CoverageMongoDBWriter.ID_FIELD, getIdField(meanCoverage));
     }
 
     public String getIdField(MeanCoverage meanCoverage) {
@@ -39,18 +39,18 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
     }
 
     @Override
-    public MeanCoverage convertToDataModelType(DBObject dbObject) {
-        String[] split = dbObject.get(CoverageMongoDBWriter.ID_FIELD).toString().split("_");
+    public MeanCoverage convertToDataModelType(Document document) {
+        String[] split = document.get(CoverageMongoDBWriter.ID_FIELD).toString().split("_");
 
         float averageFloat;
         Object average;
-        if (dbObject.containsField(CoverageMongoDBWriter.FILES_FIELD)) {
-            average = ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter
+        if (document.containsKey(CoverageMongoDBWriter.FILES_FIELD)) {
+            average = ((Document) ((List) document.get(CoverageMongoDBWriter.FILES_FIELD)).get(0)).get(CoverageMongoDBWriter
                     .AVERAGE_FIELD);
-            //coverage = ((Double) ((BasicDBObject) ((BasicDBList) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get
+            //coverage = ((Double) ((Document) ((LinkedList<>) dbObject.get(CoverageMongoWriter.FILES_FIELD)).get(0)).get
             // (CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
-        } else if (dbObject.containsField(CoverageMongoDBWriter.AVERAGE_FIELD)) {
-            average = dbObject.get(CoverageMongoDBWriter.AVERAGE_FIELD);
+        } else if (document.containsKey(CoverageMongoDBWriter.AVERAGE_FIELD)) {
+            average = document.get(CoverageMongoDBWriter.AVERAGE_FIELD);
             //coverage = ((Double) dbObject.get(CoverageMongoWriter.AVERAGE_FIELD)).floatValue();
         } else {
             //TODO: Show a error message
@@ -70,10 +70,7 @@ public class DBObjectToMeanCoverageConverter implements ComplexTypeConverter<Mea
     }
 
     @Override
-    public DBObject convertToStorageType(MeanCoverage meanCoverage) {
-
-        BasicDBObject mCoverage = new BasicDBObject(CoverageMongoDBWriter.AVERAGE_FIELD, meanCoverage.getCoverage());
-
-        return mCoverage;
+    public Document convertToStorageType(MeanCoverage meanCoverage) {
+        return new Document(CoverageMongoDBWriter.AVERAGE_FIELD, meanCoverage.getCoverage());
     }
 }

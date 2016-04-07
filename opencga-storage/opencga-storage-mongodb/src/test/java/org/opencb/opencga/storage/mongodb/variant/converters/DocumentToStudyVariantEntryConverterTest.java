@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.google.common.collect.Lists;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 
 import java.util.*;
 
@@ -32,11 +32,11 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToStudyVariantEntryConverterTest {
+public class DocumentToStudyVariantEntryConverterTest {
 
     private StudyEntry studyEntry;
-    private BasicDBObject mongoStudy;
-    private DBObject mongoFileWithIds;
+    private Document mongoStudy;
+    private Document mongoFileWithIds;
 
     private List<String> sampleNames;
     private Integer fileId;
@@ -67,23 +67,23 @@ public class DBObjectToStudyVariantEntryConverterTest {
         studyEntry.addSampleData("NA003", na003);
 
         // MongoDB object
-        mongoStudy = new BasicDBObject(DBObjectToStudyVariantEntryConverter.STUDYID_FIELD, studyId);
+        mongoStudy = new Document(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyId);
 
-        BasicDBObject mongoFile = new BasicDBObject(DBObjectToStudyVariantEntryConverter.FILEID_FIELD, fileId);
-        String dot = DBObjectToStudyConfigurationConverter.TO_REPLACE_DOTS;
-        mongoFile.append(DBObjectToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
-                new BasicDBObject("QUAL", 0.01)
+        Document mongoFile = new Document(DocumentToStudyVariantEntryConverter.FILEID_FIELD, fileId);
+        String dot = DocumentToStudyConfigurationConverter.TO_REPLACE_DOTS;
+        mongoFile.append(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD,
+                new Document("QUAL", 0.01)
                         .append("AN", 2.0)
                         .append("do" + dot + "we" + dot + "accept" + dot + "attribute" + dot + "with" + dot + "dots?", "yes")
-        );
-//        mongoFile.append(DBObjectToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
-        mongoStudy.append(DBObjectToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
+        ).append(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, new Document());
+//        mongoFile.append(DocumentToVariantSourceEntryConverter.FORMAT_FIELD, file.getFormat());
+        mongoStudy.append(DocumentToStudyVariantEntryConverter.FILES_FIELD, Collections.singletonList(mongoFile));
 
-        BasicDBObject genotypeCodes = new BasicDBObject();
+        Document genotypeCodes = new Document();
 //        genotypeCodes.append("def", "0/0");
         genotypeCodes.append("0/1", Collections.singletonList(1));
         genotypeCodes.append("1/1", Collections.singletonList(2));
-        mongoStudy.append(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
+        mongoStudy.append(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, genotypeCodes);
 
         studyConfiguration = new StudyConfiguration(studyId, "");
         Map<String, Integer> sampleIds = new HashMap<>();
@@ -98,11 +98,11 @@ public class DBObjectToStudyVariantEntryConverterTest {
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 
 
-        mongoFileWithIds = new BasicDBObject((this.mongoStudy.toMap()));
-        mongoFileWithIds.put(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD, new BasicDBObject());
-//        ((DBObject) mongoFileWithIds.get("samp")).put("def", "0/0");
-        ((DBObject) mongoFileWithIds.get(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(25));
-        ((DBObject) mongoFileWithIds.get(DBObjectToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(35));
+        mongoFileWithIds = new Document((this.mongoStudy));
+        mongoFileWithIds.put(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, new Document());
+//        ((Document) mongoFileWithIds.get("samp")).put("def", "0/0");
+        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("0/1", Collections.singletonList(25));
+        ((Document) mongoFileWithIds.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)).put("1/1", Collections.singletonList(35));
     }
 
     /* TODO move to variant converter: sourceEntry does not have stats anymore
@@ -116,22 +116,22 @@ public class DBObjectToStudyVariantEntryConverterTest {
         file.setStats(stats);
         file.getSamplesData().clear(); // TODO Samples can't be tested easily, needs a running Mongo instance
         
-        BasicDBObject mongoStats = new BasicDBObject(DBObjectToVariantStatsConverter.MAF_FIELD, 0.1);
-        mongoStats.append(DBObjectToVariantStatsConverter.MGF_FIELD, 0.01);
-        mongoStats.append(DBObjectToVariantStatsConverter.MAFALLELE_FIELD, "A");
-        mongoStats.append(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD, "A/A");
-        mongoStats.append(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, 10);
-        mongoStats.append(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, 5);
-        BasicDBObject genotypes = new BasicDBObject();
+        Document mongoStats = new Document(DocumentToVariantStatsConverter.MAF_FIELD, 0.1);
+        mongoStats.append(DocumentToVariantStatsConverter.MGF_FIELD, 0.01);
+        mongoStats.append(DocumentToVariantStatsConverter.MAFALLELE_FIELD, "A");
+        mongoStats.append(DocumentToVariantStatsConverter.MGFGENOTYPE_FIELD, "A/A");
+        mongoStats.append(DocumentToVariantStatsConverter.MISSALLELE_FIELD, 10);
+        mongoStats.append(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD, 5);
+        Document genotypes = new Document();
         genotypes.append("0/0", 100);
         genotypes.append("0/1", 50);
         genotypes.append("1/1", 10);
-        mongoStats.append(DBObjectToVariantStatsConverter.NUMGT_FIELD, genotypes);
-        mongoStudy.append(DBObjectToVariantSourceEntryConverter.STATS_FIELD, mongoStats);
+        mongoStats.append(DocumentToVariantStatsConverter.NUMGT_FIELD, genotypes);
+        mongoStudy.append(DocumentToVariantSourceEntryConverter.STATS_FIELD, mongoStats);
         
         List<String> sampleNames = null;
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(
-                true, new DBObjectToSamplesConverter(sampleNames));
+        DocumentToVariantSourceEntryConverter converter = new DocumentToVariantSourceEntryConverter(
+                true, new DocumentToSamplesConverter(sampleNames));
         VariantSourceEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(file, converted);
     }
@@ -145,34 +145,34 @@ public class DBObjectToStudyVariantEntryConverterTest {
         stats.addGenotype(new Genotype("1/1"), 10);
         file.setStats(stats);
         
-        BasicDBObject mongoStats = new BasicDBObject(DBObjectToVariantStatsConverter.MAF_FIELD, 0.1);
-        mongoStats.append(DBObjectToVariantStatsConverter.MGF_FIELD, 0.01);
-        mongoStats.append(DBObjectToVariantStatsConverter.MAFALLELE_FIELD, "A");
-        mongoStats.append(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD, "A/A");
-        mongoStats.append(DBObjectToVariantStatsConverter.MISSALLELE_FIELD, 10);
-        mongoStats.append(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD, 5);
-        BasicDBObject genotypes = new BasicDBObject();
+        Document mongoStats = new Document(DocumentToVariantStatsConverter.MAF_FIELD, 0.1);
+        mongoStats.append(DocumentToVariantStatsConverter.MGF_FIELD, 0.01);
+        mongoStats.append(DocumentToVariantStatsConverter.MAFALLELE_FIELD, "A");
+        mongoStats.append(DocumentToVariantStatsConverter.MGFGENOTYPE_FIELD, "A/A");
+        mongoStats.append(DocumentToVariantStatsConverter.MISSALLELE_FIELD, 10);
+        mongoStats.append(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD, 5);
+        Document genotypes = new Document();
         genotypes.append("0/0", 100);
         genotypes.append("0/1", 50);
         genotypes.append("1/1", 10);
-        mongoStats.append(DBObjectToVariantStatsConverter.NUMGT_FIELD, genotypes);
-        mongoStudy.append(DBObjectToVariantSourceEntryConverter.STATS_FIELD, mongoStats);
+        mongoStats.append(DocumentToVariantStatsConverter.NUMGT_FIELD, genotypes);
+        mongoStudy.append(DocumentToVariantSourceEntryConverter.STATS_FIELD, mongoStats);
 
-        DBObjectToVariantSourceEntryConverter converter = new DBObjectToVariantSourceEntryConverter(
-                true, new DBObjectToSamplesConverter(sampleNames));
-        DBObject converted = converter.convertToStorageType(file);
+        DocumentToVariantSourceEntryConverter converter = new DocumentToVariantSourceEntryConverter(
+                true, new DocumentToSamplesConverter(sampleNames));
+        Document converted = converter.convertToStorageType(file);
         
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MAF_FIELD), converted.get(DBObjectToVariantStatsConverter.MAF_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MGF_FIELD), converted.get(DBObjectToVariantStatsConverter.MGF_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MAFALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MAF_FIELD), converted.get(DocumentToVariantStatsConverter.MAF_FIELD));
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MGF_FIELD), converted.get(DocumentToVariantStatsConverter.MGF_FIELD));
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MAFALLELE_FIELD), converted.get(DocumentToVariantStatsConverter
         .MAFALLELE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MGFGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MGFGENOTYPE_FIELD), converted.get(DocumentToVariantStatsConverter
         .MGFGENOTYPE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSALLELE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MISSALLELE_FIELD), converted.get(DocumentToVariantStatsConverter
         .MISSALLELE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.MISSGENOTYPE_FIELD), converted.get(DBObjectToVariantStatsConverter
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.MISSGENOTYPE_FIELD), converted.get(DocumentToVariantStatsConverter
         .MISSGENOTYPE_FIELD));
-        assertEquals(mongoStudy.get(DBObjectToVariantStatsConverter.NUMGT_FIELD), converted.get(DBObjectToVariantStatsConverter
+        assertEquals(mongoStudy.get(DocumentToVariantStatsConverter.NUMGT_FIELD), converted.get(DocumentToVariantStatsConverter
         .NUMGT_FIELD));
     }
     */
@@ -182,8 +182,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
         List<String> sampleNames = null;
 
         // Test with no stats converter provided
-        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new
-                DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId, new
+                DocumentToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -193,8 +193,8 @@ public class DBObjectToStudyVariantEntryConverterTest {
         studyEntry.getSamplesData().clear(); // TODO Samples can't be tested easily, needs a running Mongo instance
         List<String> sampleNames = null;
         // Test with a stats converter provided but no stats object
-        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId, new
-                DBObjectToSamplesConverter(studyId, sampleNames, "0/0"));
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId, new
+                DocumentToSamplesConverter(studyId, sampleNames, "0/0"));
         StudyEntry converted = converter.convertToDataModelType(mongoStudy);
         assertEquals(studyEntry, converted);
     }
@@ -202,22 +202,22 @@ public class DBObjectToStudyVariantEntryConverterTest {
     @Test
     public void testConvertToStorageTypeWithoutStats() {
         // Test with no stats converter provided
-        DBObjectToStudyVariantEntryConverter converter = new DBObjectToStudyVariantEntryConverter(true, fileId,
-                new DBObjectToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
-        DBObject converted = converter.convertToStorageType(studyEntry);
+        DocumentToStudyVariantEntryConverter converter = new DocumentToStudyVariantEntryConverter(true, fileId,
+                new DocumentToSamplesConverter(studyId, fileId, sampleNames, "0/0"));
+        Document converted = converter.convertToStorageType(studyEntry);
         assertEquals(mongoStudy, converted);
     }
 
     @Test
     public void testConvertToStorageTypeWithoutStatsWithSampleIds() {
-        DBObjectToStudyVariantEntryConverter converter;
-        DBObject convertedMongo;
+        DocumentToStudyVariantEntryConverter converter;
+        Document convertedMongo;
         StudyEntry convertedFile;
 
 
         // Test with no stats converter provided
-        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyConfiguration);
-        converter = new DBObjectToStudyVariantEntryConverter(
+        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studyConfiguration);
+        converter = new DocumentToStudyVariantEntryConverter(
                 true, fileId,
                 samplesConverter
         );
@@ -230,14 +230,14 @@ public class DBObjectToStudyVariantEntryConverterTest {
 
     @Test
     public void testConvertToDataTypeWithoutStatsWithSampleIds() {
-        DBObjectToStudyVariantEntryConverter converter;
-        DBObject convertedMongo;
+        DocumentToStudyVariantEntryConverter converter;
+        Document convertedMongo;
         StudyEntry convertedFile;
 
 
         // Test with no stats converter provided
-        DBObjectToSamplesConverter samplesConverter = new DBObjectToSamplesConverter(studyConfiguration);
-        converter = new DBObjectToStudyVariantEntryConverter(
+        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(studyConfiguration);
+        converter = new DocumentToStudyVariantEntryConverter(
                 true, fileId,
                 samplesConverter
         );

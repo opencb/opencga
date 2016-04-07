@@ -9,10 +9,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -42,6 +42,10 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     protected QueryResult<Variant> queryResult;
     protected QueryOptions options;
     protected Query query;
+
+    protected int skippedVariants() {
+        return 0;
+    }
 
     @Before
     public void before() throws Exception {
@@ -83,6 +87,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
 
             dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
+            NUM_VARIANTS -= skippedVariants();
 
         }
     }
@@ -205,7 +210,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
 
     @Test
     public void testGetAllVariants_returnedStudiesEmpty() {
-        query.append(RETURNED_STUDIES.key(), -1);
+        query.append(RETURNED_STUDIES.key(), Collections.emptyList());
+
+        thrown.expect(VariantQueryException.class); //StudyNotFound exception
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(NUM_VARIANTS, queryResult.getNumResults());
@@ -217,10 +224,19 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
     }
 
     @Test
-    public void testGetAllVariants_filterStudy_returnedStudiesEmpty() {
+    public void testGetAllVariants_returnedStudies_wrong() {
+        query.append(RETURNED_STUDIES.key(), -1);
+
+        thrown.expect(VariantQueryException.class); //StudyNotFound exception
+        queryResult = dbAdaptor.get(query, options);
+
+    }
+
+    @Test
+    public void testGetAllVariants_filterStudy_returnedStudies_wrong() {
         query.append(STUDIES.key(), -1);
 
-        thrown.expect(IllegalArgumentException.class); //StudyNotFound exception
+        thrown.expect(VariantQueryException.class); //StudyNotFound exception
         queryResult = dbAdaptor.get(query, options);
     }
 
@@ -241,8 +257,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
                 .append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(7942, queryResult.getNumResults());
-        assertEquals(7942, queryResult.getNumTotalResults());
+        assertEquals(7942 - skippedVariants(), queryResult.getNumResults());
+        assertEquals(7942 - skippedVariants(), queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -259,8 +275,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         query.append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(7942, queryResult.getNumResults());
-        assertEquals(7942, queryResult.getNumTotalResults());
+        assertEquals(7942 - skippedVariants(), queryResult.getNumResults());
+        assertEquals(7942 - skippedVariants(), queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -275,8 +291,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         query.append(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        assertEquals(3298, queryResult.getNumResults());
-        assertEquals(3298, queryResult.getNumTotalResults());
+        assertEquals(3298 - skippedVariants(), queryResult.getNumResults());
+        assertEquals(3298 - skippedVariants(), queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -314,8 +330,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         QueryResult<Variant> queryResultStudy = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultStudy.getNumTotalResults(), queryResult.getNumResults());
-        assertEquals(5476, queryResult.getNumResults());
-        assertEquals(5476, queryResult.getNumTotalResults());
+        assertEquals(5476 - skippedVariants(), queryResult.getNumResults());
+        assertEquals(5476 - skippedVariants(), queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             Set<String> returnedFileIds = variant.getStudies().stream().map(StudyEntry::getFiles).flatMap(fileEntries -> fileEntries
@@ -367,8 +383,8 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
         QueryResult<Variant> queryResultFile = dbAdaptor.get(query, options.append("limit", 1).append("skipCount", false));
 
         assertEquals(queryResultFile.getNumTotalResults(), queryResult.getNumResults());
-        assertEquals(3279, queryResult.getNumResults());
-        assertEquals(3279, queryResult.getNumTotalResults());
+        assertEquals(3279 - skippedVariants(), queryResult.getNumResults());
+        assertEquals(3279 - skippedVariants(), queryResult.getNumTotalResults());
 
         for (Variant variant : queryResult.getResult()) {
             Set<String> returnedFileIds = variant.getStudies().stream().map(StudyEntry::getFiles).flatMap(fileEntries -> fileEntries

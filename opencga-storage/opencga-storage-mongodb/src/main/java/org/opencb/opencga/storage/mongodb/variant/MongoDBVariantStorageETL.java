@@ -12,9 +12,9 @@ import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -204,7 +205,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     case TRIO:
                     case PAIRED:
                     case PAIRED_TUMOR:
-                        defaultGenotype = Collections.singleton(DBObjectToSamplesConverter.UNKNOWN_GENOTYPE);
+                        defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
                         logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
                         break;
                     default:

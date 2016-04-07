@@ -17,8 +17,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 
 import java.util.List;

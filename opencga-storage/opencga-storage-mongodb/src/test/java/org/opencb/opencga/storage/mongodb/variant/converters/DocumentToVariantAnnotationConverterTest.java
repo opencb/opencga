@@ -1,16 +1,15 @@
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.BasicDBList;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
+import org.bson.Document;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -18,10 +17,10 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by fjlopez on 23/09/15.
  */
-public class DBObjectToVariantAnnotationConverterTest {
+public class DocumentToVariantAnnotationConverterTest {
 
     private VariantAnnotation variantAnnotation;
-    private BasicDBObject dbObject;
+    private Document dbObject;
 
     @Before
     public void setUp() {
@@ -121,68 +120,68 @@ public class DBObjectToVariantAnnotationConverterTest {
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         variantAnnotation = jsonObjectMapper.convertValue(JSON.parse(variantJson), VariantAnnotation.class);
 
-        BasicDBList soDBList1 = new BasicDBList();
+        LinkedList soDBList1 = new LinkedList();
         soDBList1.add(1632);
-        BasicDBObject ctDBObject1 = new BasicDBObject(DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD, "TOMM40")
-                .append(DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")
-                .append(DBObjectToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000592434")
-                .append(DBObjectToVariantAnnotationConverter.STRAND_FIELD, "+")
-                .append(DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD, "protein_coding")
-                .append(DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, soDBList1);
+        Document ctDBObject1 = new Document(DocumentToVariantAnnotationConverter.GENE_NAME_FIELD, "TOMM40")
+                .append(DocumentToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD, "ENSG00000130204")
+                .append(DocumentToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000592434")
+                .append(DocumentToVariantAnnotationConverter.STRAND_FIELD, "+")
+                .append(DocumentToVariantAnnotationConverter.BIOTYPE_FIELD, "protein_coding")
+                .append(DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD, soDBList1);
 
-        BasicDBList soDBList2 = new BasicDBList();
+        LinkedList soDBList2 = new LinkedList<>();
         soDBList2.add(1583);
-        BasicDBObject scoreDBobject1 = new BasicDBObject(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD, 1.0)
-                .append(DBObjectToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, "tolerated");
-        BasicDBObject scoreDBobject2 = new BasicDBObject(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD, 0.0)
-                .append(DBObjectToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, "benign");
-        BasicDBObject ctDBObject2 = new BasicDBObject(DBObjectToVariantAnnotationConverter.GENE_NAME_FIELD, "APOE")
-                .append(DBObjectToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD, "ENSG00000130203")
-                .append(DBObjectToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000252486")
-                .append(DBObjectToVariantAnnotationConverter.CODON_FIELD, "Tgc/Cgc")
-                .append(DBObjectToVariantAnnotationConverter.STRAND_FIELD, "+")
-                .append(DBObjectToVariantAnnotationConverter.BIOTYPE_FIELD, "protein_coding")
-                .append(DBObjectToVariantAnnotationConverter.C_DNA_POSITION_FIELD, 499)
-                .append(DBObjectToVariantAnnotationConverter.CDS_POSITION_FIELD, 388)
-                .append(DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD, soDBList2)
-                .append(DBObjectToVariantAnnotationConverter.AA_POSITION_FIELD, 130)
-                .append(DBObjectToVariantAnnotationConverter.AA_REFERENCE_FIELD, "CYS")
-                .append(DBObjectToVariantAnnotationConverter.AA_ALTERNATE_FIELD, "ARG")
-                .append(DBObjectToVariantAnnotationConverter.SIFT_FIELD, scoreDBobject1)
-                .append(DBObjectToVariantAnnotationConverter.POLYPHEN_FIELD, scoreDBobject2);
+        Document scoreDBobject1 = new Document(DocumentToVariantAnnotationConverter.SCORE_SOURCE_FIELD, 1.0)
+                .append(DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, "tolerated");
+        Document scoreDBobject2 = new Document(DocumentToVariantAnnotationConverter.SCORE_SOURCE_FIELD, 0.0)
+                .append(DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, "benign");
+        Document ctDBObject2 = new Document(DocumentToVariantAnnotationConverter.GENE_NAME_FIELD, "APOE")
+                .append(DocumentToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD, "ENSG00000130203")
+                .append(DocumentToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD, "ENST00000252486")
+                .append(DocumentToVariantAnnotationConverter.CODON_FIELD, "Tgc/Cgc")
+                .append(DocumentToVariantAnnotationConverter.STRAND_FIELD, "+")
+                .append(DocumentToVariantAnnotationConverter.BIOTYPE_FIELD, "protein_coding")
+                .append(DocumentToVariantAnnotationConverter.C_DNA_POSITION_FIELD, 499)
+                .append(DocumentToVariantAnnotationConverter.CDS_POSITION_FIELD, 388)
+                .append(DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD, soDBList2)
+                .append(DocumentToVariantAnnotationConverter.AA_POSITION_FIELD, 130)
+                .append(DocumentToVariantAnnotationConverter.AA_REFERENCE_FIELD, "CYS")
+                .append(DocumentToVariantAnnotationConverter.AA_ALTERNATE_FIELD, "ARG")
+                .append(DocumentToVariantAnnotationConverter.SIFT_FIELD, scoreDBobject1)
+                .append(DocumentToVariantAnnotationConverter.POLYPHEN_FIELD, scoreDBobject2);
 
-        BasicDBList soDBList3 = new BasicDBList();
+        LinkedList soDBList3 = new LinkedList();
         soDBList3.add(1566);
-        BasicDBObject ctDBObject3 = new BasicDBObject(DBObjectToVariantAnnotationConverter.SO_ACCESSION_FIELD,
+        Document ctDBObject3 = new Document(DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD,
                 soDBList3);
 
-        dbObject = new BasicDBObject("id", "?");
-        BasicDBList ctDBList = new BasicDBList();
+        dbObject = new Document("id", "?");
+        LinkedList ctDBList = new LinkedList();
         ctDBList.add(ctDBObject1);
         ctDBList.add(ctDBObject2);
         ctDBList.add(ctDBObject3);
         dbObject.append("ct", ctDBList);
 
-        BasicDBList conservationDBList = new BasicDBList();
-        BasicDBObject conservationScore1 =
-                new BasicDBObject(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, 0.11100000143051147)
-                        .append(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, "phastCons");
-        BasicDBObject conservationScore2 =
-                new BasicDBObject(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, 0.5609999895095825)
-                        .append(DBObjectToVariantAnnotationConverter.SCORE_SCORE_FIELD, "phylop");
+        LinkedList conservationDBList = new LinkedList();
+        Document conservationScore1 =
+                new Document(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 0.11100000143051147)
+                        .append(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, "phastCons");
+        Document conservationScore2 =
+                new Document(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 0.5609999895095825)
+                        .append(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, "phylop");
         conservationDBList.add(conservationScore1);
         conservationDBList.add(conservationScore2);
         dbObject.append("cr_score", conservationDBList);
 
-        BasicDBObject drugDBObject = new BasicDBObject(DBObjectToVariantAnnotationConverter.DRUG_NAME_FIELD, "TOMM40")
-                .append(DBObjectToVariantAnnotationConverter.DRUG_NAME_FIELD, "PA164712505")
-                .append(DBObjectToVariantAnnotationConverter.DRUG_SOURCE_FIELD, "PharmGKB");
-        BasicDBList drugDBList = new BasicDBList();
+        Document drugDBObject = new Document(DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, "TOMM40")
+                .append(DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, "PA164712505")
+                .append(DocumentToVariantAnnotationConverter.DRUG_SOURCE_FIELD, "PharmGKB");
+        LinkedList drugDBList = new LinkedList();
         drugDBList.add(drugDBObject);
         dbObject.append("drug", drugDBList);
 
-        BasicDBObject clinicalDBObject = new BasicDBObject();
-        BasicDBObject cosmicDBObject = new BasicDBObject("mutationId", "3749517")
+        Document clinicalDBObject = new Document();
+        Document cosmicDBObject = new Document("mutationId", "3749517")
                 .append("primarySite", "large_intestine")
                 .append("siteSubtype", "rectum")
                 .append("primaryHistology", "carcinoma")
@@ -191,28 +190,28 @@ public class DBObjectToVariantAnnotationConverterTest {
                 .append("tumourOrigin", "primary")
                 .append("geneName", "APOE")
                 .append("mutationSomaticStatus", "Confirmed somatic variant");
-        BasicDBList cosmicDBList = new BasicDBList();
+        LinkedList cosmicDBList = new LinkedList();
         cosmicDBList.add(cosmicDBObject);
         clinicalDBObject.append("cosmic", cosmicDBList);
-        BasicDBList traitDBList1 = new BasicDBList();
+        LinkedList traitDBList1 = new LinkedList();
         traitDBList1.add("Alzheimer's disease biomarkers");
-        BasicDBObject gwasDBObject = new BasicDBObject("snpIdCurrent", "429358")
+        Document gwasDBObject = new Document("snpIdCurrent", "429358")
                 .append("traits", traitDBList1)
                 .append("riskAlleleFrequency", 0.28)
                 .append("reportedGenes", "APOE");
-        BasicDBList gwasDBList = new BasicDBList();
+        LinkedList gwasDBList = new LinkedList();
         gwasDBList.add(gwasDBObject);
         clinicalDBObject.append("gwas", gwasDBList);
-        BasicDBList traitDBList2 = new BasicDBList();
+        LinkedList traitDBList2 = new LinkedList();
         traitDBList2.add("APOE4(-)-FREIBURG");
-        BasicDBList geneNameDBList = new BasicDBList();
+        LinkedList geneNameDBList = new LinkedList();
         geneNameDBList.add("APOE");
-        BasicDBObject clinvarDBObject = new BasicDBObject("accession", "RCV000019456")
+        Document clinvarDBObject = new Document("accession", "RCV000019456")
                 .append("clinicalSignificance", "Pathogenic")
                 .append("traits", traitDBList2)
                 .append("geneNames", geneNameDBList)
                 .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER");
-        BasicDBList clinvarDBList = new BasicDBList();
+        LinkedList clinvarDBList = new LinkedList();
         clinvarDBList.add(clinvarDBObject);
         clinicalDBObject.append("clinvar", clinvarDBList);
         dbObject.append("clinical", clinicalDBObject);
@@ -220,8 +219,8 @@ public class DBObjectToVariantAnnotationConverterTest {
 
     @Test
     public void testConvertToDataModelType() throws Exception {
-        DBObjectToVariantAnnotationConverter dbObjectToVariantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
-        VariantAnnotation convertedVariantAnnotation = dbObjectToVariantAnnotationConverter.convertToDataModelType(dbObject);
+        DocumentToVariantAnnotationConverter documentToVariantAnnotationConverter = new DocumentToVariantAnnotationConverter();
+        VariantAnnotation convertedVariantAnnotation = documentToVariantAnnotationConverter.convertToDataModelType(dbObject);
         assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(1).getProteinVariantAnnotation().getReference(), "CYS");
         assertEquals(convertedVariantAnnotation.getGeneDrugInteraction().get(0).getDrugName(), "PA164712505");
         assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
@@ -230,15 +229,15 @@ public class DBObjectToVariantAnnotationConverterTest {
 
     @Test
     public void testConvertToStorageType() throws Exception {
-        DBObjectToVariantAnnotationConverter dbObjectToVariantAnnotationConverter = new DBObjectToVariantAnnotationConverter();
-        DBObject convertedDBObject = dbObjectToVariantAnnotationConverter.convertToStorageType(variantAnnotation);
-        assertEquals(130, (int) ((BasicDBObject) ((List) convertedDBObject.get(DBObjectToVariantAnnotationConverter
-                .CONSEQUENCE_TYPE_FIELD)).get(2)).get(DBObjectToVariantAnnotationConverter.AA_POSITION_FIELD));
-        assertEquals("phylop", (String) ((BasicDBObject) ((List) convertedDBObject.get(DBObjectToVariantAnnotationConverter
-                .CONSERVED_REGION_SCORE_FIELD)).get(1)).get(DBObjectToVariantAnnotationConverter.SCORE_SOURCE_FIELD));
-        assertEquals("RCV000019456", (String) ((BasicDBObject) ((List) ((BasicDBObject) convertedDBObject.get
-                (DBObjectToVariantAnnotationConverter.CLINICAL_DATA_FIELD)).get(DBObjectToVariantAnnotationConverter.CLINVAR_FIELD)).get
-                (0)).get("accession"));
+        DocumentToVariantAnnotationConverter documentToVariantAnnotationConverter = new DocumentToVariantAnnotationConverter();
+        Document convertedDBObject = documentToVariantAnnotationConverter.convertToStorageType(variantAnnotation);
+        assertEquals(130, (int) ((Document) ((List) convertedDBObject.get(DocumentToVariantAnnotationConverter
+                .CONSEQUENCE_TYPE_FIELD)).get(2)).get(DocumentToVariantAnnotationConverter.AA_POSITION_FIELD));
+        assertEquals("phylop", (String) ((Document) ((List) convertedDBObject.get(DocumentToVariantAnnotationConverter
+                .CONSERVED_REGION_SCORE_FIELD)).get(1)).get(DocumentToVariantAnnotationConverter.SCORE_SOURCE_FIELD));
+        assertEquals("RCV000019456", ((Document)  convertedDBObject.get
+                (DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD, Document.class)
+                .get(DocumentToVariantAnnotationConverter.CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
 
     }
 }

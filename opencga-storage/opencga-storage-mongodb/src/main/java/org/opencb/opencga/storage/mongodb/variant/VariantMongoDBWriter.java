@@ -18,10 +18,11 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
+import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
@@ -47,11 +48,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     private boolean includeSrc = false;
     private boolean includeSamples = true;
 
-    private DBObjectToVariantConverter variantConverter;
-    private DBObjectToVariantStatsConverter statsConverter;
-    private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToStudyVariantEntryConverter sourceEntryConverter;
-    private DBObjectToSamplesConverter sampleConverter;
+    private DocumentToVariantConverter variantConverter;
+    private DocumentToVariantStatsConverter statsConverter;
+    private DocumentToVariantSourceConverter sourceConverter;
+    private DocumentToStudyVariantEntryConverter sourceEntryConverter;
+    private DocumentToSamplesConverter sampleConverter;
 
     //    private long numVariantsWritten;
     private static long staticNumVariantsWritten;
@@ -221,18 +222,18 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private void setConverters() {
 
-        sourceConverter = new DBObjectToVariantSourceConverter();
-        statsConverter = includeStats ? new DBObjectToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
+        sourceConverter = new DocumentToVariantSourceConverter();
+        statsConverter = includeStats ? new DocumentToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
+        sampleConverter = includeSamples ? new DocumentToSamplesConverter(studyConfiguration) : null;
 
-        sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc, sampleConverter);
+        sourceEntryConverter = new DocumentToStudyVariantEntryConverter(includeSrc, sampleConverter);
 
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter.
         // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
+        variantConverter = new DocumentToVariantConverter(null, statsConverter);
     }
 
 

@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
+import org.bson.Document;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -35,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<VariantSource, DBObject> {
+public class DocumentToVariantSourceConverter implements ComplexTypeConverter<VariantSource, Document> {
 
     public static final String FILEID_FIELD = "fid";
     public static final String FILENAME_FIELD = "fname";
@@ -62,12 +61,12 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
 
 
     @Override
-    public VariantSource convertToDataModelType(DBObject object) {
+    public VariantSource convertToDataModelType(Document object) {
         VariantSource source = new VariantSource((String) object.get(FILENAME_FIELD), (String) object.get(FILEID_FIELD),
                 (String) object.get(STUDYID_FIELD), (String) object.get(STUDYNAME_FIELD), null, VariantSource.Aggregation.NONE);
 
         // Samples
-        if (object.containsField(SAMPLES_FIELD)) {
+        if (object.containsKey(SAMPLES_FIELD)) {
             Map<String, Integer> samplesPosition = new HashMap<>();
             for (Map.Entry<String, Integer> entry : ((Map<String, Integer>) object.get(SAMPLES_FIELD)).entrySet()) {
                 samplesPosition.put(entry.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), entry.getValue());
@@ -76,7 +75,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         }
 
         // Statistics
-        DBObject statsObject = (DBObject) object.get(STATS_FIELD);
+        Document statsObject = (Document) object.get(STATS_FIELD);
         if (statsObject != null) {
             VariantGlobalStats stats = new VariantGlobalStats(
                     (int) statsObject.get(NUMVARIANTS_FIELD), (int) statsObject.get(NUMSAMPLES_FIELD),
@@ -99,7 +98,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         }
 
         // Metadata
-        BasicDBObject metadata = (BasicDBObject) object.get(METADATA_FIELD);
+        Document metadata = (Document) object.get(METADATA_FIELD);
         for (Map.Entry<String, Object> o : metadata.entrySet()) {
             source.addMetadata(o.getKey().replace(CHARACTER_TO_REPLACE_DOTS, '.'), o.getValue());
         }
@@ -108,8 +107,8 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
     }
 
     @Override
-    public DBObject convertToStorageType(VariantSource object) {
-        BasicDBObject studyMongo = new BasicDBObject(FILENAME_FIELD, object.getFileName())
+    public Document convertToStorageType(VariantSource object) {
+        Document studyMongo = new Document(FILENAME_FIELD, object.getFileName())
                 .append(FILEID_FIELD, object.getFileId())
                 .append(STUDYNAME_FIELD, object.getStudyName())
                 .append(STUDYID_FIELD, object.getStudyId())
@@ -117,7 +116,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
 
         Map<String, Integer> samplesPosition = object.getSamplesPosition();
         if (samplesPosition != null) {
-            BasicDBObject samples = new BasicDBObject(samplesPosition.size());
+            Document samples = new Document();
             for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
                 samples.append(entry.getKey().replace('.', CHARACTER_TO_REPLACE_DOTS), entry.getValue());
             }
@@ -125,7 +124,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         }
 
         // TODO Pending how to manage the consequence type ranking (calculate during reading?)
-//        BasicDBObject cts = new BasicDBObject();
+//        Document cts = new Document();
 //        for (Map.Entry<String, Integer> entry : conseqTypes.entrySet()) {
 //            cts.append(entry.getKey(), entry.getValue());
 //        }
@@ -133,7 +132,7 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // Statistics
         VariantGlobalStats global = object.getStats();
         if (global != null) {
-            DBObject globalStats = new BasicDBObject(NUMSAMPLES_FIELD, global.getSamplesCount())
+            Document globalStats = new Document(NUMSAMPLES_FIELD, global.getSamplesCount())
                     .append(NUMVARIANTS_FIELD, global.getVariantsCount())
                     .append(NUMSNPS_FIELD, global.getSnpsCount())
                     .append(NUMINDELS_FIELD, global.getIndelsCount())
@@ -148,9 +147,9 @@ public class DBObjectToVariantSourceConverter implements ComplexTypeConverter<Va
         // TODO Save pedigree information
 
         // Metadata
-        Logger logger = Logger.getLogger(DBObjectToVariantSourceConverter.class.getName());
+        Logger logger = Logger.getLogger(DocumentToVariantSourceConverter.class.getName());
         Map<String, Object> meta = object.getMetadata();
-        BasicDBObject metadataMongo = new BasicDBObject();
+        Document metadataMongo = new Document();
         for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
             if (metaEntry.getKey().equals("variantFileHeader")) {
                 metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
