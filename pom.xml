@@ -37,13 +37,16 @@
     <properties>
         <java.version>1.8</java.version>
         <opencga.version>0.8-dev</opencga.version>
-        <biodata.version>0.6.0-SNAPSHOT</biodata.version>
+        <biodata.version>0.7.0-SNAPSHOT</biodata.version>
         <datastore.version>0.5.0</datastore.version>
         <cellbase.version>4.0.0-SNAPSHOT</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.5.4</jackson.version>
         <jersey.version>2.19</jersey.version>
+        <hadoop.version>2.6.3</hadoop.version>
+        <hbase.version>1.0.1</hbase.version>
+        <avro.version>1.7.7</avro.version>
     </properties>
 
     <scm>
@@ -94,6 +97,11 @@
             <id>roalva1</id>
             <name>Roberto</name>
             <email>roalva1@gmail.com</email>
+        </developer>
+        <developer>
+            <id>mh11</id>
+            <name>Matthias</name>
+            <email>mh719+git@cam.ac.uk</email>
         </developer>
     </developers>
 
@@ -218,7 +226,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <version>15.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -283,18 +291,154 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
-                <version>9.3.3.v20150827</version>
+                <version>9.3.6.v20151106</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-webapp</artifactId>
-                <version>9.3.3.v20150827</version>
+                <version>9.3.6.v20151106</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-common</artifactId>
+                <version>${hbase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jetty-util</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jsp-2.1</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>jsp-api-2.1</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api-2.5</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-json</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>jersey-server</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-client</artifactId>
+                <version>${hbase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-server</artifactId>
+                <version>${hbase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-annotations</artifactId>
+                <version>${hbase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-protocol</artifactId>
+                <version>${hbase.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-hdfs</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapreduce-client-core</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-auth</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-core</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hbase</groupId>
+                <artifactId>hbase-testing-util</artifactId>
+                <version>${hbase.version}</version>
+                <scope>test</scope>
+                <optional>true</optional>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro</artifactId>
+                <version>${avro.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro-ipc</artifactId>
+                <version>${avro.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro-mapred</artifactId>
+                <version>${avro.version}</version>
+                <classifier>hadoop2</classifier>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.12</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.hpg-bigdata</groupId>
+                <artifactId>hpg-bigdata-core</artifactId>
+                <version>0.6-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.hpg-bigdata</groupId>
+                <artifactId>hpg-bigdata-tools</artifactId>
+                <version>0.6-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -354,6 +498,11 @@
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE>
 
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>hbase://who1:60000</OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
+                <OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>hdfs://who1</OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>
+
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
@@ -362,6 +511,7 @@
 
                 <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
                 <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.STORAGE.ENGINE.DEFAULT>mongodb</OPENCGA.STORAGE.ENGINE.DEFAULT>
             </properties>
         </profile>
         <profile>

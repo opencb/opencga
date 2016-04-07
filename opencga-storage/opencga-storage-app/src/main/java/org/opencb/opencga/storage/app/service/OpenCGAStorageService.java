@@ -21,28 +21,29 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-//import org.opencb.opencga.catalog.CatalogException;
-//import org.opencb.opencga.catalog.CatalogManager;
-//import org.opencb.opencga.catalog.db.CatalogDBException;
-//import org.opencb.opencga.catalog.io.CatalogIOManagerException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
+//import org.opencb.opencga.catalog.CatalogException;
+//import org.opencb.opencga.catalog.CatalogManager;
+//import org.opencb.opencga.catalog.db.CatalogDBException;
+//import org.opencb.opencga.catalog.io.CatalogIOManagerException;
+
 /**
  * Created by jacobo on 23/10/14.
  */
-public class OpenCGAStorageService implements Runnable {
+public final class OpenCGAStorageService implements Runnable {
 
-    public static final String PORT     = "OPENCGA.STORAGE.APP.SERVICE.PORT";
-    public static final String SLEEP    = "OPENCGA.STORAGE.APP.SERVICE.SLEEP";
-    public static final String USER     = "OPENCGA.STORAGE.APP.SERVICE.USER";
+    public static final String PORT = "OPENCGA.STORAGE.APP.SERVICE.PORT";
+    public static final String SLEEP = "OPENCGA.STORAGE.APP.SERVICE.SLEEP";
+    public static final String USER = "OPENCGA.STORAGE.APP.SERVICE.USER";
     public static final String PASSWORD = "OPENCGA.STORAGE.APP.SERVICE.PASSWORD";
 
     private final Properties properties;
-//    private CatalogManager catalogManager;
+    //    private CatalogManager catalogManager;
     private static OpenCGAStorageService singleton;
 
     private Server server;
@@ -52,14 +53,15 @@ public class OpenCGAStorageService implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(OpenCGAStorageService.class);
 
     public static OpenCGAStorageService newInstance(Properties properties) {
-        return singleton = new OpenCGAStorageService(properties);
+        singleton = new OpenCGAStorageService(properties);
+        return singleton;
     }
 
     public static OpenCGAStorageService getInstance() {
         return singleton;
     }
 
-    private OpenCGAStorageService(Properties properties)  {
+    private OpenCGAStorageService(Properties properties) {
         this.properties = properties;
 //        this.catalogManager = new CatalogManager(Config.getCatalogProperties());
 
@@ -67,12 +69,14 @@ public class OpenCGAStorageService implements Runnable {
         int port = Integer.parseInt(properties.getProperty(OpenCGAStorageService.PORT, "8083"));
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(true, "org.opencb.opencga.storage.app.service.rest");
+        resourceConfig.packages(true, "org.opencb.opencga.storage.server.rest");
+
         ServletContainer sc = new ServletContainer(resourceConfig);
-        ServletHolder sh = new ServletHolder(sc);
+        ServletHolder sh = new ServletHolder("opencga", sc);
 
         logger.info("Server in port : {}", port);
         server = new Server(port);
+        sh.setInitParameter("sessionManager", "org.opencb.opnecga.catalog.XXX");
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
 
@@ -84,23 +88,22 @@ public class OpenCGAStorageService implements Runnable {
         int sleep = Integer.parseInt(properties.getProperty(SLEEP, "60000"));
 
 
-        while(!exit) {
+        while (!exit) {
             try {
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {
-                if(!exit) {
+                if (!exit) {
                     e.printStackTrace();
                 }
             }
             logger.info("----- WakeUp {} -----", TimeUtils.getTimeMillis());
 
-            try {
-
-
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            try {
+//
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
 
 
@@ -132,7 +135,7 @@ public class OpenCGAStorageService implements Runnable {
         return 0;
     }
 
-    synchronized public void stop() {
+    public synchronized void stop() {
         exit = true;
         thread.interrupt();
     }

@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -383,7 +383,7 @@ public class AnalysisFileIndexer {
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
             int chunkSize = 200;    //TODO: Read from properties.
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" index-alignments ")
+                    .append(" alignment index ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
                     .append(" --database ").append(dataStore.getDbName())
@@ -413,7 +413,7 @@ public class AnalysisFileIndexer {
             String userId = catalogManager.getUserIdByProjectId(projectId);
 
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
-                    .append(" index-variants ")
+                    .append(" variant index ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
 //                    .append(" --study-name \'").append(study.getName()).append("\'")
@@ -434,15 +434,15 @@ public class AnalysisFileIndexer {
             if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {
                 sb.append(" --calculate-stats ");
             }
-            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
-                sb.append(" --include-src ");
-            }
+//            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
+//                sb.append(" --include-src ");
+//            }
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
             }
-            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue())) {
-                sb.append(" --include-genotypes ");
-            }
+//            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue())) {
+//                sb.append(" --include-genotypes ");
+//            }
             if (!options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), "").isEmpty()) {
                 sb.append(" --include-extra-fields ").append(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
             }

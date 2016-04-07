@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 /**
- * Created on 30/10/15
+ * Created on 30/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -25,7 +25,7 @@ public class MongoDBVariantWriteResult {
         this.nonInsertedVariants = nonInsertedVariants;
     }
 
-    public void merge(MongoDBVariantWriteResult ... others) {
+    public void merge(MongoDBVariantWriteResult... others) {
         for (MongoDBVariantWriteResult other : others) {
             newDocuments += other.newDocuments;
             updatedObjects += other.updatedObjects;
@@ -102,17 +102,33 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MongoDBVariantWriteResult)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MongoDBVariantWriteResult)) {
+            return false;
+        }
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
 
-        if (newDocuments != that.newDocuments) return false;
-        if (updatedObjects != that.updatedObjects) return false;
-        if (skippedVariants != that.skippedVariants) return false;
-        if (nonInsertedVariants != that.nonInsertedVariants) return false;
-        if (newVariantsNanoTime != that.newVariantsNanoTime) return false;
-        if (existingVariantsNanoTime != that.existingVariantsNanoTime) return false;
+        if (newDocuments != that.newDocuments) {
+            return false;
+        }
+        if (updatedObjects != that.updatedObjects) {
+            return false;
+        }
+        if (skippedVariants != that.skippedVariants) {
+            return false;
+        }
+        if (nonInsertedVariants != that.nonInsertedVariants) {
+            return false;
+        }
+        if (newVariantsNanoTime != that.newVariantsNanoTime) {
+            return false;
+        }
+        if (existingVariantsNanoTime != that.existingVariantsNanoTime) {
+            return false;
+        }
         return fillGapsNanoTime == that.fillGapsNanoTime;
 
     }
@@ -131,15 +147,15 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public String toString() {
-        return "MongoDBVariantWriteResult{" +
-                "newDocuments=" + newDocuments +
-                ", updatedObjects=" + updatedObjects +
-                ", skippedVariants=" + skippedVariants +
-                ", nonInsertedVariants=" + nonInsertedVariants +
-                ", newVariantsTime=" + newVariantsNanoTime / 1000000000.0 + "s" +
-                ", existingVariantsTime=" + existingVariantsNanoTime / 1000000000.0 + "s" +
-                ", fillGapsTime=" + fillGapsNanoTime / 1000000000.0 + "s" +
-                '}';
+        return "MongoDBVariantWriteResult{"
+                + "newDocuments=" + newDocuments
+                + ", updatedObjects=" + updatedObjects
+                + ", skippedVariants=" + skippedVariants
+                + ", nonInsertedVariants=" + nonInsertedVariants
+                + ", newVariantsTime=" + newVariantsNanoTime / 1000000000.0 + "s"
+                + ", existingVariantsTime=" + existingVariantsNanoTime / 1000000000.0 + "s"
+                + ", fillGapsTime=" + fillGapsNanoTime / 1000000000.0 + "s"
+                + '}';
     }
 
 }

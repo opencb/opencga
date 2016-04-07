@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.variant.io.json;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public abstract class VariantSourceJsonMixin {}
+public abstract class VariantSourceJsonMixin {
+}

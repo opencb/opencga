@@ -26,6 +26,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 23/10/14.
  */
+@Deprecated
 public class OptionParser {
 
     private final JCommander jcommander;
@@ -45,7 +46,7 @@ public class OptionParser {
 
     String parse(String args[]) {
         jcommander.parse(args);
-        return jcommander.getParsedCommand() != null? jcommander.getParsedCommand() : "";
+        return jcommander.getParsedCommand() != null ? jcommander.getParsedCommand() : "";
     }
 
     GeneralOptions getGeneralOptions() {
@@ -54,7 +55,7 @@ public class OptionParser {
 
     class GeneralOptions {
 
-        @Parameter(names = { "-h", "--help" }, description = "Print this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         boolean help;
 
         @Parameter(names = {"-V", "--version"}, arity = 0)

@@ -32,7 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -266,7 +266,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
         try {
             String[] studyIds = studyIdStrCvs.split(",");
-            List<org.opencb.datastore.core.QueryResult> queryResults = new LinkedList<>();
+            List<QueryResult> queryResults = new LinkedList<>();
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr);
@@ -294,9 +294,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
         List<Region> regions = Region.parseRegions(region);
 
-        List<org.opencb.datastore.core.QueryResult> results = new ArrayList<>();
+        List<QueryResult> results = new ArrayList<>();
 //        QueryResult alignmentsByRegion;
-        org.opencb.datastore.core.QueryResult alignmentsByRegion;
+        QueryResult alignmentsByRegion;
 
         // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
 
@@ -378,9 +378,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 if (regions.size() != 1) {
                     return createErrorResponse("", "Histogram fetch only accepts one region.");
                 }
-                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new org.opencb.datastore.core.QueryOptions(queryOptions));
+                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
             } else {
-                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new org.opencb.datastore.core.QueryOptions(queryOptions));
+                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
             }
             results.add(alignmentsByRegion);
         }

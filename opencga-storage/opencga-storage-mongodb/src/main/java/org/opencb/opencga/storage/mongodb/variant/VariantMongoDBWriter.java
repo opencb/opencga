@@ -18,10 +18,11 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.io.VariantDBWriter;
+import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
@@ -44,19 +45,19 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
 
     private boolean includeStats;
-    private boolean includeSrc = true;
-    private boolean includeSamples;
+    private boolean includeSrc = false;
+    private boolean includeSamples = true;
 
-    private DBObjectToVariantConverter variantConverter;
-    private DBObjectToVariantStatsConverter statsConverter;
-    private DBObjectToVariantSourceConverter sourceConverter;
-    private DBObjectToStudyVariantEntryConverter sourceEntryConverter;
-    private DBObjectToSamplesConverter sampleConverter;
+    private DocumentToVariantConverter variantConverter;
+    private DocumentToVariantStatsConverter statsConverter;
+    private DocumentToVariantSourceConverter sourceConverter;
+    private DocumentToStudyVariantEntryConverter sourceEntryConverter;
+    private DocumentToSamplesConverter sampleConverter;
 
-//    private long numVariantsWritten;
+    //    private long numVariantsWritten;
     private static long staticNumVariantsWritten;
 
-//    private long checkExistsTime = 0;
+    //    private long checkExistsTime = 0;
 //    private long checkExistsDBTime = 0;
     private long insertionTime = 0;
     private StudyConfiguration studyConfiguration;
@@ -110,9 +111,9 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     public boolean write(List<Variant> data) {
 //        return write_setOnInsert(data);
         synchronized (variantSourceWritten) {
-            long l = staticNumVariantsWritten/1000;
+            long l = staticNumVariantsWritten / 1000;
             staticNumVariantsWritten += data.size();
-            if (staticNumVariantsWritten/1000 != l) {
+            if (staticNumVariantsWritten / 1000 != l) {
                 logger.info("Num variants written " + staticNumVariantsWritten);
             }
         }
@@ -120,7 +121,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         if (!data.isEmpty()) {
             coveredChromosomes.add(data.get(0).getChromosome());
         }
-        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this.sourceEntryConverter, studyConfiguration, loadedSampleIds);
+        QueryResult<MongoDBVariantWriteResult> queryResult = dbAdaptor.insert(data, fileId, this.variantConverter, this
+                .sourceEntryConverter, studyConfiguration, loadedSampleIds);
 
         MongoDBVariantWriteResult batchWriteResult = queryResult.first();
         logger.debug("New batch of {} elements. WriteResult: {}", data.size(), batchWriteResult);
@@ -131,22 +133,26 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildBatchRaw(List<Variant> data) {
         return true;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildEffectRaw(List<Variant> variants) {
         return false;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean buildBatchIndex(List<Variant> data) {
         return false;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected boolean writeBatch(List<Variant> batch) {
         return true;
     }
@@ -205,7 +211,8 @@ public class VariantMongoDBWriter extends VariantDBWriter {
         includeSamples = b;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public final void includeEffect(boolean b) {
     }
 
@@ -215,18 +222,18 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private void setConverters() {
 
-        sourceConverter = new DBObjectToVariantSourceConverter();
-        statsConverter = includeStats ? new DBObjectToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
-        sampleConverter = includeSamples ? new DBObjectToSamplesConverter(studyConfiguration) : null;
+        sourceConverter = new DocumentToVariantSourceConverter();
+        statsConverter = includeStats ? new DocumentToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
+        sampleConverter = includeSamples ? new DocumentToSamplesConverter(studyConfiguration) : null;
 
-        sourceEntryConverter = new DBObjectToStudyVariantEntryConverter(includeSrc, sampleConverter);
+        sourceEntryConverter = new DocumentToStudyVariantEntryConverter(includeSrc, sampleConverter);
 
         sourceEntryConverter.setIncludeSrc(includeSrc);
 
         // Do not create the VariantConverter with the sourceEntryConverter.
         // The variantSourceEntry conversion will be done on demand to create a proper mongoDB update query.
         // variantConverter = new DBObjectToVariantConverter(sourceEntryConverter);
-        variantConverter = new DBObjectToVariantConverter(null, statsConverter);
+        variantConverter = new DocumentToVariantConverter(null, statsConverter);
     }
 
 

@@ -46,9 +46,8 @@ public class AlignmentSummary {
     private Map.Entry<Integer, Object>[] tagsArray;
     private Map<Map.Entry<Integer, Object>, Integer> tagsMap;
 
-    
 
-    public static class AlignmentRegionSummaryBuilder{
+    public static class AlignmentRegionSummaryBuilder {
         final private AlignmentSummary summary;
 
         //Histogram for default values.
@@ -56,35 +55,37 @@ public class AlignmentSummary {
         final private Map<Integer, Integer> lenMap;
         final private Map<String, Integer> rnextMap;
         final private Map<Integer, Integer> overlapMap;
-        
-        public AlignmentRegionSummaryBuilder(int index){
+
+        public AlignmentRegionSummaryBuilder(int index) {
             summary = new AlignmentSummary(index);
-            
+
             this.flagsMap = new HashMap<>();
             this.lenMap = new HashMap<>();
             this.rnextMap = new HashMap<>();
             this.overlapMap = new HashMap<>();
         }
-        
+
         /**
          * This function can only be called when summary is OPEN.
+         *
          * @param overlapped
          * @return builder
          */
-        public AlignmentRegionSummaryBuilder addOverlappedBucket(int overlapped){
+        public AlignmentRegionSummaryBuilder addOverlappedBucket(int overlapped) {
             Integer f = overlapMap.get(overlapped);
-            f = f==null?1:f+1;
-            overlapMap.put(overlapped,f);
+            f = f == null ? 1 : f + 1;
+            overlapMap.put(overlapped, f);
             return this;
         }
 
         /**
          * This function can only be called when summary is OPEN.
+         *
          * @param alignment
          * @return builder
          */
-        public AlignmentRegionSummaryBuilder addAlignment(Alignment alignment){
-            if(!summary.open){
+        public AlignmentRegionSummaryBuilder addAlignment(Alignment alignment) {
+            if (!summary.open) {
                 System.out.println("[ERROR] Alignmentregionsummary.addAlignment() can't be called when is closed!");
                 //TODO jj: Throw exception?
                 return this;
@@ -92,31 +93,31 @@ public class AlignmentSummary {
             //FLAG
             {
                 Integer f = flagsMap.get(alignment.getFlags());
-                f = f==null?1:f+1;
+                f = f == null ? 1 : f + 1;
                 flagsMap.put(alignment.getFlags(), f);
             }
 
             //LENGTH
             {
                 Integer l = lenMap.get(alignment.getLength());
-                l = l==null?1:l+1;
+                l = l == null ? 1 : l + 1;
                 lenMap.put(alignment.getLength(), l);
             }
 
             //MateReferenceName
             {
                 Integer rn = rnextMap.get(alignment.getMateReferenceName());
-                rn = rn==null?1:rn+1;
+                rn = rn == null ? 1 : rn + 1;
                 rnextMap.put(alignment.getMateReferenceName(), rn);
             }
 
             //Tags / Attributes
             int key;
             Map.Entry<Integer, Object> tag;
-            for(Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()){
+            for (Map.Entry<String, Object> entry : alignment.getAttributes().entrySet()) {
 
                 //Update key map
-                if(!summary.keysMap.containsKey(entry.getKey())){
+                if (!summary.keysMap.containsKey(entry.getKey())) {
                     summary.keysMap.put(entry.getKey(), key = summary.keysMap.size());
                 } else {
                     key = summary.keysMap.get(entry.getKey());
@@ -125,89 +126,98 @@ public class AlignmentSummary {
                 //Add new map
                 tag = new HashMap.SimpleEntry<>(key, entry.getValue());
 
-                if(!summary.tagsMap.containsKey(tag)){
+                if (!summary.tagsMap.containsKey(tag)) {
                     summary.tagsMap.put(tag, summary.tagsMap.size());
                 }
             }
             return this;
         }
-        public AlignmentSummary build(){
-            if(summary.open == false){
+
+        public AlignmentSummary build() {
+            if (summary.open == false) {
                 return summary;
             }
             int maxFlags = 0;
-            for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
-                if(entry.getValue() > maxFlags){
+            for (Map.Entry<Integer, Integer> entry : flagsMap.entrySet()) {
+                if (entry.getValue() > maxFlags) {
                     maxFlags = entry.getValue();
                     summary.defaultFlag = entry.getKey();
                 }
             }
 
             int maxLen = 0;
-            for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
-                if(entry.getValue() > maxLen){
+            for (Map.Entry<Integer, Integer> entry : lenMap.entrySet()) {
+                if (entry.getValue() > maxLen) {
                     maxLen = entry.getValue();
                     summary.defaultLen = entry.getKey();
                 }
             }
 
             int maxRNext = 0;
-            for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
-                if(entry.getValue() > maxRNext){
+            for (Map.Entry<String, Integer> entry : rnextMap.entrySet()) {
+                if (entry.getValue() > maxRNext) {
                     maxRNext = entry.getValue();
                     summary.defaultRNext = entry.getKey();
                 }
             }
 
             int maxOverlap = 0;
-            for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
-                if(entry.getValue() > maxOverlap){
+            for (Map.Entry<Integer, Integer> entry : overlapMap.entrySet()) {
+                if (entry.getValue() > maxOverlap) {
                     maxOverlap = entry.getValue();
                     summary.defaultOverlappedBucket = entry.getKey();
                 }
             }
 
             summary.keysArray = new String[summary.keysMap.size()];
-            for(Map.Entry<String, Integer> entry : summary.keysMap.entrySet()){
+            for (Map.Entry<String, Integer> entry : summary.keysMap.entrySet()) {
                 summary.keysArray[entry.getValue()] = entry.getKey();
             }
 
             summary.tagsArray = new Map.Entry[summary.tagsMap.size()];
-            for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : summary.tagsMap.entrySet()){
+            for (Map.Entry<Map.Entry<Integer, Object>, Integer> entry : summary.tagsMap.entrySet()) {
                 summary.tagsArray[entry.getValue()] = entry.getKey();
             }
 
             summary.open = false;
-            
+
             return summary;
         }
 
-        public void printHistogram(){
+        public void printHistogram() {
             System.out.println("AlignmentRegionSummary [" + summary.index + "] Histogram");
             System.out.println("Default Flag Map");
-            for(Map.Entry<Integer, Integer> entry : flagsMap.entrySet()){
-                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            for (Map.Entry<Integer, Integer> entry : flagsMap.entrySet()) {
+                System.out.print(entry.getKey() + "\t");
+                for (int i = 0; i < entry.getValue(); i++) System.out.print("*");
+                System.out.println("");
             }
 
             System.out.println("\nDefault Length Map");
-            for(Map.Entry<Integer, Integer> entry : lenMap.entrySet()){
-                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            for (Map.Entry<Integer, Integer> entry : lenMap.entrySet()) {
+                System.out.print(entry.getKey() + "\t");
+                for (int i = 0; i < entry.getValue(); i++) System.out.print("*");
+                System.out.println("");
             }
 
             System.out.println("\nDefault RNext Map");
-            for(Map.Entry<String, Integer> entry : rnextMap.entrySet()){
-                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            for (Map.Entry<String, Integer> entry : rnextMap.entrySet()) {
+                System.out.print(entry.getKey() + "\t");
+                for (int i = 0; i < entry.getValue(); i++) System.out.print("*");
+                System.out.println("");
             }
 
             System.out.println("\nDefault OverlappedBucket Map");
-            for(Map.Entry<Integer, Integer> entry : overlapMap.entrySet()){
-                System.out.print(entry.getKey() + "\t"); for(int i = 0; i < entry.getValue(); i++) System.out.print("*");System.out.println("");
+            for (Map.Entry<Integer, Integer> entry : overlapMap.entrySet()) {
+                System.out.print(entry.getKey() + "\t");
+                for (int i = 0; i < entry.getValue(); i++) System.out.print("*");
+                System.out.println("");
             }
         }
 
     }
-    
-    private AlignmentSummary(int index){
+
+    private AlignmentSummary(int index) {
         this.open = true;
         this.index = index;
 
@@ -218,7 +228,7 @@ public class AlignmentSummary {
 
     }
 
-    public AlignmentSummary(AlignmentProto.Summary summary, int index){
+    public AlignmentSummary(AlignmentProto.Summary summary, int index) {
         this.open = false;
 
         this.index = index;
@@ -229,10 +239,10 @@ public class AlignmentSummary {
         this.defaultOverlappedBucket = summary.getDefaultOverlapped();
 
         String keys = summary.getKeys();
-        this.keysArray = new String[keys.length()/2];
+        this.keysArray = new String[keys.length() / 2];
         this.keysMap = new HashMap<>();
-        for(int i = 0; i < keys.length()/2; i++){
-            keysArray[i] = keys.substring(i*2, i*2+2);
+        for (int i = 0; i < keys.length() / 2; i++) {
+            keysArray[i] = keys.substring(i * 2, i * 2 + 2);
             keysMap.put(keysArray[i], i);
         }
 
@@ -241,13 +251,13 @@ public class AlignmentSummary {
         this.tagsMap = new HashMap<>();
         this.tagsArray = new Map.Entry[summary.getValuesCount()];
         for (AlignmentProto.Summary.Pair pair : summary.getValuesList()) {
-            if(pair.hasAvalue()) {
+            if (pair.hasAvalue()) {
                 value = (char) pair.getAvalue();
-            } else if(pair.hasFvalue()) {
+            } else if (pair.hasFvalue()) {
                 value = pair.getFvalue();
-            } else if(pair.hasIvalue()) {
+            } else if (pair.hasIvalue()) {
                 value = pair.getIvalue();
-            } else if(pair.hasZvalue()) {
+            } else if (pair.hasZvalue()) {
                 value = pair.getZvalue();
             }
             AbstractMap.SimpleEntry<Integer, Object> entry = new HashMap.SimpleEntry<>(pair.getKey(), value);
@@ -260,17 +270,17 @@ public class AlignmentSummary {
     /**
      * This function can only be called when summary is CLOSED.
      */
-    public AlignmentProto.Summary toProto(){
+    public AlignmentProto.Summary toProto() {
 
         String keys = "";
 
-        for(String s : keysArray){
-            keys+=s;
+        for (String s : keysArray) {
+            keys += s;
         }
 
         AlignmentProto.Summary.Pair[] pairsArray = new AlignmentProto.Summary.Pair[tagsMap.size()];
-        for(Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()){
-            if(pairsArray[entry.getValue()] != null){
+        for (Map.Entry<Map.Entry<Integer, Object>, Integer> entry : tagsMap.entrySet()) {
+            if (pairsArray[entry.getValue()] != null) {
                 System.out.println("[ERROR] Duplicated tag index.");
             }
 
@@ -286,8 +296,8 @@ public class AlignmentSummary {
             }
 
             pairsArray[entry.getValue()] = builder
-                            .setKey(entry.getKey().getKey())
-                            .build();
+                    .setKey(entry.getKey().getKey())
+                    .build();
 
         }
 
@@ -304,15 +314,15 @@ public class AlignmentSummary {
 
     /**
      * This function can only be called when summary is CLOSED.
-     *
+     * <p>
      * TODO jj: Add better algorithm. For 2.0
      */
-    public ArrayList<Integer> getIndexTagList(Map<String, Object> alignmentTags){
+    public ArrayList<Integer> getIndexTagList(Map<String, Object> alignmentTags) {
         ArrayList<Integer> indexTagList = new ArrayList<>(alignmentTags.size());
 
         int key;
         Map.Entry<Integer, Object> tag;
-        for(Map.Entry<String, Object> entry : alignmentTags.entrySet()){
+        for (Map.Entry<String, Object> entry : alignmentTags.entrySet()) {
             key = keysMap.get(entry.getKey());
             tag = new HashMap.SimpleEntry<>(key, entry.getValue());
             indexTagList.add(tagsMap.get(tag));
@@ -321,13 +331,13 @@ public class AlignmentSummary {
         return indexTagList;
     }
 
-    public Map<String, Object> getTagsFromList(List<Integer> indexTagList){
+    public Map<String, Object> getTagsFromList(List<Integer> indexTagList) {
         Map<String, Object> tags = new HashMap<>();
 
-        for(Integer i : indexTagList) {
+        for (Integer i : indexTagList) {
             try {
                 tags.put(keysArray[tagsArray[i].getKey()], tagsArray[i].getValue());
-            } catch (ArrayIndexOutOfBoundsException      ex){
+            } catch (ArrayIndexOutOfBoundsException ex) {
                 System.out.println("Error? summary.getTagsFromList()");
             }
         }

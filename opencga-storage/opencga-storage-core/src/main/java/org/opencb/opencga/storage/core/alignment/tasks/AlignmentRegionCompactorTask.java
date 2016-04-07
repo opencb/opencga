@@ -31,7 +31,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Date: 27/03/14
+ * Date: 27/03/14.
+ *
  * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
  */
 
@@ -51,7 +52,7 @@ public class AlignmentRegionCompactorTask extends Task<AlignmentRegion> {
     }
 
     @Override
-    public boolean pre(){
+    public boolean pre() {
         try {
             adaptor.open();
         } catch (IOException e) {
@@ -62,7 +63,7 @@ public class AlignmentRegionCompactorTask extends Task<AlignmentRegion> {
     }
 
     @Override
-    public boolean post(){
+    public boolean post() {
         try {
             adaptor.close();
         } catch (IOException e) {
@@ -75,20 +76,21 @@ public class AlignmentRegionCompactorTask extends Task<AlignmentRegion> {
     @Override
     public boolean apply(List<AlignmentRegion> batch) throws IOException {
 
-        for(AlignmentRegion alignmentRegion : batch){
+        for (AlignmentRegion alignmentRegion : batch) {
             Region region = alignmentRegion.getRegion();
             long start = region.getStart();
-            if(start <= 0){
+            if (start <= 0) {
                 start = 1;
                 region.setStart(1);
             }
-            logger.info("Asking for sequence: " + region.toString() + " size = " + (region.getEnd()-region.getStart()));
+            logger.info("Asking for sequence: " + region.toString() + " size = " + (region.getEnd() - region.getStart()));
             String sequence = adaptor.getSequence(region);
-            for(Alignment alignment : alignmentRegion.getAlignments()){
+            for (Alignment alignment : alignmentRegion.getAlignments()) {
                 try {
                     AlignmentUtils.completeDifferencesFromReference(alignment, sequence, start);
                 } catch (ShortReferenceSequenceException e) {
-                    logger.warn("NOT ENOUGH REFERENCE SEQUENCE. " + alignment.getChromosome()+":"+alignment.getUnclippedStart() + "-" + alignment.getUnclippedEnd(), e);
+                    logger.warn("NOT ENOUGH REFERENCE SEQUENCE. " + alignment.getChromosome() + ":" + alignment.getUnclippedStart() + "-"
+                            + alignment.getUnclippedEnd(), e);
                 }
             }
         }

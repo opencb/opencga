@@ -19,7 +19,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

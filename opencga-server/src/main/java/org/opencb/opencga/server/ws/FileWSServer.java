@@ -39,7 +39,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -579,7 +579,7 @@ public class FileWSServer extends OpenCGAWSServer {
             String storageEngine = dataStore.getStorageEngine();
             String dbName = dataStore.getDbName();
 //            QueryResult result;
-            org.opencb.datastore.core.QueryResult result;
+            QueryResult result;
             switch (file.getBioformat()) {
                 case ALIGNMENT: {
                     //TODO: getChunkSize from file.index.attributes?  use to be 200
@@ -614,14 +614,14 @@ public class FileWSServer extends OpenCGAWSServer {
                         return createErrorResponse(e);
                     }
 //                    QueryResult alignmentsByRegion;
-                    org.opencb.datastore.core.QueryResult alignmentsByRegion;
+                    QueryResult alignmentsByRegion;
                     if (histogram) {
                         if (regions.size() != 1) {
                             return createErrorResponse("", "Histogram fetch only accepts one region.");
                         }
-                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new org.opencb.datastore.core.QueryOptions(queryOptions));
+                        alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
                     } else {
-                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new org.opencb.datastore.core.QueryOptions(queryOptions));
+                        alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
                     }
                     result = alignmentsByRegion;
                     break;
@@ -661,20 +661,20 @@ public class FileWSServer extends OpenCGAWSServer {
                         return createErrorResponse(e);
                     }
 //                    QueryResult queryResult;
-                    org.opencb.datastore.core.QueryResult queryResult;
+                    QueryResult queryResult;
                     if (histogram) {
                         queryOptions.put("interval", interval);
-                        queryResult = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
+                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
 //                    } else if (variantSource) {
 //                        queryOptions.put("fileId", Integer.toString(fileIdNum));
 //                        queryResult = dbAdaptor.getVariantSourceDBAdaptor().getAllSources(queryOptions);
                     } else if (!groupBy.isEmpty()) {
-                        queryResult = dbAdaptor.groupBy(new org.opencb.datastore.core.Query(query), groupBy, new org.opencb.datastore.core.QueryOptions(queryOptions));
+                        queryResult = dbAdaptor.groupBy(new Query(query), groupBy, new QueryOptions(queryOptions));
                     } else {
                         //With merge = true, will return only one result.
 //                        queryOptions.put("merge", true);
 //                        queryResult = dbAdaptor.getAllVariantsByRegionList(regions, queryOptions).get(0);
-                        queryResult = dbAdaptor.get(new org.opencb.datastore.core.Query(query), new org.opencb.datastore.core.QueryOptions(queryOptions));
+                        queryResult = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
                     }
                     result = queryResult;
                     if (warningMsg != null) {
@@ -738,12 +738,12 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        List<org.opencb.datastore.core.QueryResult> results = new LinkedList<>();
+        List<QueryResult> results = new LinkedList<>();
         try {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
-                org.opencb.datastore.core.QueryResult result;
+                QueryResult result;
                 result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
