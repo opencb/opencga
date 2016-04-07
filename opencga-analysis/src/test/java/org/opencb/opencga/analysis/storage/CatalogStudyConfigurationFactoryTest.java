@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -52,13 +53,12 @@ public class CatalogStudyConfigurationFactoryTest {
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
-        catalogPropertiesFile = getResourceUri("catalog.properties").getPath();
-        Properties properties = new Properties();
-        properties.load(CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogStudyConfigurationFactoryTest.class.getClassLoader()
+                .getClass().getResource("/catalog-configuration.yml").openStream());
 
-        CatalogManagerTest.clearCatalog(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 

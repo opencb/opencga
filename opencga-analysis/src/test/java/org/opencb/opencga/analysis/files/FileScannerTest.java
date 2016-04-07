@@ -4,6 +4,7 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -35,13 +36,12 @@ public class FileScannerTest extends TestCase {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
-        CatalogManagerTest.clearCatalog(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");

@@ -21,6 +21,7 @@ import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
@@ -31,8 +32,11 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -121,8 +125,10 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     public CatalogManager getCatalogManager() {
         if (catalogManager == null) {
             try {
-                catalogManager = new CatalogManager(Config.getProperties("catalog", properties));
-            } catch (CatalogException e) {
+                CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                        "conf", "catalog-configuration.yml").toFile()));
+                catalogManager = new CatalogManager(catalogConfiguration);
+            } catch (CatalogException | IOException e) {
                 e.printStackTrace();
             }
         }

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.config;
 
 import org.junit.Test;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,6 +45,9 @@ public class CatalogConfigurationTest {
 
         DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
         catalogConfiguration.setDatabase(databaseCredentials);
+
+        Policies policies = new Policies().setUserCreation(Policies.UserCreation.ALWAYS);
+        catalogConfiguration.setPolicies(policies);
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
 //        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
 //

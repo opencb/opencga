@@ -11,12 +11,13 @@ import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -55,20 +55,20 @@ public class AnalysisFileIndexerTest {
     private CatalogFileUtils catalogFileUtils;
     private long outputId;
     Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
-    private String catalogPropertiesFile;
+    private CatalogConfiguration catalogConfiguration;
     private final String userId = "user";
     private final String dbName = DB_NAME;
     private List<File> files = new ArrayList<>();
 
     public void beforeIndex() throws Exception {
         Path openCGA = AnalysisStorageTestUtil.isolateOpenCGA();
-        catalogPropertiesFile = openCGA.resolve("conf").resolve("catalog.properties").toString();
-        Properties properties = Config.getCatalogProperties();
+        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml").openStream());
+//        Properties properties = Config.getCatalogProperties();
 
-        CatalogManagerTest.clearCatalog(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
         clearDB(dbName);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
@@ -195,15 +195,17 @@ public class AnalysisFileIndexerTest {
     
     public void beforeAggregatedIndex(String file, VariantSource.Aggregation aggregation) throws Exception {
         Path openCGA = AnalysisStorageTestUtil.isolateOpenCGA();
-        catalogPropertiesFile = openCGA.resolve("conf").resolve("catalog.properties").toString();
-        Properties properties = Config.getCatalogProperties();
+        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml").openStream());
+        //Properties properties = Config.getCatalogProperties();
 
-        CatalogManagerTest.clearCatalog(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
         clearDB(dbName);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
+        Policies policies = new Policies();
+        policies.setUserCreation(Policies.UserCreation.ALWAYS);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
@@ -229,8 +231,8 @@ public class AnalysisFileIndexerTest {
         assertEquals(0, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort().getStatus().getStatus());
         checkCalculatedAggregatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
-                new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), dbName,
-                catalogPropertiesFile, sessionId);
+                new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), dbName
+        );
     }
     
 }

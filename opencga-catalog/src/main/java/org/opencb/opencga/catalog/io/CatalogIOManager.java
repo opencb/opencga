@@ -99,7 +99,7 @@ public abstract class CatalogIOManager {
      * @throws CatalogIOException CatalogIOException
      */
     public void setup() throws CatalogIOException {
-        setProperties(properties);
+        setProperties(catalogConfiguration);
         if (!exists(rootDir)) {
             logger.info("Initializing CatalogIOManager. Creating main folder '" + rootDir + "'");
             createDirectory(rootDir, true);

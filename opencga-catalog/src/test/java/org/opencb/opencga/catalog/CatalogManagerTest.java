@@ -29,6 +29,7 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -127,6 +128,32 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
+    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        db.getDb().drop();
+        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+
+        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
+        deleteFolderTree(rootdir.toFile());
+        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
+            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
     public static void deleteFolderTree(java.io.File folder) {
         java.io.File[] files = folder.listFiles();
         if (files != null) {
@@ -143,13 +170,12 @@ public class CatalogManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
-        clearCatalog(properties);
+        clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
