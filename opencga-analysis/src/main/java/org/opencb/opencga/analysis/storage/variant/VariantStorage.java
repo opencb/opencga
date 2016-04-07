@@ -25,11 +25,10 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.storage.core.StorageManagerException;
@@ -84,19 +83,19 @@ public class VariantStorage {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
             studyIdSet.add(studyId);
-            switch (cohort.getCohortStatus()) {
-                case NONE:
-                case INVALID:
+            switch (cohort.getStatus().getStatus()) {
+                case Cohort.CohortStatus.NONE:
+                case Cohort.CohortStatus.INVALID:
                     break;
-                case READY:
+                case Cohort.CohortStatus.READY:
                     if (updateStats) {
                         catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                         break;
                     }
-                case CALCULATING:
+                case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to calculate stats for cohort " +
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
-                            " with status \"" + cohort.getCohortStatus() + "\"");
+                            " with status \"" + cohort.getStatus().getStatus() + "\"");
             }
             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("id", cohort.getSamples()), new QueryOptions(), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());

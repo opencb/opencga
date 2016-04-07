@@ -323,18 +323,18 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         Cohort cohort = readCohort(cohortId, new QueryOptions(MongoDBCollection.INCLUDE, "projects.studies.cohorts."
-                + CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key()), sessionId).first();
+                + CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key()), sessionId).first();
         if (params.containsKey(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key())
                 || params.containsKey(CatalogCohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
-            switch (cohort.getCohortStatus()) {
-                case CALCULATING:
+            switch (cohort.getStatus().getStatus()) {
+                case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
                             + "\"");
-                case READY:
-                    params.put("status", Cohort.CohortStatus.INVALID);
+                case Cohort.CohortStatus.READY:
+                    params.put("status.status", Cohort.CohortStatus.INVALID);
                     break;
-                case NONE:
-                case INVALID:
+                case Cohort.CohortStatus.NONE:
+                case Cohort.CohortStatus.INVALID:
                     break;
                 default:
                     break;

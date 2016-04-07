@@ -167,9 +167,12 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.COHORT_STATUS.key(),
-                Cohort.CohortStatus.class);
-        filterEnumParams(parameters, cohortParams, acceptedEnumParams);
+        //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_STATUS.key(),
+        //        Cohort.CohortStatus.class);
+        //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        }
 
         if (!cohortParams.isEmpty()) {
             QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query), new Document("$set", cohortParams), null);
