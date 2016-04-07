@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,30 +55,43 @@ public abstract class CatalogIOManager {
     protected URI jobsDir;
     //    protected URI rootDir;
     protected URI tmp;
+    @Deprecated
     protected Properties properties;
+    protected CatalogConfiguration catalogConfiguration;
 
     private CatalogIOManager() {
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public CatalogIOManager(String propertiesFile) throws CatalogIOException {
+    public CatalogIOManager(String catalogConfigurationFile) throws CatalogIOException {
         this();
-        this.properties = new Properties();
+        this.catalogConfiguration = new CatalogConfiguration();
+        //this.properties = new Properties();
         try {
-            this.properties.load(new FileInputStream(propertiesFile));
+            this.catalogConfiguration.load(new FileInputStream(catalogConfigurationFile));
+            //this.properties.load(new FileInputStream(propertiesFile));
         } catch (IOException e) {
-            throw new CatalogIOException("Error loading properties file", e);
+            throw new CatalogIOException("Error loading Catalog Configuration file", e);
         }
         setup();
     }
 
+    @Deprecated
     public CatalogIOManager(Properties properties) throws CatalogIOException {
         this();
         this.properties = properties;
         setup();
     }
 
+    public CatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        this();
+        this.catalogConfiguration = catalogConfiguration;
+        setup();
+    }
+
+    @Deprecated
     protected abstract void setProperties(Properties properties) throws CatalogIOException;
+    protected abstract void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException;
 
     /**
      * This method creates the folders and workspace structure for storing the OpenCGA data. I

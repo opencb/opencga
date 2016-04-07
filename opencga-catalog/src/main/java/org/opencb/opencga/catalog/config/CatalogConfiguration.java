@@ -38,9 +38,11 @@ public class CatalogConfiguration {
 
     private String admin;
     private String password;
+    private String adminEmail;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
+    private Policies policies;
 
 //    private authentication
 
@@ -95,8 +97,10 @@ public class CatalogConfiguration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", admin='").append(admin).append('\'');
         sb.append(", password='").append(password).append('\'');
+        sb.append(", adminEmail='").append(adminEmail).append('\'');
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
+        sb.append(", policies=").append(policies);
         sb.append('}');
         return sb.toString();
     }
@@ -163,5 +167,21 @@ public class CatalogConfiguration {
 
     public void setDatabase(DatabaseCredentials database) {
         this.database = database;
+    }
+
+    public String getAdminEmail() {
+        return adminEmail;
+    }
+
+    public void setAdminEmail(String adminEmail) {
+        this.adminEmail = adminEmail;
+    }
+
+    public Policies getPolicies() {
+        return policies;
+    }
+
+    public void setPolicies(Policies policies) {
+        this.policies = policies;
     }
 }

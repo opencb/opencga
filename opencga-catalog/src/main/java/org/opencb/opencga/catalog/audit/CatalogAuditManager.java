@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -31,13 +32,25 @@ public class CatalogAuditManager implements AuditManager {
     private final CatalogUserDBAdaptor userDBAdaptor;
     private final AuthorizationManager authorizationManager;
     private final Properties catalogProperties;
+    private final CatalogConfiguration catalogConfiguration;
 
+    @Deprecated
     public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor,
                                AuthorizationManager authorizationManager, Properties catalogProperties) {
         this.auditDBAdaptor = auditDBAdaptor;
         this.userDBAdaptor = userDBAdaptor;
         this.authorizationManager = authorizationManager;
         this.catalogProperties = catalogProperties;
+        this.catalogConfiguration = null;
+    }
+
+    public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor,
+                               AuthorizationManager authorizationManager, CatalogConfiguration catalogConfiguration) {
+        this.auditDBAdaptor = auditDBAdaptor;
+        this.userDBAdaptor = userDBAdaptor;
+        this.authorizationManager = authorizationManager;
+        this.catalogConfiguration = catalogConfiguration;
+        this.catalogProperties = null;
     }
 
     @Override

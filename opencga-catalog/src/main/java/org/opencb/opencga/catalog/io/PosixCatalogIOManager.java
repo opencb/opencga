@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.io;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -48,6 +49,11 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         super(properties);
     }
 
+    public PosixCatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        super(catalogConfiguration);
+    }
+
+    @Deprecated
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
         try {
@@ -63,6 +69,30 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         } else {
             try {
                 jobsDir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR));
+            } catch (URISyntaxException e) {
+                throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+            }
+        }
+        if (!jobsDir.getScheme().equals("file")) {
+            throw new CatalogIOException("wrong posix file system in catalog.properties: " + jobsDir);
+        }
+    }
+
+    @Override
+    protected void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        try {
+            rootDir = UriUtils.createDirectoryUri(catalogConfiguration.getDataDir());
+        } catch (URISyntaxException e) {
+            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+        }
+        if (!rootDir.getScheme().equals("file")) {
+            throw new CatalogIOException("wrong posix file system in catalog.properties: " + rootDir);
+        }
+        if (catalogConfiguration.getTempJobsDir().isEmpty()) {
+            jobsDir = rootDir.resolve(DEFAULT_OPENCGA_JOBS_FOLDER);
+        } else {
+            try {
+                jobsDir = UriUtils.createDirectoryUri(catalogConfiguration.getTempJobsDir());
             } catch (URISyntaxException e) {
                 throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
             }
