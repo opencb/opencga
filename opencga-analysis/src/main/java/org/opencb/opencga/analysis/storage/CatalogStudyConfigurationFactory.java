@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -52,7 +51,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS.key(), Index.Status.READY);
+            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), Index.IndexStatus.READY);
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
     public static final Query COHORTS_QUERY = new Query();
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
@@ -261,11 +260,12 @@ public class CatalogStudyConfigurationFactory {
             for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
                     new Query("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), new QueryOptions(), sessionId)
                     .getResult()) {
-                if (file.getIndex() == null || !file.getIndex().getStatus().equals(Index.Status.READY)) {
+                if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
                     final Index index;
                     index = file.getIndex() == null ? new Index() : file.getIndex();
-                    index.setStatus(Index.Status.READY);
-                    logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(), file.getIndex().getStatus(), Index.Status.READY);
+                    index.getStatus().setStatus(Index.IndexStatus.READY);
+                    logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                            file.getIndex().getStatus().getStatus(), Index.IndexStatus.READY);
                     catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
                 }
             }

@@ -26,7 +26,7 @@ public class Index {
 
     private String userId;
     private String date;
-    private Status status;
+    private IndexStatus status;
     private long jobId;
 
     private Map<String, Object> attributes;
@@ -35,7 +35,7 @@ public class Index {
     }
 
 
-    public Index(String userId, String date, Status status, long jobId, Map<String, Object> attributes) {
+    public Index(String userId, String date, IndexStatus status, long jobId, Map<String, Object> attributes) {
         this.userId = userId;
         this.date = date;
         this.status = status;
@@ -67,11 +67,11 @@ public class Index {
         this.jobId = jobId;
     }
 
-    public Status getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(IndexStatus status) {
         this.status = status;
     }
 
@@ -83,14 +83,47 @@ public class Index {
         this.attributes = attributes;
     }
 
-    /**
+    public static class IndexStatus extends Status {
+
+     /*
      * States.
      * <p>
      * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
      * \                                              /
      * ------------------> INDEXING ----------------/
      */
-    public enum Status {
-        NONE, TRANSFORMING, TRANSFORMED, LOADING, INDEXING, READY
+        public static final String NONE = "NONE";
+        public static final String TRANSFORMING = "TRANSFORMING";
+        public static final String TRANSFORMED = "TRANSFORMED";
+        public static final String LOADING = "LOADING";
+        public static final String INDEXING = "INDEXING";
+
+        public IndexStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                init(UNKNOWN, message);
+            }
+        }
+
+        public IndexStatus(String status) {
+            this(status, "");
+        }
+
+        public IndexStatus() {
+            this(NONE, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED) || status.equals(LOADING)
+                    || status.equals(INDEXING)) {
+                return true;
+            }
+            return false;
+        }
     }
+
 }

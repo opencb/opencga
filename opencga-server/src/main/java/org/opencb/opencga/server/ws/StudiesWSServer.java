@@ -307,7 +307,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             File file = catalogManager.getAllFiles(studyId, query
                     .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
                     .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS.key(), Index.Status.READY),
+                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), Index.IndexStatus.READY),
                     qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -328,7 +328,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             }
 
 //            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
+            if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
                 return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }

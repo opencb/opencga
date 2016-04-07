@@ -191,7 +191,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_DATE("index.date", TEXT, ""),
-        INDEX_STATUS("index.status", TEXT_ARRAY, ""),
+        INDEX_STATUS_STATUS("index.status.status", TEXT, ""),
+        INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

@@ -159,21 +159,21 @@ public class AnalysisFileIndexer {
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
-            switch (originalFile.getIndex().getStatus()) {
-                case TRANSFORMING:
+            switch (originalFile.getIndex().getStatus().getStatus()) {
+                case Index.IndexStatus.TRANSFORMING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being transformed");
-                case TRANSFORMED:
+                case Index.IndexStatus.TRANSFORMED:
                     if (transform) {
                         throw new CatalogException("File '" + originalFile.getId() + "' is already transformed");
                     }
                     break;
-                case LOADING:
+                case Index.IndexStatus.LOADING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being loaded");
-                case INDEXING:
+                case Index.IndexStatus.INDEXING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being indexed");
-                case READY:
+                case Index.IndexStatus.READY:
                     throw new CatalogException("File '" + originalFile.getId() + "' is already indexed");
-                case NONE:
+                case Index.IndexStatus.NONE:
                     break;
             }
         } else {
@@ -259,14 +259,14 @@ public class AnalysisFileIndexer {
         /** Create index information **/
         Index indexInformation = originalFile.getIndex();
         if (indexInformation == null) {
-            indexInformation = new Index(userId, TimeUtils.getTime(), Index.Status.NONE, -1, indexAttributes);
+            indexInformation = new Index(userId, TimeUtils.getTime(), new Index.IndexStatus(Index.IndexStatus.NONE), -1, indexAttributes);
         }
         if (transform && !load) {
-            indexInformation.setStatus(Index.Status.TRANSFORMING);
+            indexInformation.getStatus().setStatus(Index.IndexStatus.TRANSFORMING);
         } else if (!transform && load) {
-            indexInformation.setStatus(Index.Status.LOADING);
+            indexInformation.getStatus().setStatus(Index.IndexStatus.LOADING);
         } else if (transform && load) {
-            indexInformation.setStatus(Index.Status.INDEXING);
+            indexInformation.getStatus().setStatus(Index.IndexStatus.INDEXING);
         }
 
         if (!simulate) {
@@ -287,18 +287,18 @@ public class AnalysisFileIndexer {
 
         String jobName;
         String jobDescription;
-        switch (indexInformation.getStatus()) {
+        switch (indexInformation.getStatus().getStatus()) {
             default:
 //                throw new IllegalStateException("Unexpected state");
-            case INDEXING:
+            case Index.IndexStatus.INDEXING:
                 jobName = "index";
                 jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
-            case LOADING:
+            case Index.IndexStatus.LOADING:
                 jobName = "load";
                 jobDescription = "Loading file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
-            case TRANSFORMING:
+            case Index.IndexStatus.TRANSFORMING:
                 jobName = "transform";
                 jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;

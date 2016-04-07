@@ -51,7 +51,7 @@ public class VariantFetcher {
         fileIdNum = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
-        if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
+        if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
             throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                     " is not an indexed file.");
         }

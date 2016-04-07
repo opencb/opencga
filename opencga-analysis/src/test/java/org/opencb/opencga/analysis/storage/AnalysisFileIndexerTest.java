@@ -159,13 +159,13 @@ public class AnalysisFileIndexerTest {
 
         //Create transform index job
         Job job = analysisFileIndexer.index((int) files.get(0).getId(), (int) outputId, sessionId, queryOptions).first();
-        assertEquals(Index.Status.TRANSFORMING, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
+        assertEquals(Index.IndexStatus.TRANSFORMING, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus().getStatus());
 
         //Run transform index job
         job = runStorageJob(catalogManager, job, logger, sessionId);
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort().getCohortStatus());
-        assertEquals(Index.Status.TRANSFORMED, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
+        assertEquals(Index.IndexStatus.TRANSFORMED, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
         //Get transformed file
@@ -180,14 +180,14 @@ public class AnalysisFileIndexerTest {
         queryOptions.append(AnalysisFileIndexer.TRANSFORM, false);
         queryOptions.append(AnalysisFileIndexer.LOAD, true);
         job = analysisFileIndexer.index((int) transformedFile.getId(), (int) outputId, sessionId, queryOptions).first();
-        assertEquals(Index.Status.LOADING, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
+        assertEquals(Index.IndexStatus.LOADING, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
         //Run load index job
         runStorageJob(catalogManager, job, logger, sessionId);
         assertEquals(500, getDefaultCohort().getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort().getCohortStatus());
-        assertEquals(Index.Status.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus());
+        assertEquals(Index.IndexStatus.READY, catalogManager.getFile(files.get(0).getId(), sessionId).first().getIndex().getStatus().getStatus());
         Cohort defaultCohort = catalogManager.getAllCohorts(studyId,
                 new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first();
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);

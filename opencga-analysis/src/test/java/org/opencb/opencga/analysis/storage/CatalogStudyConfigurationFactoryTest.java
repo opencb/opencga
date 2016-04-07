@@ -85,7 +85,8 @@ public class CatalogStudyConfigurationFactoryTest {
         file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
-            catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today", Index.Status.READY, 1234, Collections.emptyMap())), sessionId);
+            catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today",
+                    new Index.IndexStatus(Index.IndexStatus.READY), 1234, Collections.emptyMap())), sessionId);
             indexedFiles.add((int) file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();
@@ -150,7 +151,7 @@ public class CatalogStudyConfigurationFactoryTest {
 
             assertEquals(file.getName(), entry.getKey());
             assertEquals(new HashSet<>(file.getSampleIds()), studyConfiguration.getSamplesInFiles().get(file.getId()));
-            if (file.getIndex() != null && file.getIndex().getStatus().equals(Index.Status.READY)) {
+            if (file.getIndex() != null && file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
                 assertTrue(studyConfiguration.getIndexedFiles().contains(file.getId()));
                 assertTrue(studyConfiguration.getHeaders().containsKey(file.getId()));
                 assertTrue(!studyConfiguration.getHeaders().get(file.getId()).isEmpty());
