@@ -9,21 +9,21 @@ admin: "admin"
 password: "admin"
 
 emailServer:
-  host: ${OPENCGA.CATALOG.MAIL.HOST}
-  port: ${OPENCGA.CATALOG.MAIL.PORT}
-  user: ${OPENCGA.CATALOG.MAIL.USER}
-  password: ${OPENCGA.CATALOG.MAIL.PASSWORD}
+  host: ""
+  port: 123
+  user: ""
+  password: ""
   from: ""
   ssl: false
 
 database:
   hosts:
-  - ${OPENCGA.CATALOG.DB.HOSTS}
+  - "localhost"
   database: "opencga_catalog_test"
-  user: ${OPENCGA.CATALOG.DB.USER}
-  password: ${OPENCGA.CATALOG.DB.PASSWORD}
+  user: ""
+  password: ""
   options:
-    authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+    authenticationDatabase: ""
 
 policies:
   userCreation: "ALWAYS" ## This is the policy to create users. Can be: ONLY_ADMIN, ANY_LOGGED_USER or ALWAYS.
