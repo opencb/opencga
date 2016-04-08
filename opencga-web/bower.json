@@ -30,6 +30,8 @@
     "jquery": "~1.12.2",
     "uri.js": "~1.17.1",
     "file-saver.js": "~1.20150507.2",
-    "polymer": "~1.4.0"
+    "polymer": "~1.4.0",
+    "cookies-js": "~1.2.2",
+    "crypto-js": "crypto-js-evanvosberg#~3.1.5"
   }
 }
