@@ -182,6 +182,7 @@
             login: function(e) {
                 Cookies.set(this.cookieSessionId, e.detail.sessionId);
                 Cookies.set(this.cookieUserName, e.detail.userId);
+                console.log(e.detail.sessionId);
                 this.enableClick();
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
