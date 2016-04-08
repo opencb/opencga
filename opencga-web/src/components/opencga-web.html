@@ -16,6 +16,8 @@
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../bower_components/iron-input/iron-input.html">
+
 
 <link rel="import" href="opencga-login.html">
 <link rel="import" href="opencga-dashboard.html">
@@ -110,12 +112,12 @@
                         <p></p>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon1">Host</span>
-                            <input type="text" class="form-control" placeholder="Host" aria-describedby="basic-addon1" value="{{host}}">
+                            <input is="iron-input" class="form-control" bind-value="{{tmpHost}}">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">OK</button>
+                        <button on-click="closeSettings" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button on-click="saveHost" type="button" class="btn btn-primary">OK</button>
                     </div>
                 </div>
             </div>
@@ -142,6 +144,7 @@
 
                 // Read config file
                 this.host = OPENCGA_HOST;
+                this.tmpHost = this.host;
                 this.version = OPENCGA_VERSION;
                 this.cookieSessionId = OPENCGA_COOKIE_SESSION_ID;
                 this.cookieUserName = OPENCGA_COOKIE_USER_NAME;
@@ -187,6 +190,16 @@
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
             },
+
+            saveHost: function(e) {
+                this.host = this.tmpHost;
+                OpencgaManager.host = this.host;
+            },
+
+            closeSettings: function(e) {
+                this.tmpHost = this.host;
+            },
+
 
 
             logout: function() {
