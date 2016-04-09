@@ -76,7 +76,6 @@
                                     <a href="#login">
                                         <i class="fa fa-sign-in fa-lg"></i> Login
                                     </a>
-
                                     <a href="#logout" on-click="logout" style="display: none;">
                                         <i class="fa fa-sign-out fa-lg"></i> Logout
                                     </a>
@@ -174,12 +173,12 @@
 
             showLogin: function() {
                 $(".opencga-menu a[href='#logout']").hide();
-                $(".opencga-menu a[href='#login']").show();
+                $(".opencga-menu a[href='#login']").removeAttr("style");
             },
 
             showLogout: function() {
                 $(".opencga-menu a[href='#login']").hide();
-                $(".opencga-menu a[href='#logout']").show();
+                $(".opencga-menu a[href='#logout']").removeAttr("style");
             },
 
             login: function(e) {
@@ -189,6 +188,7 @@
                 this.enableClick();
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
+//                alertify.success("You are successfully logged in.");
             },
 
             saveHost: function(e) {
@@ -214,9 +214,9 @@
                             me.showLogin();
                             Cookies.expire(me.cookieSessionId);
                             Cookies.expire(me.cookieUserName);
-                            console.log("You are successfully logged out.");
                             $(".opencga-menu a[href='#login']").trigger("click");
                             me.disableClick();
+//                            alertify.success("You are successfully logged out.");
                         }
                     }
                 })
