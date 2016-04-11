@@ -25,6 +25,17 @@ public class MongoDBVariantWriteResult {
         this.nonInsertedVariants = nonInsertedVariants;
     }
 
+    public MongoDBVariantWriteResult(long newDocuments, long updatedObjects, long skippedVariants, long nonInsertedVariants,
+                                     long newVariantsNanoTime, long existingVariantsNanoTime, long fillGapsNanoTime) {
+        this.newDocuments = newDocuments;
+        this.updatedObjects = updatedObjects;
+        this.skippedVariants = skippedVariants;
+        this.nonInsertedVariants = nonInsertedVariants;
+        this.newVariantsNanoTime = newVariantsNanoTime;
+        this.existingVariantsNanoTime = existingVariantsNanoTime;
+        this.fillGapsNanoTime = fillGapsNanoTime;
+    }
+
     public void merge(MongoDBVariantWriteResult... others) {
         for (MongoDBVariantWriteResult other : others) {
             newDocuments += other.newDocuments;

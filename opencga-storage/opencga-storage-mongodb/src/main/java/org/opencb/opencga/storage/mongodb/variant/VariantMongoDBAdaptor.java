@@ -64,6 +64,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -112,6 +113,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected MongoDBCollection getVariantsCollection() {
         return variantsCollection;
+    }
+
+    protected MongoDataStore getDB() {
+        return db;
     }
 
     protected MongoCredentials getCredentials() {
@@ -1271,7 +1276,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
-        String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
+        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
         if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
         } else if (excludeGenotypes) {
@@ -1460,7 +1465,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $push : {
         //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
         // } }
-        if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "")
+        if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key(), "")
                 .equals(Collections.singletonList(DocumentToSamplesConverter.UNKNOWN_GENOTYPE))
 //                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {

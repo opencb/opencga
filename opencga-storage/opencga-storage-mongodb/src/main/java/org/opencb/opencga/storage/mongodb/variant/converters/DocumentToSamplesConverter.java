@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +38,8 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
+
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -140,7 +141,7 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         this();
         setSamples(studyId, fileId, samples);
         studyConfigurations.get(studyId).getAttributes()
-                .put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
+                .put(DEFAULT_GENOTYPE.key(), Collections.singleton(defaultGenotype));
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
@@ -561,9 +562,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
         this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
 
-        Set defGenotypeSet = studyConfiguration.getAttributes().get(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Set.class);
+        Set defGenotypeSet = studyConfiguration.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
         if (defGenotypeSet == null) {
-            List<String> defGenotype = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE);
+            List<String> defGenotype = studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
             if (defGenotype.size() == 0) {
                 defGenotypeSet = Collections.<String>emptySet();
             } else if (defGenotype.size() == 1) {

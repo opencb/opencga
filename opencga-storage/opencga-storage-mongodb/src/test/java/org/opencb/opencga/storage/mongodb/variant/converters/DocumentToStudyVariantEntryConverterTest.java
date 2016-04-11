@@ -93,7 +93,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyConfiguration.setSampleIds(sampleIds);
         studyConfiguration.getIndexedFiles().add(fileId);
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(15, 25, 35)));
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton("0/0"));
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), Collections.singleton("0/0"));
 
         sampleNames = Lists.newArrayList("NA001", "NA002", "NA003");
 

@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -29,7 +27,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.net.UnknownHostException;
-import java.util.List;
+import java.util.Collections;
+
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -41,15 +41,32 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
 
-    //StorageEngine specific options
-//    public static final String WRITE_MONGO_THREADS = "writeMongoThreads";
-    public static final String AUTHENTICATION_DB = MongoDBConfiguration.AUTHENTICATION_DATABASE;
-    public static final String COLLECTION_VARIANTS = "collection.variants";
-    public static final String COLLECTION_FILES = "collection.files";
-    public static final String COLLECTION_STUDIES = "collection.studies";
-    public static final String BULK_SIZE = "bulkSize";
-    public static final String DEFAULT_GENOTYPE = "defaultGenotype";
-    public static final String ALREADY_LOADED_VARIANTS = "alreadyLoadedVariants";
+    public enum MongoDBVariantOptions {
+        COLLECTION_VARIANTS("collection.variants", "variants"),
+        COLLECTION_FILES("collection.files", "file"),
+        COLLECTION_STUDIES("collection.studies",  "studies"),
+        COLLECTION_STAGE("collection.stage",  "stage"),
+        BULK_SIZE("bulkSize",  100),
+        DEFAULT_GENOTYPE("defaultGenotype", Collections.singleton("0/0")),
+        ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0);
+
+        private final String key;
+        private final Object value;
+
+        MongoDBVariantOptions(String key, Object value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public String key() {
+            return key;
+        }
+
+        @SuppressWarnings("unchecked")
+        public <T> T defaultValue() {
+            return (T) value;
+        }
+    }
 
 
     @Override
@@ -95,8 +112,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             options.append(VariantStorageManager.Options.DB_NAME.key(), dbName);
         }
 
-        String variantsCollection = options.getString(COLLECTION_VARIANTS, "variants");
-        String filesCollection = options.getString(COLLECTION_FILES, "files");
+        String variantsCollection = options.getString(COLLECTION_VARIANTS.key(), COLLECTION_VARIANTS.defaultValue());
+        String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
         try {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection,
@@ -119,7 +136,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
 
         DatabaseCredentials database = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase();
-        List<DataStoreServerAddress> dataStoreServerAddresses = MongoCredentials.parseDataStoreServerAddresses(database.getHosts());
 
         try {
             return new MongoCredentials(database, dbName);
@@ -135,7 +151,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             return super.buildStudyConfigurationManager(options);
         } else {
             String dbName = options == null ? null : options.getString(VariantStorageManager.Options.DB_NAME.key());
-            String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES, "studies");
+            String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
                 return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
