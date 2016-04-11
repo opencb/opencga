@@ -344,8 +344,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
 */
 
-            //Enable debug mode. There may be some bugs
-            options.put("debug", true);
 
             MongoDBCollection stageCollection = dbAdaptor.getDB().getCollection(
                     options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
@@ -463,7 +461,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         MongoDBVariantWriteResult writeResult = variantWriter.getResult();
         writeResult.setSkippedVariants(skippedVariants);
 
-        logger.info("Write result: {}", writeResult);
+        logger.info("Write result: {}", writeResult.toString());
+        logger.info("Write result: {}", writeResult.toTSV());
+        logger.info("Write result: {}", writeResult.toJson());
         options.put("writeResult", writeResult);
         return writeResult;
     }
@@ -539,8 +539,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             logger.info("Final number of loaded variants: " + count);
         }
         logger.info("============================================================");
-        // Avoid throw exception if debug mode is enable
-        if (!options.getBoolean("debug", false) && exception != null) {
+        if (exception != null) {
             throw exception;
         }
     }

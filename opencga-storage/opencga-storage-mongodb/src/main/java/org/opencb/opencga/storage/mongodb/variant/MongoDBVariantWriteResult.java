@@ -169,4 +169,29 @@ public class MongoDBVariantWriteResult {
                 + '}';
     }
 
+    public String toJson() {
+        return "{\n"
+                + "\tnewDocuments:" + newDocuments + ",\n"
+                + "\tupdatedObjects:" + updatedObjects + ",\n"
+                + "\tskippedVariants:" + skippedVariants + ",\n"
+                + "\tnonInsertedVariants:" + nonInsertedVariants + ",\n"
+                + "\tnewVariantsTime:" + newVariantsNanoTime / 1000000000.0 + ",\n"
+                + "\texistingVariantsTime:" + existingVariantsNanoTime / 1000000000.0 + ",\n"
+                + "\tfillGapsTime:" + fillGapsNanoTime / 1000000000.0 + "\n"
+                + '}';
+    }
+
+    public String toTSV() {
+        return "#newDocuments\tupdatedObjects\tskippedVariants\tnonInsertedVariants\tnewVariantsTime\texistingVariantsTime\tfillGapsTime\t"
+                + "\n"
+                + newDocuments + '\t'
+                + updatedObjects + '\t'
+                + skippedVariants + '\t'
+                + nonInsertedVariants + '\t'
+                + newVariantsNanoTime / 1000000000.0 + '\t'
+                + existingVariantsNanoTime / 1000000000.0 + '\t'
+                + fillGapsNanoTime / 1000000000.0;
+    }
+
+
 }

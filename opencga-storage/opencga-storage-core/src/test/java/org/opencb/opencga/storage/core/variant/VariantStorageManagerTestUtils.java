@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -80,6 +81,9 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     public static URI getResourceUri(String resourceName) throws IOException {
         Path rootDir = getTmpRootDir();
         Path resourcePath = rootDir.resolve(resourceName);
+        if (!resourcePath.getParent().toFile().exists()) {
+            Files.createDirectory(resourcePath.getParent());
+        }
         if (!resourcePath.toFile().exists()) {
             Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
                     .REPLACE_EXISTING);

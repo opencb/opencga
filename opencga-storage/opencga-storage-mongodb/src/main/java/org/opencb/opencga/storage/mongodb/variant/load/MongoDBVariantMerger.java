@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
+import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
@@ -8,6 +9,7 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -47,7 +49,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private LinkedList<Integer> indexedSamples;
 
     private final AtomicInteger variantsCount;
-    public static final int LOGING_BATCH_SIZE = 1000;
+    public static final int DEFAULT_LOGING_BATCH_SIZE = 500;
+    private final int logingBatchSize;
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
 
@@ -66,6 +69,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
         variantsCount = new AtomicInteger(0);
+        logingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
     }
 
     public MongoDBVariantWriteResult getResult() {
@@ -85,8 +89,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         List<Document> inserts = new LinkedList<>();
         List<Bson> queriesExisting = new LinkedList<>();
+        List<String> queriesExistingId = new LinkedList<>();
         List<Bson> updatesExisting = new LinkedList<>();
         List<Bson> queriesFillGaps = new LinkedList<>();
+        List<String> queriesFillGapsId = new LinkedList<>();
         List<Bson> updatesFillGaps = new LinkedList<>();
         final int[] skipped = {0};
         final int[] nonInserted = {0};
@@ -154,6 +160,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                     .put(UNKNOWN_GENOTYPE, indexedSamples);
                             inserts.add(newDocument);
                         } else {
+                            queriesExistingId.add(variantConverter.buildStorageId(variant));
                             if (newStudy) {
                                 Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
                                 queriesExisting.add(Filters.eq("_id", variantConverter.buildStorageId(variant)));
@@ -188,6 +195,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                                     Filters.eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
                             updatesFillGaps.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + UNKNOWN_GENOTYPE,
                                     new LinkedList<>(getSamplesInFile(fileId))));
+                            queriesFillGapsId.add(variantConverter.buildStorageId(emptyVar));
                         }
                     }
                 }
@@ -198,17 +206,56 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         long newVariants = -System.nanoTime();
         if (!inserts.isEmpty()) {
-            collection.insert(inserts, QUERY_OPTIONS);
+            BulkWriteResult writeResult = collection.insert(inserts, QUERY_OPTIONS).first();
+            if (writeResult.getInsertedCount() != inserts.size()) {
+                logger.error("(Inserts = " + inserts.size() + ") != (InsertedCount = " + writeResult.getInsertedCount() + " )");
+                for (Document insert : inserts) {
+                    Long count = collection.count(Filters.eq("_id", insert.get("_id"))).first();
+                    if (count != 1) {
+                        logger.error("Missing insert " + insert.get("_id"));
+                    }
+                }
+            }
         }
         newVariants += System.nanoTime();
         long existingVariants = -System.nanoTime();
         if (!queriesExisting.isEmpty()) {
-            collection.update(queriesExisting, updatesExisting, QUERY_OPTIONS);
+            QueryResult<BulkWriteResult> update = collection.update(queriesExisting, updatesExisting, QUERY_OPTIONS);
+            if (update.first().getModifiedCount() != queriesExisting.size()) {
+                logger.error("(Updated existing variants = " + queriesExisting.size() + " ) != "
+                        + " (UpdatedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
+//                nonInserted[0] += queriesExisting.size() - update.first().getModifiedCount();
+
+                for (QueryResult<Document> r : collection.find(queriesExisting, null)) {
+                    if (!r.getResult().isEmpty()) {
+                        String id = r.first().get("_id", String.class);
+                        queriesExistingId.remove(id);
+                    }
+                }
+                for (String id : queriesExistingId) {
+                    logger.error("Missing Variant " + id);
+                }
+            }
         }
         existingVariants += System.nanoTime();
         long fillGapsVariants = -System.nanoTime();
         if (!queriesFillGaps.isEmpty()) {
-            collection.update(queriesFillGaps, updatesFillGaps, QUERY_OPTIONS);
+            QueryResult<BulkWriteResult> update = collection.update(queriesFillGaps, updatesFillGaps, QUERY_OPTIONS);
+            if (update.first().getModifiedCount() != queriesFillGaps.size()) {
+                logger.error("(Updated fillGaps variants = " + queriesFillGaps.size() + " ) != "
+                        + "(UpdatedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
+//                nonInserted[0] += queriesFillGaps.size() - update.first().getModifiedCount();
+
+                for (QueryResult<Document> r : collection.find(queriesFillGaps, null)) {
+                    if (!r.getResult().isEmpty()) {
+                        String id = r.first().get("_id", String.class);
+                        queriesFillGapsId.remove(id);
+                    }
+                }
+                for (String id : queriesFillGapsId) {
+                    logger.error("Missing Variant " + id);
+                }
+            }
         }
         fillGapsVariants += System.nanoTime();
 
@@ -220,7 +267,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         int processedVariants = queriesExisting.size() + inserts.size();
         int previousCount = variantsCount.getAndAdd(processedVariants);
-        if ((previousCount + processedVariants) / LOGING_BATCH_SIZE != previousCount / LOGING_BATCH_SIZE) {
+        if ((previousCount + processedVariants) / logingBatchSize != previousCount / logingBatchSize) {
             logger.info("Write variants in VARIANTS collection " + (previousCount + processedVariants) + "/" + numTotalVariants + " "
                     + String.format("%.2f%%", ((float) (previousCount + processedVariants)) / numTotalVariants * 100.0));
         }

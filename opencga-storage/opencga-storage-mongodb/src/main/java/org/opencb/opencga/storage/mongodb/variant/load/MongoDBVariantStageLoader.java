@@ -53,7 +53,8 @@ public class MongoDBVariantStageLoader {
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
     private final AtomicInteger variantsCount;
-    public static final int LOGING_BATCH_SIZE = 1000;
+    public static final int DEFAULT_LOGING_BATCH_SIZE = 500;
+    private final int logingBatchSize;
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
 
@@ -199,6 +200,7 @@ public class MongoDBVariantStageLoader {
         this.numTotalVariants = numTotalVariants;
         fieldName = studyId + "." + fileId;
         variantsCount = new AtomicInteger(0);
+        logingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
     }
 
     public MongoDBVariantWriteResult insert(List<Variant> variants) {
@@ -256,7 +258,7 @@ public class MongoDBVariantStageLoader {
         }
 
         int previousCount = variantsCount.getAndAdd(variantsLocalCount[0]);
-        if ((previousCount + variantsLocalCount[0]) / LOGING_BATCH_SIZE != previousCount / LOGING_BATCH_SIZE) {
+        if ((previousCount + variantsLocalCount[0]) / logingBatchSize != previousCount / logingBatchSize) {
             logger.info("Write variants in STAGE collection " + (previousCount + variantsLocalCount[0]) + "/" + numTotalVariants + " "
                     + String.format("%.2f%%", ((float) (previousCount + variantsLocalCount[0])) / numTotalVariants * 100.0));
         }
@@ -272,10 +274,15 @@ public class MongoDBVariantStageLoader {
     }
 
     public static QueryResult<UpdateResult> deleteFiles(MongoDBCollection stageCollection, int studyId, int fileId) {
+        //Delete those studies that had duplicated variants. Those are not inserted, so they are not new variants.
+        stageCollection.update(
+                and(exists(studyId + "." + fileId + ".1"), exists(studyId + ".new", false)), unset(Integer.toString(studyId)),
+                new QueryOptions(MongoDBCollection.MULTI, true));
         return stageCollection.update(
                 exists(studyId + "." + fileId),
                 combine(
-                        unset(studyId + "." + fileId),
+//                        unset(studyId + "." + fileId),
+                        set(studyId + "." + fileId, null),
                         set(studyId + ".new", false)
                 ), new QueryOptions(MongoDBCollection.MULTI, true));
     }
@@ -285,7 +292,8 @@ public class MongoDBVariantStageLoader {
         List<Bson> updates = new LinkedList<>();
         for (Integer fileId : fileIds) {
             filters.add(exists(studyId + "." + fileId));
-            updates.add(unset(studyId + "." + fileId));
+//            updates.add(unset(studyId + "." + fileId));
+            updates.add(set(studyId + "." + fileId, null));
         }
         updates.add(set(studyId + ".new", false));
         return stageCollection.update(or(filters), combine(updates), new QueryOptions(MongoDBCollection.MULTI, true));
