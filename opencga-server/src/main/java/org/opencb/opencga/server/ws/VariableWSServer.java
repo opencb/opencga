@@ -68,6 +68,20 @@ public class VariableWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{variableSetId}/field/add")
+    @ApiOperation(value = "Add a new field in a variable set", position = 5)
+    public Response addFieldToVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId")
+                                          long variableSetId,
+                                          @ApiParam(value = "variable", required = true) Variable variable) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.addFieldToVariableSet(variableSetId, variable, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{variableSetId}/info")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2)
@@ -115,6 +129,7 @@ public class VariableWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableSetId}/delete")
+    @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Delete an unused variable Set", position = 4)
     public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
@@ -122,6 +137,35 @@ public class VariableWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
-        }    }
+        }
+    }
 
+    @GET
+    @Path("/{variableSetId}/field/delete")
+    @ApiOperation(value = "Delete one field from a variable set", position = 6)
+    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId")
+                                             long variableSetId,
+                                             @ApiParam(value = "name", required = true) @QueryParam("name") String name) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.removeFieldFromVariableSet(variableSetId, name, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{variableSetId}/field/rename")
+    @ApiOperation(value = "Rename the field id of a field in a variable set", position = 7)
+    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true)
+                                                 @PathParam("variableSetId") long variableSetId,
+                                             @ApiParam(value = "oldName", required = true) @QueryParam("oldName") String oldName,
+                                             @ApiParam(value = "newName", required = true) @QueryParam("newName") String newName) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.renameFieldFromVariableSet(variableSetId, oldName, newName, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 }

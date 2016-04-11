@@ -27,7 +27,9 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.core.common.Config;
 
 import javax.ws.rs.client.Client;
@@ -105,8 +107,8 @@ public class WSServerTestUtils {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog.properties"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog-configuration.yml");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
