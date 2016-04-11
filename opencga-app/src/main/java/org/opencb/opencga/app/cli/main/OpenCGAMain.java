@@ -616,11 +616,11 @@ public class OpenCGAMain {
 
                         long studyId = catalogManager.getStudyId(c.studyId);
                         Query query = new Query();
-                        if (c.name != null) query.put("like", c.name);
-                        if (c.directory != null) query.put("directory", c.directory);
-                        if (c.bioformats != null) query.put("bioformat", c.bioformats);
-                        if (c.types != null) query.put("type", c.types);
-                        if (c.status != null) query.put("status", c.status);
+                        if (c.name != null) query.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + c.name);
+                        if (c.directory != null) query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), c.directory);
+                        if (c.bioformats != null) query.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), c.bioformats);
+                        if (c.types != null) query.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), c.types);
+                        if (c.status != null) query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), c.status);
 
                         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), fileQueryResult, null));

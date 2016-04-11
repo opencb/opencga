@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -163,10 +164,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public Long getFileId(String id) throws CatalogException {
-        try {
+        if (StringUtils.isNumeric(id)) {
             return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
         }
 
         String[] split = id.split("@", 2);
