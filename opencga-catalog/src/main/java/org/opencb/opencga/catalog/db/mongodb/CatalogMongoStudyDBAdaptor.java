@@ -564,9 +564,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
-                CatalogSampleDBAdaptor.VariableSetParams option = CatalogSampleDBAdaptor.VariableSetParams.getParam(key) != null
-                        ? CatalogSampleDBAdaptor.VariableSetParams.getParam(key)
-                        : CatalogSampleDBAdaptor.VariableSetParams.getParam(entry.getKey());
+                CatalogStudyDBAdaptor.VariableSetParams option = CatalogStudyDBAdaptor.VariableSetParams.getParam(key) != null
+                        ? CatalogStudyDBAdaptor.VariableSetParams.getParam(key)
+                        : CatalogStudyDBAdaptor.VariableSetParams.getParam(entry.getKey());
                 switch (option) {
                     case STUDY_ID:
                         addCompQueryFilter(option, option.name(), PRIVATE_ID, options, mongoQueryList);

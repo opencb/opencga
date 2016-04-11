@@ -25,15 +25,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.FileOutputStream;
@@ -64,25 +65,20 @@ public class CatalogFileUtilsTest {
 
     @Before
     public void before() throws CatalogException, IOException {
-
-        InputStream is = this.getClass().getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
-
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", properties.getProperty(CatalogManager.CATALOG_DB_USER, ""))
-                .add("password", properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, ""))
-                .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
+                .add("username", catalogConfiguration.getDatabase().getUser())
+                .add("password", catalogConfiguration.getDatabase().getPassword())
+                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0].split(":");
-        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                split[0], 27017);
+        String[] split = catalogConfiguration.getDatabase().getHosts().get(0).split(":");
+        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
-
-        CatalogManagerTest.clearCatalog(properties);
-        catalogManager = new CatalogManager(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);

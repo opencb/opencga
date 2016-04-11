@@ -4,12 +4,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,14 +39,27 @@ public class UserManager extends AbstractManager implements IUserManager {
     //    private final SessionManager sessionManager;
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-    protected final String creationUserPolicy;
+    protected final Policies.UserCreation creationUserPolicy;
 
+    @Deprecated
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-        creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER, "always");
+        creationUserPolicy = Policies.UserCreation.ALWAYS;
+        //creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER,
+        // Policies.UserCreation.ALWAYS);
+//        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
+    }
+
+    public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                       AuditManager auditManager,
+                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+
+        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
@@ -72,6 +86,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
+    @Deprecated
     @Override
     public QueryResult<User> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
@@ -98,8 +113,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
         String userId;
+
         switch (creationUserPolicy) {
-            case "onlyAdmin": {
+            case ONLY_ADMIN: {
                 userId = getUserId(sessionId);
                 if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                     user.getAttributes().put("creatorUserId", userId);
@@ -108,7 +124,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 }
                 break;
             }
-            case "anyLoggedUser": {
+            case ANY_LOGGED_USER: {
                 ParamUtils.checkParameter(sessionId, "sessionId");
                 userId = getUserId(sessionId);
                 if (userId.isEmpty()) {
@@ -117,7 +133,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 user.getAttributes().put("creatorUserId", userId);
                 break;
             }
-            case "always":
+            case ALWAYS:
             default:
                 userId = id;
                 break;

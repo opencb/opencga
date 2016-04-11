@@ -26,8 +26,10 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -35,7 +37,6 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
@@ -127,6 +128,32 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
+    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        db.getDb().drop();
+        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+
+        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
+        deleteFolderTree(rootdir.toFile());
+        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
+            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
     public static void deleteFolderTree(java.io.File folder) {
         java.io.File[] files = folder.listFiles();
         if (files != null) {
@@ -143,13 +170,12 @@ public class CatalogManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        InputStream is = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
-        clearCatalog(properties);
+        clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
@@ -1360,19 +1386,19 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1,vs2"), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
                 , "VS1"), sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogSampleDBAdaptor.VariableSetParams.ID.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.ID.key()
                 , vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 

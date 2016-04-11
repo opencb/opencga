@@ -2,24 +2,28 @@
 logLevel: "INFO"
 logFile: null
 
-dataDir: "/opt/opencga/sessions"
-tempJobsDir: "/opt/opencga/sessions/jobs"
+dataDir: ${OPENCGA.CATALOG.ROOTDIR}
+tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
 
 admin: "admin"
 password: "admin"
 
 emailServer:
-  host: "localhost"
-  port: ""
-  user: ""
-  password: ""
+  host: ${OPENCGA.CATALOG.MAIL.HOST}
+  port: ${OPENCGA.CATALOG.MAIL.PORT}
+  user: ${OPENCGA.CATALOG.MAIL.USER}
+  password: ${OPENCGA.CATALOG.MAIL.PASSWORD}
   from: ""
   ssl: false
 
 database:
   hosts:
-  - "localhost"
-  database: "opencga_catalog"
-  user: "admin"
-  password: ""
-  options: {}
+  - ${OPENCGA.CATALOG.DB.HOSTS}
+  database: ${OPENCGA.CATALOG.DB.DATABASE}
+  user: ${OPENCGA.CATALOG.DB.USER}
+  password: ${OPENCGA.CATALOG.DB.PASSWORD}
+  options:
+    authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+
+policies:
+  userCreation: "ALWAYS" ## This is the policy to create users. Can be: ONLY_ADMIN, ANY_LOGGED_USER or ALWAYS.

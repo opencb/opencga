@@ -63,6 +63,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
+    @Deprecated
     @Override
     public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");

@@ -154,7 +154,7 @@ public class OpenCGAWSServerTest {
         }
 
         Cohort myCohort = OpenCGAWSServer.catalogManager.createCohort(study.getId(), "MyCohort", Cohort.Type.FAMILY, "", samples.stream().map(Sample::getId).collect(Collectors.toList()), null, sessionId).first();
-        assertEquals(Cohort.CohortStatus.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
+        assertEquals(Cohort.CohortStatus.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getStatus());
 
         long outputId = OpenCGAWSServer.catalogManager.getFileParent(fileVcf.getId(), null, sessionId).first().getId();
         Job calculateVariantStatsJob = fileTest.calculateVariantStats(myCohort.getId(), outputId, sessionId);
@@ -162,7 +162,7 @@ public class OpenCGAWSServerTest {
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
         assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getStatus().getStatus());
-        assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
+        assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getStatus());
 
 
 

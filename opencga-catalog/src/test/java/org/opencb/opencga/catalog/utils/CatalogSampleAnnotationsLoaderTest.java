@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import junit.framework.Assert;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -50,9 +51,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
-        Properties catalogProperties = new Properties();
-        catalogProperties.load(CatalogSampleAnnotationsLoader.class.getClassLoader().getResourceAsStream("catalog.properties"));
-        catalogManager = new CatalogManager(catalogProperties);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
+                .getClass().getResource("/catalog-configuration.yml").openStream());
+        catalogManager = new CatalogManager(catalogConfiguration);
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
 

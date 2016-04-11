@@ -122,8 +122,8 @@ public class CliOptionsParser extends OptionsParser {
 
     class IndexCommandOptions {
 
-        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, arity = 1)
-        public String input;
+        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
+        public List<String> input;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;

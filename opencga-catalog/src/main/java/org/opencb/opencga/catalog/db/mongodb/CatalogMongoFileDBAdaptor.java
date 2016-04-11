@@ -595,6 +595,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                         break;
                 }
             } catch (Exception e) {
+                logger.error("Error with " + entry.getKey() + " " + entry.getValue());
                 throw new CatalogDBException(e);
             }
         }
