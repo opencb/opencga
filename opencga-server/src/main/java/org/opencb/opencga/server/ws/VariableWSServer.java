@@ -68,20 +68,6 @@ public class VariableWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{variableSetId}/field/add")
-    @ApiOperation(value = "Add a new field in a variable set", position = 5)
-    public Response addFieldToVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId")
-                                          long variableSetId,
-                                          @ApiParam(value = "variable", required = true) Variable variable) {
-        try {
-            QueryResult<VariableSet> queryResult = catalogManager.addFieldToVariableSet(variableSetId, variable, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{variableSetId}/info")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2)
@@ -134,6 +120,21 @@ public class VariableWSServer extends OpenCGAWSServer {
     public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{variableSetId}/field/add")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Add a new field in a variable set", position = 5)
+    public Response addFieldToVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId")
+                                          long variableSetId,
+                                          @ApiParam(value = "variable", required = true) Variable variable) {
+        try {
+            QueryResult<VariableSet> queryResult = catalogManager.addFieldToVariableSet(variableSetId, variable, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
