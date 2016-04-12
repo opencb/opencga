@@ -21,7 +21,6 @@
 
 <link rel="import" href="opencga-login.html">
 <link rel="import" href="opencga-dashboard.html">
-<link rel="import" href="opencga-files-panel.html">
 
 <dom-module id="opencga-web">
     <template>
@@ -93,7 +92,7 @@
                     <opencga-login></opencga-login>
                 </div>
                 <div class="collapse content" id="home">
-                    <opencga-files-panel></opencga-files-panel>
+                    <opencga-dashboard user="{{this.cookieUserName}}" session-id="{{this.cookieSessionId}}"></opencga-dashboard>
                 </div>
             </div>
 
@@ -199,8 +198,6 @@
             closeSettings: function(e) {
                 this.tmpHost = this.host;
             },
-
-
 
             logout: function() {
                 var me = this;

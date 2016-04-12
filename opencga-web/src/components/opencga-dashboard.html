@@ -18,13 +18,51 @@
 
 <dom-module id="opencga-dashboard">
     <template>
-        <style is="custom-style" include="opencga-shared-styles"></style>
+        <!--<style is="custom-style" include="opencga-shared-styles"></style>-->
 
+        User: <span>{{user}}</span>
+        Session: <span>{{sessionId}}</span>
     </template>
     <script>
         Polymer({
             is: 'opencga-dashboard',
             properties: {
+                user: {
+                    type: String
+                },
+                sessionId: {
+                    type: String
+                }
+            },
+
+            observers: [
+                '_getAvailableStudies(user, sessionId)'
+            ],
+
+            ready: function() {
+
+                console.log("Hello from dashboard");
+                console.log(user)
+            },
+
+            _getAvailableStudies: function() {
+                OpencgaManager.users.info({
+                    id: user,
+                    query: {
+                        sid: sessionId,
+                        include: "projects"
+                    },
+                    request: {
+                        success: function (response) {
+                            debugger
+                            // Set this.projecs
+                        },
+                        error: function (response) {
+                            debugger
+                            console.log("Could not retrieve the projects");
+                        }
+                    }
+                })
             }
         });
     </script>
